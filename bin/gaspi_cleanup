@@ -1,0 +1,94 @@
+#!/bin/sh
+
+# Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013
+
+# This file is part of GPI-2.
+
+# GPI-2 is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public License
+# version 3 as published by the Free Software Foundation.
+
+# GPI-2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
+
+PRG=`/bin/cat /tmp/.last_gaspi_prg 2> /dev/null`
+MFILE=""
+
+#helper functions
+usage()
+{
+    echo
+    echo "usage: gaspi_cleanup -m <machinefile>"
+    echo
+}
+
+validate_machinefile()
+{
+    #empty
+    if [ ! -s $MFILE ]; then
+	echo "Empty machine file ($1)"
+	exit 1
+    fi
+    
+    #valid hosts
+    hlist=`cat $1`
+    for i in $hlist
+    do
+	ping -c 1 $i > /dev/null 2>&1
+	if [ $? != 0 ]; then
+	   echo "Host not reachable ($i)"
+	   exit 1
+	fi
+    done
+}
+
+kill_procs()                                                                                                    
+{                                                                                                               
+    for i in $hlist                                                                                             
+    do                                                                                                          
+        ssh $i killall -s KILL $PRG > /dev/null 2>&1 &
+    done                                                                                                        
+}
+
+#at least we need machinefile
+if [ $# -lt 2 ]; then
+    usage
+    exit 1
+fi
+
+
+if [ "$PRG" = "" ]; then
+    echo "Error: GASPI binary not found." 
+    exit 1
+fi
+
+while [ "$1" != "" ]; do
+    case $1 in
+	-m | --machinefile)
+	    shift
+ 	    if [ -r $1 ]; then
+		MFILE=$1
+            else
+		echo "Error: Cannot read $1 (-m option) (or file does not exist)"
+ 		exit 1
+	    fi
+	    ;;
+	*)
+	    usage
+	    ;;
+    esac
+    shift
+done
+
+validate_machinefile $MFILE
+    
+hlist=`/bin/cat $MFILE`
+    
+kill_procs 
+
+exit 0

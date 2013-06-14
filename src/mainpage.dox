@@ -1,0 +1,120 @@
+/*! \mainpage GPI-2
+ *
+ * \section intro_sec Introduction
+ *
+ * GPI-2 is the second generation of GPI (www.gpi-site.com). GPI-2 implements the GASPI specification (www.gaspi.de), an API specification which originates from the ideas and concepts GPI. 
+ *
+ * GPI-2 is an API for asynchronous communication. It provides a flexible, scalable and fault tolerant interface for parallel applications.
+ *
+ *
+ * @image html new_arch.png
+ *
+ * \section install_sec Installation
+ * The easiest way to install GPI-2 is by using the install.sh script. The default settings install GPI-2 under /opt/GPI2/. This location can be easily modified by passing the location with the -p option to the install script.
+ *
+ * For example,
+ *
+ *   ./install.sh -p /prog/GPI2
+ *
+ * installs GPI-2 under /prog/GPI2 instead of under the default location.
+ *
+ * \subsection reqs Requirements
+ *
+ * The current version of GPI-2 has the following requirements.
+ *
+ * Software:
+ * - libibverbs (Verbs library from OFED).
+ *
+ * Hardware:
+ * - Infiniband or RoCE devices.
+ *
+ * \section buildgpi Building GPI-2
+ *
+ *
+ * You can build GPI2 on your own. There are the following make targets:
+ *
+\li all	     - Build everything
+\li gpi	     - Build the GPI-2 library (including debug version)
+\li tests    - Build provided tests
+\li mic	     - Build the GPI-2 library for the MIC
+\li docs     - Generate documentation (requires doxygen)
+\li clean    - Clean-up
+
+ * \section Building GPI-2 applications
+ *
+ *
+ * GPI-2 provides two libraries: \b libGPI2.a and \b libGPI2-dbg.a.
+ * 
+ * The \b libGPI2.a aims at high-performance and is to be used in production whereas the \b libGPI2-dbg.a provides a debug version, with extra parameter checking and debug messages and is to be used to debug and during development.
+
+
+ * \section  Running GPI-2 applications
+ *
+ *
+ * The gaspi_run utility is used to start and run GPI-2 applications. A machine file with the hostnames of nodes where the application will run, must be provided. For example, to start 1 process per node (on 4 nodes), the machine file looks like:
+ \verbatim
+ node01
+ node02
+ node03
+ node04
+  \endverbatim	
+ * Similarly, to start 2 processes per node (on 4 nodes):
+ \verbatim
+ node01
+ node01
+ node02
+ node02
+ node03
+ node03
+ node04
+ node04
+  \endverbatim
+ *
+ *
+ *
+ * The gaspi_run utility is invoked as follows:
+ * 
+ * 	gaspi_run -m <machinefile> [OPTIONS] <path GASPI program>
+ * 
+ * \b IMPORTANT: The path to the program must be the full path and that same path must exist on all nodes where the program should be started.
+ * 	
+ * The gaspi_run utility has the following further options [OPTIONS]:
+ * \verbatim
+   -b <binary file> Use a different binary for first node (master).
+     	     	   The master (first entry in the machine file) is
+		   started with a different application than the rest
+		   of the nodes (workers).
+     	     	   
+   -N              Enable NUMA for processes on same node. With this
+   		   option it is only possible to start the same number
+		   of processes as NUMA nodes present on the system.
+		   The processes running on same node will be set with
+		   affinity to the proper NUMA node.
+   
+   -n <procs>      Start as many <procs> from machine file.
+     		   This option is used to start less processes than
+		   those listed in the machine file.
+		   
+   -d              Run with GDB (debugger) on master node. With this
+  		   option, GDB is started in the master node, to allow
+		   debugging the application.
+   
+   -h               Show help.
+ 
+ \endverbatim
+ *
+ *
+ *
+ * \section logger The gaspi_logger
+ * 
+ * 
+ * The gaspi_logger utility is used to view the output from all nodes except the master node (rank 0). The gaspi_logger is started, on
+another session, on the master node. The output of the application, when called with gaspi_printf, will be redirected to the gaspi_logger. Other I/O routines (e.g. printf) will not.
+ *
+ * \section info More Information
+ * 
+ * 
+ * For more information, check the GPI-2 website: www.gpi-site.com
+ *
+ */
+ 

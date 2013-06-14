@@ -1,0 +1,79 @@
+Tests directory
+===============
+
+This directory contains tests for full coverage of the interface and
+the typical benchmarks.
+
+Organization
+============
+
+There are 2 main sub-directories: microbenchmarks and tests:
+
+- microbenchmarks contains the usual latency, bandwidth and others.
+
+- tests contains all the tests. This directory is divided in several
+  sub-directories that organize the tests on how they test particular
+  functionality (initialization, communication, collectives, etc.).
+
+  
+Usage
+=====
+
+The runtests.sh script is the driver to run all tests. It expects that
+a machine file named 'machines' resides on the same directory. This
+machine file contains the nodes where the tests should run.
+
+Examples:
+	./runtests.sh 
+	runs all available tests.
+
+	./runtests.sh gpiapp
+	runs a particular test (gpiapp).
+
+Definitions file
+================
+
+It is possible to define a definitions file for each test to define
+command line arguments. Each definition file must be placed in the
+defs directory with a name <test_name.def>.
+
+A default definitions file is placed (default.def) to allow for other
+(general) definitions. For now only the network type is supported,
+allowing to define on which network type (IB or Ethernet) the test
+should run. See the defs/default.def file.
+
+New Tests
+=========
+
+Adding new tests is easy: simply add the test source code to one of
+the test directories and add the test to the respective Makefile.
+Each test should include <test_utils.h> and call TSUITE_INIT.
+
+Examples (new_test.c):
+#include <GASPI.h>
+#include <test_utils.h>
+
+int  main(int argc, char *argv[])
+{
+  TSUITE_INIT(argc, argv);
+  ASSERT(gaspi_proc_init(GASPI_BLOCK));
+
+  ASSERT(gaspi_proc_term(GASPI_BLOCK));
+  return EXIT_SUCCESS;
+}
+
+With the Intel Xeon Phi (MIC)
+=============================
+
+The current setup does not support the MIC auto-magically. You need
+to:
+
+- compile the tests for the MIC by editing the make.defines file
+to setup the compiler and its flags.
+- copy the tests (bin directory) to the right path on the MIC(s)
+- make clean
+- re-edit the Makefile and set it up for the host
+- make again to create binaries for the host system
+
+
+Have fun!
