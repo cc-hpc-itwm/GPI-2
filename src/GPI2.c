@@ -198,7 +198,7 @@ typedef struct
 static gaspi_config_t glb_gaspi_cfg = {
   1,				//logout
   0,				//netinfo
-  0,				//netdev
+  -1,				//netdev
   2048,				//mtu
   1,				//port check
   0,				//user selected network

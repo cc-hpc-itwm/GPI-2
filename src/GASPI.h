@@ -36,7 +36,7 @@ extern "C"
 
 #define GASPI_MAJOR_VERSION (1)
 #define GASPI_MINOR_VERSION (0)
-#define GASPI_REVISION (0)
+#define GASPI_REVISION (1)
 
 #define GASPI_BLOCK       (0xffffffff)
 #define GASPI_TEST        (0x0)
@@ -162,7 +162,7 @@ extern "C"
   {
     gaspi_uint logger;	     /**< flag to set logging */
     gaspi_uint net_info;     /**< flag to set network information display*/
-    gaspi_uint netdev_id;    /**< the network device to use */
+    gaspi_int netdev_id;     /**< the network device to use */
     gaspi_uint mtu;	     /**< the MTU value to use */
     gaspi_uint port_check;   /**< flag to whether to perform a network check */
     gaspi_uint user_net;     /**< */

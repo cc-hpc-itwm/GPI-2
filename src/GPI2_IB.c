@@ -61,6 +61,7 @@ typedef struct
   struct ibv_port_attr port_attr[2];
   struct ibv_srq_init_attr srq_attr;
   int ib_card_typ;
+  int num_dev;
   int max_rd_atomic;
   int ib_port;
   struct ibv_cq *scqGroups, *rcqGroups;
@@ -189,7 +190,7 @@ int
 gaspi_init_ib_core ()
 {
   char boardIDbuf[256];
-  int i, c, p;
+  int i, c, p, dev_idx=0;
 
   if (glb_gaspi_ib_init)
     return -1;
@@ -202,14 +203,50 @@ gaspi_init_ib_core ()
   for (i = 0; i < 64; i++)
     glb_gaspi_ctx_ib.wc_grp_send[i].status = IBV_WC_SUCCESS;
 
-  glb_gaspi_ctx_ib.dev_list = ibv_get_device_list (NULL);
-  glb_gaspi_ctx_ib.ib_dev =
-    glb_gaspi_ctx_ib.dev_list[glb_gaspi_cfg.netdev_id];
-  if (!glb_gaspi_ctx_ib.ib_dev)
-    {
-      gaspi_print_error ("Failed to get device list (libibverbs)");
+
+  glb_gaspi_ctx_ib.dev_list = ibv_get_device_list (&glb_gaspi_ctx_ib.num_dev);
+  if (!glb_gaspi_ctx_ib.dev_list) {
+    gaspi_print_error ("Failed to get device list (libibverbs)");
+    return -1;
+  }
+
+
+  if(glb_gaspi_cfg.netdev_id >= 0){
+
+    if(glb_gaspi_cfg.netdev_id >= glb_gaspi_ctx_ib.num_dev) {
+      gaspi_print_error ("Failed to get device (libibverbs)");
       return -1;
     }
+
+    glb_gaspi_ctx_ib.ib_dev = glb_gaspi_ctx_ib.dev_list[glb_gaspi_cfg.netdev_id];
+    if (!glb_gaspi_ctx_ib.ib_dev) {
+      gaspi_print_error ("Failed to get device (libibverbs)");
+      return -1;
+    }
+
+    dev_idx = glb_gaspi_cfg.netdev_id;
+  }
+  else {
+
+    for (i=0;i<glb_gaspi_ctx_ib.num_dev;i++) {
+    
+      glb_gaspi_ctx_ib.ib_dev = glb_gaspi_ctx_ib.dev_list[i];
+     
+      if (!glb_gaspi_ctx_ib.ib_dev) {
+        gaspi_print_error ("Failed to get device (libibverbs)");
+        continue;
+      }
+
+      if (glb_gaspi_ctx_ib.ib_dev->transport_type != IBV_TRANSPORT_IB) continue;
+      else {
+        dev_idx=i;
+        break;
+      }
+
+    }
+  }
+
+
 
   if (glb_gaspi_ctx_ib.ib_dev->transport_type != IBV_TRANSPORT_IB)
     {
@@ -258,6 +295,7 @@ gaspi_init_ib_core ()
   if (glb_gaspi_cfg.net_info)
     {
       gaspi_printf ("<<<<<<<<<<<<<<<<IB-info>>>>>>>>>>>>>>>>>>>\n");
+      gaspi_printf ("\tib_dev     : %d (%s)\n",dev_idx,ibv_get_device_name(glb_gaspi_ctx_ib.dev_list[dev_idx]));
       gaspi_printf ("\tca typ     : %d\n",
 		    glb_gaspi_ctx_ib.device_attr.vendor_part_id);
       gaspi_printf ("\tmtu        : %d\n", glb_gaspi_cfg.mtu);
