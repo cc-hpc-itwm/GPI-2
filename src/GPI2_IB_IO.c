@@ -158,10 +158,7 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
 
   lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms);
 
-  const enum ibv_send_flags sf =
-    (size >
-     MAX_INLINE_BYTES) ? IBV_SEND_SIGNALED : IBV_SEND_SIGNALED |
-    IBV_SEND_INLINE;
+ 
   slist.addr =
     (uintptr_t) (glb_gaspi_ctx_ib.
 		 rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
@@ -177,7 +174,7 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
   swr.num_sge = 1;
   swr.wr_id = rank;
   swr.opcode = IBV_WR_RDMA_READ;
-  swr.send_flags = sf;
+  swr.send_flags = IBV_SEND_SIGNALED;
   swr.next = NULL;
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr, &bad_wr))
