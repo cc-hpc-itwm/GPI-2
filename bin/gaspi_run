@@ -26,8 +26,9 @@ TYP=GASPI_MASTER
 MAX_NUMA_NODES=1
 HAS_NUMA=0
 HN=`/bin/hostname`
-TMP_MFILE=".gaspi_tmp"`date +%N`
-UNIQ_MFILE=".gaspi_tmp_uniq"`date +%N`
+TMP_PATTERN=".gpi2.XXXXXXXX"
+TMP_MFILE=$(TMPDIR=. mktemp ${TMP_PATTERN})
+UNIQ_MFILE=$(TMPDIR=. mktemp ${TMP_PATTERN})
 ORIG_MFILE=""
 NNODES=0
 DEBUG=0
