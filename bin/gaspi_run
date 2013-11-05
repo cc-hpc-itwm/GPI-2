@@ -278,7 +278,9 @@ done < $MFILE
 
 PRGNAME=`basename $KPRG`
 echo $PRGNAME  > /tmp/.last_gaspi_prg
-chmod a+rw /tmp/.last_gaspi_prg
+if [ -O /tmp/.last_gaspi_prg ]; then
+    chmod a+rw /tmp/.last_gaspi_prg &> /dev/null
+fi
 
 export GASPI_MASTER=$HN;
 
