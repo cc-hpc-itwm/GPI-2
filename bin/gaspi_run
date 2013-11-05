@@ -234,6 +234,13 @@ t0=$(date +%s)
 previous=`head -n 1 $MFILE`
 ncount=0
 
+#take care of paths
+TMP_PRG=`readlink -f "$PRG"`
+TMP_KPRG=`readlink -f $KPRG`
+
+PRG=$TMP_PRG
+KPRG=$TMP_KPRG
+
 while read LINE
 do
     i=$LINE
