@@ -421,8 +421,10 @@ gaspi_init_ib_core ()
   if (glb_gaspi_cfg.net_typ == GASPI_IB)
     {
 
-      switch (glb_gaspi_ctx_ib.
-	      port_attr[glb_gaspi_ctx_ib.ib_port - 1].max_mtu)
+      const gaspi_uint active_mtu = 
+	glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].active_mtu;
+
+      switch (active_mtu)
 	{
 
 	case IBV_MTU_1024:
