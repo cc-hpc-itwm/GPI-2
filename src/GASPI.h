@@ -1047,6 +1047,13 @@ extern "C"
    */
   void gaspi_printf (const char *fmt, ...);
 
+  /** GASPI printf to print to a particular gaspi_logger. 
+   * 
+   * @param rank the rank of the logger node.
+   * @param fmt printf parameters.
+   */
+  void gaspi_printf_to (gaspi_rank_t rank, const char *fmt, ...);
+
   /**  Print the CPU's affinity mask.
    * 
    * 

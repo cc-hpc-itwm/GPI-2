@@ -1,5 +1,5 @@
 BIN =  proc_init.bin proc_init_timeout.bin cmd_line_args.bin \
-	kill_procs.bin cl.bin hello_world.bin
+	kill_procs.bin cl.bin hello_world.bin print_to.bin
 
 CFLAGS+=-I../
 
