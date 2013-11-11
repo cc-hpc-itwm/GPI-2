@@ -83,11 +83,6 @@ validate_machinefile()
 	exit 1
     fi
 
-    master=`head -n 1 $MFILE`
-    if [ "$master" != "$HN" ]; then
-	print_error_exit "Error: first node on machine file ($MFILE) is expected to be the current host!"
-    fi
-
     #create tmp_file
     if [ -r $TMP_MFILE ]; then
 	rm -f $TMP_MFILE
@@ -241,6 +236,9 @@ TMP_KPRG=`readlink -f $KPRG`
 PRG=$TMP_PRG
 KPRG=$TMP_KPRG
 
+#who's master
+master_node=`head -n 1 $MFILE`
+
 while read LINE
 do
     i=$LINE
@@ -272,9 +270,9 @@ do
     fi
 
     if [ $SET_NUMA -eq 1 ]; then    
-	cmd="/bin/sh -c 'export GASPI_MASTER=$HN;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; $PRG > /dev/null 2>&1 &'"
+	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; $PRG > /dev/null 2>&1 &'"
     else
-	cmd="/bin/sh -c 'export GASPI_MASTER=$HN;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE; $PRG > /dev/null 2>&1 &'"
+	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE; $PRG > /dev/null 2>&1 &'"
     fi
 
     ssh $i $cmd &
@@ -289,28 +287,43 @@ if [ -O /tmp/.last_gaspi_prg ]; then
     chmod a+rw /tmp/.last_gaspi_prg &> /dev/null
 fi
 
-export GASPI_MASTER=$HN;
-
-if [ $SET_NUMA -eq 1 ]; then
-    export GASPI_SET_NUMA_SOCKET=1;
-fi
-export GASPI_SOCKET=0;
-export GASPI_TYP=GASPI_MASTER;
-export GASPI_MFILE=$MFILE;
-
-t1=$(date +%s)
-tdiff=$(( $t1 - $t0 ))
-echo ssh-startup time: $tdiff sec
-
 #start master
-if [ $DEBUG != 0 ]; then
-    gdb --args $MASTER_PRG
+
+if [ "$master_node" != "$HN" ]; then
+    #prepare differently for remote node
+    chmod a+r $MFILE
+    TMP_FILE=`readlink -f $MFILE`
+    MFILE=$TMP_FILE
+    
+    if [ $SET_NUMA -eq 1 ]; then    
+ 	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=0;export GASPI_TYP=GASPI_MASTER;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; $PRG'"
+    else
+ 	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=0;export GASPI_TYP=GASPI_MASTER;export GASPI_MFILE=$MFILE; $PRG'"
+     fi
+     ssh $master_node $cmd 
 else
-    $MASTER_PRG
-fi
-if [ $? != 0 ]; then
-    clean_exit
-    exit 1
+    export GASPI_MASTER=$HN;
+    
+    if [ $SET_NUMA -eq 1 ]; then
+	export GASPI_SET_NUMA_SOCKET=1;
+    fi
+    export GASPI_SOCKET=0;
+    export GASPI_TYP=GASPI_MASTER;
+    export GASPI_MFILE=$MFILE;
+    
+    t1=$(date +%s)
+    tdiff=$(( $t1 - $t0 ))
+    echo ssh-startup time: $tdiff sec
+
+    if [ $DEBUG != 0 ]; then
+	gdb --args $MASTER_PRG
+    else
+	$MASTER_PRG
+    fi
+    if [ $? != 0 ]; then
+	clean_exit
+	exit 1
+    fi
 fi
 
 #clean-up and exit
