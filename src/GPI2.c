@@ -727,8 +727,20 @@ pgaspi_proc_rank (gaspi_rank_t * const rank)
 {
   if (glb_gaspi_init)
     {
+#ifdef DEBUG
+      if(rank != NULL)
+	{
+	  *rank = glb_gaspi_ctx.rank;
+	}
+      else
+	{
+	  gaspi_print_error ("Passed argument is a NULL pointer");
+	  return GASPI_ERROR;
+	}
+#else
       *rank = glb_gaspi_ctx.rank;
       return GASPI_SUCCESS;
+#endif
     }
   else
     return GASPI_ERROR;
@@ -739,8 +751,20 @@ pgaspi_proc_num (gaspi_rank_t * const proc_num)
 {
   if (glb_gaspi_init)
     {
+#ifdef DEBUG
+      if(proc_num != NULL)
+	{
+	  *proc_num = glb_gaspi_ctx.tnc;
+	}
+      else
+	{
+	  gaspi_print_error ("Passed argument is a NULL pointer");
+	  return GASPI_ERROR;
+	}
+#else
       *proc_num = glb_gaspi_ctx.tnc;
       return GASPI_SUCCESS;
+#endif
     }
   else
     return GASPI_ERROR;
@@ -749,7 +773,10 @@ pgaspi_proc_num (gaspi_rank_t * const proc_num)
 char *
 gaspi_get_hn (const unsigned int id)
 {
-  return glb_gaspi_ctx.hn + id * 64;
+  if(id < glb_gaspi_ctx.tnc)
+    return glb_gaspi_ctx.hn + id * 64;
+  else
+    return NULL;
 }
 
 gaspi_return_t

@@ -22,4 +22,4 @@ mic:
 	cp GASPI.h ../include/mic
 
 clean:
-	rm -f *.o libGPI2.a libGPI2-dbg.a *~ ../lib64/libGPI2* ../lib64/mic/libGPI2.a
+	rm -f *.o libGPI2.a libGPI2-dbg.a *~ ../lib64/libGPI2* ../lib64/mic/libGPI2.a ../include/GASPI.h
