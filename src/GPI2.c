@@ -731,6 +731,7 @@ pgaspi_proc_rank (gaspi_rank_t * const rank)
       if(rank != NULL)
 	{
 	  *rank = glb_gaspi_ctx.rank;
+	  return GASPI_SUCCESS;
 	}
       else
 	{
@@ -755,6 +756,7 @@ pgaspi_proc_num (gaspi_rank_t * const proc_num)
       if(proc_num != NULL)
 	{
 	  *proc_num = glb_gaspi_ctx.tnc;
+	  return GASPI_SUCCESS;
 	}
       else
 	{
