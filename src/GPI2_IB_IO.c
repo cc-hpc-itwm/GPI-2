@@ -591,8 +591,7 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
   
   if(old_notification_val == NULL)
     {
-      gaspi_printf("Debug: Invalid pointer on parameter old_notification_val (gaspi_notify_reset)\n");    
-      return GASPI_ERROR;
+      gaspi_printf("Warning: NULL pointer on parameter old_notification_val (gaspi_notify_reset)\n");    
     }
 #endif
 
@@ -606,7 +605,8 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
   const unsigned int res =
     __sync_val_compare_and_swap (&p[notification_id], p[notification_id], 0);
 
-  *old_notification_val = res;
+  if(old_notification_val != NULL)
+    *old_notification_val = res;
 
   return GASPI_SUCCESS;
 }

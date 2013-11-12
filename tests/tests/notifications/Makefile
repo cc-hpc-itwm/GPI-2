@@ -1,4 +1,4 @@
-BIN = notify.bin notify_all.bin write_notify.bin
+BIN = notify.bin notify_all.bin write_notify.bin notify_null.bin
 
 CFLAGS+=-I../
 
