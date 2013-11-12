@@ -29,6 +29,8 @@ HN=`/bin/hostname`
 TMP_PATTERN=".gpi2.XXXXXXXX"
 TMP_MFILE=$(TMPDIR=. mktemp ${TMP_PATTERN})
 UNIQ_MFILE=$(TMPDIR=. mktemp ${TMP_PATTERN})
+RUN_PATTERN=".gaspi_run.XXXXXXXX"
+RUN_FILE=$(TMPDIR=. mktemp ${RUN_PATTERN})
 ORIG_MFILE=""
 NNODES=0
 DEBUG=0
@@ -52,6 +54,7 @@ remove_temp_file()
 {    
     rm -f $TMP_MFILE
     rm -f $UNIQ_MFILE
+    rm -f $RUN_FILE
 }
 
 clean_exit()
@@ -81,11 +84,6 @@ validate_machinefile()
     if [ ! -s $MFILE ]; then
 	echo "Empty machine file ($1)"
 	exit 1
-    fi
-
-    master=`head -n 1 $MFILE`
-    if [ "$master" != "$HN" ]; then
-	print_error_exit "Error: first node on machine file ($MFILE) is expected to be the current host!"
     fi
 
     #create tmp_file
@@ -223,10 +221,6 @@ fi
 
 validate_machinefile $MFILE
 
-#master binary is the same
-if [ "$MASTER_PRG" = "" ]; then
-    MASTER_PRG=$PRG
-fi
 
 hlist=`cat $MFILE`
 t=0
@@ -240,6 +234,14 @@ TMP_KPRG=`readlink -f $KPRG`
 
 PRG=$TMP_PRG
 KPRG=$TMP_KPRG
+
+#master binary is the same
+if [ "$MASTER_PRG" = "" ]; then
+    MASTER_PRG=$PRG
+fi
+
+#who's master
+master_node=`head -n 1 $MFILE`
 
 while read LINE
 do
@@ -272,12 +274,12 @@ do
     fi
 
     if [ $SET_NUMA -eq 1 ]; then    
-	cmd="/bin/sh -c 'export GASPI_MASTER=$HN;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; $PRG > /dev/null 2>&1 &'"
+	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; if [ -x $PRG ]; then $PRG; else echo '$i': '$PRG' not found;exit 1;fi 2> /dev/null &'"
     else
-	cmd="/bin/sh -c 'export GASPI_MASTER=$HN;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE; $PRG > /dev/null 2>&1 &'"
+	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE; if [ -x $PRG ]; then $PRG;else echo '$i': '$PRG' not found;exit 1;fi 2> /dev/null &'"
     fi
 
-    ssh $i $cmd &
+    ssh $i $cmd  >> $RUN_FILE &
 
     previous="$i"
 
@@ -289,28 +291,63 @@ if [ -O /tmp/.last_gaspi_prg ]; then
     chmod a+rw /tmp/.last_gaspi_prg &> /dev/null
 fi
 
-export GASPI_MASTER=$HN;
-
-if [ $SET_NUMA -eq 1 ]; then
-    export GASPI_SET_NUMA_SOCKET=1;
+#check all started well
+sleep 1
+if [ `wc -l $RUN_FILE |gawk '{print $1}'` != "0" ]; then 
+    echo "Error: Failed to start $PRG on remote nodes"
+    echo
+    cat $RUN_FILE
+    echo
+    clean_exit
+    exit 1
 fi
-export GASPI_SOCKET=0;
-export GASPI_TYP=GASPI_MASTER;
-export GASPI_MFILE=$MFILE;
 
+#start master
 t1=$(date +%s)
 tdiff=$(( $t1 - $t0 ))
 echo ssh-startup time: $tdiff sec
 
-#start master
-if [ $DEBUG != 0 ]; then
-    gdb --args $MASTER_PRG
+if [ "$master_node" != "$HN" ]; then
+    #prepare differently for remote node
+    chmod a+r $MFILE &> /dev/null
+    TMP_FILE=`readlink -f $MFILE`
+    MFILE=$TMP_FILE
+    scp $MFILE ${master_node}:${MFILE} &> /dev/null
+    if [ $? != 0 ]; then
+	echo "Warning: Failed to copy machinefile to remote host. Program might not start correctly."
+    fi
+
+    if [ $SET_NUMA -eq 1 ]; then    
+ 	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=0;export GASPI_TYP=GASPI_MASTER;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; $MASTER_PRG'"
+    else
+ 	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=0;export GASPI_TYP=GASPI_MASTER;export GASPI_MFILE=$MFILE; $MASTER_PRG'"
+     fi
+    ssh $master_node $cmd 
+    if [ $? != 0 ]; then
+	echo "Error: Failed to start $MASTER_PRG on $master_node"
+	clean_exit
+	exit 1
+    fi
 else
-    $MASTER_PRG
-fi
-if [ $? != 0 ]; then
-    clean_exit
-    exit 1
+    export GASPI_MASTER=$HN;
+    
+    if [ $SET_NUMA -eq 1 ]; then
+	export GASPI_SET_NUMA_SOCKET=1;
+    fi
+    export GASPI_SOCKET=0;
+    export GASPI_TYP=GASPI_MASTER;
+    export GASPI_MFILE=$MFILE;
+    
+
+    if [ $DEBUG != 0 ]; then
+	gdb --args $MASTER_PRG
+    else
+	$MASTER_PRG
+    fi
+    if [ $? != 0 ]; then
+	clean_exit
+	exit 1
+    fi
 fi
 
 #clean-up and exit
