@@ -168,7 +168,7 @@ extern "C"
     gaspi_uint user_net;     /**< */
     gaspi_network_t net_typ; /**< network type */
     gaspi_uint queue_depth;  /**< the queue depth (size) to use */
-    gaspi_uint qp_count;     /**< the number of queues to use */
+    gaspi_uint queue_num;     /**< the number of queues to use */
     gaspi_number_t group_max;
     gaspi_number_t segment_max;
     gaspi_size_t transfer_size_max;

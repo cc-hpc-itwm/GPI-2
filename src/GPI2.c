@@ -375,10 +375,10 @@ pgaspi_config_set (const gaspi_config_t nconf)
   else
     glb_gaspi_cfg.netdev_id = nconf.netdev_id;
 
-  if (nconf.qp_count > GASPI_MAX_QP || nconf.qp_count < 1)
+  if (nconf.queue_num > GASPI_MAX_QP || nconf.queue_num < 1)
     return GASPI_ERROR;
   else
-    glb_gaspi_cfg.qp_count = nconf.qp_count;
+    glb_gaspi_cfg.queue_num = nconf.queue_num;
 
   if (nconf.queue_depth > GASPI_MAX_QSIZE || nconf.queue_depth < 1)
     return GASPI_ERROR;
@@ -453,7 +453,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   glb_gaspi_ctx.lockPS.lock = 0;
   glb_gaspi_ctx.lockPR.lock = 0;
 
-  for (i = 0; i < glb_gaspi_cfg.qp_count; i++)
+  for (i = 0; i < glb_gaspi_cfg.queue_num; i++)
     glb_gaspi_ctx.lockC[i].lock = 0;
 
   memset (&glb_gaspi_ctx, 0, sizeof (gaspi_context));
@@ -1245,7 +1245,7 @@ pgaspi_disconnect (const gaspi_rank_t rank,
 gaspi_return_t
 pgaspi_queue_num (gaspi_number_t * const queue_num)
 {
-  *queue_num = glb_gaspi_cfg.qp_count;
+  *queue_num = glb_gaspi_cfg.queue_num;
   return GASPI_SUCCESS;
 }
 

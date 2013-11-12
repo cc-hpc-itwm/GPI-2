@@ -274,9 +274,9 @@ do
     fi
 
     if [ $SET_NUMA -eq 1 ]; then    
-	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; if [ -x $PRG ]; then $PRG; else echo '$i': '$PRG' not found;exit 1;fi 2> /dev/null &'"
+	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; if [ -x $KPRG ]; then $PRG; else echo '$i': '$KPRG' not found;exit 1;fi 2> /dev/null &'"
     else
-	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE; if [ -x $PRG ]; then $PRG;else echo '$i': '$PRG' not found;exit 1;fi 2> /dev/null &'"
+	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE; if [ -x $KPRG ]; then $PRG;else echo '$i': '$KPRG' not found;exit 1;fi 2> /dev/null &'"
     fi
 
     ssh $i $cmd  >> $RUN_FILE &
