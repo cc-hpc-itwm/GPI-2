@@ -7,4 +7,4 @@ build: $(BIN)
 %.bin: %.f90
 	$(CF) $(CFLAGS) $(LIB_PATH) -o $(TOPROOT)/bin/$@ $^ $(LIBS)
 clean:
-	rm -rf *~ \#_* *.o *.bin
+	rm -rf *~ \#_* *.o *.bin *.mod
