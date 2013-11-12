@@ -3,6 +3,7 @@ TOPROOT = $(PWD)
 GPI_DIR = $(TOPROOT)/..
 OFED_PATH = /usr/local/ofed1.5.4.1
 CC = gcc
+CF = gfortran
 CXX = g++
 
 CFLAGS = -Wall -g -I$(GPI_DIR)/include

@@ -5,6 +5,7 @@ all: gpi tests docs
 gpi:
 	make -C src
 	make -C src debug
+	make -C src fortran
 
 mic:
 	make -C src mic
