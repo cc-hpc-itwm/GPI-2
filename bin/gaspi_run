@@ -293,7 +293,8 @@ fi
 
 #check all started well
 sleep 1
-if [ `wc -l $RUN_FILE |gawk '{print $1}'` != "0" ]; then 
+grep "${KPRG} not found" $RUN_FILE
+if [ $? = 0 ]; then
     echo "Error: Failed to start $PRG on remote nodes"
     echo
     cat $RUN_FILE
