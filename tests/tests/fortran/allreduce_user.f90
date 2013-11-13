@@ -1,6 +1,6 @@
 module my_reduce
 
-  use gaspi_h
+  use gaspi
   implicit none
 
 contains
@@ -35,7 +35,7 @@ end module my_reduce
 
 program allreduce
 
-  use gaspi_h
+  use gaspi
   use my_reduce
   implicit none
 

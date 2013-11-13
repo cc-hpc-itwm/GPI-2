@@ -51,7 +51,7 @@ module GASPI_types
 end module GASPI_types
 
 !-----------------------------------------------------------------------
-module GASPI_h
+module GASPI
 !-----------------------------------------------------------------------
 
   use, intrinsic :: ISO_C_BINDING
@@ -882,5 +882,5 @@ module GASPI_h
     end interface
     
     
-  end module GASPI_h
+  end module GASPI
   
