@@ -57,11 +57,10 @@ remove_temp_file()
     rm -f $RUN_FILE
 }
 
+
+
 clean_exit()
 {
-#wait spawned ssh commands
-    wait
-
 #assumes the clean-up script is in the same directory as gaspi_run
     BASEDIR=`dirname $0`
     $BASEDIR/gaspi_cleanup -m $UNIQ_MFILE

@@ -1,3 +1,7 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Fortran test that uses *most* of GPI-2 functionality!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 program main
   use gaspi
   use , intrinsic :: ISO_C_BINDING
@@ -18,9 +22,14 @@ program main
   integer(gaspi_queue_id_t) :: queue
   integer(gaspi_size_t) :: tsize
   integer(gaspi_rank_t), pointer :: arr(:)
-  integer, allocatable :: int_arr(:)
+  integer(gaspi_segment_id_t), target :: list_segs(255)
+  integer(gaspi_offset_t), target :: list_locoffs(255)
+  integer(gaspi_offset_t), target :: list_remoffs(255)
+  integer(gaspi_size_t), target :: list_sizes(255)
+  integer(gaspi_atomic_value_t) :: atom_value
+  type(c_ptr) :: segs_ptr, locoff_ptr, remoff_ptr, sizes_ptr
   type(c_ptr) :: seg_ptr
-  integer :: seg_int_size
+  integer :: seg_int_size, recvmsgs, i
 
   !capabilities
   write(*,*) "--------- VALUES --------------"  
@@ -229,6 +238,112 @@ program main
   call gaspi_printf(out_str)
  
 
+  !passive
+  localOff = 0
+  tsize = 8
+  if(rank .eq. 0) then
+     do recvmsgs = 1, nprocs - 1
+        ret = gaspi_passive_receive(seg_id, localOff, remoteRank, tsize, GASPI_BLOCK)
+        if(ret .ne. GASPI_SUCCESS) then
+           write(*,*) "gaspi_passive_receive failed"
+           call exit(-1)
+        end if
+        write (*, *) "passive msg from ", remoteRank, "magic :", arr(1)
+        if (arr(1) .ne. 42) then
+           write(*, *), "Wrong magic number"
+        end if
+     end do
+  else
+     remoteRank = 0
+     arr(1) = 42
+     ret = gaspi_passive_send(seg_id, localOff, remoteRank, tsize, GASPI_BLOCK)
+     if(ret .ne. GASPI_SUCCESS) then
+        write(*,*) "gaspi_passive_send failed"
+        call exit(-1)
+     end if
+     
+  endif
+
+  ret = gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK)
+  if(ret .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_barrier failed"
+     call exit(-1)
+  end if
+
+  !lists
+  arr(:) = (rank)
+  num = 255 
+  tsize = sizeof(rank)
+  remoteRank = modulo(rank + 1, nprocs)
+  do i = 1, num
+     list_segs(i) = 0
+     list_locoffs(i) = (255*tsize) + ((i-1)*tsize)
+     list_remoffs(i) = (i-1)*tsize
+     list_sizes(i) = tsize
+  end do
+
+  segs_ptr = c_loc(list_segs(1))
+  locoff_ptr = c_loc(list_locoffs(1))
+  remoff_ptr = c_loc(list_remoffs(1))
+  sizes_ptr = c_loc(list_sizes(1))
+
+  ret = gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK)
+  if(ret .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_barrier failed"
+     call exit(-1)
+  end if
+
+  ret = gaspi_read_list(num, segs_ptr, locoff_ptr, remoteRank, segs_ptr, remoff_ptr, sizes_ptr, queue, GASPI_BLOCK)
+  if(ret .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_read_list failed"
+     call exit(-1)
+  end if
+
+  ret = gaspi_wait(queue, GASPI_BLOCK)
+  if(ret .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_wait failed"
+     call exit(-1)
+  end if
+
+  do i = 1, num
+     if( arr(i+255) .ne. remoteRank) then
+        write(istr,'(i4)'),  arr(i)
+        out_str = 'wrong data '//trim(istr)//C_NEW_LINE//C_NULL_CHAR
+        call gaspi_printf(out_str)
+     end if
+  end do
+  ret = gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK)
+  if(ret .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_barrier failed"
+     call exit(-1)
+  end if
+
+  !atomic
+  arr(:) = 0
+  localOff = 0
+  remoteRank = 0
+  ret = gaspi_atomic_fetch_add(seg_id, localOff, remoteRank, INT(1,8), atom_value, GASPI_BLOCK)
+  if(ret .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_atomic_fetch_add failed"
+     call exit(-1)
+  end if
+
+  ret = gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK)
+  if(ret .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_barrier failed"
+     call exit(-1)
+  end if
+
+  if(rank .eq. 0) then
+     ret = gaspi_atomic_fetch_add(seg_id, localOff, remoteRank, INT(0,8), atom_value, GASPI_BLOCK)
+     if(ret .ne. GASPI_SUCCESS) then
+        write(*,*) "gaspi_atomic_fetch_add failed"
+        call exit(-1)
+     end if
+     if(atom_value .eq. nprocs) then
+        write(*,*), "Correct atomic value: ", atom_value
+     end if
+  end if
   !term
   ret = gaspi_proc_term(GASPI_BLOCK)
   if(ret .ne. GASPI_SUCCESS) then
