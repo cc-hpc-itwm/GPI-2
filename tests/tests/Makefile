@@ -6,6 +6,7 @@ subdirs: $(SUBDIRS)
 
 $(SUBDIRS):
 	$(MAKE) -C $@
+
 clean:
 	$(foreach dir, $(SUBDIRS), $(MAKE) -C $(dir) clean;)
 	rm -f *.o *~
