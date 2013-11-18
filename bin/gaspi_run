@@ -308,6 +308,13 @@ tdiff=$(( $t1 - $t0 ))
 echo ssh-startup time: $tdiff sec
 
 if [ "$master_node" != "$HN" ]; then
+    if [ $DEBUG != 0 ]; then
+	echo 
+	echo "Running with debugger only allowed if current node ($HN) is the first node in machinefile"
+	echo
+	clean_exit
+	exit 1
+    fi
     #prepare differently for remote node
     chmod a+r $MFILE &> /dev/null
     TMP_FILE=`readlink -f $MFILE`
