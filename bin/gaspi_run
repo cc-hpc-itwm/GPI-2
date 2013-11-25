@@ -236,12 +236,11 @@ do
 
     if $first
     then
-     	TYP=GASPI_MASTER
         first=false
      	continue
-    else
-     	TYP=GASPI_WORKER
     fi
+
+    TYP=GASPI_WORKER
 
     if [ "$i" = "$previous" ]; then
 	j=$(($j+1))
