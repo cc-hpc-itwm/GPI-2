@@ -320,11 +320,15 @@ if [ "$master_node" != "$HN" ]; then
 	echo "Warning: Failed to copy machinefile to remote host. Program might not start correctly."
     fi
 
+    cmd="/bin/sh -c"
+    cmd="$cmd 'export GASPI_MASTER=$master_node"
+    cmd="$cmd; export GASPI_SOCKET=0"
+    cmd="$cmd; export GASPI_TYP=GASPI_MASTER"
+    cmd="$cmd; export GASPI_MFILE=$MFILE"
     if [ $SET_NUMA -eq 1 ]; then
- 	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=0;export GASPI_TYP=GASPI_MASTER;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; $MASTER_PRG'"
-    else
- 	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=0;export GASPI_TYP=GASPI_MASTER;export GASPI_MFILE=$MFILE; $MASTER_PRG'"
-     fi
+        cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
+    fi
+    cmd="$cmd; $MASTER_PRG'"
     ssh $master_node $cmd
     if [ $? != 0 ]; then
 	echo "Error: Failed to start $MASTER_PRG on $master_node"
