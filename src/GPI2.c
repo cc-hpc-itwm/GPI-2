@@ -17,6 +17,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -725,25 +726,31 @@ errL:
 gaspi_return_t
 pgaspi_proc_rank (gaspi_rank_t * const rank)
 {
-  if (glb_gaspi_init)
-    {
-      *rank = glb_gaspi_ctx.rank;
-      return GASPI_SUCCESS;
-    }
-  else
+  if (!glb_gaspi_init)
+  {
     return GASPI_ERROR;
+  }
+
+  assert (rank);
+
+  *rank = glb_gaspi_ctx.rank;
+
+  return GASPI_SUCCESS;
 }
 
 gaspi_return_t
 pgaspi_proc_num (gaspi_rank_t * const proc_num)
 {
-  if (glb_gaspi_init)
-    {
-      *proc_num = glb_gaspi_ctx.tnc;
-      return GASPI_SUCCESS;
-    }
-  else
+  if (!glb_gaspi_init)
+  {
     return GASPI_ERROR;
+  }
+
+  assert (proc_num);
+
+  *proc_num = glb_gaspi_ctx.tnc;
+
+  return GASPI_SUCCESS;
 }
 
 char *
