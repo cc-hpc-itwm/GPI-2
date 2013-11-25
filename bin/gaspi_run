@@ -85,9 +85,7 @@ validate_machinefile()
     fi
 
     #create tmp_file
-    if [ -r $TMP_MFILE ]; then
-	rm -f $TMP_MFILE
-    fi
+    rm -f $TMP_MFILE
     if [ `touch $TMP_MFILE 2> /dev/null; echo "$?"` -eq 0 ]; then
 	chmod 777 $TMP_MFILE
     else
