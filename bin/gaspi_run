@@ -290,7 +290,7 @@ if [ -O /tmp/.last_gaspi_prg ]; then
 fi
 
 #check all started well
-sleep 1
+wait
 grep "${KPRG} not found" $RUN_FILE
 if [ $? = 0 ]; then
     echo "Error: Failed to start $PRG on remote nodes"
