@@ -224,18 +224,11 @@ t0=$(date +%s)
 master_node=`head -n 1 $MFILE`
 previous="$master_node"
 
-first=true
-while read LINE
+for LINE in $(tail -n +2 $MFILE)
 do
     #ignore blank lines
     if [ -z "$LINE" ]; then
 	continue;
-    fi
-
-    if $first
-    then
-        first=false
-     	continue
     fi
 
     if [ "$LINE" = "$previous" ]; then
@@ -265,7 +258,7 @@ do
 
     previous="$LINE"
 
-done < $MFILE
+done
 
 echo $PRGNAME  > /tmp/.last_gaspi_prg
 if [ -O /tmp/.last_gaspi_prg ]; then
