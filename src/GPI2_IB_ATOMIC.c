@@ -23,7 +23,7 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 			gaspi_atomic_value_t * const val_old,
 			const gaspi_timeout_t timeout_ms)
 {
-#ifdef DEBUG
+#ifndef NDEBUG
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
     {
       gaspi_printf("Debug: Invalid segment (gaspi_atomic_fetch_add)\n");    
@@ -131,7 +131,7 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 			   const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG
+#ifndef NDEBUG
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
     {
       gaspi_printf("Debug: Invalid segment (gaspi_atomic_compare_swap)\n");    

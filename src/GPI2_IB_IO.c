@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef DEBUG
+#ifndef NDEBUG
 static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_id_local,
 			      const gaspi_offset_t offset_local, const gaspi_rank_t rank,
 			      const gaspi_segment_id_t segment_id_remote,
@@ -80,7 +80,7 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
 	     const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG
+#ifndef NDEBUG
   if (!glb_gaspi_init)
     return GASPI_ERROR;
 
@@ -142,7 +142,7 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
 	    const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG
+#ifndef NDEBUG
   if (!glb_gaspi_init)
     return GASPI_ERROR;
   
@@ -195,7 +195,7 @@ gaspi_return_t
 pgaspi_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG
+#ifndef NDEBUG
   if (!glb_gaspi_init)
     return GASPI_ERROR;
 
@@ -241,7 +241,7 @@ pgaspi_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 
       if ((ne < 0) || (wc.status != IBV_WC_SUCCESS))
 	{
-#ifdef DEBUG
+#ifndef NDEBUG
 	  gaspi_printf("Debug: Failed request to %u. Queue %d might be broken\n",
 		       wc.wr_id, queue);
 #endif	  
@@ -269,7 +269,7 @@ pgaspi_write_list (const gaspi_number_t num,
 		  const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG
+#ifndef NDEBUG
   gaspi_number_t n;
   
   if (!glb_gaspi_init)
@@ -344,7 +344,7 @@ pgaspi_read_list (const gaspi_number_t num,
 		 const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG
+#ifndef NDEBUG
   gaspi_number_t n;
   
   if (!glb_gaspi_init)
@@ -417,7 +417,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
 	      const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG
+#ifndef NDEBUG
   if (glb_gaspi_ctx_ib.rrmd[segment_id_remote] == NULL)
     {
       gaspi_printf("Debug: Invalid remote segment (gaspi_notify)\n");    
@@ -483,7 +483,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 		       const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG
+#ifndef NDEBUG
   if (glb_gaspi_ctx_ib.rrmd[segment_id_local] == NULL)
     {
       gaspi_printf("Debug: Invalid segment (gaspi_notify_waitsome)\n");    
@@ -582,7 +582,7 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
 		    const gaspi_notification_id_t notification_id,
 		    gaspi_notification_t * const old_notification_val)
 {
-#ifdef DEBUG
+#ifndef NDEBUG
   if (glb_gaspi_ctx_ib.rrmd[segment_id_local] == NULL)
     {
       gaspi_printf("Debug: Invalid segment (gaspi_notify_reset)\n");    
@@ -624,7 +624,7 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 		    const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG
+#ifndef NDEBUG
   if (!glb_gaspi_init)
     return GASPI_ERROR;
 
@@ -706,7 +706,7 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 			 const gaspi_timeout_t timeout_ms)
 {
 
- #ifdef DEBUG
+ #ifndef NDEBUG
   gaspi_number_t n;
   
   if (!glb_gaspi_init)

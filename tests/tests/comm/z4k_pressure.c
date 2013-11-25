@@ -23,7 +23,7 @@ int highestnode;
 
 #define FLOAT 1
 
-//#define DEBUG 1
+#define NDEBUG 1
 
 int main(int argc, char *argv[])
 {
@@ -55,10 +55,10 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_num(&highestnode));
 
   while(k <= RUNS)
-    { 
+    {
       //generate random
-      srand((unsigned)time(0)); 
-      
+      srand((unsigned)time(0));
+
 #ifdef FLOAT
       srand48((unsigned) time(0));
 #endif
@@ -76,13 +76,13 @@ int main(int argc, char *argv[])
 #endif
 	}
 
-#ifdef DEBUG
+#ifndef NDEBUG
 #ifdef FLOAT
       gaspi_printf("random value in pos 0 %f\n", mptr[0]);
 #else
       gaspi_printf("random value in pos 0 %d\n", mptr[0]);
 #endif
-#endif //DEBUG
+#endif
 
       ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
@@ -100,26 +100,26 @@ int main(int argc, char *argv[])
 	  }
 	ASSERT (gaspi_wait(0, GASPI_BLOCK));
       }
-#ifdef DEBUG
+#ifndef NDEBUG
     gaspi_printf("%d bytes written!\n", ITERATIONS * ITERATIONS * size);
 #endif
     //check if data was written successfully
-    ASSERT (gaspi_read(0, offset_check, (myrank + 1) % highestnode, 
+    ASSERT (gaspi_read(0, offset_check, (myrank + 1) % highestnode,
 		       0, memSize/2, GB, 0, GASPI_BLOCK));
 
     ASSERT (gaspi_wait(0, GASPI_BLOCK));
-#ifdef DEBUG
+#ifndef NDEBUG
     gaspi_printf("%d bytes read!\n",GB);
 #endif
     j=0;
 
-#ifdef DEBUG
+#ifndef NDEBUG
 #ifdef FLOAT
     gaspi_printf("Values  %f %f %f \n", mptr[0], mptr[memSize/8], mptr[offset_check/4]);
 #else
     gaspi_printf("Values  %d %d %d \n", mptr[0], mptr[memSize/8], mptr[offset_check/4]);
 #endif
-#endif//DEBUG
+#endif
 
     while(j < GB / 4 )
       {
@@ -134,13 +134,13 @@ int main(int argc, char *argv[])
 	}
 	j++;
       }
-    
+
     offset_write=0;
     offset_read = memSize / 2;
 
-#ifdef DEBUG
+#ifndef NDEBUG
     gaspi_printf("Check!\n");
-#endif	
+#endif
 
     k++;
   }
@@ -153,4 +153,3 @@ int main(int argc, char *argv[])
 
   return ret;
 }
-
