@@ -227,10 +227,8 @@ previous="$master_node"
 first=true
 while read LINE
 do
-    i=$LINE
-
     #ignore blank lines
-    if [ -z "$i" ]; then
+    if [ -z "$LINE" ]; then
 	continue;
     fi
 
@@ -240,7 +238,7 @@ do
      	continue
     fi
 
-    if [ "$i" = "$previous" ]; then
+    if [ "$LINE" = "$previous" ]; then
 	j=$(($j+1))
 	if [ $j -eq $MAX_NUMA_NODES ]; then
 	    echo
@@ -261,11 +259,11 @@ do
     if [ $SET_NUMA -eq 1 ]; then
 	cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
     fi
-    cmd="$cmd; if [ -x $KPRG ]; then $PRG;else echo '$i': '$KPRG' not found;exit 1;fi 2> /dev/null &'"
+    cmd="$cmd; if [ -x $KPRG ]; then $PRG;else echo '$LINE': '$KPRG' not found;exit 1;fi 2> /dev/null &'"
 
-    ssh $i $cmd  >> $RUN_FILE &
+    ssh $LINE $cmd  >> $RUN_FILE &
 
-    previous="$i"
+    previous="$LINE"
 
 done < $MFILE
 
