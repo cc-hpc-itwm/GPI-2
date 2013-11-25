@@ -80,6 +80,7 @@ validate_machinefile()
     #empty
     if [ ! -s $MFILE ]; then
 	echo "Empty machine file ($1)"
+        remove_temp_file
 	exit 1
     fi
 
