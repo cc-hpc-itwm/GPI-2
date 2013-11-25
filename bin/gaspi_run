@@ -96,7 +96,6 @@ validate_machinefile()
     ncount=0
     while read LINE
     do
-	args=`echo $LINE | gawk '{print NF}'`
 	i=`echo $LINE | gawk '{print $1}'   `
 	if [ "$i" != "" ]; then
      	    ping -c 1 $i > /dev/null 2>&1
