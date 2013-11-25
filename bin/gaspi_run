@@ -222,7 +222,7 @@ fi
 t0=$(date +%s)
 #who's master
 master_node=`head -n 1 $MFILE`
-previous=`head -n 1 $MFILE`
+previous="$master_node"
 
 t=0
 while read LINE
