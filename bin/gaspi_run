@@ -86,12 +86,11 @@ validate_machinefile()
 
     #create tmp_file
     rm -f $TMP_MFILE
-    if [ `touch $TMP_MFILE 2> /dev/null; echo "$?"` -eq 0 ]; then
-	chmod 777 $TMP_MFILE
-    else
-	print_error_exit "User permissions failure: $PWD is not writable"
-    fi
 
+    touch $TMP_MFILE 2>/dev/null && chmod 777 $TMP_MFILE ||
+    {
+	print_error_exit "User permissions failure: $PWD is not writable"
+    }
 
     ncount=0
     while read LINE
