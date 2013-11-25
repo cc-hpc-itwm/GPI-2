@@ -215,7 +215,6 @@ fi
 validate_machinefile $MFILE
 
 
-t=0
 t0=$(date +%s)
 previous=`head -n 1 $MFILE`
 ncount=0
@@ -228,6 +227,7 @@ fi
 #who's master
 master_node=`head -n 1 $MFILE`
 
+t=0
 while read LINE
 do
     i=$LINE
