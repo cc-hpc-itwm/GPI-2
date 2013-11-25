@@ -79,9 +79,7 @@ validate_machinefile()
 {
     #empty
     if [ ! -s $MFILE ]; then
-	echo "Empty machine file ($1)"
-        remove_temp_file
-	exit 1
+	print_error_exit "Empty machine file ($1)"
     fi
 
     #create tmp_file
