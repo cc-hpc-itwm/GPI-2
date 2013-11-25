@@ -224,7 +224,7 @@ t0=$(date +%s)
 master_node=`head -n 1 $MFILE`
 previous="$master_node"
 
-t=0
+first=true
 while read LINE
 do
     i=$LINE
@@ -234,9 +234,10 @@ do
 	continue;
     fi
 
-    if [ $t -eq 0 ]; then
+    if $first
+    then
      	TYP=GASPI_MASTER
-     	t=$(($t+1))
+        first=false
      	continue
     else
      	TYP=GASPI_WORKER
