@@ -97,10 +97,10 @@ validate_machinefile()
     do
 	i=`echo $LINE | gawk '{print $1}'   `
 	if [ "$i" != "" ]; then
-     	    ping -c 1 $i > /dev/null 2>&1
-     	    if [ $? != 0 ]; then
+     	    ping -c 1 $i >/dev/null 2>&1 ||
+            {
      		print_error_exit "Host not reachable ($i)"
-     	    fi
+     	    }
 
 	    ncount=$(($ncount+1))
 	    if [ $NNODES -lt $ncount ]; then
