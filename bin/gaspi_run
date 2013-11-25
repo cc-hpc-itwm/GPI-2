@@ -226,11 +226,6 @@ previous="$master_node"
 
 for LINE in $(tail -n +2 $MFILE)
 do
-    #ignore blank lines
-    if [ -z "$LINE" ]; then
-	continue;
-    fi
-
     if [ "$LINE" = "$previous" ]; then
 	j=$(($j+1))
 	if [ $j -eq $MAX_NUMA_NODES ]; then
