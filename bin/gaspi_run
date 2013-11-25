@@ -271,7 +271,7 @@ do
     cmd="$cmd 'export GASPI_MASTER=$master_node"
     cmd="$cmd; export GASPI_SOCKET=$j"
     cmd="$cmd; export GASPI_TYP=$TYP"
-    cmd="$cmd; export GASPI_MFILE=$MFILE"
+    cmd="$cmd; export GASPI_MFILE=$(readlink -f $MFILE)"
     if [ $SET_NUMA -eq 1 ]; then
 	cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
     fi
