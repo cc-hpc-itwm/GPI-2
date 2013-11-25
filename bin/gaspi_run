@@ -77,7 +77,6 @@ print_error_exit()
 
 validate_machinefile()
 {
-    #empty
     if [ ! -s $MFILE ]; then
 	print_error_exit "Empty machine file ($1)"
     fi
