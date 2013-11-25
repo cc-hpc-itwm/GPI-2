@@ -96,7 +96,7 @@ validate_machinefile()
     while read LINE
     do
 	i=`echo $LINE | gawk '{print $1}'   `
-	if [ "$i" != "" ]; then
+	if [ -n "$i" ]; then
      	    ping -c 1 $i >/dev/null 2>&1 ||
             {
      		print_error_exit "Host not reachable ($i)"
@@ -140,7 +140,7 @@ if [ $# -lt 3 ]; then
 fi
 
 #command line parsing
-while [ "$1" != "" ]; do
+while [ -n "$1" ]; do
     case $1 in
 	-m | --machinefile)
 	    shift
@@ -187,7 +187,7 @@ while [ "$1" != "" ]; do
     shift
 done
 
-if [ "$PRG" = "" ]; then
+if [ -z "$PRG" ]; then
     print_error_exit "No binary file provided. See help (-h option)"
 fi
 
@@ -225,7 +225,7 @@ previous=`head -n 1 $MFILE`
 ncount=0
 
 #master binary is the same
-if [ "$MASTER_PRG" = "" ]; then
+if [ -z "$MASTER_PRG" ]; then
     MASTER_PRG=$PRG
 fi
 
@@ -237,7 +237,7 @@ do
     i=$LINE
 
     #ignore blank lines
-    if [ "$i" = "" ]; then
+    if [ -z "$i" ]; then
 	continue;
     fi
 
