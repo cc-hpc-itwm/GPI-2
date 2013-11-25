@@ -99,7 +99,7 @@ validate_machinefile()
      		print_error_exit "Host not reachable ($i)"
      	    }
 
-	    ncount=$(($ncount+1))
+	    ncount=$((ncount+1))
 	    if [ $NNODES -lt $ncount ]; then
 		break
 	    fi
@@ -227,7 +227,7 @@ previous="$master_node"
 for LINE in $(tail -n +2 $MFILE)
 do
     if [ "$LINE" = "$previous" ]; then
-	j=$(($j+1))
+	j=$((j+1))
 	if [ $j -eq $MAX_NUMA_NODES ]; then
 	    echo
 	    echo "Error: incorrect machine file (-m $ORIG_MFILE) (max procs per node: $MAX_NUMA_NODES)"
@@ -274,7 +274,7 @@ fi
 
 #start master
 t1=$(date +%s)
-tdiff=$(( $t1 - $t0 ))
+tdiff=$((t1 - t0))
 echo ssh-startup time: $tdiff sec
 
 if [ "$master_node" != "$HN" ]; then
