@@ -47,16 +47,16 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GASPI.h"
 
-#pragma weak gaspi_queue_num = pgaspi_queue_num 
-#pragma weak gaspi_queue_size_max = pgaspi_queue_size_max 
-#pragma weak gaspi_transfer_size_min = pgaspi_transfer_size_min 
-#pragma weak gaspi_transfer_size_max = pgaspi_transfer_size_max 
+#pragma weak gaspi_queue_num = pgaspi_queue_num
+#pragma weak gaspi_queue_size_max = pgaspi_queue_size_max
+#pragma weak gaspi_transfer_size_min = pgaspi_transfer_size_min
+#pragma weak gaspi_transfer_size_max = pgaspi_transfer_size_max
 #pragma weak gaspi_passive_transfer_size_max = pgaspi_passive_transfer_size_max
 #pragma weak gaspi_allreduce_elem_max = pgaspi_allreduce_elem_max
 #pragma weak gaspi_rw_list_elem_max = pgaspi_rw_list_elem_max
 #pragma weak gaspi_network_type = pgaspi_network_type
 #pragma weak gaspi_time_ticks = pgaspi_time_ticks
-#pragma weak gaspi_cpu_frequency  = pgaspi_cpu_frequency 
+#pragma weak gaspi_cpu_frequency  = pgaspi_cpu_frequency
 #pragma weak gaspi_config_get  = pgaspi_config_get
 #pragma weak gaspi_config_set  = pgaspi_config_set
 #pragma weak gaspi_version  = pgaspi_version
@@ -71,7 +71,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #pragma weak gaspi_proc_rank    = pgaspi_proc_rank
 #pragma weak gaspi_proc_num     = pgaspi_proc_num
 #pragma weak gaspi_wait         = pgaspi_wait
-#pragma weak gaspi_write        = pgaspi_write 
+#pragma weak gaspi_write        = pgaspi_write
 #pragma weak gaspi_read         = pgaspi_read
 #pragma weak gaspi_read_list = pgaspi_read_list
 #pragma weak gaspi_write_list = pgaspi_write_list
@@ -213,7 +213,7 @@ static gaspi_config_t glb_gaspi_cfg = {
   GASPI_MAX_TSIZE_P,		//passive_transfer_size_max;
   NEXT_OFFSET,			//allreduce_buf_size;
   255,				//allreduce_elem_max;
-  1				//build_infrastructure;  
+  1				//build_infrastructure;
 };
 
 static gaspi_context glb_gaspi_ctx;
@@ -420,7 +420,7 @@ pgaspi_set_socket_affinity (const gaspi_uchar socket)
 #endif
       return GASPI_ERROR;
     }
-  
+
   if (gaspi_get_affinity_mask (socket, &sock_mask) < 0)
     {
       gaspi_print_error ("Failed to get affinity mask");
@@ -580,7 +580,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  gaspi_print_error("Debug: Failed to allocate memory");
 	  goto errL;
 	}
-#endif      
+#endif
 
       if (glb_gaspi_ctx.p_off)
 	free (glb_gaspi_ctx.p_off);
@@ -634,7 +634,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  gaspi_print_error("Debug: Failed to allocate memory");
 	  goto errL;
 	}
-#endif      
+#endif
 
       gaspi_return_t ret = buildMaster (timeout_ms);
       if (ret != GASPI_SUCCESS)
@@ -772,7 +772,7 @@ buildMaster (gaspi_timeout_t timeout_ms)
     {
 #ifndef NDEBUG
       gaspi_printf("Debug: Connecting with node %u\n", i);
-#endif  
+#endif
 
       ni.rank = i;
       ni.tnc = glb_gaspi_ctx.tnc;
@@ -842,7 +842,7 @@ buildMaster (gaspi_timeout_t timeout_ms)
 
 #ifndef NDEBUG
   gaspi_printf("Debug: Initializing and communicating IB core\n");
-#endif  
+#endif
 
   if (gaspi_init_ib_core () != 0)
     return GASPI_ERROR;
@@ -904,8 +904,8 @@ buildMaster (gaspi_timeout_t timeout_ms)
 
 #ifndef NDEBUG
   gaspi_printf("Debug: Done building master!\n");
-#endif  
-  
+#endif
+
   return GASPI_SUCCESS;
 }
 
@@ -920,8 +920,8 @@ buildWorker (gaspi_timeout_t timeout_ms)
 
 #ifndef NDEBUG
       gaspi_printf("Debug: Connecting with master node \n");
-#endif  
-  
+#endif
+
   int master_sfd =
     gaspi_listen2port (glb_gaspi_ctx.snPort + glb_gaspi_ctx.localSocket,
 		       timeout_ms);
@@ -990,7 +990,7 @@ buildWorker (gaspi_timeout_t timeout_ms)
 
 #ifndef NDEBUG
   gaspi_printf("Debug: Initializing and communicating IB core\n");
-#endif  
+#endif
 
   if (gaspi_init_ib_core () != 0)
     return GASPI_ERROR;
@@ -1140,7 +1140,7 @@ buildWorker (gaspi_timeout_t timeout_ms)
 	  if (gaspi_connect_context (remRank) != 0)
 	    return GASPI_ERROR;
 
-	}			//if 
+	}			//if
 
     }				//for
 
@@ -1184,7 +1184,7 @@ buildWorker (gaspi_timeout_t timeout_ms)
 
 #ifndef NDEBUG
   gaspi_printf("Debug: Done building worker with rank %u\n", glb_gaspi_ctx.rank);
-#endif  
+#endif
 
   return GASPI_SUCCESS;
 }
@@ -1195,7 +1195,7 @@ pgaspi_connect (const gaspi_rank_t rank,
 {
   //#ifndef NDEBUG
   gaspi_printf("Debug: Current version of GPI-2 does not implement this function (gaspi_connect)\n");
-  //#endif  
+  //#endif
   return GASPI_SUCCESS;
 }
 
@@ -1207,7 +1207,7 @@ pgaspi_disconnect (const gaspi_rank_t rank,
 
   //#ifndef NDEBUG
   gaspi_printf("Debug: Current version of GPI-2 does not implement this function (gaspi_disconnect)\n");
-  //#endif  
+  //#endif
 
   return GASPI_SUCCESS;
 }
@@ -1279,7 +1279,7 @@ pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
 gaspi_return_t
 pgaspi_network_type (gaspi_network_t * const network_type)
 {
-  
+
   *network_type = glb_gaspi_cfg.net_typ;
   return GASPI_SUCCESS;
 }
@@ -1307,7 +1307,7 @@ gaspi_return_t
 pgaspi_statistic_verbosity_level(gaspi_number_t _verbosity_level)
 {
   //  verbosity_level = _verbosity_level;
-  gaspi_printf("Debug: Current version of GPI-2 does not implement this function (gaspi_statistic_verbosity_level)\n");        
+  gaspi_printf("Debug: Current version of GPI-2 does not implement this function (gaspi_statistic_verbosity_level)\n");
   return GASPI_SUCCESS;
 }
 
@@ -1316,7 +1316,7 @@ pgaspi_statistic_counter_max(gaspi_statistic_counter_t* counter_max)
 {
   //  *counter_max = 0;
   gaspi_printf("Debug: Current version of GPI-2 does not implement this function (gaspi_statistic_counter_max)\n");
-  
+
   return GASPI_SUCCESS;
 }
 
@@ -1341,7 +1341,7 @@ pgaspi_statistic_counter_get ( gaspi_statistic_counter_t counter
   gaspi_printf("Debug: Current version of GPI-2 does not implement this function (gaspi_statistic_counter_get)\n");
   return GASPI_SUCCESS;
 }
-                        
+
 gaspi_return_t
 pgaspi_statistic_counter_reset (gaspi_statistic_counter_t counter)
 {
