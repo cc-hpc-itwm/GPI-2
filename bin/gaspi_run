@@ -240,8 +240,6 @@ do
      	continue
     fi
 
-    TYP=GASPI_WORKER
-
     if [ "$i" = "$previous" ]; then
 	j=$(($j+1))
 	if [ $j -eq $MAX_NUMA_NODES ]; then
@@ -258,7 +256,7 @@ do
     cmd="/bin/sh -c"
     cmd="$cmd 'export GASPI_MASTER=$master_node"
     cmd="$cmd; export GASPI_SOCKET=$j"
-    cmd="$cmd; export GASPI_TYP=$TYP"
+    cmd="$cmd; export GASPI_TYP=GASPI_WORKER"
     cmd="$cmd; export GASPI_MFILE=$(readlink -f $MFILE)"
     if [ $SET_NUMA -eq 1 ]; then
 	cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
