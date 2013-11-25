@@ -35,6 +35,13 @@ ORIG_MFILE=""
 NNODES=0
 DEBUG=0
 
+remove_temp_file()
+{
+    rm -f $TMP_MFILE
+    rm -f $UNIQ_MFILE
+    rm -f $RUN_FILE
+}
+
 #helper functions
 usage()
 {
@@ -48,16 +55,8 @@ usage()
     echo "  -d               Run with GDB (debugger) on master node."
     echo "  -h               This help."
     echo
+    remove_temp_file
 }
-
-remove_temp_file()
-{
-    rm -f $TMP_MFILE
-    rm -f $UNIQ_MFILE
-    rm -f $RUN_FILE
-}
-
-
 
 clean_exit()
 {
