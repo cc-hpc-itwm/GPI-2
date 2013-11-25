@@ -13,9 +13,12 @@ opts_used=0
 #Functions
 exit_timeout(){
     echo "Stop this program"
+    trap - TERM INT QUIT
     $GASPI_CLEAN
     kill -9 $TPID &> /dev/null
+    killall -9 sleep &> /dev/null
     sleep 1
+    trap exit_timeout TERM INT QUIT
 }
 
 run_test(){

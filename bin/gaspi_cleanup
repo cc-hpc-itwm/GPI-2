@@ -52,7 +52,8 @@ kill_procs()
     for i in $hlist                                                                                             
     do                                                                                                          
         ssh $i killall -s KILL $PRG > /dev/null 2>&1 &
-    done                                                                                                        
+    done             
+    wait
 }
 
 #at least we need machinefile

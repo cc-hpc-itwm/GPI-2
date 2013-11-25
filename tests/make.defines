@@ -3,10 +3,11 @@ TOPROOT = $(PWD)
 GPI_DIR = $(TOPROOT)/..
 OFED_PATH = /usr/local/ofed1.5.4.1
 CC = gcc
+CF = gfortran
 CXX = g++
 
-CFLAGS = -Wall -g -I$(GPI_DIR)/include
-CPPFLAGS = -Wall -g -I$(GPI_DIR)/include
+CFLAGS = -g -I$(GPI_DIR)/include
+CPPFLAGS = -g -I$(GPI_DIR)/include
 
 LIB_PATH = -L$(GPI_DIR)/lib64 -L$(OFED_PATH)/lib64
 LIBS     = -lGPI2 -libverbs -lMCTP1 -lpthread

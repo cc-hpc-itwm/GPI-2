@@ -421,8 +421,10 @@ gaspi_init_ib_core ()
   if (glb_gaspi_cfg.net_typ == GASPI_IB)
     {
 
-      switch (glb_gaspi_ctx_ib.
-	      port_attr[glb_gaspi_ctx_ib.ib_port - 1].max_mtu)
+      const gaspi_uint active_mtu = 
+	glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].active_mtu;
+
+      switch (active_mtu)
 	{
 
 	case IBV_MTU_1024:
@@ -538,7 +540,7 @@ gaspi_init_ib_core ()
       return 1;
     }
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
 
       glb_gaspi_ctx_ib.scqC[c] =
@@ -586,7 +588,7 @@ gaspi_init_ib_core ()
     }
 
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
 
       glb_gaspi_ctx_ib.qpC[c] =
@@ -651,7 +653,7 @@ gaspi_init_ib_core ()
 	}
     }
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       for (i = 0; i < glb_gaspi_ctx.tnc; i++)
 	{
@@ -748,7 +750,7 @@ gaspi_init_ib_core ()
 
     }
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       for (i = 0; i < glb_gaspi_ctx.tnc; i++)
 	{
@@ -812,7 +814,7 @@ gaspi_init_ib_core ()
     }
 
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       qp_attr.dest_qp_num =
 	glb_gaspi_ctx_ib.qpC[c][glb_gaspi_ctx.rank]->qp_num;
@@ -859,7 +861,7 @@ gaspi_init_ib_core ()
       return -1;
     }
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       if (ibv_modify_qp
 	  (glb_gaspi_ctx_ib.qpC[c][glb_gaspi_ctx.rank], &qp_attr,
@@ -978,7 +980,7 @@ gaspi_cleanup_ib_core ()
   glb_gaspi_ctx_ib.qpP = NULL;
 
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
 
       for (i = 0; i < glb_gaspi_ctx.tnc; i++)
@@ -1025,7 +1027,7 @@ gaspi_cleanup_ib_core ()
       return -1;
     }
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       if (ibv_destroy_cq (glb_gaspi_ctx_ib.scqC[c]))
 	{
@@ -1231,7 +1233,7 @@ gaspi_connect_context (const int i)
       return -1;
     }
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       qp_attr.dest_qp_num = glb_gaspi_ctx_ib.rrcd[i].qpnC[c];
 
@@ -1282,7 +1284,7 @@ gaspi_connect_context (const int i)
     }
 
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       if (ibv_modify_qp (glb_gaspi_ctx_ib.qpC[c][i], &qp_attr,
 			 IBV_QP_STATE |
@@ -2182,7 +2184,7 @@ pgaspi_queue_size (const gaspi_queue_id_t queue,
 		  gaspi_number_t * const queue_size)
 {
 
-  if (queue >= glb_gaspi_cfg.qp_count)
+  if (queue >= glb_gaspi_cfg.queue_num)
     return GASPI_ERROR;
 
   *queue_size = glb_gaspi_ctx_ib.ne_count_c[queue];

@@ -36,7 +36,7 @@ extern "C"
 
 #define GASPI_MAJOR_VERSION (1)
 #define GASPI_MINOR_VERSION (0)
-#define GASPI_REVISION (1)
+#define GASPI_REVISION (2)
 
 #define GASPI_BLOCK       (0xffffffff)
 #define GASPI_TEST        (0x0)
@@ -168,7 +168,7 @@ extern "C"
     gaspi_uint user_net;     /**< */
     gaspi_network_t net_typ; /**< network type */
     gaspi_uint queue_depth;  /**< the queue depth (size) to use */
-    gaspi_uint qp_count;     /**< the number of queues to use */
+    gaspi_uint queue_num;     /**< the number of queues to use */
     gaspi_number_t group_max;
     gaspi_number_t segment_max;
     gaspi_size_t transfer_size_max;
@@ -1046,6 +1046,13 @@ extern "C"
    * @param fmt printf parameters.
    */
   void gaspi_printf (const char *fmt, ...);
+
+  /** GASPI printf to print to a particular gaspi_logger. 
+   * 
+   * @param rank the rank of the logger node.
+   * @param fmt printf parameters.
+   */
+  void gaspi_printf_to (gaspi_rank_t rank, const char *fmt, ...);
 
   /**  Print the CPU's affinity mask.
    * 

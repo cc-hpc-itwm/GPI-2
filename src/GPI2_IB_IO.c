@@ -59,7 +59,7 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
       return -1;
     }
 
-  if (queue >= glb_gaspi_cfg.qp_count)
+  if (queue >= glb_gaspi_cfg.queue_num)
     {
       
       gaspi_printf("Debug: Invalid queue (%s)\n", func_name);    
@@ -199,7 +199,7 @@ pgaspi_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
   if (!glb_gaspi_init)
     return GASPI_ERROR;
 
-  if (queue >= glb_gaspi_cfg.qp_count)
+  if (queue >= glb_gaspi_cfg.queue_num)
     {
       gaspi_printf("Debug: Invalid queue (gaspi_wait)\n");    
       return GASPI_ERROR;
@@ -430,7 +430,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
       return GASPI_ERROR;
     }
 
-  if (queue >= glb_gaspi_cfg.qp_count)
+  if (queue >= glb_gaspi_cfg.queue_num)
     {
       gaspi_printf("Debug: Invalid queue (gaspi_notify)\n");    
       return GASPI_ERROR;
@@ -591,8 +591,7 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
   
   if(old_notification_val == NULL)
     {
-      gaspi_printf("Debug: Invalid pointer on parameter old_notification_val (gaspi_notify_reset)\n");    
-      return GASPI_ERROR;
+      gaspi_printf("Warning: NULL pointer on parameter old_notification_val (gaspi_notify_reset)\n");    
     }
 #endif
 
@@ -606,7 +605,8 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
   const unsigned int res =
     __sync_val_compare_and_swap (&p[notification_id], p[notification_id], 0);
 
-  *old_notification_val = res;
+  if(old_notification_val != NULL)
+    *old_notification_val = res;
 
   return GASPI_SUCCESS;
 }

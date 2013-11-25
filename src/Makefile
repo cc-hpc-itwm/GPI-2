@@ -14,6 +14,10 @@ debug:
 	cp libGPI2-dbg.a ../lib64
 	cp GASPI.h ../include
 
+fortran:
+	gfortran -O2 -c GASPI.f90
+	cp gaspi.mod gaspi_types.mod ../include
+
 mic:
 	icc -mmic -O2 -Wall -I$(OFED_PATH)/include -DMIC -D_GNU_SOURCE -c GPI2.c
 	rm -f libGPI2.a
@@ -22,4 +26,5 @@ mic:
 	cp GASPI.h ../include/mic
 
 clean:
-	rm -f *.o libGPI2.a libGPI2-dbg.a *~ ../lib64/libGPI2* ../lib64/mic/libGPI2.a
+	rm -f *.o libGPI2.a libGPI2-dbg.a *~ ../lib64/libGPI2* ../lib64/mic/libGPI2.a ../include/GASPI.h
+	rm -f *.mod ../include/gaspi_types.mod ../include/gaspi.mod
