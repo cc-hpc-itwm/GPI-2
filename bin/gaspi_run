@@ -47,11 +47,11 @@ usage()
     echo "  -n <procs>       Start as many <procs> from machine file."
     echo "  -d               Run with GDB (debugger) on master node."
     echo "  -h               This help."
-    echo 
+    echo
 }
 
 remove_temp_file()
-{    
+{
     rm -f $TMP_MFILE
     rm -f $UNIQ_MFILE
     rm -f $RUN_FILE
@@ -114,7 +114,7 @@ validate_machinefile()
 	    echo $i >> $TMP_MFILE
 	fi
     done < $MFILE
-    
+
     ORIG_MFILE=$MFILE
     MFILE=$TMP_MFILE
 
@@ -127,15 +127,15 @@ validate_machinefile()
 
 }
 
-kill_procs()                                                                                                    
+kill_procs()
 {
     echo "Killing GASPI procs..."
-    for i in $hlist                                                                                             
+    for i in $hlist
     do
 	ssh $i killall -s KILL $PRGNAME > /dev/null 2>&1 &
     done
     remove_temp_file
-    exit 1                                                                                                       
+    exit 1
 }
 
 #at least we need machinefile and binary
@@ -187,7 +187,7 @@ while [ "$1" != "" ]; do
 		break
             else
                 print_error_exit "Error: Cannot execute $1 (or file does not exist)"
-            fi    
+            fi
     esac
     shift
 done
@@ -250,7 +250,7 @@ do
     if [ "$i" = "" ]; then
 	continue;
     fi
-    
+
     if [ $t -eq 0 ]; then
      	TYP=GASPI_MASTER
      	t=$(($t+1))
@@ -262,7 +262,7 @@ do
     if [ "$i" = "$previous" ]; then
 	j=$(($j+1))
 	if [ $j -eq $MAX_NUMA_NODES ]; then
-	    echo 
+	    echo
 	    echo "Error: incorrect machine file (-m $ORIG_MFILE) (max procs per node: $MAX_NUMA_NODES)"
 	    echo
 	    clean_exit
@@ -272,7 +272,7 @@ do
 	j=0
     fi
 
-    if [ $SET_NUMA -eq 1 ]; then    
+    if [ $SET_NUMA -eq 1 ]; then
 	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; if [ -x $KPRG ]; then $PRG; else echo '$i': '$KPRG' not found;exit 1;fi 2> /dev/null &'"
     else
 	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE; if [ -x $KPRG ]; then $PRG;else echo '$i': '$KPRG' not found;exit 1;fi 2> /dev/null &'"
@@ -309,7 +309,7 @@ echo ssh-startup time: $tdiff sec
 
 if [ "$master_node" != "$HN" ]; then
     if [ $DEBUG != 0 ]; then
-	echo 
+	echo
 	echo "Running with debugger only allowed if current node ($HN) is the first node in machinefile"
 	echo
 	clean_exit
@@ -324,12 +324,12 @@ if [ "$master_node" != "$HN" ]; then
 	echo "Warning: Failed to copy machinefile to remote host. Program might not start correctly."
     fi
 
-    if [ $SET_NUMA -eq 1 ]; then    
+    if [ $SET_NUMA -eq 1 ]; then
  	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=0;export GASPI_TYP=GASPI_MASTER;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; $MASTER_PRG'"
     else
  	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=0;export GASPI_TYP=GASPI_MASTER;export GASPI_MFILE=$MFILE; $MASTER_PRG'"
      fi
-    ssh $master_node $cmd 
+    ssh $master_node $cmd
     if [ $? != 0 ]; then
 	echo "Error: Failed to start $MASTER_PRG on $master_node"
 	clean_exit
@@ -337,14 +337,14 @@ if [ "$master_node" != "$HN" ]; then
     fi
 else
     export GASPI_MASTER=$HN;
-    
+
     if [ $SET_NUMA -eq 1 ]; then
 	export GASPI_SET_NUMA_SOCKET=1;
     fi
     export GASPI_SOCKET=0;
     export GASPI_TYP=GASPI_MASTER;
     export GASPI_MFILE=$MFILE;
-    
+
 
     if [ $DEBUG != 0 ]; then
 	gdb --args $MASTER_PRG
