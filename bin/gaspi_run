@@ -61,8 +61,7 @@ usage()
 clean_exit()
 {
 #assumes the clean-up script is in the same directory as gaspi_run
-    BASEDIR=`dirname $0`
-    $BASEDIR/gaspi_cleanup -m $UNIQ_MFILE
+    $(dirname $0)/gaspi_cleanup -m $UNIQ_MFILE
 
     remove_temp_file
 }
