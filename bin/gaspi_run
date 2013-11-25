@@ -315,7 +315,7 @@ if [ "$master_node" != "$HN" ]; then
     chmod a+r $MFILE &> /dev/null
     TMP_FILE=`readlink -f $MFILE`
     MFILE=$TMP_FILE
-    scp $MFILE ${master_node}:${MFILE} &> /dev/null
+    scp $MFILE ${master_node}:${MFILE} > /dev/null
     if [ $? != 0 ]; then
 	echo "Warning: Failed to copy machinefile to remote host. Program might not start correctly."
     fi
