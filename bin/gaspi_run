@@ -122,7 +122,7 @@ validate_machinefile()
 kill_procs()
 {
     echo "Killing GASPI procs..."
-    for i in $hlist
+    for i in $(cat $MFILE)
     do
 	ssh $i killall -s KILL $PRGNAME > /dev/null 2>&1 &
     done
@@ -215,7 +215,6 @@ fi
 validate_machinefile $MFILE
 
 
-hlist=`cat $MFILE`
 t=0
 t0=$(date +%s)
 previous=`head -n 1 $MFILE`
