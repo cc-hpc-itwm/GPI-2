@@ -415,7 +415,7 @@ pgaspi_set_socket_affinity (const gaspi_uchar socket)
 
   if (socket >= 4)
     {
-#ifdef DEBUG
+#ifndef NDEBUG
       gaspi_print_error("Debug: GPI-2 only allows up to a maximum of 4 NUMA sockets");
 #endif
       return GASPI_ERROR;
@@ -574,7 +574,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
       glb_gaspi_ctx.hn = (char *) calloc (glb_gaspi_ctx.tnc, 64);
 
-#ifdef DEBUG
+#ifndef NDEBUG
       if(glb_gaspi_ctx.hn == NULL)
 	{
 	  gaspi_print_error("Debug: Failed to allocate memory");
@@ -628,7 +628,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
       glb_gaspi_ctx.sockfd = (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
 
-#ifdef DEBUG
+#ifndef NDEBUG
       if(glb_gaspi_ctx.sockfd == NULL)
 	{
 	  gaspi_print_error("Debug: Failed to allocate memory");
@@ -770,7 +770,7 @@ buildMaster (gaspi_timeout_t timeout_ms)
 
   for (i = 1; i < glb_gaspi_ctx.tnc; i++)
     {
-#ifdef DEBUG
+#ifndef NDEBUG
       gaspi_printf("Debug: Connecting with node %u\n", i);
 #endif  
 
@@ -840,7 +840,7 @@ buildMaster (gaspi_timeout_t timeout_ms)
 
     }//for
 
-#ifdef DEBUG
+#ifndef NDEBUG
   gaspi_printf("Debug: Initializing and communicating IB core\n");
 #endif  
 
@@ -902,7 +902,7 @@ buildMaster (gaspi_timeout_t timeout_ms)
       return GASPI_TIMEOUT;
     }
 
-#ifdef DEBUG
+#ifndef NDEBUG
   gaspi_printf("Debug: Done building master!\n");
 #endif  
   
@@ -918,7 +918,7 @@ buildWorker (gaspi_timeout_t timeout_ms)
   struct timeval seltout;
   int ret;
 
-#ifdef DEBUG
+#ifndef NDEBUG
       gaspi_printf("Debug: Connecting with master node \n");
 #endif  
   
@@ -988,7 +988,7 @@ buildWorker (gaspi_timeout_t timeout_ms)
     port_add = MAX (port_add, glb_gaspi_ctx.p_off[i]);
 
 
-#ifdef DEBUG
+#ifndef NDEBUG
   gaspi_printf("Debug: Initializing and communicating IB core\n");
 #endif  
 
@@ -1182,7 +1182,7 @@ buildWorker (gaspi_timeout_t timeout_ms)
       return GASPI_TIMEOUT;
     }
 
-#ifdef DEBUG
+#ifndef NDEBUG
   gaspi_printf("Debug: Done building worker with rank %u\n", glb_gaspi_ctx.rank);
 #endif  
 
@@ -1193,7 +1193,7 @@ gaspi_return_t
 pgaspi_connect (const gaspi_rank_t rank,
 	       const gaspi_timeout_t timeout_ms)
 {
-  //#ifdef DEBUG
+  //#ifndef NDEBUG
   gaspi_printf("Debug: Current version of GPI-2 does not implement this function (gaspi_connect)\n");
   //#endif  
   return GASPI_SUCCESS;
@@ -1205,7 +1205,7 @@ pgaspi_disconnect (const gaspi_rank_t rank,
 		  const gaspi_timeout_t timeout_ms)
 {
 
-  //#ifdef DEBUG
+  //#ifndef NDEBUG
   gaspi_printf("Debug: Current version of GPI-2 does not implement this function (gaspi_disconnect)\n");
   //#endif  
 

@@ -23,7 +23,7 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 		    const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG  
+#ifndef NDEBUG  
   if (glb_gaspi_ctx_ib.rrmd[segment_id_local] == NULL)
     {
       gaspi_printf("Debug: Invalid local segment (gaspi_passive_send)\n");    
@@ -133,7 +133,7 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 		       const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG  
+#ifndef NDEBUG  
   if (glb_gaspi_ctx_ib.rrmd[segment_id_local] == NULL)
     {
       gaspi_printf("Debug: Invalid local segment (gaspi_passive_receive)\n");    

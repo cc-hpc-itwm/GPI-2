@@ -62,7 +62,7 @@ static void * thread_function(void * arg)
 
   gaspi_queue_id_t t_queue = (gaspi_queue_id_t) arg_ptr->threadID;
 
-#ifdef DEBUG
+#ifndef NDEBUG
   gaspi_printf("THREAD %d:write %lu read %lu check %lu\n",
 	      arg_ptr->threadID,
 	      offset_write_init,
@@ -103,7 +103,7 @@ static void * thread_function(void * arg)
 #endif
 	}
 
-#ifdef DEBUG
+#ifndef NDEBUG
 #ifdef FLOAT
 	gaspi_printf("THREAD %d: random value in pos %lu %f\n",
 		    arg_ptr->threadID,
@@ -146,7 +146,7 @@ static void * thread_function(void * arg)
 			    0, offset_read_init, GB / NUMTHREADS, t_queue, GASPI_BLOCK));
 	ASSERT (gaspi_wait(t_queue, GASPI_BLOCK));
 
-#ifdef DEBUG
+#ifndef NDEBUG
 #ifdef FLOAT
 	gaspi_printf("THREAD %d: Values  %lu:%f %lu:%f %lu:%f \n",
 		    arg_ptr->threadID,

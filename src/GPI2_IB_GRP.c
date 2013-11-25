@@ -20,7 +20,7 @@ gaspi_return_t
 pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG
+#ifndef NDEBUG
   if (!glb_gaspi_init)
     {
       gaspi_printf("Debug: called gaspi_barrier but GPI-2 is not initialized\n");
@@ -81,7 +81,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	{
 	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	  unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
+#ifndef NDEBUG
 	  gaspi_printf("Debug: failed to post request to %u for barrier (gaspi_barrier)\n",
 		       dst);
 #endif	  
@@ -115,7 +115,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	    }
 	}
       unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
+#ifndef NDEBUG
 	  gaspi_printf("Debug: Failed request to %u. Collectives queue might be broken\n",
 		       glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
   
@@ -508,7 +508,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 		 const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG
+#ifndef NDEBUG
   if (!glb_gaspi_init)
     {
       gaspi_printf("Debug: called gaspi_allreduce but GPI-2 is not initialized\n");
@@ -620,7 +620,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
+#ifndef NDEBUG
 	  gaspi_printf("Debug: failed to post request to %u for allreduce (gaspi_allreduce)\n",
 		       dst);	  
 #endif	  
@@ -695,7 +695,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
+#ifndef NDEBUG
 	      gaspi_printf("Debug: failed to post request to %u for allreduce (gaspi_allreduce)\n",
 			   dst);	      
 #endif	  
@@ -753,7 +753,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
+#ifndef NDEBUG
 	      gaspi_printf("Debug: failed to post request to %u for allreduce (gaspi_allreduce)\n",
 			   dst);	      
 #endif	  
@@ -798,7 +798,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 	    }
 	}
       unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
+#ifndef NDEBUG
       gaspi_printf("Debug: Failed request to %u. Collectives queue might be broken\n",
 		   glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
   
@@ -829,7 +829,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 		      const gaspi_timeout_t timeout_ms)
 {
 
-#ifdef DEBUG
+#ifndef NDEBUG
   if (!glb_gaspi_init)
     {
       gaspi_printf("Debug: called gaspi_allreduce_user but GPI-2 is not initialized\n");
@@ -935,7 +935,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
+#ifndef NDEBUG
 	      gaspi_printf("Debug: failed to post request to %u (gaspi_allreduce_user)\n",
 			   dst);	      
 #endif	  
@@ -1010,7 +1010,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
+#ifndef NDEBUG
 	      gaspi_printf("Debug: failed to post request to %u (gaspi_allreduce_user)\n",
 			   dst);	      
 #endif	  
@@ -1068,7 +1068,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
+#ifndef NDEBUG
 	      gaspi_printf("Debug: failed to post request to %u (gaspi_allreduce_user)\n",
 			   dst);	      
 #endif	  
@@ -1113,7 +1113,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 	    }
 	}
       unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
+#ifndef NDEBUG
       gaspi_printf("Debug: Failed request to %u. Collectives queue might be broken\n",
 		   glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
   
