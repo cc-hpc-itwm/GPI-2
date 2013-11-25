@@ -339,14 +339,14 @@ if [ "$master_node" != "$HN" ]; then
 	exit 1
     fi
 else
-    export GASPI_MASTER=$HN;
+    export GASPI_MASTER=$HN
 
     if [ $SET_NUMA -eq 1 ]; then
-	export GASPI_SET_NUMA_SOCKET=1;
+	export GASPI_SET_NUMA_SOCKET=1
     fi
-    export GASPI_SOCKET=0;
-    export GASPI_TYP=GASPI_MASTER;
-    export GASPI_MFILE=$MFILE;
+    export GASPI_SOCKET=0
+    export GASPI_TYP=GASPI_MASTER
+    export GASPI_MFILE=$MFILE
 
 
     if [ $DEBUG != 0 ]; then
