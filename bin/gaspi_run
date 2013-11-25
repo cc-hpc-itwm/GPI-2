@@ -112,7 +112,7 @@ validate_machinefile()
 
     uniq $MFILE > $UNIQ_MFILE
        #number of nodes (NNODES) must fit number of hosts
-    n=`wc -l $MFILE |gawk '{print $1}'`
+    n=$(wc -l < $MFILE)
     if [ $n -lt $NNODES ]; then
 	print_error_exit "Not enough hosts ($n) for required number of nodes (-n $NNODES)"
     fi
