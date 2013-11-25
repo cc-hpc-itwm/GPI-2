@@ -177,8 +177,8 @@ while [ "$1" != "" ]; do
 	    ;;
 	*) #Sucks! we're taking a small risk here
             if [ -x $1 ]; then
-                PRG=$*
-		KPRG=$1
+                PRG=$(readlink -f $*)
+		KPRG=$(readlink -f $1)
 		break
             else
                 print_error_exit "Error: Cannot execute $1 (or file does not exist)"
@@ -190,13 +190,6 @@ done
 if [ "$PRG" = "" ]; then
     print_error_exit "No binary file provided. See help (-h option)"
 fi
-
-#take care of paths
-TMP_PRG=`readlink -f "$PRG"`
-TMP_KPRG=`readlink -f $KPRG`
-
-PRG=$TMP_PRG
-KPRG=$TMP_KPRG
 
 PRGNAME=`basename $KPRG`
 
