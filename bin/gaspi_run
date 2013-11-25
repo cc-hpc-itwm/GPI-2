@@ -191,6 +191,15 @@ if [ "$PRG" = "" ]; then
     print_error_exit "No binary file provided. See help (-h option)"
 fi
 
+#take care of paths
+TMP_PRG=`readlink -f "$PRG"`
+TMP_KPRG=`readlink -f $KPRG`
+
+PRG=$TMP_PRG
+KPRG=$TMP_KPRG
+
+PRGNAME=`basename $KPRG`
+
 trap kill_procs TERM INT QUIT
 
 #sanity check and settings
@@ -221,13 +230,6 @@ t=0
 t0=$(date +%s)
 previous=`head -n 1 $MFILE`
 ncount=0
-
-#take care of paths
-TMP_PRG=`readlink -f "$PRG"`
-TMP_KPRG=`readlink -f $KPRG`
-
-PRG=$TMP_PRG
-KPRG=$TMP_KPRG
 
 #master binary is the same
 if [ "$MASTER_PRG" = "" ]; then
@@ -283,7 +285,6 @@ do
 
 done < $MFILE
 
-PRGNAME=`basename $KPRG`
 echo $PRGNAME  > /tmp/.last_gaspi_prg
 if [ -O /tmp/.last_gaspi_prg ]; then
     chmod a+rw /tmp/.last_gaspi_prg &> /dev/null
