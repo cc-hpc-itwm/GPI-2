@@ -214,17 +214,15 @@ fi
 
 validate_machinefile $MFILE
 
-
-t0=$(date +%s)
-previous=`head -n 1 $MFILE`
-
 #master binary is the same
 if [ -z "$MASTER_PRG" ]; then
     MASTER_PRG=$PRG
 fi
 
+t0=$(date +%s)
 #who's master
 master_node=`head -n 1 $MFILE`
+previous=`head -n 1 $MFILE`
 
 t=0
 while read LINE
