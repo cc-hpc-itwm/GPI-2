@@ -25,7 +25,7 @@ PRGNAME=""
 TYP=GASPI_MASTER
 MAX_NUMA_NODES=1
 HAS_NUMA=0
-HN=`/bin/hostname`
+HN=$(hostname)
 TMP_PATTERN=".gpi2.XXXXXXXX"
 TMP_MFILE=$(TMPDIR=. mktemp ${TMP_PATTERN})
 UNIQ_MFILE=$(TMPDIR=. mktemp ${TMP_PATTERN})
@@ -34,6 +34,13 @@ RUN_FILE=$(TMPDIR=. mktemp ${RUN_PATTERN})
 ORIG_MFILE=""
 NNODES=0
 DEBUG=0
+
+remove_temp_file()
+{
+    rm -f $TMP_MFILE
+    rm -f $UNIQ_MFILE
+    rm -f $RUN_FILE
+}
 
 #helper functions
 usage()
@@ -47,23 +54,14 @@ usage()
     echo "  -n <procs>       Start as many <procs> from machine file."
     echo "  -d               Run with GDB (debugger) on master node."
     echo "  -h               This help."
-    echo 
+    echo
+    remove_temp_file
 }
-
-remove_temp_file()
-{    
-    rm -f $TMP_MFILE
-    rm -f $UNIQ_MFILE
-    rm -f $RUN_FILE
-}
-
-
 
 clean_exit()
 {
 #assumes the clean-up script is in the same directory as gaspi_run
-    BASEDIR=`dirname $0`
-    $BASEDIR/gaspi_cleanup -m $UNIQ_MFILE
+    $(dirname $0)/gaspi_cleanup -m $UNIQ_MFILE
 
     remove_temp_file
 }
@@ -79,63 +77,57 @@ print_error_exit()
 
 validate_machinefile()
 {
-    #empty
     if [ ! -s $MFILE ]; then
-	echo "Empty machine file ($1)"
-	exit 1
+	print_error_exit "Empty machine file ($1)"
     fi
 
     #create tmp_file
-    if [ -r $TMP_MFILE ]; then
-	rm -f $TMP_MFILE
-    fi
-    if [ `touch $TMP_MFILE 2> /dev/null; echo "$?"` -eq 0 ]; then
-	chmod 777 $TMP_MFILE
-    else
-	print_error_exit "User permissions failure: $PWD is not writable"
-    fi
+    rm -f $TMP_MFILE
 
+    touch $TMP_MFILE 2>/dev/null && chmod 777 $TMP_MFILE ||
+    {
+	print_error_exit "User permissions failure: $PWD is not writable"
+    }
 
     ncount=0
     while read LINE
     do
-	args=`echo $LINE | gawk '{print NF}'`
 	i=`echo $LINE | gawk '{print $1}'   `
-	if [ "$i" != "" ]; then
-     	    ping -c 1 $i > /dev/null 2>&1
-     	    if [ $? != 0 ]; then
+	if [ -n "$i" ]; then
+     	    ping -c 1 $i >/dev/null 2>&1 ||
+            {
      		print_error_exit "Host not reachable ($i)"
-     	    fi
+     	    }
 
-	    ncount=$(($ncount+1))
+	    ncount=$((ncount+1))
 	    if [ $NNODES -lt $ncount ]; then
 		break
 	    fi
 	    echo $i >> $TMP_MFILE
 	fi
     done < $MFILE
-    
+
     ORIG_MFILE=$MFILE
     MFILE=$TMP_MFILE
 
     uniq $MFILE > $UNIQ_MFILE
        #number of nodes (NNODES) must fit number of hosts
-    n=`wc -l $MFILE |gawk '{print $1}'`
+    n=$(wc -l < $MFILE)
     if [ $n -lt $NNODES ]; then
 	print_error_exit "Not enough hosts ($n) for required number of nodes (-n $NNODES)"
     fi
 
 }
 
-kill_procs()                                                                                                    
+kill_procs()
 {
     echo "Killing GASPI procs..."
-    for i in $hlist                                                                                             
+    for i in $(cat $MFILE)
     do
 	ssh $i killall -s KILL $PRGNAME > /dev/null 2>&1 &
     done
     remove_temp_file
-    exit 1                                                                                                       
+    exit 1
 }
 
 #at least we need machinefile and binary
@@ -145,7 +137,7 @@ if [ $# -lt 3 ]; then
 fi
 
 #command line parsing
-while [ "$1" != "" ]; do
+while [ -n "$1" ]; do
     case $1 in
 	-m | --machinefile)
 	    shift
@@ -182,19 +174,21 @@ while [ "$1" != "" ]; do
 	    ;;
 	*) #Sucks! we're taking a small risk here
             if [ -x $1 ]; then
-                PRG=$*
-		KPRG=$1
+                PRG=$(readlink -f $*)
+		KPRG=$(readlink -f $1)
 		break
             else
                 print_error_exit "Error: Cannot execute $1 (or file does not exist)"
-            fi    
+            fi
     esac
     shift
 done
 
-if [ "$PRG" = "" ]; then
+if [ -z "$PRG" ]; then
     print_error_exit "No binary file provided. See help (-h option)"
 fi
+
+PRGNAME=`basename $KPRG`
 
 trap kill_procs TERM INT QUIT
 
@@ -220,49 +214,22 @@ fi
 
 validate_machinefile $MFILE
 
-
-hlist=`cat $MFILE`
-t=0
-t0=$(date +%s)
-previous=`head -n 1 $MFILE`
-ncount=0
-
-#take care of paths
-TMP_PRG=`readlink -f "$PRG"`
-TMP_KPRG=`readlink -f $KPRG`
-
-PRG=$TMP_PRG
-KPRG=$TMP_KPRG
-
 #master binary is the same
-if [ "$MASTER_PRG" = "" ]; then
+if [ -z "$MASTER_PRG" ]; then
     MASTER_PRG=$PRG
 fi
 
+t0=$(date +%s)
 #who's master
 master_node=`head -n 1 $MFILE`
+previous="$master_node"
 
-while read LINE
+for LINE in $(tail -n +2 $MFILE)
 do
-    i=$LINE
-
-    #ignore blank lines
-    if [ "$i" = "" ]; then
-	continue;
-    fi
-    
-    if [ $t -eq 0 ]; then
-     	TYP=GASPI_MASTER
-     	t=$(($t+1))
-     	continue
-    else
-     	TYP=GASPI_WORKER
-    fi
-
-    if [ "$i" = "$previous" ]; then
-	j=$(($j+1))
+    if [ "$LINE" = "$previous" ]; then
+	j=$((j+1))
 	if [ $j -eq $MAX_NUMA_NODES ]; then
-	    echo 
+	    echo
 	    echo "Error: incorrect machine file (-m $ORIG_MFILE) (max procs per node: $MAX_NUMA_NODES)"
 	    echo
 	    clean_exit
@@ -272,26 +239,29 @@ do
 	j=0
     fi
 
-    if [ $SET_NUMA -eq 1 ]; then    
-	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; if [ -x $KPRG ]; then $PRG; else echo '$i': '$KPRG' not found;exit 1;fi 2> /dev/null &'"
-    else
-	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=$j;export GASPI_TYP=$TYP;export GASPI_MFILE=$MFILE; if [ -x $KPRG ]; then $PRG;else echo '$i': '$KPRG' not found;exit 1;fi 2> /dev/null &'"
+    cmd="/bin/sh -c"
+    cmd="$cmd 'export GASPI_MASTER=$master_node"
+    cmd="$cmd; export GASPI_SOCKET=$j"
+    cmd="$cmd; export GASPI_TYP=GASPI_WORKER"
+    cmd="$cmd; export GASPI_MFILE=$(readlink -f $MFILE)"
+    if [ $SET_NUMA -eq 1 ]; then
+	cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
     fi
+    cmd="$cmd; if [ -x $KPRG ]; then $PRG;else echo '$LINE': '$KPRG' not found;exit 1;fi 2> /dev/null &'"
 
-    ssh $i $cmd  >> $RUN_FILE &
+    ssh $LINE $cmd  >> $RUN_FILE &
 
-    previous="$i"
+    previous="$LINE"
 
-done < $MFILE
+done
 
-PRGNAME=`basename $KPRG`
 echo $PRGNAME  > /tmp/.last_gaspi_prg
 if [ -O /tmp/.last_gaspi_prg ]; then
     chmod a+rw /tmp/.last_gaspi_prg &> /dev/null
 fi
 
 #check all started well
-sleep 1
+wait
 grep "${KPRG} not found" $RUN_FILE
 if [ $? = 0 ]; then
     echo "Error: Failed to start $PRG on remote nodes"
@@ -304,47 +274,51 @@ fi
 
 #start master
 t1=$(date +%s)
-tdiff=$(( $t1 - $t0 ))
+tdiff=$((t1 - t0))
 echo ssh-startup time: $tdiff sec
 
 if [ "$master_node" != "$HN" ]; then
     if [ $DEBUG != 0 ]; then
-	echo 
+	echo
 	echo "Running with debugger only allowed if current node ($HN) is the first node in machinefile"
 	echo
 	clean_exit
 	exit 1
     fi
     #prepare differently for remote node
-    chmod a+r $MFILE &> /dev/null
+    chmod a+r $MFILE > /dev/null
     TMP_FILE=`readlink -f $MFILE`
     MFILE=$TMP_FILE
-    scp $MFILE ${master_node}:${MFILE} &> /dev/null
+    scp $MFILE ${master_node}:${MFILE} > /dev/null
     if [ $? != 0 ]; then
 	echo "Warning: Failed to copy machinefile to remote host. Program might not start correctly."
     fi
 
-    if [ $SET_NUMA -eq 1 ]; then    
- 	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=0;export GASPI_TYP=GASPI_MASTER;export GASPI_MFILE=$MFILE;export GASPI_SET_NUMA_SOCKET=1; $MASTER_PRG'"
-    else
- 	cmd="/bin/sh -c 'export GASPI_MASTER=$master_node;export GASPI_SOCKET=0;export GASPI_TYP=GASPI_MASTER;export GASPI_MFILE=$MFILE; $MASTER_PRG'"
-     fi
-    ssh $master_node $cmd 
+    cmd="/bin/sh -c"
+    cmd="$cmd 'export GASPI_MASTER=$master_node"
+    cmd="$cmd; export GASPI_SOCKET=0"
+    cmd="$cmd; export GASPI_TYP=GASPI_MASTER"
+    cmd="$cmd; export GASPI_MFILE=$MFILE"
+    if [ $SET_NUMA -eq 1 ]; then
+        cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
+    fi
+    cmd="$cmd; $MASTER_PRG'"
+    ssh $master_node $cmd
     if [ $? != 0 ]; then
 	echo "Error: Failed to start $MASTER_PRG on $master_node"
 	clean_exit
 	exit 1
     fi
 else
-    export GASPI_MASTER=$HN;
-    
+    export GASPI_MASTER=$HN
+
     if [ $SET_NUMA -eq 1 ]; then
-	export GASPI_SET_NUMA_SOCKET=1;
+	export GASPI_SET_NUMA_SOCKET=1
     fi
-    export GASPI_SOCKET=0;
-    export GASPI_TYP=GASPI_MASTER;
-    export GASPI_MFILE=$MFILE;
-    
+    export GASPI_SOCKET=0
+    export GASPI_TYP=GASPI_MASTER
+    export GASPI_MFILE=$MFILE
+
 
     if [ $DEBUG != 0 ]; then
 	gdb --args $MASTER_PRG
