@@ -174,7 +174,7 @@ while [ -n "$1" ]; do
 	    ;;
 	*) #Sucks! we're taking a small risk here
             if [ -x $1 ]; then
-                PRG=$(readlink -f $*)
+		PRG=$(readlink -f "$*")
 		KPRG=$(readlink -f $1)
 		break
             else
