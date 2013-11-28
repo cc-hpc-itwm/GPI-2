@@ -493,7 +493,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   socketPtr = getenv ("GASPI_SOCKET");
   numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
-  typPtr = getenv ("GASPI_TYP");
+  typPtr = getenv ("GASPI_TYPE");
   mfilePtr = getenv ("GASPI_MFILE");
 
   if (socketPtr)
@@ -522,7 +522,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   if (!typPtr)
     {
-      gaspi_print_error ("No node type defined (GASPI_TYP)");
+      gaspi_print_error ("No node type defined (GASPI_TYPE)");
       goto errL;
     }
 
@@ -670,7 +670,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
     }
   else
     {
-      gaspi_print_error ("Invalid node type (GASPI_TYP)");
+      gaspi_print_error ("Invalid node type (GASPI_TYPE)");
       goto errL;
     }
 
