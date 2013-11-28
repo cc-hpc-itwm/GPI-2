@@ -445,7 +445,8 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   gaspi_return_t eret = GASPI_ERROR;
   int i;
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
   if (glb_gaspi_init)
     goto errL;
@@ -677,7 +678,9 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
   gaspi_sn_packet snp;
   int i;
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if (lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout))
+    return GASPI_TIMEOUT;
+  
   if (glb_gaspi_init == 0)
     goto errL;
 

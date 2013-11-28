@@ -1605,11 +1605,13 @@ pgaspi_group_commit (const gaspi_group_t group,
   if (!glb_gaspi_init)
     return GASPI_ERROR;
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
   if (group == 0 || group >= GASPI_MAX_GROUPS
       || glb_gaspi_group_ib[group].id == -1)
     goto errL;
+
   if (glb_gaspi_group_ib[group].tnc < 2)
     goto errL;
 
@@ -1812,6 +1814,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     {
       glb_gaspi_ctx_ib.rrmd[segment_id] =
 	(gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+
       memset (glb_gaspi_ctx_ib.rrmd[segment_id], 0,
 	      glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
     }
@@ -1830,6 +1833,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       goto errL;
     }
 
+  //TODO: avoid 2 memsets in case of GASPI_MEM_INITIALIZED
   memset (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].ptr, 0,
 	  NOTIFY_OFFSET);
 
@@ -1938,8 +1942,10 @@ pgaspi_segment_register (const gaspi_segment_id_t segment_id,
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
     return GASPI_ERROR;
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
+  //TODO: replace command numbers for readable versions
   snp.cmd = 4;
   snp.seg_id = segment_id;
   snp.rkey = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].rkey;
@@ -1986,6 +1992,7 @@ gaspi_seg_reg_sn (const gaspi_sn_packet snp)
 int
 gaspi_send_seg_info (const gaspi_segment_id_t seg_id, const int i)
 {
+  //TODO: ???
   struct
   {
     unsigned long addr, size;
@@ -2057,12 +2064,15 @@ pgaspi_segment_create (const gaspi_segment_id_t segment_id,
   int i, j;
   gaspi_return_t eret = GASPI_ERROR;
 
+  //TODO: do not exit, send empty seg info
   if (gaspi_segment_alloc (segment_id, size, alloc_policy) != 0)
     return GASPI_ERROR;
+  
   if (group >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[group].id == -1)
     return GASPI_ERROR;
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
   //exchange data inside group
   for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
@@ -2107,7 +2117,7 @@ errL:
 gaspi_return_t
 pgaspi_segment_num (gaspi_number_t * const segment_num)
  {
-
+   //TODO: check for pointer validity in debug mode
   if (glb_gaspi_init)
     {
       *segment_num = glb_gaspi_ctx.mseg_cnt;
@@ -2125,6 +2135,7 @@ pgaspi_segment_list (const gaspi_number_t num,
   if (!glb_gaspi_init)
     return GASPI_ERROR;
 
+  //TODO: 256 -> readable
   for (i = 0; i < 256; i++)
     {
       if (glb_gaspi_ctx_ib.rrmd[i] != NULL)
@@ -2141,6 +2152,7 @@ gaspi_return_t
 pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 {
 
+  //TODO: check for validity of ptr in debug mode
   if (!glb_gaspi_init)
     return GASPI_ERROR;
 
@@ -2159,6 +2171,8 @@ gaspi_return_t
 pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 		    const gaspi_rank_t rank, gaspi_size_t * const size)
 {
+  //TODO: check for pointer validity in debug mode
+  //TODO: add error messages in case of it
   if (!glb_gaspi_init)
     return GASPI_ERROR;
 
@@ -2183,7 +2197,7 @@ gaspi_return_t
 pgaspi_queue_size (const gaspi_queue_id_t queue,
 		  gaspi_number_t * const queue_size)
 {
-
+  //TODO: check for validity of pointer in debug mode
   if (queue >= glb_gaspi_cfg.queue_num)
     return GASPI_ERROR;
 
@@ -2194,6 +2208,7 @@ pgaspi_queue_size (const gaspi_queue_id_t queue,
 gaspi_return_t
 pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
 {
+  //TODO: check for validity of ptr in debug mode
   *buf_size = NEXT_OFFSET;
   return GASPI_SUCCESS;
 }

@@ -60,7 +60,9 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
   
-  lock_gaspi_tout (&glb_gaspi_group_ib[0].gl, timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_group_ib[0].gl, timeout_ms))
+    return GASPI_TIMEOUT;
+  
 
   slist.addr = (uintptr_t) (glb_gaspi_group_ib[0].buf + NEXT_OFFSET);
   slist.length = 8;
@@ -168,7 +170,8 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-  lock_gaspi_tout (&glb_gaspi_group_ib[0].gl, timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_group_ib[0].gl, timeout_ms))
+    return GASPI_TIMEOUT;
 
   slist.addr = (uintptr_t) (glb_gaspi_group_ib[0].buf + NEXT_OFFSET);
   slist.length = 8;

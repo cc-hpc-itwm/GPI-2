@@ -95,7 +95,8 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
   struct ibv_sge slist;
   struct ibv_send_wr swr;
 
-  lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
+    return GASPI_TIMEOUT;
 
   const enum ibv_send_flags sf =
     (size >
@@ -156,8 +157,8 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
   struct ibv_sge slist;
   struct ibv_send_wr swr;
 
-  lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms);
-
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
+    return GASPI_TIMEOUT;
  
   slist.addr =
     (uintptr_t) (glb_gaspi_ctx_ib.
@@ -209,7 +210,8 @@ pgaspi_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
   int ne = 0, i;
   struct ibv_wc wc;
 
-  lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
+    return GASPI_TIMEOUT;
 
   const int nr = glb_gaspi_ctx_ib.ne_count_c[queue];
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
@@ -293,7 +295,8 @@ pgaspi_write_list (const gaspi_number_t num,
   struct ibv_send_wr swr[256];
   int i;
 
-  lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
+    return GASPI_TIMEOUT;
 
   for (i = 0; i < num; i++)
     {
@@ -368,7 +371,8 @@ pgaspi_read_list (const gaspi_number_t num,
   struct ibv_send_wr swr[256];
   int i;
 
-  lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
+    return GASPI_TIMEOUT;
 
   for (i = 0; i < num; i++)
     {
@@ -441,7 +445,8 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
   struct ibv_sge slistN;
   struct ibv_send_wr swrN;
 
-  lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
+    return GASPI_TIMEOUT;
 
   slistN.addr =
     (uintptr_t) (glb_gaspi_group_ib[0].buf + NOTIFY_OFF_LOCAL +
@@ -639,7 +644,8 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
   struct ibv_sge slist, slistN;
   struct ibv_send_wr swr, swrN;
 
-  lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
+    return GASPI_TIMEOUT;
 
   slist.addr =
     (uintptr_t) (glb_gaspi_ctx_ib.
@@ -730,7 +736,8 @@ pgaspi_write_list_notify (const gaspi_number_t num,
   struct ibv_send_wr swr[256], swrN;
   int i;
 
-  lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
+    return GASPI_TIMEOUT;
 
   for (i = 0; i < num; i++)
     {
