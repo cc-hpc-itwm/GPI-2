@@ -132,6 +132,13 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define gaspi_print_error(msg) gaspi_printf("Error: %s (%s:%d)\n", msg, __FILE__, __LINE__);
 
+#define gaspi_verify_null_ptr(ptr)				\
+  if(ptr == NULL)						\
+    {								\
+  gaspi_print_error ("Passed argument is a NULL pointer");	\
+  return GASPI_ERROR;						\
+    } 
+
 typedef unsigned long gaspi_cycles_t;
 
 static inline gaspi_cycles_t
@@ -350,6 +357,9 @@ pgaspi_version (float *const version)
 gaspi_return_t
 pgaspi_config_get (gaspi_config_t * const config)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(config);
+#endif
 
   memcpy (config, &glb_gaspi_cfg, sizeof (gaspi_config_t));
   return GASPI_SUCCESS;
@@ -400,6 +410,9 @@ pgaspi_config_set (const gaspi_config_t nconf)
 gaspi_return_t
 pgaspi_machine_type (char const machine_type[16])
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(machine_type);
+#endif
 
   memset ((void *) machine_type, 16, 0);
   snprintf ((char *) machine_type, 16, "%s", glb_gaspi_ctx.mtyp);
@@ -730,21 +743,13 @@ pgaspi_proc_rank (gaspi_rank_t * const rank)
 {
   if (glb_gaspi_init)
     {
+
 #ifdef DEBUG
-      if(rank != NULL)
-	{
-	  *rank = glb_gaspi_ctx.rank;
-	  return GASPI_SUCCESS;
-	}
-      else
-	{
-	  gaspi_print_error ("Passed argument is a NULL pointer");
-	  return GASPI_ERROR;
-	}
-#else
+      gaspi_verify_null_ptr(rank);
+#endif
+
       *rank = glb_gaspi_ctx.rank;
       return GASPI_SUCCESS;
-#endif
     }
   else
     return GASPI_ERROR;
@@ -756,20 +761,11 @@ pgaspi_proc_num (gaspi_rank_t * const proc_num)
   if (glb_gaspi_init)
     {
 #ifdef DEBUG
-      if(proc_num != NULL)
-	{
-	  *proc_num = glb_gaspi_ctx.tnc;
-	  return GASPI_SUCCESS;
-	}
-      else
-	{
-	  gaspi_print_error ("Passed argument is a NULL pointer");
-	  return GASPI_ERROR;
-	}
-#else
+      gaspi_verify_null_ptr(proc_num);
+#endif
+
       *proc_num = glb_gaspi_ctx.tnc;
       return GASPI_SUCCESS;
-#endif
     }
   else
     return GASPI_ERROR;
@@ -1248,6 +1244,10 @@ pgaspi_disconnect (const gaspi_rank_t rank,
 gaspi_return_t
 pgaspi_queue_num (gaspi_number_t * const queue_num)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(queue_num);
+#endif
+
   *queue_num = glb_gaspi_cfg.queue_num;
   return GASPI_SUCCESS;
 }
@@ -1255,6 +1255,9 @@ pgaspi_queue_num (gaspi_number_t * const queue_num)
 gaspi_return_t
 pgaspi_queue_size_max (gaspi_number_t * const queue_size_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(queue_size_max);
+#endif
 
   *queue_size_max = glb_gaspi_cfg.queue_depth;
   return GASPI_SUCCESS;
@@ -1263,6 +1266,9 @@ pgaspi_queue_size_max (gaspi_number_t * const queue_size_max)
 gaspi_return_t
 pgaspi_transfer_size_min (gaspi_size_t * const transfer_size_min)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(transfer_size_min);
+#endif
 
   *transfer_size_min = 1;
   return GASPI_SUCCESS;
@@ -1271,6 +1277,9 @@ pgaspi_transfer_size_min (gaspi_size_t * const transfer_size_min)
 gaspi_return_t
 pgaspi_transfer_size_max (gaspi_size_t * const transfer_size_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(transfer_size_max);
+#endif
 
   *transfer_size_max = GASPI_MAX_TSIZE_C;
   return GASPI_SUCCESS;
@@ -1279,6 +1288,9 @@ pgaspi_transfer_size_max (gaspi_size_t * const transfer_size_max)
 gaspi_return_t
 pgaspi_notification_num (gaspi_number_t * const notification_num)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(notification_num);
+#endif
 
   *notification_num = ((1 << 16) - 1);
   return GASPI_SUCCESS;
@@ -1288,6 +1300,9 @@ gaspi_return_t
 pgaspi_passive_transfer_size_max (gaspi_size_t *
 				 const passive_transfer_size_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(passive_transfer_size_max);
+#endif
 
   *passive_transfer_size_max = GASPI_MAX_TSIZE_P;
   return GASPI_SUCCESS;
@@ -1296,6 +1311,9 @@ pgaspi_passive_transfer_size_max (gaspi_size_t *
 gaspi_return_t
 pgaspi_allreduce_elem_max (gaspi_number_t * const elem_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(elem_max);
+#endif
 
   *elem_max = ((1 << 8) - 1);
   return GASPI_SUCCESS;
@@ -1304,6 +1322,10 @@ pgaspi_allreduce_elem_max (gaspi_number_t * const elem_max)
 gaspi_return_t
 pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(elem_max);
+#endif
+
   *elem_max = ((1 << 8) - 1);
   return GASPI_SUCCESS;
 }
@@ -1312,6 +1334,10 @@ gaspi_return_t
 pgaspi_network_type (gaspi_network_t * const network_type)
 {
   
+#ifdef DEBUG
+  gaspi_verify_null_ptr(network_type);
+#endif
+
   *network_type = glb_gaspi_cfg.net_typ;
   return GASPI_SUCCESS;
 }
@@ -1319,6 +1345,9 @@ pgaspi_network_type (gaspi_network_t * const network_type)
 gaspi_return_t
 pgaspi_time_ticks (gaspi_time_t * const ticks)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(ticks);
+#endif
 
   *ticks = gaspi_get_cycles ();
   return GASPI_SUCCESS;
@@ -1330,6 +1359,10 @@ pgaspi_cpu_frequency (gaspi_float * const cpu_mhz)
 
   if (!glb_gaspi_init)
     return GASPI_ERROR;
+
+#ifdef DEBUG
+  gaspi_verify_null_ptr(cpu_mhz);
+#endif
 
   *cpu_mhz = glb_gaspi_ctx.mhz;
   return GASPI_SUCCESS;

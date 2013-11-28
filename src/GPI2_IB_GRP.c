@@ -138,7 +138,6 @@ void
 opMinIntGASPI (void *res, void *localVal, void *dstVal,
 	       const unsigned char cnt)
 {
-  //TODO: check for validity of buffers in debug mode
   unsigned char i;
 
   int *rv = (int *) res;

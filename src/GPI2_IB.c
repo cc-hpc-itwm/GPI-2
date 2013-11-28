@@ -1334,7 +1334,7 @@ pgaspi_group_create (gaspi_group_t * const group)
   unsigned int size, page_size;
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+      return GASPI_ERROR;
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
@@ -1755,6 +1755,9 @@ pgaspi_group_num (gaspi_number_t * const group_num)
 
   if (glb_gaspi_init)
     {
+#ifdef DEBUG
+      gaspi_verify_null_ptr(group_num);
+#endif
       *group_num = glb_gaspi_ctx.group_cnt;
       return GASPI_SUCCESS;
     }
@@ -1768,6 +1771,10 @@ pgaspi_group_size (const gaspi_group_t group,
 
   if (glb_gaspi_init && group < glb_gaspi_ctx.group_cnt)
     {
+#ifdef DEBUG
+      gaspi_verify_null_ptr(group_size);
+#endif
+
       *group_size = glb_gaspi_group_ib[group].tnc;
       return GASPI_SUCCESS;
     }
@@ -1791,6 +1798,10 @@ pgaspi_group_ranks (const gaspi_group_t group,
 gaspi_return_t
 pgaspi_group_max (gaspi_number_t * const group_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(group_max);
+#endif
+
   *group_max = GASPI_MAX_GROUPS;
   return GASPI_SUCCESS;
 }
@@ -1992,7 +2003,6 @@ gaspi_seg_reg_sn (const gaspi_sn_packet snp)
 int
 gaspi_send_seg_info (const gaspi_segment_id_t seg_id, const int i)
 {
-  //TODO: ???
   struct
   {
     unsigned long addr, size;
@@ -2116,10 +2126,13 @@ errL:
 
 gaspi_return_t
 pgaspi_segment_num (gaspi_number_t * const segment_num)
- {
-   //TODO: check for pointer validity in debug mode
+{
   if (glb_gaspi_init)
     {
+#ifdef DEBUG
+      gaspi_verify_null_ptr(segment_num);
+#endif
+
       *segment_num = glb_gaspi_ctx.mseg_cnt;
       return GASPI_SUCCESS;
     }
@@ -2151,8 +2164,6 @@ pgaspi_segment_list (const gaspi_number_t num,
 gaspi_return_t
 pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 {
-
-  //TODO: check for validity of ptr in debug mode
   if (!glb_gaspi_init)
     return GASPI_ERROR;
 
@@ -2162,16 +2173,20 @@ pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
     return GASPI_ERROR;
 
+#ifdef DEBUG
+  gaspi_verify_null_ptr(ptr);
+#endif
+
   *ptr =
     glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf + NOTIFY_OFFSET;
   return GASPI_SUCCESS;
+
 }
 
 gaspi_return_t
 pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 		    const gaspi_rank_t rank, gaspi_size_t * const size)
 {
-  //TODO: check for pointer validity in debug mode
   //TODO: add error messages in case of it
   if (!glb_gaspi_init)
     return GASPI_ERROR;
@@ -2182,6 +2197,10 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
   if (glb_gaspi_ctx_ib.rrmd[segment_id][rank].size == 0)
     return GASPI_ERROR;
 
+#ifdef DEBUG
+  gaspi_verify_null_ptr(size);
+#endif
+
   *size = glb_gaspi_ctx_ib.rrmd[segment_id][rank].size;
   return GASPI_SUCCESS;
 }
@@ -2189,6 +2208,10 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_segment_max (gaspi_number_t * const segment_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(segment_max);
+#endif
+
   *segment_max = GASPI_MAX_MSEGS;
   return GASPI_SUCCESS;
 }
@@ -2197,9 +2220,12 @@ gaspi_return_t
 pgaspi_queue_size (const gaspi_queue_id_t queue,
 		  gaspi_number_t * const queue_size)
 {
-  //TODO: check for validity of pointer in debug mode
   if (queue >= glb_gaspi_cfg.queue_num)
     return GASPI_ERROR;
+
+#ifdef DEBUG
+  gaspi_verify_null_ptr(queue_size);
+#endif
 
   *queue_size = glb_gaspi_ctx_ib.ne_count_c[queue];
   return GASPI_SUCCESS;
@@ -2208,7 +2234,11 @@ pgaspi_queue_size (const gaspi_queue_id_t queue,
 gaspi_return_t
 pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
 {
-  //TODO: check for validity of ptr in debug mode
+
+#ifdef DEBUG
+  gaspi_verify_null_ptr(buf_size);
+#endif
+
   *buf_size = NEXT_OFFSET;
   return GASPI_SUCCESS;
 }
