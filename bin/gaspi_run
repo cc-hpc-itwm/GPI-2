@@ -34,6 +34,7 @@ RUN_FILE=$(TMPDIR=. mktemp ${RUN_PATTERN})
 ORIG_MFILE=""
 NNODES=0
 DEBUG=0
+GASPI_LAUNCHER=ssh
 
 remove_temp_file()
 {
@@ -124,7 +125,7 @@ kill_procs()
     echo "Killing GASPI procs..."
     for i in $(cat $MFILE)
     do
-	ssh $i killall -s KILL $PRGNAME > /dev/null 2>&1 &
+	$GASPI_LAUNCHER $i killall -s KILL $PRGNAME > /dev/null 2>&1 &
     done
     remove_temp_file
     exit 1
@@ -249,7 +250,7 @@ do
     fi
     cmd="$cmd; if [ -x $KPRG ]; then $PRG;else echo '$LINE': '$KPRG' not found;exit 1;fi 2> /dev/null &'"
 
-    ssh $LINE $cmd  >> $RUN_FILE &
+    $GASPI_LAUNCHER $LINE $cmd  >> $RUN_FILE &
 
     previous="$LINE"
 
@@ -275,7 +276,7 @@ fi
 #start master
 t1=$(date +%s)
 tdiff=$((t1 - t0))
-echo ssh-startup time: $tdiff sec
+echo Startup time: $tdiff sec
 
 if [ "$master_node" != "$HN" ]; then
     if [ $DEBUG != 0 ]; then
@@ -303,7 +304,7 @@ if [ "$master_node" != "$HN" ]; then
         cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
     fi
     cmd="$cmd; $MASTER_PRG'"
-    ssh $master_node $cmd
+    $GASPI_LAUNCHER $master_node $cmd
     if [ $? != 0 ]; then
 	echo "Error: Failed to start $MASTER_PRG on $master_node"
 	clean_exit
