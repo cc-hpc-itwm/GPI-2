@@ -23,6 +23,7 @@ PRG=""
 KPRG=""
 PRGNAME=""
 TYPE=GASPI_MASTER
+MAX_IMMED_CONN=10
 MAX_NUMA_NODES=1
 HAS_NUMA=0
 HN=$(hostname)
@@ -235,6 +236,9 @@ for LINE in $(tail -n +2 $MFILE)
 do
     if [ "$LINE" = "$previous" ]; then
 	j=$((j+1))
+	if [ `expr $j % $MAX_IMMED_CONN` = 0 ]; then
+	    sleep 1
+	fi
 	if [ $j -eq $MAX_NUMA_NODES ]; then
 	    echo
 	    echo "Error: incorrect machine file (-m $ORIG_MFILE) (max procs per node: $MAX_NUMA_NODES)"
