@@ -64,6 +64,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #pragma weak gaspi_proc_kill = pgaspi_proc_kill
 #pragma weak gaspi_proc_term    = pgaspi_proc_term
 #pragma weak gaspi_machine_type = pgaspi_machine_type
+#pragma weak gaspi_numa_socket = pgaspi_numa_socket
 #pragma weak gaspi_set_socket_affinity = pgaspi_set_socket_affinity
 #pragma weak gaspi_disconnect = pgaspi_disconnect
 #pragma weak gaspi_connect = pgaspi_connect
@@ -467,6 +468,28 @@ pgaspi_set_socket_affinity (const gaspi_uchar socket)
 
   return GASPI_SUCCESS;
 }
+
+gaspi_return_t
+pgaspi_numa_socket(gaspi_uchar * const socket)
+{
+  char * numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
+  if(numaPtr)
+    {
+      if(atoi(numaPtr) == 1)
+	{
+	  *socket = glb_gaspi_ctx.localSocket;
+	  
+	  return GASPI_SUCCESS;
+	}
+    }
+
+#ifdef DEBUG
+  gaspi_print_error("Debug: NUMA was not enabled (-N option of gaspi_run)");
+#endif
+  
+  return GASPI_ERROR;
+}
+
 
 gaspi_return_t
 pgaspi_proc_init (const gaspi_timeout_t timeout_ms)

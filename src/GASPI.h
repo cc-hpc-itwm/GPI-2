@@ -1060,6 +1060,16 @@ extern "C"
    */
   void gaspi_print_affinity_mask ();
 
+  /** Get NUMA socket
+   *
+   *
+   * @param socket Output parameter with the socket
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case
+   * GPI2 was not started with NUMA enabled.
+   */
+  gaspi_return_t gaspi_numa_socket(gaspi_uchar * const socket);
+
   /** Set socket affinity
    * 
    * 
