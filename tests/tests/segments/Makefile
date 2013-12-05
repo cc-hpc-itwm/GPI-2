@@ -1,4 +1,4 @@
-BIN =  seg_alloc_one.bin seg_alloc_all.bin max_mem.bin
+BIN =  seg_alloc_one.bin seg_alloc_all.bin max_mem.bin seg_reuse.bin
 
 CFLAGS+=-I../
 
