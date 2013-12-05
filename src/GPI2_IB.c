@@ -1334,7 +1334,10 @@ pgaspi_group_create (gaspi_group_t * const group)
   unsigned int size, page_size;
 
   if (!glb_gaspi_init)
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
       return GASPI_ERROR;
+    }
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
@@ -1350,7 +1353,10 @@ pgaspi_group_create (gaspi_group_t * const group)
 	}
     }
   if (id == GASPI_MAX_GROUPS)
-    goto errL;
+    {
+      gaspi_print_error("Exhausted max number of groups (GASPI_MAX_GROUPS)");
+      goto errL;
+    }
 
   size = NEXT_OFFSET;
   page_size = sysconf (_SC_PAGESIZE);
@@ -1422,14 +1428,17 @@ pgaspi_group_delete (const gaspi_group_t group)
 {
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
   if (group == 0 || group >= GASPI_MAX_GROUPS
       || glb_gaspi_group_ib[group].id == -1)
     {
-      gaspi_print_error ("Invalid group");
+      gaspi_print_error ("Invalid group to delete");
       goto errL;
     }
 
@@ -1480,21 +1489,33 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
   int i;
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
   if (group == 0 || group >= GASPI_MAX_GROUPS
       || glb_gaspi_group_ib[group].id == -1)
-    goto errL;
+    {
+      gaspi_print_error("Invalid group to add to");
+      goto errL;
+    }
 
   if (rank >= glb_gaspi_ctx.tnc)
-    goto errL;
+    {
+      gaspi_print_error("Invalid rank to add to group");
+      goto errL;
+    }
 
   for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
     {
       if (glb_gaspi_group_ib[group].rank_grp[i] == rank)
-	goto errL;
+	{
+	  gaspi_print_error("Rank already present in group");
+	  goto errL;
+	}
     }
 
   glb_gaspi_group_ib[group].rank_grp[glb_gaspi_group_ib[group].tnc++] = rank;
@@ -1603,18 +1624,27 @@ pgaspi_group_commit (const gaspi_group_t group,
   gaspi_return_t eret = GASPI_ERROR;
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
   if (group == 0 || group >= GASPI_MAX_GROUPS
       || glb_gaspi_group_ib[group].id == -1)
-    goto errL;
+    {
+      gaspi_print_error("Invalid group to commit to");
+      goto errL;
+    }
 
   if (glb_gaspi_group_ib[group].tnc < 2)
-    goto errL;
-
+    {
+      gaspi_print_error("Group must have at least 2 ranks to be committed");
+      goto errL;
+    }
+  
   glb_gaspi_group_ib[group].rank = -1;
 
   for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
@@ -1627,7 +1657,10 @@ pgaspi_group_commit (const gaspi_group_t group,
     }
 
   if (glb_gaspi_group_ib[group].rank == -1)
-    goto errL;
+    {
+      gaspi_print_error("Invalid group to commit to");
+      goto errL;
+    }
 
   glb_gaspi_group_ib[group].next_pof2 = 1;
 
@@ -1739,7 +1772,11 @@ pgaspi_group_commit (const gaspi_group_t group,
 	}
     }				//for
 
-  gaspi_grp_barrier_sn (group, GASPI_BLOCK);
+  if(gaspi_grp_barrier_sn (group, GASPI_BLOCK) != 0)
+    {
+      gaspi_print_error("Failed to sync committed group");
+      goto errL;
+    }
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
@@ -1761,6 +1798,7 @@ pgaspi_group_num (gaspi_number_t * const group_num)
       *group_num = glb_gaspi_ctx.group_cnt;
       return GASPI_SUCCESS;
     }
+  gaspi_print_error("Invalid function before gaspi_proc_init");
   return GASPI_ERROR;
 }
 
@@ -1778,6 +1816,8 @@ pgaspi_group_size (const gaspi_group_t group,
       *group_size = glb_gaspi_group_ib[group].tnc;
       return GASPI_SUCCESS;
     }
+
+  gaspi_print_error("Invalid function before gaspi_proc_init or invalid group parameter");
   return GASPI_ERROR;
 }
 
@@ -1792,6 +1832,7 @@ pgaspi_group_ranks (const gaspi_group_t group,
 	group_ranks[i] = glb_gaspi_group_ib[group].rank_grp[i];
       return GASPI_SUCCESS;
     }
+  gaspi_print_error("Invalid function before gaspi_proc_init or invalid group parameter");
   return GASPI_ERROR;
 }
 
@@ -1814,12 +1855,23 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
   unsigned int page_size;
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
-  if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS || size == 0)
-    goto errL;
+  if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS)
+    {
+      gaspi_print_error("Too many allocated segments");
+      goto errL;
+    }
+  if( size == 0)
+    {
+      gaspi_print_error("Cannot allocate segment of size 0");
+      goto errL;
+    }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
     {
@@ -1831,7 +1883,10 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size)
-    goto errL;
+    {
+      gaspi_print_error("Segment already exists");
+      goto errL;
+    }
 
   page_size = sysconf (_SC_PAGESIZE);
   glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size = size;
@@ -1894,15 +1949,24 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 {
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function call before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    goto errL;
+    {
+      gaspi_print_error("Invalid segment to delete");
+      goto errL;
+    }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
-    goto errL;
+    {
+      gaspi_print_error("Invalid segment to delete");
+      goto errL;
+    }
 
   if (munlock
       (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf,
@@ -1944,14 +2008,27 @@ pgaspi_segment_register (const gaspi_segment_id_t segment_id,
   gaspi_return_t gret;
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   if (rank >= glb_gaspi_ctx.tnc || rank == glb_gaspi_ctx.rank)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid rank to register segment");
+      return GASPI_ERROR;
+    }
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid segment to register (non-allocated)");
+      return GASPI_ERROR;
+    }
+
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid segment to register (size = 0)");
+      return GASPI_ERROR;
+    }
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
@@ -1965,7 +2042,10 @@ pgaspi_segment_register (const gaspi_segment_id_t segment_id,
 
   gret = gaspi_call_sn_threadDG (rank, snp, timeout_ms);
   if (gret != 0)
-    goto errL;
+    {
+      gaspi_print_error("Failed segment registration");
+      goto errL;
+    }
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
@@ -2136,6 +2216,8 @@ pgaspi_segment_num (gaspi_number_t * const segment_num)
       *segment_num = glb_gaspi_ctx.mseg_cnt;
       return GASPI_SUCCESS;
     }
+
+  gaspi_print_error("Invalid function before gaspi_proc_init");
   return GASPI_ERROR;
 }
 
@@ -2146,7 +2228,10 @@ pgaspi_segment_list (const gaspi_number_t num,
   int i, idx = 0;
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   //TODO: 256 -> readable
   for (i = 0; i < 256; i++)
@@ -2156,7 +2241,9 @@ pgaspi_segment_list (const gaspi_number_t num,
     }
 
   if (idx != glb_gaspi_ctx.mseg_cnt)
-    return GASPI_ERROR;
+    {
+      return GASPI_ERROR;
+    }
 
   return GASPI_SUCCESS;
 }
@@ -2165,13 +2252,22 @@ gaspi_return_t
 pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 {
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid segment id");
+      return GASPI_ERROR;
+    }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid segment (size = 0)");
+      return GASPI_ERROR;
+    }
 
 #ifdef DEBUG
   gaspi_verify_null_ptr(ptr);
@@ -2187,15 +2283,24 @@ gaspi_return_t
 pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 		    const gaspi_rank_t rank, gaspi_size_t * const size)
 {
-  //TODO: add error messages in case of it
+
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid segment id");
+      return GASPI_ERROR;
+    }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id][rank].size == 0)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid segment (size = 0)");
+      return GASPI_ERROR;
+    }
 
 #ifdef DEBUG
   gaspi_verify_null_ptr(size);
@@ -2221,8 +2326,10 @@ pgaspi_queue_size (const gaspi_queue_id_t queue,
 		  gaspi_number_t * const queue_size)
 {
   if (queue >= glb_gaspi_cfg.queue_num)
-    return GASPI_ERROR;
-
+    {
+      gaspi_print_error("Invalid queue id provided");
+      return GASPI_ERROR;
+    }
 #ifdef DEBUG
   gaspi_verify_null_ptr(queue_size);
 #endif

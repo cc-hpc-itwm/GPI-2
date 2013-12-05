@@ -56,7 +56,7 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
   if (offset & 0x7)
     {
-      gaspi_print_error("Unaligned offset");
+      gaspi_print_error("Unaligned offset for atomic operation (fetch_add)");
       return GASPI_ERROR;
     }
   
@@ -166,7 +166,7 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 
   if (offset & 0x7)
     {
-      gaspi_print_error("Unaligned offset");
+      gaspi_print_error("Unaligned offset for atomic operation (compare_swap");
       return GASPI_ERROR;
     }
 

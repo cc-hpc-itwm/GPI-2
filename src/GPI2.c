@@ -370,7 +370,10 @@ pgaspi_config_set (const gaspi_config_t nconf)
 {
 
   if (glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Cannot set configuration after GPI-2 is started");
+      return GASPI_ERROR;
+    }
 
   if (nconf.net_typ == GASPI_IB || nconf.net_typ == GASPI_ETHERNET)
     {
@@ -378,28 +381,42 @@ pgaspi_config_set (const gaspi_config_t nconf)
       glb_gaspi_cfg.user_net = 1;
     }
   else
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid value for parameter net_typ");
+      return GASPI_ERROR;
+    }
 
   if (nconf.netdev_id > 1)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid value for parameter netdev_id");
+      return GASPI_ERROR;
+    }
   else
     glb_gaspi_cfg.netdev_id = nconf.netdev_id;
 
   if (nconf.queue_num > GASPI_MAX_QP || nconf.queue_num < 1)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid value for parameter queue_num (min=1 and max=GASPI_MAX_QP");
+      return GASPI_ERROR;
+    }
   else
     glb_gaspi_cfg.queue_num = nconf.queue_num;
 
   if (nconf.queue_depth > GASPI_MAX_QSIZE || nconf.queue_depth < 1)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid value for parameter queue_depth (min=1 and max=GASPI_MAX_QSIZE");
+      return GASPI_ERROR;
+    }
   else
     glb_gaspi_cfg.queue_depth = nconf.queue_depth;
 
   if (nconf.mtu == 1024 || nconf.mtu == 2048 || nconf.mtu == 4096)
     glb_gaspi_cfg.mtu = nconf.mtu;
   else
-    return GASPI_ERROR;
-
+    {
+      gaspi_print_error("Invalid value for parameter mtu (supported: 1024, 2048,4096)");
+      return GASPI_ERROR;
+    }
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.logger = nconf.logger;
   glb_gaspi_cfg.port_check = nconf.port_check;
@@ -695,7 +712,10 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
     return GASPI_TIMEOUT;
   
   if (glb_gaspi_init == 0)
-    goto errL;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      goto errL;
+    }
 
   gaspi_cleanup_ib_core ();
 
@@ -752,7 +772,10 @@ pgaspi_proc_rank (gaspi_rank_t * const rank)
       return GASPI_SUCCESS;
     }
   else
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 }
 
 gaspi_return_t
@@ -768,7 +791,10 @@ pgaspi_proc_num (gaspi_rank_t * const proc_num)
       return GASPI_SUCCESS;
     }
   else
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 }
 
 char *
@@ -890,7 +916,9 @@ buildMaster (gaspi_timeout_t timeout_ms)
 	}
 
       if (gaspi_connect_context (i) != 0)
-	return GASPI_ERROR;
+	{
+	  return GASPI_ERROR;
+	}
     }//for
 
   gaspi_init_master_grp ();
@@ -907,6 +935,7 @@ buildMaster (gaspi_timeout_t timeout_ms)
 			GASPI_INT_PORT +
 			glb_gaspi_ctx.p_off[glb_gaspi_ctx.rank],
 			GASPI_SN_TIMEOUT);
+
   if (glb_gaspi_ctx.sockfd[glb_gaspi_ctx.rank] < 0)
     {
       for (k = 0; k < glb_gaspi_ctx.tnc; k++)
@@ -1022,6 +1051,7 @@ buildWorker (gaspi_timeout_t timeout_ms)
 
   if (gaspi_init_ib_core () != 0)
     return GASPI_ERROR;
+
   if (gaspi_recv_ib_info (0) != 0)
     {
       shutdown (glb_gaspi_ctx.sockfd[0], 2);
@@ -1358,8 +1388,10 @@ pgaspi_cpu_frequency (gaspi_float * const cpu_mhz)
 {
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
-
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 #ifdef DEBUG
   gaspi_verify_null_ptr(cpu_mhz);
 #endif
