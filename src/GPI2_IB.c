@@ -575,6 +575,13 @@ gaspi_init_ib_core ()
 
   glb_gaspi_ctx_ib.qpGroups =
     (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
+#ifdef DEBUG
+  if(glb_gaspi_ctx_ib.qpGroups == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return -1;
+    }
+#endif
 
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
@@ -613,6 +620,14 @@ gaspi_init_ib_core ()
 
   glb_gaspi_ctx_ib.qpP =
     (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
+#ifdef DEBUG
+  if(glb_gaspi_ctx_ib.qpP == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return -1;
+    }
+#endif
+
   qpi_attr.send_cq = glb_gaspi_ctx_ib.scqP;
   qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqP;
   qpi_attr.srq = glb_gaspi_ctx_ib.srqP;
@@ -711,8 +726,24 @@ gaspi_init_ib_core ()
 
   glb_gaspi_ctx_ib.lrcd =
     (gaspi_rc_all *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_all));
+#ifdef DEBUG
+  if(glb_gaspi_ctx_ib.lrcd == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return -1;
+    }
+#endif
+
   glb_gaspi_ctx_ib.rrcd =
     (gaspi_rc_all *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_all));
+#ifdef DEBUG
+  if(glb_gaspi_ctx_ib.rrcd == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return -1;
+    }
+#endif
+
 
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
@@ -914,11 +945,27 @@ gaspi_init_ib_core ()
 
   glb_gaspi_group_ib[0].rank_grp =
     (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
+#ifdef DEBUG
+  if(glb_gaspi_group_ib[0].rank_grp == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return -1;
+    }
+#endif
+
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     glb_gaspi_group_ib[0].rank_grp[i] = i;
 
   glb_gaspi_group_ib[0].rrcd =
     (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
+#ifdef DEBUG
+  if(glb_gaspi_group_ib[0].rrcd == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return -1;
+    }
+#endif
+
   memset (glb_gaspi_group_ib[0].rrcd, 0,
 	  glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
 
@@ -1399,11 +1446,27 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   glb_gaspi_group_ib[id].rank_grp =
     (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
+#ifdef DEBUG
+  if(glb_gaspi_group_ib[id].rank_grp == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      goto errL;
+    }
+#endif
+
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     glb_gaspi_group_ib[id].rank_grp[i] = -1;
 
   glb_gaspi_group_ib[id].rrcd =
     (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
+#ifdef DEBUG
+  if(glb_gaspi_group_ib[id].rrcd == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      goto errL;
+    }
+#endif
+
   memset (glb_gaspi_group_ib[id].rrcd, 0,
 	  glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
 
@@ -1877,6 +1940,14 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     {
       glb_gaspi_ctx_ib.rrmd[segment_id] =
 	(gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+#ifdef DEBUG
+      if(glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
+	{
+	  gaspi_print_error("Memory allocation failed (malloc)");
+	  goto errL;
+	}
+#endif
+
 
       memset (glb_gaspi_ctx_ib.rrmd[segment_id], 0,
 	      glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
@@ -2065,6 +2136,14 @@ gaspi_seg_reg_sn (const gaspi_sn_packet snp)
     {
       glb_gaspi_ctx_ib.rrmd[snp.seg_id] =
 	(gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+#ifdef DEBUG
+      if(glb_gaspi_ctx_ib.rrmd[snp.seg_id] == NULL)
+	{
+	  gaspi_print_error("Memory allocation failed (malloc)");
+	  return -1;
+	}
+#endif
+      
       memset (glb_gaspi_ctx_ib.rrmd[snp.seg_id], 0,
 	      glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
     }

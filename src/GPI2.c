@@ -1027,12 +1027,23 @@ buildWorker (gaspi_timeout_t timeout_ms)
   if (glb_gaspi_ctx.hn)
     free (glb_gaspi_ctx.hn);
   glb_gaspi_ctx.hn = (char *) calloc (glb_gaspi_ctx.tnc, 64);
+
   if (glb_gaspi_ctx.p_off)
     free (glb_gaspi_ctx.p_off);
   glb_gaspi_ctx.p_off = (char *) calloc (glb_gaspi_ctx.tnc, 1);
+
   if (glb_gaspi_ctx.sockfd)
     free (glb_gaspi_ctx.sockfd);
   glb_gaspi_ctx.sockfd = (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
+
+#ifdef DEBUG
+  if(glb_gaspi_ctx.sockfd == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return GASPI_ERROR;
+    }
+#endif
+
 
   int size = glb_gaspi_ctx.tnc * 64;
 
