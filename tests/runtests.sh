@@ -9,7 +9,7 @@ TESTS_PASS=0
 Results=1 #if we want to look at the results/output
 Time=1
 opts_used=0
-
+LOG_FILE=runtests_$(date -Idate).log
 #Functions
 exit_timeout(){
     echo "Stop this program"
@@ -43,8 +43,8 @@ run_test(){
 	$GASPI_RUN $PWD/bin/$1 &> results/$1-$(date -Idate).dat &
 	PID=$!
     else
-
-	$GASPI_RUN $PWD/bin/$1 $TEST_ARGS > /dev/null 2>&1 &
+	echo "=================================== $1 ===================================" >> $LOG_FILE 2>&1 &
+	$GASPI_RUN $PWD/bin/$1 $TEST_ARGS >> $LOG_FILE 2>&1 &
 	PID=$!
     fi
 
@@ -76,10 +76,9 @@ run_test(){
 trap exit_timeout TERM INT QUIT
 
 #Script starts here
-while getopts "vpt" o ; do  
+while getopts "vt" o ; do  
     case $o in  
-	v ) Results=1;opts_used=$[$opts_used + 1];;
-	p ) Plot=1;opts_used=$[$opts_used + 1];;
+	v ) Results=1;opts_used=$[$opts_used + 1];echo "" > $LOG_FILE ;;
 	t ) Time=0;;
     esac  
 done
@@ -114,14 +113,17 @@ if [ $HAS_NUMA == 1 ]; then
 fi
 #run them
 for i in $TESTS
-  do
-  if [ `find $PWD/bin/ -iname $i ` ]; then 
-      run_test $i 
-      NUM_TESTS=$(($NUM_TESTS+1))
-      sleep 1
-  else
-      echo "Test $i does not exist."
-  fi
+do
+    if [ "$i" == "-v" ]; then
+	continue
+    fi
+    if [ `find $PWD/bin/ -iname $i ` ]; then 
+	run_test $i 
+	NUM_TESTS=$(($NUM_TESTS+1))
+	sleep 1
+    else
+	echo "Test $i does not exist."
+    fi
 done
 
 killall sleep
