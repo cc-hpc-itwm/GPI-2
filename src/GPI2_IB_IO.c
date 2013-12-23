@@ -488,7 +488,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
 #ifdef DEBUG
   if (glb_gaspi_ctx_ib.rrmd[segment_id_remote] == NULL)
     {
-      gaspi_printf("Debug: Invalid remote segment: %u (gaspi_notify)\n". segment_id_remote);    
+      gaspi_printf("Debug: Invalid remote segment: %u (gaspi_notify)\n", segment_id_remote);    
       return GASPI_ERROR;
     }
   
