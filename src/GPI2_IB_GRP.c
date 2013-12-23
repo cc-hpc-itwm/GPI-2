@@ -27,7 +27,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       return GASPI_ERROR;
     }
   
-  if (g >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[g].id == -1 )
+  if (g >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[g].id < 0 )
     {
       gaspi_printf("Debug: Invalid group %u (gaspi_barrier)\n", g);
       return GASPI_ERROR;
@@ -534,7 +534,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
       return GASPI_ERROR;
     }
     
-  if (g >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[g].id == -1 )
+  if (g >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[g].id < 0 )
     {
       gaspi_printf("Debug: Invalid group %u (gaspi_allreduce)\n", g);
       return GASPI_ERROR;

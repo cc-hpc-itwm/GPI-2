@@ -19,6 +19,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef GPI2_UTILITY_H
 #define GPI2_UTILITY_H
 
+
+
 float
 gaspi_get_cpufreq ()
 {
@@ -135,16 +137,18 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 #endif
 
 //internal forward declarations
-gaspi_return_t buildMaster (gaspi_timeout_t timeout_ms);
-gaspi_return_t buildWorker (gaspi_timeout_t timeout_ms);
-void *gaspi_sn_thread (void *arg);
 int gaspi_init_ib_core ();
 int gaspi_cleanup_ib_core ();
-int gaspi_send_ib_info (const int idx);
-int gaspi_recv_ib_info (const int idx);
-int gaspi_connect_context (const int idx);
+int gaspi_connect_context(const int idx);
 void gaspi_init_collectives ();
-void gaspi_init_master_grp ();
-int gaspi_seg_reg_sn (const gaspi_sn_packet snp);
+char *gaspi_get_hn (const unsigned int id);
+int  gaspi_create_endpoint(const int i);
+
+ulong gaspi_load_ulong(volatile ulong *ptr){
+  ulong v=*ptr;
+  asm volatile("" ::: "memory");
+  return v;
+}
+
 
 #endif

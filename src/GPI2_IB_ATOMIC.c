@@ -220,6 +220,8 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 	    qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].
 					wr_id] = 1;
 	  unlock_gaspi (&glb_gaspi_group_ib[0].gl);
+	  gaspi_printf("Debug: Failed request to %u.\n",
+		       glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
 	  return GASPI_ERROR;
 	}
     }

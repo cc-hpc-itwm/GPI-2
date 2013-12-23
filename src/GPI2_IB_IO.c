@@ -488,7 +488,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
 #ifdef DEBUG
   if (glb_gaspi_ctx_ib.rrmd[segment_id_remote] == NULL)
     {
-      gaspi_printf("Debug: Invalid remote segment: %u (gaspi_notify)\n". segment_id_remote);    
+      gaspi_printf("Debug: Invalid remote segment: %u (gaspi_notify)\n", segment_id_remote);    
       return GASPI_ERROR;
     }
   
@@ -512,9 +512,8 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
-  slistN.addr =
-    (uintptr_t) (glb_gaspi_group_ib[0].buf + NOTIFY_OFF_LOCAL +
-		 notification_id * 4);
+  slistN.addr = (uintptr_t) (glb_gaspi_ctx_ib.nsrc.buf + notification_id * 4);
+
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = 4;
@@ -732,9 +731,8 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
   swr.send_flags = IBV_SEND_SIGNALED;
   swr.next = &swrN;
 
-  slistN.addr =
-    (uintptr_t) (glb_gaspi_group_ib[0].buf + NOTIFY_OFF_LOCAL +
-		 notification_id * 4);
+  slistN.addr = (uintptr_t) (glb_gaspi_ctx_ib.nsrc.buf + notification_id * 4);
+
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = 4;
@@ -845,9 +843,8 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 	swr[i].next = &swr[i + 1];
     }
 
-  slistN.addr =
-    (uintptr_t) (glb_gaspi_group_ib[0].buf + NOTIFY_OFF_LOCAL +
-		 notification_id * 4);
+  slistN.addr = (uintptr_t) (glb_gaspi_ctx_ib.nsrc.buf + notification_id * 4);
+
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = 4;
