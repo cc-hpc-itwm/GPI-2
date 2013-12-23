@@ -27,8 +27,21 @@ Examples:
 	./runtests.sh 
 	runs all available tests.
 
-	./runtests.sh gpiapp
+	./runtests.sh gpiapp.bin
 	runs a particular test (gpiapp).
+
+When testing GPI-2 or debugging a test, it may helpful to view the
+output of some or all tests. Hence, the previous examples can be
+executed as:
+
+	./runtests.sh -v
+	runs all available tests, creating a log file.
+
+	./runtests.sh -v gpiapp.bin
+	runs a particular test (gpiapp), creating a log file.
+
+After the run, a log file (.log) will be available in the same
+directory.
 
 Definitions file
 ================
