@@ -71,6 +71,8 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
   swr.wr.atomic.remote_addr =
     glb_gaspi_ctx_ib.rrmd[segment_id][rank].addr + NOTIFY_OFFSET + offset;
 
+
+
   swr.wr.atomic.rkey = glb_gaspi_ctx_ib.rrmd[segment_id][rank].rkey;
   swr.wr.atomic.compare_add = val_add;
 
@@ -110,6 +112,10 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 	    qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].
 					wr_id] = 1;
 	  unlock_gaspi (&glb_gaspi_group_ib[0].gl);
+	  gaspi_printf("Debug: Failed request to %u : %s.\n",
+		       glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 
+		       ibv_wc_status_str(glb_gaspi_ctx_ib.wc_grp_send[i].status));
+
 	  return GASPI_ERROR;
 	}
     }
@@ -174,6 +180,7 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
     return GASPI_TIMEOUT;
 
   slist.addr = (uintptr_t) (glb_gaspi_group_ib[0].buf + NEXT_OFFSET);
+
   slist.length = 8;
   slist.lkey = glb_gaspi_group_ib[0].mr->lkey;
 
@@ -220,8 +227,9 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 	    qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].
 					wr_id] = 1;
 	  unlock_gaspi (&glb_gaspi_group_ib[0].gl);
-	  gaspi_printf("Debug: Failed request to %u.\n",
-		       glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
+ 	  gaspi_printf("Debug: Failed request to %u : %s.\n",
+		       glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 
+		       ibv_wc_status_str(glb_gaspi_ctx_ib.wc_grp_send[i].status));
 	  return GASPI_ERROR;
 	}
     }

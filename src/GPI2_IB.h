@@ -1,3 +1,21 @@
+/*
+Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013
+
+This file is part of GPI-2.
+
+GPI-2 is free software; you can redistribute it
+and/or modify it under the terms of the GNU General Public License
+version 3 as published by the Free Software Foundation.
+
+GPI-2 is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #ifndef GPI2_IB_H
 #define GPI2_IB_H
 
@@ -74,7 +92,7 @@ typedef struct{
   struct ibv_mr *mr;
   int id;
   unsigned int size;
-  gaspi_lock gl;
+  gaspi_lock_t gl;
   volatile unsigned char barrier_cnt;
   volatile unsigned char togle;
   int rank, tnc;

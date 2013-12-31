@@ -19,8 +19,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef GPI2_UTILITY_H
 #define GPI2_UTILITY_H
 
-
-
 float
 gaspi_get_cpufreq ()
 {
@@ -31,7 +29,6 @@ gaspi_get_cpufreq ()
   f = fopen ("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
   if (f)
     {
-
       if (fgets (buf, sizeof (buf), f))
 	{
 	  uint m;
@@ -67,10 +64,10 @@ gaspi_get_cpufreq ()
 	      mhz = m;
 	      continue;
 	    }
-	}			//while
+	}
 
       fclose (f);
-    }				//if
+    }
 
   return mhz;
 }
@@ -144,7 +141,8 @@ void gaspi_init_collectives ();
 char *gaspi_get_hn (const unsigned int id);
 int  gaspi_create_endpoint(const int i);
 
-ulong gaspi_load_ulong(volatile ulong *ptr){
+ulong gaspi_load_ulong(volatile ulong *ptr)
+{
   ulong v=*ptr;
   asm volatile("" ::: "memory");
   return v;

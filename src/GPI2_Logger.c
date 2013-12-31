@@ -1,6 +1,3 @@
-#include <string.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 /*
 Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013
 
@@ -18,12 +15,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
-
-#include <sys/socket.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <pthread.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
 
 #define PORT_LOGGER 17825
 
@@ -35,7 +34,6 @@ static int gaspi_log_socket = 0;
 static inline void
 _check_log_init(void)
 {
-
   if (gaspi_master_log_init == 0)
     {
       gaspi_master_log_init = 1;

@@ -123,7 +123,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define GASPI_INT_PORT    (12121)
 
-
 #define GASPI_VERSION     (GASPI_MAJOR_VERSION + GASPI_MINOR_VERSION/10.0f + GASPI_REVISION/100.0f)
 
 #define COLL_MEM_SEND     (131136)
@@ -159,14 +158,15 @@ typedef struct
 {
   ALIGN64 volatile unsigned char lock;
   char dummy[63];
-} gaspi_lock;
+} gaspi_lock_t;
 
 enum
 { MASTER_PROC = 1, WORKER_PROC = 2 };
 
 
 
-typedef struct{
+typedef struct
+{
   int localSocket;
   int procType;
   int rank;
@@ -181,9 +181,9 @@ typedef struct{
   int mseg_cnt;
   unsigned char *qp_state_vec[GASPI_MAX_QP + 3];
   char mtyp[64];
-  gaspi_lock lockPS;
-  gaspi_lock lockPR;
-  gaspi_lock lockC[GASPI_MAX_QP];
+  gaspi_lock_t lockPS;
+  gaspi_lock_t lockPR;
+  gaspi_lock_t lockC[GASPI_MAX_QP];
   pthread_t snt;
 } gaspi_context;
 
@@ -217,7 +217,6 @@ static gaspi_config_t glb_gaspi_cfg = {
 
 static gaspi_context glb_gaspi_ctx;
 
-
 volatile int glb_gaspi_init = 0;
 volatile int glb_gaspi_sn_init = 0;
 volatile int glb_gaspi_ib_init = 0;
@@ -245,7 +244,7 @@ inline __attribute__ ((always_inline))
 
 //thread2core pinning assumed
 inline __attribute__ ((always_inline))
-     int lock_gaspi_tout (gaspi_lock * l, const unsigned int timeout_ms)
+     int lock_gaspi_tout (gaspi_lock_t * l, const unsigned int timeout_ms)
 {
 
   if (timeout_ms == GASPI_BLOCK)
@@ -285,7 +284,7 @@ inline __attribute__ ((always_inline))
 }
 
 inline __attribute__ ((always_inline))
-     void unlock_gaspi (gaspi_lock * l)
+     void unlock_gaspi (gaspi_lock_t * l)
 {
   gaspi_atomic_xchg (&l->lock, 0);
 }
@@ -294,7 +293,7 @@ inline __attribute__ ((always_inline))
 
 //thread2core pinning assumed
 inline __attribute__ ((always_inline))
-     int lock_gaspi_tout (gaspi_lock * l, const unsigned int timeout_ms)
+     int lock_gaspi_tout (gaspi_lock_t * l, const unsigned int timeout_ms)
 {
 
   if (timeout_ms == GASPI_BLOCK)
@@ -334,17 +333,17 @@ inline __attribute__ ((always_inline))
 }
 
 inline __attribute__ ((always_inline))
-     void unlock_gaspi (gaspi_lock * l)
+     void unlock_gaspi (gaspi_lock_t * l)
 {
   __sync_lock_release (&l->lock);
 }
 
 #endif // MIC
 
-gaspi_lock glb_gaspi_ctx_lock  = GASPILOCK_UNLOCKED;
-gaspi_lock gaspi_create_lock   = GASPILOCK_UNLOCKED;
-gaspi_lock gaspi_ccontext_lock = GASPILOCK_UNLOCKED;
-gaspi_lock gaspi_mseg_lock     = GASPILOCK_UNLOCKED;
+gaspi_lock_t glb_gaspi_ctx_lock  = GASPILOCK_UNLOCKED;
+gaspi_lock_t gaspi_create_lock   = GASPILOCK_UNLOCKED;
+gaspi_lock_t gaspi_ccontext_lock = GASPILOCK_UNLOCKED;
+gaspi_lock_t gaspi_mseg_lock     = GASPILOCK_UNLOCKED;
 
 gaspi_return_t
 pgaspi_version (float *const version)
@@ -490,342 +489,398 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
   return GASPI_ERROR;
 }
 
-
-gaspi_return_t pgaspi_proc_init (const gaspi_timeout_t timeout_ms){
-
+static inline int
+_handle_env()
+{
   char *socketPtr, *typePtr, *mfilePtr, *numaPtr;
+  socketPtr = getenv ("GASPI_SOCKET");
+  numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
+  typePtr = getenv ("GASPI_TYPE");
+  mfilePtr = getenv ("GASPI_MFILE");
+  
+  if(socketPtr) glb_gaspi_ctx.localSocket = MIN(MAX(atoi(socketPtr),0),3);
+  
+  
+  if(numaPtr)
+    {
+      
+      cpu_set_t sock_mask;
+      if(gaspi_get_affinity_mask (glb_gaspi_ctx.localSocket, &sock_mask) < 0)
+	{
+	  gaspi_print_error ("Failed to get affinity mask");
+	}
+      else
+	{
+	  char mtyp[16];
+	  gaspi_machine_type (mtyp);
+	  if(strncmp (mtyp, "x86_64", 6) == 0){
+	    if(sched_setaffinity (0, sizeof (cpu_set_t), &sock_mask) != 0)
+	      {
+		gaspi_print_error ("Failed to set affinity (NUMA)");
+	      }
+	  }
+	}
+    }
+  
+  
+  if(!typePtr)
+    {
+      gaspi_print_error ("No node type defined (GASPI_TYPE)");
+      return -1;
+    }
+  
+  
+  if(strcmp (typePtr, "GASPI_WORKER") == 0)
+    glb_gaspi_ctx.procType = WORKER_PROC;
+  else if (strcmp (typePtr, "GASPI_MASTER") == 0)
+    glb_gaspi_ctx.procType = MASTER_PROC;
+  else{
+    gaspi_print_error ("Incorrect node type!\n");
+    return -1;
+  }
+
+  if (mfilePtr)
+    snprintf (glb_gaspi_ctx.mfile, 1024, "%s", mfilePtr);
+
+  return 0;
+}
+
+gaspi_return_t
+pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
+{
+
+
   gaspi_return_t eret = GASPI_ERROR;
   int i;
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
-  if(glb_gaspi_sn_init==0){
+  if(glb_gaspi_sn_init==0)
+    {
 
-    glb_gaspi_ctx.lockPS.lock = 0;
-    glb_gaspi_ctx.lockPR.lock = 0;
+      glb_gaspi_ctx.lockPS.lock = 0;
+      glb_gaspi_ctx.lockPR.lock = 0;
     
-    for (i = 0; i < glb_gaspi_cfg.queue_num; i++)
-      glb_gaspi_ctx.lockC[i].lock = 0;
+      for (i = 0; i < glb_gaspi_cfg.queue_num; i++)
+	glb_gaspi_ctx.lockC[i].lock = 0;
 
-    memset (&glb_gaspi_ctx, 0, sizeof (gaspi_context));
+      memset (&glb_gaspi_ctx, 0, sizeof (gaspi_context));
 
-    struct utsname mbuf;
-    if (uname (&mbuf) == 0)
-      {
-	snprintf (glb_gaspi_ctx.mtyp, 64, "%s", mbuf.machine);
-      }
-
-    //timing
-    glb_gaspi_ctx.mhz = gaspi_get_cpufreq ();
-    if (glb_gaspi_ctx.mhz == 0.0f)
-      {
-	gaspi_print_error ("Failed to get CPU frequency");
-	goto errL;
-      }
-  
-    glb_gaspi_ctx.cycles_to_msecs = 1.0f / (glb_gaspi_ctx.mhz * 1000.0f);
-  
-  
-    socketPtr = getenv ("GASPI_SOCKET");
-    numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
-    typePtr = getenv ("GASPI_TYPE");
-    mfilePtr = getenv ("GASPI_MFILE");
-  
-    if(socketPtr) glb_gaspi_ctx.localSocket = MIN(MAX(atoi(socketPtr),0),3);
-  
-  
-    if(numaPtr){
-  
-      cpu_set_t sock_mask;
-      if(gaspi_get_affinity_mask (glb_gaspi_ctx.localSocket, &sock_mask) < 0){
-	gaspi_print_error ("Failed to get affinity mask");
-      }
-      else{
-	char mtyp[16];
-	gaspi_machine_type (mtyp);
-	if(strncmp (mtyp, "x86_64", 6) == 0){
-	  if(sched_setaffinity (0, sizeof (cpu_set_t), &sock_mask) != 0){
-	    gaspi_print_error ("Failed to set affinity (NUMA)");
-	  }
-	}
-      }
-    }
-  
-  
-    if(!typePtr){
-      gaspi_print_error ("No node type defined (GASPI_TYPE)");
-      goto errL;
-    }
-  
-  
-    if(strcmp (typePtr, "GASPI_WORKER") == 0)
-      glb_gaspi_ctx.procType = WORKER_PROC;
-    else if (strcmp (typePtr, "GASPI_MASTER") == 0)
-      glb_gaspi_ctx.procType = MASTER_PROC;
-    else{
-      gaspi_print_error ("Incorrect node type!\n");
-      goto errL;
-    }
-
-    if (mfilePtr)
-      {
-	snprintf (glb_gaspi_ctx.mfile, 1024, "%s", mfilePtr);
-      }
-  
-    //start sn_backend
-    if(pthread_create(&glb_gaspi_ctx.snt, NULL, gaspi_sn_backend, NULL) != 0){
-      eret = GASPI_ERROR;
-      goto errL;
-    }
-  
-    glb_gaspi_sn_init = 1;
-
-  }//glb_gaspi_sn_init
-
-
-
-  if(glb_gaspi_ctx.procType == MASTER_PROC){
-
-    if(glb_gaspi_ib_init==0){
-
-      //check mfile
-      if(glb_gaspi_ctx.mfile == NULL){
-        gaspi_print_error("No machinefile provided (env var: GASPI_MFILE)");
-        goto errL;
-      }
-      
-      if(access (glb_gaspi_ctx.mfile, R_OK) == -1){
-        gaspi_print_error ("Incorrect permissions of machinefile");
-        goto errL;
-      }
-  
-      //read hostnames
-      char *line = NULL;
-      size_t len = 0;
-      int read;
-
-      FILE *fp = fopen (glb_gaspi_ctx.mfile, "r");
-      if (fp == NULL)
+      struct utsname mbuf;
+      if (uname (&mbuf) == 0)
 	{
-	  gaspi_print_error("Failed to open machinefile");
+	  snprintf (glb_gaspi_ctx.mtyp, 64, "%s", mbuf.machine);
+	}
+
+      //timing
+      glb_gaspi_ctx.mhz = gaspi_get_cpufreq ();
+      if (glb_gaspi_ctx.mhz == 0.0f)
+	{
+	  gaspi_print_error ("Failed to get CPU frequency");
 	  goto errL;
 	}
+  
+      glb_gaspi_ctx.cycles_to_msecs = 1.0f / (glb_gaspi_ctx.mhz * 1000.0f);
 
-      glb_gaspi_ctx.tnc = 0;
-
-      while ((read = getline (&line, &len, fp)) != -1)
+      //handle environment  
+      if(_handle_env())
 	{
-
-	  //we assume a single hostname per line
-	  if ((read < 2) || (read > 64))
-	    continue;
-	  glb_gaspi_ctx.tnc++;
-
-	  if (glb_gaspi_ctx.tnc >= GASPI_MAX_NODES)
-	    break;
+	  gaspi_print_error("Failed to handle environment");
+	  goto errL;
 	}
-
-      rewind (fp);
   
-      if(glb_gaspi_ctx.hn_poff) free (glb_gaspi_ctx.hn_poff);
-  
-      glb_gaspi_ctx.hn_poff = (char *) calloc (glb_gaspi_ctx.tnc, 65);
-  
-  
-#ifdef DEBUG
-      if(glb_gaspi_ctx.hn_poff == NULL){
-        gaspi_print_error("Debug: Failed to allocate memory");
-        goto errL;
-      }
-#endif      
-  
-      glb_gaspi_ctx.poff = glb_gaspi_ctx.hn_poff+glb_gaspi_ctx.tnc*64;
-        
-      int id = 0;
-      while((read = getline (&line, &len, fp)) != -1){
-        //we assume a single hostname per line
-        if((read < 2) || (read >= 64)) continue;
-  
-        int inList = 0;
+      //start sn_backend
+      if(pthread_create(&glb_gaspi_ctx.snt, NULL, gaspi_sn_backend, NULL) != 0)
+	{
+	  eret = GASPI_ERROR;
+	  goto errL;
+	}
     
-        for(i = 0; i < id; i++){
-          //already in list ?
-          const int hnlen = MAX (strlen (glb_gaspi_ctx.hn_poff + i * 64), MIN (strlen (line) - 1, 63));
-          if(strncmp (glb_gaspi_ctx.hn_poff + i * 64, line, hnlen) == 0){
-            inList++;
-          }
-        }
+      glb_gaspi_sn_init = 1;
+
+    }//glb_gaspi_sn_init
+
+  if(glb_gaspi_ctx.procType == MASTER_PROC)
+    {
+
+      if(glb_gaspi_ib_init==0)
+	{
+	  //check mfile
+	  if(glb_gaspi_ctx.mfile == NULL)
+	    {
+	      gaspi_print_error("No machinefile provided (env var: GASPI_MFILE)");
+	      goto errL;
+	    }
+	  
+	  if(access (glb_gaspi_ctx.mfile, R_OK) == -1)
+	    {
+	      gaspi_print_error ("Incorrect permissions of machinefile");
+	      goto errL;
+	    }
+	  
+	  //read hostnames
+	  char *line = NULL;
+	  size_t len = 0;
+	  int read;
+	  
+	  FILE *fp = fopen (glb_gaspi_ctx.mfile, "r");
+	  if (fp == NULL)
+	    {
+	      gaspi_print_error("Failed to open machinefile");
+	      goto errL;
+	    }
+
+	  glb_gaspi_ctx.tnc = 0;
+	  
+	  while ((read = getline (&line, &len, fp)) != -1)
+	    {
+	      
+	      //we assume a single hostname per line
+	      if ((read < 2) || (read > 64))
+		continue;
+	      glb_gaspi_ctx.tnc++;
+	      
+	      if (glb_gaspi_ctx.tnc >= GASPI_MAX_NODES)
+		break;
+	    }
+	  
+	  rewind (fp);
+	  
+	  if(glb_gaspi_ctx.hn_poff)
+	    free (glb_gaspi_ctx.hn_poff);
+	  
+	  glb_gaspi_ctx.hn_poff = (char *) calloc (glb_gaspi_ctx.tnc, 65);
   
-        glb_gaspi_ctx.poff[id] = inList;
-  
-        strncpy (glb_gaspi_ctx.hn_poff + id * 64, line, MIN (read - 1, 63));
-        id++; 
-        
-        if(id >= GASPI_MAX_NODES) break;
-      }
-  
-      fclose (fp);
-  
-      if(line) free (line);
-      //master
-      glb_gaspi_ctx.rank = 0;
-      glb_gaspi_ctx.tnc = glb_gaspi_ctx.tnc;
-  
-      if(glb_gaspi_ctx.sockfd) free(glb_gaspi_ctx.sockfd);
-  
-      glb_gaspi_ctx.sockfd = (int*) malloc (glb_gaspi_ctx.tnc * sizeof (int));
   
 #ifdef DEBUG
-      if(glb_gaspi_ctx.sockfd == NULL){
-        gaspi_print_error("Debug: Failed to allocate memory");
-        goto errL;
-      }
+	  if(glb_gaspi_ctx.hn_poff == NULL)
+	    {
+	      gaspi_print_error("Debug: Failed to allocate memory");
+	      goto errL;
+	    }
 #endif      
+	  
+	  glb_gaspi_ctx.poff = glb_gaspi_ctx.hn_poff+glb_gaspi_ctx.tnc*64;
+        
+	  int id = 0;
+	  while((read = getline (&line, &len, fp)) != -1)
+	    {
+	      //we assume a single hostname per line
+	      if((read < 2) || (read >= 64)) continue;
+	      
+	      int inList = 0;
+	      
+	      for(i = 0; i < id; i++)
+		{
+		  //already in list ?
+		  const int hnlen = MAX (strlen (glb_gaspi_ctx.hn_poff + i * 64), MIN (strlen (line) - 1, 63));
+		  if(strncmp (glb_gaspi_ctx.hn_poff + i * 64, line, hnlen) == 0){
+		    inList++;
+		  }
+		}
+	      
+	      glb_gaspi_ctx.poff[id] = inList;
+	      
+	      strncpy (glb_gaspi_ctx.hn_poff + id * 64, line, MIN (read - 1, 63));
+	      id++; 
+	      
+	      if(id >= GASPI_MAX_NODES) break;
+	    }
   
-      for(i=0;i<glb_gaspi_ctx.tnc;i++) 
-	glb_gaspi_ctx.sockfd[i]=-1;
+	  fclose (fp);
+	  
+	  if(line) free (line);
+	  //master
+	  glb_gaspi_ctx.rank = 0;
+	  glb_gaspi_ctx.tnc = glb_gaspi_ctx.tnc;
+	  
+	  if(glb_gaspi_ctx.sockfd) free(glb_gaspi_ctx.sockfd);
   
-      if(gaspi_init_ib_core()!=GASPI_SUCCESS)
+	  glb_gaspi_ctx.sockfd = (int*) malloc (glb_gaspi_ctx.tnc * sizeof (int));
+	  
+#ifdef DEBUG
+	  if(glb_gaspi_ctx.sockfd == NULL)
+	    {
+	      gaspi_print_error("Debug: Failed to allocate memory");
+	      goto errL;
+	    }
+#endif      
+	  
+	  for(i=0;i<glb_gaspi_ctx.tnc;i++) 
+	    glb_gaspi_ctx.sockfd[i]=-1;
+  
+	  if(gaspi_init_ib_core()!=GASPI_SUCCESS)
+	    {
+	      eret=GASPI_ERROR;
+	      goto errL;
+	    }
+	  
+	}//glb_gaspi_ib_init
+      
+      struct timeb t0,t1;
+      ftime(&t0);
+      
+      for(i=0;i<glb_gaspi_ctx.tnc;i++)
+	{
+	  if(glb_gaspi_ctx.sockfd[i] != -1)
+	    continue;
+	  
+	  while(glb_gaspi_ctx.sockfd[i]==-1)
+	    {
+	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),GASPI_INT_PORT+glb_gaspi_ctx.poff[i],1000);
+	      
+	      if(glb_gaspi_ctx.sockfd[i]==-1)
+		{
+		  ftime(&t1);
+		  const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
+		  
+		  if(delta_ms > timeout_ms)
+		    {
+		      eret=GASPI_TIMEOUT;
+		      goto errL;
+		    }
+		}
+	      else
+		{
+		  if(i > 0)
+		    {//we already have everything
+		      gaspi_cd_header cdh;
+		      cdh.op_len=glb_gaspi_ctx.tnc*65;
+		      cdh.op=GASPI_SN_TOPOLOGY;
+		      cdh.rank=i;
+		      cdh.tnc=glb_gaspi_ctx.tnc;
+		      int ret;
+		      if( (ret=write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header)))!=sizeof(gaspi_cd_header))
+			{
+			  printf("write failed:%d !\n",ret);
+			  printf("write error ! (%s)\n",(char*)strerror(errno));
+			  eret=GASPI_ERROR;goto errL;
+			}
+		      
+		      if( (ret=write(glb_gaspi_ctx.sockfd[i],glb_gaspi_ctx.hn_poff,glb_gaspi_ctx.tnc*65))!=glb_gaspi_ctx.tnc*65)
+			{
+			  printf("write failed:%d !\n",ret);
+			  printf("write error ! (%s)\n",(char*)strerror(errno));
+			  eret=GASPI_ERROR;goto errL;
+			}
+		    }
+		}
+	    }
+	}
+      
+      
+    }//MASTER_PROC
+
+  else if(glb_gaspi_ctx.procType == WORKER_PROC)
+    {
+      //wait for topo data
+      struct timeb t0,t1;
+      ftime(&t0);
+      while(gaspi_master_topo_data==0)
+	{
+	
+	  gaspi_delay();
+	  
+	  ftime(&t1);
+	  const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
+	  if(delta_ms > timeout_ms)
+	    {
+	      eret=GASPI_TIMEOUT;
+	      goto errL;
+	    }
+	}
+      
+      if(glb_gaspi_ib_init==0)
 	{
 	  eret=GASPI_ERROR;
 	  goto errL;
 	}
-    
-    }//glb_gaspi_ib_init
 
-    struct timeb t0,t1;
-    ftime(&t0);
+      //do connections
+      for(i=0;i<glb_gaspi_ctx.tnc;i++)
+	{
+	  if(glb_gaspi_ctx.sockfd[i]!=-1)
+	    continue;
   
-    for(i=0;i<glb_gaspi_ctx.tnc;i++)
-      {
-	if(glb_gaspi_ctx.sockfd[i]!=-1) continue;
-  
-	while(glb_gaspi_ctx.sockfd[i]==-1)
-	  {
-	  glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),GASPI_INT_PORT+glb_gaspi_ctx.poff[i],1000);
-	  
-	  if(glb_gaspi_ctx.sockfd[i]==-1){
-	    ftime(&t1);
-	    const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
-	    
-	    if(delta_ms > timeout_ms){eret=GASPI_TIMEOUT;
-	      goto errL;
-	    }
-	  }
-	  else
+	  while(glb_gaspi_ctx.sockfd[i]==-1)
 	    {
-	      if(i>0)
-		{//we already have everything
-		  gaspi_cd_header cdh;
-		  cdh.op_len=glb_gaspi_ctx.tnc*65;
-		  cdh.op=12;//topology data
-		  cdh.rank=i;
-		  cdh.tnc=glb_gaspi_ctx.tnc;
-		  int ret;
-		  if( (ret=write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header)))!=sizeof(gaspi_cd_header))
+	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),GASPI_INT_PORT+glb_gaspi_ctx.poff[i],100);
+	    
+	      if(glb_gaspi_ctx.sockfd[i]==-1)
+		{
+		  ftime(&t1);
+		  const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
+		
+		  if(delta_ms > timeout_ms)
 		    {
-		      printf("write failed:%d !\n",ret);
-		      printf("write error ! (%s)\n",(char*)strerror(errno));
-		      eret=GASPI_ERROR;goto errL;
+		      eret=GASPI_TIMEOUT;
+		      goto errL;
 		    }
-		  
-		  if( (ret=write(glb_gaspi_ctx.sockfd[i],glb_gaspi_ctx.hn_poff,glb_gaspi_ctx.tnc*65))!=glb_gaspi_ctx.tnc*65)
-		    {
-		      printf("write failed:%d !\n",ret);
-		      printf("write error ! (%s)\n",(char*)strerror(errno));
-		      eret=GASPI_ERROR;goto errL;
-		    }
-		}//i>0
-	    }//else
-	}//while
-    }//for
-    
-    
-  }//master
-  else if(glb_gaspi_ctx.procType == WORKER_PROC){
-
-    //wait for topo data
-    struct timeb t0,t1;
-    ftime(&t0);
-    while(gaspi_master_topo_data==0){
-
-      gaspi_delay();
-
-      ftime(&t1);
-      const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
-      if(delta_ms > timeout_ms){eret=GASPI_TIMEOUT;goto errL;}
+		}
+	    }
+	}
     }
-
-
-    if(glb_gaspi_ib_init==0){
-      eret=GASPI_ERROR;goto errL;
+  else
+    {
+      gaspi_print_error ("Invalid node type (GASPI_TYP)");
+      goto errL;
     }
-
-    //do connections
-    for(i=0;i<glb_gaspi_ctx.tnc;i++){
-      if(glb_gaspi_ctx.sockfd[i]!=-1) continue;
   
-      while(glb_gaspi_ctx.sockfd[i]==-1){
-        glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),GASPI_INT_PORT+glb_gaspi_ctx.poff[i],100);
-  
-        if(glb_gaspi_ctx.sockfd[i]==-1){
-          ftime(&t1);
-          const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
-  
-          if(delta_ms > timeout_ms){eret=GASPI_TIMEOUT;goto errL;}
-        }
-  
-      }//while
-  
-    }//for
-
-  }
-  else{
-    gaspi_print_error ("Invalid node type (GASPI_TYP)");
-    goto errL;
-  }
-
-  
-
   glb_gaspi_init = 1;
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
+  if(glb_gaspi_cfg.build_infrastructure)
+    {
+      //connect all ranks
+      for(i = glb_gaspi_ctx.rank; i < glb_gaspi_ctx.tnc; i++)
+	{
+	  if(gaspi_connect(i,GASPI_BLOCK)!=GASPI_SUCCESS)
+	    {
+	      gaspi_printf("Connection to %d failed\n", i);
+	      return GASPI_ERROR;
+	    }
+	}
+      
+      //create GASPI_GROUP_ALL
+      if(glb_gaspi_group_ib[GASPI_GROUP_ALL].id==-1)
+	{
+	  gaspi_group_t g0;
+	  if(gaspi_group_create(&g0) != GASPI_SUCCESS)
+	    {
+	      gaspi_print_error("Failed to create group (GASPI_GROUP_ALL)");
+	      return GASPI_ERROR;
+	    }
+	  
+	  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+	    {
+	      if(gaspi_group_add(g0,i) != GASPI_SUCCESS)
+		{
+		  gaspi_print_error("Addition of rank to GASPI_GROUP_ALL failed");
+		  return GASPI_ERROR;
+		}
+	    }
+	}
 
-  if(glb_gaspi_cfg.build_infrastructure){
-    printf("building infrastructure...\n");
+      //commit GASPI_GROUP_ALL
+      const gaspi_group_t g0 = 0;
 
-    //connect all ranks
-    for(i=glb_gaspi_ctx.rank;i<glb_gaspi_ctx.tnc;i++){//this is the right way !
-      if(gaspi_connect(i,GASPI_BLOCK)!=GASPI_SUCCESS) printf("connection to %d failed\n",i);
+      eret = gaspi_group_commit(g0,timeout_ms);
+
+      if(eret == GASPI_SUCCESS)
+	eret = gaspi_barrier(GASPI_GROUP_ALL, timeout_ms);
+
     }
-
-    //create group all (0)
-    if(glb_gaspi_group_ib[0].id==-1){
-      gaspi_group_t g0;
-      if(gaspi_group_create(&g0)!=GASPI_SUCCESS){printf("gaspi_group_create failed !\n");return GASPI_ERROR;}
+  else //dont build_infrastructure
+    {
+      //just reserve GASPI_GROUP_ALL
+      glb_gaspi_ctx.group_cnt = 1;
+      glb_gaspi_group_ib[GASPI_GROUP_ALL].id = -2;//disable
+      eret = GASPI_SUCCESS;
+    }
   
-      for(i=0;i<glb_gaspi_ctx.tnc;i++){
-        if(gaspi_group_add(g0,i)!=GASPI_SUCCESS){printf("gaspi_group_add failed !\n");return GASPI_ERROR;}
-      }
-    }
-
-    const gaspi_group_t g0=0;
-    if((eret=gaspi_group_commit(g0,timeout_ms))!=GASPI_SUCCESS){return eret;}
-
-    //addr
-    eret = gaspi_barrier(GASPI_GROUP_ALL, timeout_ms);
-    return eret;
-
-
-  }
-  else{//reserve group 0
-    glb_gaspi_ctx.group_cnt=1;
-    glb_gaspi_group_ib[0].id=-2;//disable
-  }
-
-  return GASPI_SUCCESS;
-
+  return eret;
+  
  errL:
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return eret;
@@ -833,24 +888,38 @@ gaspi_return_t pgaspi_proc_init (const gaspi_timeout_t timeout_ms){
 
 
 //cleanup
-gaspi_return_t pgaspi_proc_term (const gaspi_timeout_t timeout){
-int i;
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+gaspi_return_t
+pgaspi_proc_term (const gaspi_timeout_t timeout)
+{
+  int i;
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout))
+    return GASPI_TIMEOUT;
 
-  if(glb_gaspi_init == 0) goto errL;
-
-  pthread_kill(glb_gaspi_ctx.snt,SIGSTKFLT);
-
-  if(glb_gaspi_ctx.sockfd!=NULL){
-    for(i=0;i<glb_gaspi_ctx.tnc;i++){
-      shutdown(glb_gaspi_ctx.sockfd[i],2);
-      close(glb_gaspi_ctx.sockfd[i]);
+  if(glb_gaspi_init == 0)
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      goto errL;
     }
+
+  if(pthread_kill(glb_gaspi_ctx.snt,SIGSTKFLT) != 0)
+    {
+      gaspi_print_error("Failed to kill SN thread");
+      goto errL;
+    }
+
+  if(glb_gaspi_ctx.sockfd != NULL)
+    {
+      for(i = 0;i < glb_gaspi_ctx.tnc; i++)
+	{
+	  shutdown(glb_gaspi_ctx.sockfd[i],2);
+	  close(glb_gaspi_ctx.sockfd[i]);
+	}
 
     free(glb_gaspi_ctx.sockfd);
   }
 
-  if(gaspi_cleanup_ib_core()!=GASPI_SUCCESS) goto errL;
+  if(gaspi_cleanup_ib_core() != GASPI_SUCCESS)
+    goto errL;
   
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
@@ -1082,29 +1151,42 @@ pgaspi_statistic_counter_reset (gaspi_statistic_counter_t counter)
   return GASPI_SUCCESS;
 }
 
-gaspi_return_t pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms){
+gaspi_return_t
+pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
+{
+  if(!glb_gaspi_init) 
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
-  if(!glb_gaspi_init) return GASPI_ERROR;
-  if((rank==glb_gaspi_ctx.rank) || (rank>=glb_gaspi_ctx.tnc)) return GASPI_ERROR;
+  if((rank==glb_gaspi_ctx.rank) || (rank>=glb_gaspi_ctx.tnc))
+    {
+      gaspi_print_error("Invalid rank to kill");
+      return GASPI_ERROR;
+    }
 
-  lock_gaspi_tout(&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if(lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
   gaspi_cd_header cdh;
-  cdh.op_len=0;
-  cdh.op=4;//proc_kill
+  cdh.op_len = 0;
+  cdh.op = GASPI_SN_PROC_KILL;
   cdh.rank = glb_gaspi_ctx.rank;
            
   int ret;
-  if((ret=write(glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header)))!=sizeof(gaspi_cd_header)){
-    printf("write failed:%d !\n",ret);
-    printf("write error ! (%s)\n",(char*)strerror(errno));
-    goto errL;
-  }
+  ret = write(glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header));
+  if(ret != sizeof(gaspi_cd_header))
+    {
+      gaspi_print_error("Failed to contact SN thread");
+      gaspi_printf("Error %d: %s\n",ret, (char*) strerror(errno));
+      goto errL;
+    }
 
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
 
-errL:
+ errL:
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return GASPI_ERROR;
 }

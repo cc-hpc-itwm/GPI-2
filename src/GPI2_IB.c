@@ -632,53 +632,68 @@ errL:
 }
 
 
-gaspi_return_t pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms){
-gaspi_return_t eret = GASPI_ERROR;
-//int c;
+gaspi_return_t
+pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
+{
+  gaspi_return_t eret = GASPI_ERROR;
+  //int c;
 
   if(!glb_gaspi_ib_init) return GASPI_ERROR;
 
   const int i=rank;
   if(gaspi_create_endpoint(i)<0) return GASPI_ERROR;
 
+  //TODO: respecti lock timeout
   lock_gaspi_tout(&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
-    if(glb_gaspi_ctx_ib.lrcd[i].cstat) goto okL;//already connected
+  if(glb_gaspi_ctx_ib.lrcd[i].cstat)
+    goto okL;//already connected
 
-    gaspi_cd_header cdh;
-    cdh.op_len=sizeof(gaspi_rc_all);
-    cdh.op=14;//connect
-    cdh.rank = glb_gaspi_ctx.rank;
+  gaspi_cd_header cdh;
+  cdh.op_len=sizeof(gaspi_rc_all);
+  cdh.op=GASPI_SN_CONNECT;
+  cdh.rank = glb_gaspi_ctx.rank;
            
-    int ret;
-    if((ret=write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header)))!=sizeof(gaspi_cd_header)){
-      printf("write failed:%d !\n",ret);
-      printf("write error ! (%s)\n",(char*)strerror(errno));
-      eret=GASPI_ERROR;goto errL;
+  int ret;
+  ret=write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header));
+  if(ret !=sizeof(gaspi_cd_header))
+    {
+      gaspi_print_error("Failed to write");
+      gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+      eret=GASPI_ERROR;
+      goto errL;
     }
 
-    if((ret=write(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all)))!=sizeof(gaspi_rc_all)){
-      printf("write failed:%d !\n",ret);
-      printf("write error ! (%s)\n",(char*)strerror(errno));
-      eret=GASPI_ERROR;goto errL;
+  ret=write(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
+  if(ret != sizeof(gaspi_rc_all))
+    {
+      gaspi_print_error("Failed to write");
+      gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+      eret=GASPI_ERROR;
+      goto errL;
     }
 
-    if((ret=read(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all)))!=sizeof(gaspi_rc_all)){
-      printf("read failed:%d !\n",ret);
-      printf("read error ! (%s)\n",(char*)strerror(errno));
-      eret=GASPI_ERROR;goto errL;
+  ret=read(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all));
+  if(ret != sizeof(gaspi_rc_all))
+    {
+      gaspi_print_error("Failed to read");
+      gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+      eret=GASPI_ERROR;
+      goto errL;
     }
             
-    if(gaspi_connect_context(i)!=0){
-      printf("gaspi_connect_context failed !\n");
-      eret=GASPI_ERROR;goto errL;
+  if(gaspi_connect_context(i) != 0)
+    {
+      gaspi_print_error("Failed to connect context");
+      eret = GASPI_ERROR;
+      goto errL;
     }
 
-okL:
+ okL:
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
 
-errL:
+ errL:
   glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return eret;
@@ -691,39 +706,46 @@ int c;
   if(!glb_gaspi_ib_init) return GASPI_ERROR;
 
   const int i=rank;
- 
+
+  //TODO: respect lock timeout
   lock_gaspi_tout(&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
-  if(glb_gaspi_ctx_ib.lrcd[i].cstat==0) goto errL;//not connected
+  if(glb_gaspi_ctx_ib.lrcd[i].cstat==0)
+    goto errL;//not connected
 
-  if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpGroups[i])){
-    gaspi_print_error ("Failed to destroy QP (libibverbs)");
-    goto errL;
-  }
-
-  for(c = 0; c < glb_gaspi_cfg.queue_num; c++){
-    if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpC[c][i])){
+  if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpGroups[i]))
+    {
       gaspi_print_error ("Failed to destroy QP (libibverbs)");
       goto errL;
     }
-  }
-    
-  if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpP[i])){
-    gaspi_print_error ("Failed to destroy QP (libibverbs)");
-    goto errL;
-  }
 
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
+    {
+      if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpC[c][i]))
+	{
+	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
+	  goto errL;
+	}
+    }
+    
+  if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpP[i]))
+    {
+      gaspi_print_error ("Failed to destroy QP (libibverbs)");
+      goto errL;
+    }
+  
   glb_gaspi_ctx_ib.lrcd[i].qpnGroup = 0;
   glb_gaspi_ctx_ib.lrcd[i].qpnP = 0;
   
-  for(c = 0; c < glb_gaspi_cfg.queue_num; c++){
-    glb_gaspi_ctx_ib.lrcd[i].qpnC[c] = 0;
-  }
-
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
+    {
+      glb_gaspi_ctx_ib.lrcd[i].qpnC[c] = 0;
+    }
+  
   glb_gaspi_ctx_ib.lrcd[i].istat=0;
   glb_gaspi_ctx_ib.lrcd[i].cstat=0;
-
-
+  
+  
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
 
@@ -733,13 +755,18 @@ errL:
 }
 
 
-int gaspi_connect_context(const int i){
+int 
+gaspi_connect_context(const int i)
+{
 
-  if(!glb_gaspi_ib_init) return GASPI_ERROR;
+  if(!glb_gaspi_ib_init)
+    return GASPI_ERROR;
 
+  //TODO: respect lock timeout
   lock_gaspi_tout(&gaspi_ccontext_lock, GASPI_BLOCK);
 
-  if(glb_gaspi_ctx_ib.lrcd[i].cstat) goto okL;//already connected
+  if(glb_gaspi_ctx_ib.lrcd[i].cstat)
+    goto okL;//already connected
 
   struct ibv_qp_attr qp_attr;
   int c;
@@ -890,7 +917,9 @@ errL:
 
 
 
-int gaspi_cleanup_ib_core (){
+int
+gaspi_cleanup_ib_core ()
+{
   int i, c;
 
   if(!glb_gaspi_ib_init) return -1;
@@ -1081,7 +1110,9 @@ int gaspi_cleanup_ib_core (){
 }
 
 
-gaspi_return_t pgaspi_group_create (gaspi_group_t * const group){
+gaspi_return_t
+pgaspi_group_create (gaspi_group_t * const group)
+{
 
   int i, id = GASPI_MAX_GROUPS;
   unsigned int size, page_size;
@@ -1105,7 +1136,12 @@ gaspi_return_t pgaspi_group_create (gaspi_group_t * const group){
   if (id == GASPI_MAX_GROUPS)
     goto errL;
 
-  size = NEXT_OFFSET;
+  //TODO: for now as before
+  if(id == GASPI_GROUP_ALL)
+    size = NEXT_OFFSET + 128 + NOTIFY_OFFSET; 
+  else
+    size = NEXT_OFFSET;
+
   page_size = sysconf (_SC_PAGESIZE);
 
   if (posix_memalign ((void **) &glb_gaspi_group_ib[id].ptr, page_size, size)
@@ -1120,6 +1156,7 @@ gaspi_return_t pgaspi_group_create (gaspi_group_t * const group){
       gaspi_print_error ("Memory locking (mlock) failed");
       goto errL;
     }
+
   memset (glb_gaspi_group_ib[id].buf, 0, size);
 
   glb_gaspi_group_ib[id].mr =
@@ -1225,7 +1262,7 @@ errL:
   return GASPI_ERROR;
 }
 
-int
+static int
 gaspi_comp_ranks (const void *a, const void *b)
 {
   return (*(int *) a - *(int *) b);
@@ -1278,8 +1315,10 @@ errL:
 
 
 
-gaspi_return_t pgaspi_group_commit (const gaspi_group_t group,
-		                    const gaspi_timeout_t timeout_ms){
+gaspi_return_t
+pgaspi_group_commit (const gaspi_group_t group,
+		     const gaspi_timeout_t timeout_ms)
+{
 
 
   int i,r;
@@ -1349,7 +1388,7 @@ gaspi_return_t pgaspi_group_commit (const gaspi_group_t group,
   //one-sided
   gaspi_cd_header cdh;
   cdh.op_len=sizeof (gb);
-  cdh.op=16;//grp check
+  cdh.op=GASPI_SN_GRP_CHECK;
   cdh.rank = group;
   cdh.tnc = gb.tnc;
   cdh.ret = gb.cs;
@@ -1366,62 +1405,71 @@ gaspi_return_t pgaspi_group_commit (const gaspi_group_t group,
         memset(&rem_gb,0,sizeof(rem_gb));
 
         int ret;
-        if((ret=write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header)))!=sizeof(gaspi_cd_header)){
-          printf("write failed:%d !\n",ret);
-          printf("write error ! (%s)\n",(char*)strerror(errno));
-          eret=GASPI_ERROR;goto errL;
+	ret=write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
+        if(ret != sizeof(gaspi_cd_header))
+	  {
+	    gaspi_print_error("Failed to write");
+	    gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+	    eret=GASPI_ERROR;
+	    goto errL;
         }
-    
-	printf("sock %d\n", glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]]);
-        if((ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rem_gb,sizeof(rem_gb)))!=sizeof(rem_gb)){
-          printf("read failed:%d !\n",ret);
-          printf("read error (rem_gb)! (%s)\n",(char*)strerror(errno));
-          eret=GASPI_ERROR;goto errL;
+	
+	ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rem_gb,sizeof(rem_gb));
+        if(ret != sizeof(rem_gb))
+	  {
+	    gaspi_print_error("Failed to read");
+	    gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+	    eret=GASPI_ERROR;
+	    goto errL;
+	  }
+
+        if((rem_gb.ret < 0) || (gb.cs != rem_gb.cs))
+	  { 
+	    ftime(&t1);
+	    const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
+	    if(delta_ms > timeout_ms){eret=GASPI_TIMEOUT;goto errL;}
+	    
+	    //TODO: why not more, why not less
+	    usleep(250000);
+	    //gaspi_delay();
         }
+        else
+	  { 
+	    //connect groups
+	    gaspi_cd_header cdh;
+	    cdh.op_len=sizeof(gaspi_rc_grp);
+	    cdh.op=GASPI_SN_GRP_CONNECT;
+	    cdh.rank = glb_gaspi_ctx.rank;
+	    cdh.ret=group;
+	    
+	    int ret;
+	    ret=write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
+	    if(ret !=sizeof(gaspi_cd_header))
+	      {
+		gaspi_print_error("Failed to write");
+		gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+		glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
+		eret=GASPI_ERROR;
+		goto errL;
+	      }
+	    
+	    ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
+		     &glb_gaspi_group_ib[group].rrcd[glb_gaspi_group_ib[group].rank_grp[i]],
+		     sizeof(gaspi_rc_grp));
 
-        if((rem_gb.ret<0) || (gb.cs!=rem_gb.cs)){ 
-          
-          ftime(&t1);
-          const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
-          if(delta_ms > timeout_ms){eret=GASPI_TIMEOUT;goto errL;}
-
-          usleep(250000);
-          //gaspi_delay();
-
-        }
-        else{ 
-          //connect groups
-          gaspi_cd_header cdh;
-          cdh.op_len=sizeof(gaspi_rc_grp);
-          cdh.op=18;//grp connect
-          cdh.rank = glb_gaspi_ctx.rank;
-          cdh.ret=group;
-
-          int ret;
-          if((ret=write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header)))!=sizeof(gaspi_cd_header)){
-            printf("write failed:%d !\n",ret);
-            printf("write error ! (%s)\n",(char*)strerror(errno));
-            glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
-            eret=GASPI_ERROR;goto errL;
-          }
-
-          if((ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
-                        &glb_gaspi_group_ib[group].rrcd[glb_gaspi_group_ib[group].rank_grp[i]],sizeof(gaspi_rc_grp)))!=sizeof(gaspi_rc_grp)){
-
-            printf("read failed:%d !\n",ret);
-            printf("read error (rc_grp)! (%s)\n",(char*)strerror(errno));
-            glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
-            eret=GASPI_ERROR;goto errL;
-          }
-
-
-          break;
-        }//else
-   
-        }while(1);
-        
+	    if(ret != sizeof(gaspi_rc_grp))
+	      {
+		gaspi_print_error("Failed to read");
+		gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+		glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
+		eret=GASPI_ERROR;
+		goto errL;
+	      }
+	    
+	    break;
+	  }
+      }while(1);
     }//for
-
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
@@ -1523,7 +1571,11 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 
     }
 
-  if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size){printf("already allocated !\n");  goto okL;}
+  if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size)
+    {
+      gaspi_printf("Info: Segment %d already allocated!\n", segment_id);
+      goto okL;
+    }
 
   page_size = sysconf (_SC_PAGESIZE);
 
@@ -1640,10 +1692,11 @@ errL:
 
 
 
-gaspi_return_t pgaspi_segment_register(const gaspi_segment_id_t segment_id,
+gaspi_return_t
+pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 			               const gaspi_rank_t rank,
-			               const gaspi_timeout_t timeout_ms){
-
+			               const gaspi_timeout_t timeout_ms)
+{
 
   if(!glb_gaspi_ib_init) return GASPI_ERROR;
 
@@ -1656,7 +1709,7 @@ gaspi_return_t pgaspi_segment_register(const gaspi_segment_id_t segment_id,
   //seg register
   gaspi_cd_header cdh;
   cdh.op_len=0;// in place
-  cdh.op=20;
+  cdh.op=GASPI_SN_SEG_REGISTER;
   cdh.rank = glb_gaspi_ctx.rank;
   cdh.seg_id = segment_id;
   cdh.rkey=glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].rkey;
@@ -1665,23 +1718,28 @@ gaspi_return_t pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 
 
   int ret;
-  if((ret=write(glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header)))!=sizeof(gaspi_cd_header)){
-    printf("write failed:%d !\n",ret);
-    printf("write error ! (%s)\n",(char*)strerror(errno));
-    glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
-    goto errL;
-  }
+  ret=write(glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header));
+  if(ret != sizeof(gaspi_cd_header))
+    {
+      gaspi_print_error("Failed to write");
+      gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
+      goto errL;
+    }
 
   int rret;
-  if((ret=read(glb_gaspi_ctx.sockfd[rank],&rret,sizeof(int)))!=sizeof(int)){
-    printf("read failed:%d !\n",ret);
-    printf("read error ! (%s)\n",(char*)strerror(errno));
-    glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
+  ret=read(glb_gaspi_ctx.sockfd[rank],&rret,sizeof(int));
+  if(ret !=sizeof(int))
+    {
+      gaspi_print_error("Failed to read");
+      gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
+      goto errL;
+    }
+  
+  if(rret < 0) 
     goto errL;
-  }
-
-  if(rret<0) goto errL;
-
+  
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
 
@@ -1692,17 +1750,22 @@ errL:
 }
 
 //sn-registration
-int gaspi_seg_reg_sn(const gaspi_cd_header snp){
+int
+gaspi_seg_reg_sn(const gaspi_cd_header snp)
+{
 
-  if(!glb_gaspi_ib_init) return GASPI_ERROR;
+  if(!glb_gaspi_ib_init) 
+    return GASPI_ERROR;
 
   lock_gaspi_tout(&gaspi_mseg_lock,GASPI_BLOCK);
 
-  if(glb_gaspi_ctx_ib.rrmd[snp.seg_id] == NULL){
+  if(glb_gaspi_ctx_ib.rrmd[snp.seg_id] == NULL)
+    {
+      glb_gaspi_ctx_ib.rrmd[snp.seg_id] = (gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
 
-    glb_gaspi_ctx_ib.rrmd[snp.seg_id] = (gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
-    if(!glb_gaspi_ctx_ib.rrmd[snp.seg_id]) goto errL;
-
+      if(!glb_gaspi_ctx_ib.rrmd[snp.seg_id]) 
+	goto errL;
+      
     memset(glb_gaspi_ctx_ib.rrmd[snp.seg_id], 0, glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
   }
 
@@ -1763,7 +1826,7 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
   //register segment to all other group members  
   gaspi_cd_header cdh;
   cdh.op_len=0;// in place
-  cdh.op=20;
+  cdh.op=GASPI_SN_SEG_REGISTER;
   cdh.rank = glb_gaspi_ctx.rank;
   cdh.seg_id = segment_id;
   cdh.rkey=glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].rkey;
@@ -1773,65 +1836,83 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 
     //dont write several times !!!
 
-    for(r=1;r<=glb_gaspi_group_ib[group].tnc;r++){
+  for(r=1;r<=glb_gaspi_group_ib[group].tnc;r++)
+    {
       int i = (glb_gaspi_group_ib[group].rank+r)%glb_gaspi_group_ib[group].tnc;
 
-      if(glb_gaspi_group_ib[group].rank_grp[i]==glb_gaspi_ctx.rank){
-        glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_group_ib[group].rank_grp[i]].trans=1; 
-        continue;
-      }
+      if(glb_gaspi_group_ib[group].rank_grp[i]==glb_gaspi_ctx.rank)
+	{
+	  glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_group_ib[group].rank_grp[i]].trans=1; 
+	  continue;
+	}
 
-      if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_group_ib[group].rank_grp[i]].trans) continue;
+      if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_group_ib[group].rank_grp[i]].trans) 
+	continue;
 
       int ret;
-      if((ret=write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header)))!=sizeof(gaspi_cd_header)){
-        printf("write failed:%d !\n",ret);
-        printf("write error ! (%s)\n",(char*)strerror(errno));
-        glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
-        goto errL;
-      }
+      ret=write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
+		&cdh,
+		sizeof(gaspi_cd_header));
+
+      if(ret != sizeof(gaspi_cd_header))
+	{
+
+	  gaspi_print_error("Failed write");
+	  gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
+	  goto errL;
+	}
     
       int rret;
-      if((ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rret,sizeof(int)))!=sizeof(int)){
-        printf("read failed:%d !\n",ret);
-        printf("read error ! (%s)\n",(char*)strerror(errno));
-        glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
-        goto errL;
-      }
-
-      if(rret<0) goto errL;
+      ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rret,sizeof(int));
+      if(ret != sizeof(int))
+	{
+	  gaspi_print_error("Failed to read");
+	  gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
+	  goto errL;
+	}
+      
+      if(rret < 0) 
+	goto errL;
 
       glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_group_ib[group].rank_grp[i]].trans=1;
 
     }//for
 
-
   //wait for remote registration
   struct timeb t0,t1;
   ftime(&t0);
 
-  while(1){
+  while(1)
+    {
+      int cnt=0;
+      
+      for(r = 0; r < glb_gaspi_group_ib[group].tnc; r++)
+	{
+	  int i = glb_gaspi_group_ib[group].rank_grp[r];
+	  
+	  ulong s = gaspi_load_ulong(&glb_gaspi_ctx_ib.rrmd[segment_id][i].size);
+	  if(s > 0) 
+	    cnt++;
+	}
+      
+      if(cnt==glb_gaspi_group_ib[group].tnc)
+	break;
 
-    int cnt=0;
+      ftime(&t1);
+      
+      const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
 
-    for(r=0;r<glb_gaspi_group_ib[group].tnc;r++){
-      int i = glb_gaspi_group_ib[group].rank_grp[r];
-
-      ulong s = gaspi_load_ulong(&glb_gaspi_ctx_ib.rrmd[segment_id][i].size);
-      if(s>0) cnt++;
-    }
-
-    if(cnt==glb_gaspi_group_ib[group].tnc) break;
-
-    ftime(&t1);
-    const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
-    if(delta_ms > timeout_ms){
-
-      eret=GASPI_TIMEOUT;goto errL;}
+      if(delta_ms > timeout_ms)
+	{
+	  
+	  eret=GASPI_TIMEOUT;
+	  goto errL;
+	}
       usleep(250000);
-  }
-
-
+    }
+  
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
 
