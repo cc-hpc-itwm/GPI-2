@@ -15,7 +15,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
+#include "GPI2.h"
+#include "GASPI.h"
+#include "GPI2_IB.h"
 
+
+const unsigned int glb_gaspi_typ_size[6] = { 4, 4, 4, 8, 8, 8 };
+void (*fctArrayGASPI[18]) (void *, void *, void *, const unsigned char cnt) ={NULL};
+
+#pragma weak gaspi_barrier      = pgaspi_barrier
 gaspi_return_t
 pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 {
@@ -501,6 +509,7 @@ gaspi_init_collectives ()
 
 }
 
+#pragma weak gaspi_allreduce = pgaspi_allreduce
 gaspi_return_t
 pgaspi_allreduce (gaspi_pointer_t const buf_send,
 		 gaspi_pointer_t const buf_recv,
@@ -820,7 +829,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
   return GASPI_SUCCESS;
 }
 
-
+#pragma weak gaspi_allreduce_user = pgaspi_allreduce_user
 gaspi_return_t
 pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 		      gaspi_pointer_t const buf_recv,

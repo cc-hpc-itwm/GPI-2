@@ -15,8 +15,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
+#include "GASPI.h"
+#include "GPI2.h"
+#include "GPI2_IB.h"
+
+extern gaspi_context glb_gaspi_ctx;
+
 
 #ifdef DEBUG
+extern gaspi_config_t glb_gaspi_cfg;
+
 static void _print_func_params(char *func_name, const gaspi_segment_id_t segment_id_local,
 			      const gaspi_offset_t offset_local, const gaspi_rank_t rank,
 			      const gaspi_segment_id_t segment_id_remote,
@@ -96,6 +104,8 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
 
 #endif
 
+#pragma weak gaspi_write        = pgaspi_write 
+
 gaspi_return_t
 pgaspi_write (const gaspi_segment_id_t segment_id_local,
 	     const gaspi_offset_t offset_local, const gaspi_rank_t rank,
@@ -172,7 +182,7 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
   return GASPI_SUCCESS;
 }
 
-
+#pragma weak gaspi_read         = pgaspi_read
 gaspi_return_t
 pgaspi_read (const gaspi_segment_id_t segment_id_local,
 	    const gaspi_offset_t offset_local, const gaspi_rank_t rank,
@@ -235,7 +245,7 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
   return GASPI_SUCCESS;
 }
 
-
+#pragma weak gaspi_wait = pgaspi_wait
 gaspi_return_t
 pgaspi_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 {
@@ -304,6 +314,7 @@ pgaspi_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_write_list = pgaspi_write_list
 gaspi_return_t
 pgaspi_write_list (const gaspi_number_t num,
 		  gaspi_segment_id_t * const segment_id_local,
@@ -391,6 +402,7 @@ pgaspi_write_list (const gaspi_number_t num,
 
 }
 
+#pragma weak gaspi_read_list = pgaspi_read_list
 gaspi_return_t
 pgaspi_read_list (const gaspi_number_t num,
 		 gaspi_segment_id_t * const segment_id_local,
@@ -477,6 +489,7 @@ pgaspi_read_list (const gaspi_number_t num,
 
 }
 
+#pragma weak gaspi_notify       = pgaspi_notify
 gaspi_return_t
 pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
 	      const gaspi_rank_t rank,
@@ -543,6 +556,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
 
 }
 
+#pragma weak gaspi_notify_waitsome  = pgaspi_notify_waitsome
 gaspi_return_t
 pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 		       const gaspi_notification_id_t notification_begin,
@@ -645,6 +659,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 
 }
 
+#pragma weak gaspi_notify_reset     = pgaspi_notify_reset
 gaspi_return_t
 pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
 		    const gaspi_notification_id_t notification_id,
@@ -679,6 +694,7 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_write_notify = pgaspi_write_notify
 gaspi_return_t
 pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 		    const gaspi_offset_t offset_local,
@@ -772,6 +788,7 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 
 }
 
+#pragma weak gaspi_write_list_notify = pgaspi_write_list_notify
 gaspi_return_t
 pgaspi_write_list_notify (const gaspi_number_t num,
 			 gaspi_segment_id_t * const segment_id_local,

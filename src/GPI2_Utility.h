@@ -17,115 +17,22 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #ifndef GPI2_UTILITY_H
-#define GPI2_UTILITY_H
+#define GPI2_UTILITY_H 1
 
-float
-gaspi_get_cpufreq ()
-{
-  FILE *f;
-  char buf[256];
-  float mhz = 0.0f;
+#include <sched.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <xmmintrin.h>
 
-  f = fopen ("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
-  if (f)
-    {
-      if (fgets (buf, sizeof (buf), f))
-	{
-	  uint m;
-	  int rc;
 
-	  rc = sscanf (buf, "%u", &m);
-	  if (rc == 1)
-	    mhz = (float) m;
-	}
+#define gaspi_verify_null_ptr(ptr)				\
+  if(ptr == NULL)						\
+    {								\
+  gaspi_print_error ("Passed argument is a NULL pointer");	\
+  return GASPI_ERROR;						\
+    } 
 
-      fclose (f);
-    }
-
-  if (mhz > 0.0f)
-    return mhz / 1000.0f;
-
-  f = fopen ("/proc/cpuinfo", "r");
-
-  if (f)
-    {
-      while (fgets (buf, sizeof (buf), f))
-	{
-	  float m;
-	  int rc;
-
-	  rc = sscanf (buf, "cpu MHz : %f", &m);
-
-	  if (rc != 1)
-	    continue;
-
-	  if (mhz == 0.0f)
-	    {
-	      mhz = m;
-	      continue;
-	    }
-	}
-
-      fclose (f);
-    }
-
-  return mhz;
-}
-
-int
-gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
-{
-
-  int i, rc;
-  char buf[1024];
-  unsigned int m[256];
-  char path[256];
-  FILE *f;
-
-  memset (buf, 0, 1024);
-  memset (m, 0, 256 * sizeof (unsigned int));
-
-  snprintf (path, 256, "/sys/devices/system/node/node%d/cpumap", sock);
-
-  f = fopen (path, "r");
-
-  if (!f)
-    {
-      return -1;
-    }
-
-  //read cpumap
-  int id = 0;
-
-  if (fgets (buf, sizeof (buf), f))
-    {
-      char *bptr = buf;
-      while (1)
-	{
-	  int ret = sscanf (bptr, "%x", &m[id]);
-	  if (ret <= 0)
-	    break;
-	  bptr += 9;
-	  id++;
-	}
-    }
-
-  rc = id;
-
-  memset (cpuset, 0, sizeof (cpu_set_t));
-  char *ptr = (char *) cpuset;
-
-  int pos = 0;
-
-  for (i = rc - 1; i >= 0; i--)
-    {
-      memcpy (ptr + pos, &m[i], sizeof (unsigned int));
-      pos += sizeof (unsigned int);
-    }
-
-  fclose (f);
-  return 0;
-}
 
 #ifdef MIC
 #define gaspi_delay()   _mm_delay_32(32)
@@ -133,20 +40,13 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 #define gaspi_delay()   _mm_pause()
 #endif
 
-//internal forward declarations
-int gaspi_init_ib_core ();
-int gaspi_cleanup_ib_core ();
-int gaspi_connect_context(const int idx);
-void gaspi_init_collectives ();
-char *gaspi_get_hn (const unsigned int id);
-int  gaspi_create_endpoint(const int i);
+#define gaspi_print_error(msg) gaspi_printf("Error: %s (%s:%d)\n", msg, __FILE__, __LINE__);
+#define MAX(a,b)  (((a)<(b)) ? (b) : (a))
+#define MIN(a,b)  (((a)>(b)) ? (b) : (a))
 
-ulong gaspi_load_ulong(volatile ulong *ptr)
-{
-  ulong v=*ptr;
-  asm volatile("" ::: "memory");
-  return v;
-}
 
+ulong gaspi_load_ulong(volatile ulong *ptr);
+float gaspi_get_cpufreq ();
+int gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset);
 
 #endif

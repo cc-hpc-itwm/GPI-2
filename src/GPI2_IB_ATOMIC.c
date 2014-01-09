@@ -15,7 +15,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
+#include "GPI2.h"
+#include "GASPI.h"
+#include "GPI2_IB.h"
 
+#pragma weak gaspi_atomic_fetch_add      = pgaspi_atomic_fetch_add
 gaspi_return_t
 pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 			const gaspi_offset_t offset, const gaspi_rank_t rank,
@@ -129,6 +133,7 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
 }
 
+#pragma weak gaspi_atomic_compare_swap = pgaspi_atomic_compare_swap
 gaspi_return_t
 pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 			   const gaspi_offset_t offset,

@@ -23,6 +23,13 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <unistd.h>
+
+#include "GPI2.h"
+#include "GPI2_Utility.h"
 
 #define PORT_LOGGER 17825
 
@@ -31,22 +38,24 @@ static char gaspi_master_log_ptr[128];
 static int gaspi_master_log_init = 0;
 static int gaspi_log_socket = 0;
 
+extern gaspi_config_t glb_gaspi_cfg;
+
 static inline void
 _check_log_init(void)
 {
   if (gaspi_master_log_init == 0)
     {
       gaspi_master_log_init = 1;
-      char *ptr = getenv ("GASPI_MASTER");
-      
-      if (ptr)
+
+      char * ptr = getenv ("GASPI_MASTER");     
+      if (ptr != NULL)
 	{
 	  memset (gaspi_master_log_ptr, 0, 128);
 	  snprintf (gaspi_master_log_ptr, 128, "%s", ptr);
 	}
       
       char *ptr2 = getenv ("GASPI_SOCKET");
-      if (ptr2)
+      if (ptr2 != NULL)
 	{
 	  gaspi_log_socket = atoi (ptr2);
 	}

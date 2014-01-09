@@ -16,15 +16,19 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <infiniband/verbs.h>
-#include <infiniband/driver.h>
+#include <errno.h>
+#include <sys/mman.h>
+#include <sys/time.h>
+#include <sys/timeb.h>
+#include <unistd.h>
 
-gaspi_ib_ctx glb_gaspi_ctx_ib = {.rrcd=NULL, .lrcd=NULL};
-gaspi_ib_group glb_gaspi_group_ib[GASPI_MAX_GROUPS];
+#include "GASPI.h"
+#include "GPI2.h"
+#include "GPI2_IB.h"
+#include "GPI2_SN.h"
 
-const unsigned int glb_gaspi_typ_size[6] = { 4, 4, 4, 8, 8, 8 };
-
-void (*fctArrayGASPI[18]) (void *, void *, void *, const unsigned char cnt) ={NULL};
+/* Globals */
+extern gaspi_config_t glb_gaspi_cfg;
 
 static char *port_state_str[] = {
   "NOP",
@@ -62,13 +66,6 @@ link_layer_str (uint8_t link_layer)
 }
 
 
-#define GASPI_GID_INDEX   (0)
-#define PORT_LINK_UP      (5)
-#define MAX_INLINE_BYTES  (128)
-#define GASPI_QP_TIMEOUT  (20)
-#define GASPI_QP_RETRY    (7)
-
-
 static int
 gaspi_null_gid (union ibv_gid *gid)
 {
@@ -77,7 +74,7 @@ gaspi_null_gid (union ibv_gid *gid)
 	   raw[15]);
 }
 
-
+#pragma weak gaspi_state_vec_get = pgaspi_state_vec_get
 gaspi_return_t
 pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
 {
@@ -98,7 +95,6 @@ pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
 
   return GASPI_SUCCESS;
 }
-
 
 int
 gaspi_init_ib_core ()
@@ -520,8 +516,10 @@ gaspi_init_ib_core ()
 }
 
 
-int gaspi_create_endpoint(const int i){
-int c;
+int
+gaspi_create_endpoint(const int i)
+{
+  int c;
 
   lock_gaspi_tout(&gaspi_create_lock, GASPI_BLOCK);
 
@@ -631,7 +629,7 @@ errL:
 
 }
 
-
+#pragma weak gaspi_connect = pgaspi_connect
 gaspi_return_t
 pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 {
@@ -643,7 +641,7 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   const int i=rank;
   if(gaspi_create_endpoint(i)<0) return GASPI_ERROR;
 
-  //TODO: respecti lock timeout
+  //TODO: respect lock timeout
   lock_gaspi_tout(&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
   if(glb_gaspi_ctx_ib.lrcd[i].cstat)
@@ -699,9 +697,11 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   return eret;
 }
 
-
-gaspi_return_t pgaspi_disconnect(const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms){
-int c;
+#pragma weak gaspi_disconnect = pgaspi_disconnect
+gaspi_return_t
+pgaspi_disconnect(const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
+{
+  int c;
 
   if(!glb_gaspi_ib_init) return GASPI_ERROR;
 
@@ -1109,7 +1109,7 @@ gaspi_cleanup_ib_core ()
   return 0;
 }
 
-
+#pragma weak gaspi_group_create = pgaspi_group_create
 gaspi_return_t
 pgaspi_group_create (gaspi_group_t * const group)
 {
@@ -1209,6 +1209,7 @@ errL:
   return GASPI_ERROR;
 }
 
+#pragma weak gaspi_group_delete = pgaspi_group_delete
 gaspi_return_t
 pgaspi_group_delete (const gaspi_group_t group)
 {
@@ -1268,7 +1269,7 @@ gaspi_comp_ranks (const void *a, const void *b)
   return (*(int *) a - *(int *) b);
 }
 
-
+#pragma weak gaspi_group_add = pgaspi_group_add
 gaspi_return_t
 pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
 {
@@ -1314,7 +1315,7 @@ errL:
 }
 
 
-
+#pragma weak gaspi_group_commit = pgaspi_group_commit
 gaspi_return_t
 pgaspi_group_commit (const gaspi_group_t group,
 		     const gaspi_timeout_t timeout_ms)
@@ -1479,10 +1480,7 @@ errL:
   return eret;
 }
 
-
-
-
-
+#pragma weak gaspi_group_num = pgaspi_group_num
 gaspi_return_t
 pgaspi_group_num (gaspi_number_t * const group_num)
 {
@@ -1499,6 +1497,7 @@ pgaspi_group_num (gaspi_number_t * const group_num)
   return GASPI_ERROR;
 }
 
+#pragma weak gaspi_group_size = pgaspi_group_size
 gaspi_return_t
 pgaspi_group_size (const gaspi_group_t group,
 		  gaspi_number_t * const group_size)
@@ -1518,6 +1517,8 @@ pgaspi_group_size (const gaspi_group_t group,
   return GASPI_ERROR;
 }
 
+
+#pragma weak gaspi_group_ranks = pgaspi_group_ranks
 gaspi_return_t
 pgaspi_group_ranks (const gaspi_group_t group,
 		   gaspi_rank_t * const group_ranks)
@@ -1533,6 +1534,7 @@ pgaspi_group_ranks (const gaspi_group_t group,
   return GASPI_ERROR;
 }
 
+#pragma weak gaspi_group_max = pgaspi_group_max
 gaspi_return_t
 pgaspi_group_max (gaspi_number_t * const group_max)
 {
@@ -1544,6 +1546,7 @@ pgaspi_group_max (gaspi_number_t * const group_max)
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_segment_alloc = pgaspi_segment_alloc
 gaspi_return_t
 pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 		     const gaspi_size_t size,
@@ -1635,6 +1638,7 @@ errL:
 
 }
 
+#pragma weak gaspi_segment_delete = pgaspi_segment_delete
 gaspi_return_t
 pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 {
@@ -1691,7 +1695,7 @@ errL:
 }
 
 
-
+#pragma weak gaspi_segment_register = pgaspi_segment_register
 gaspi_return_t
 pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 			               const gaspi_rank_t rank,
@@ -1785,7 +1789,7 @@ errL:
 
 }
 
-
+#pragma weak gaspi_segment_create = pgaspi_segment_create
 gaspi_return_t
 pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 		      const gaspi_size_t size, const gaspi_group_t group,
@@ -1922,6 +1926,7 @@ errL:
 }
 
 
+#pragma weak gaspi_segment_num = pgaspi_segment_num
 gaspi_return_t
 pgaspi_segment_num (gaspi_number_t * const segment_num)
  {
@@ -1936,6 +1941,7 @@ pgaspi_segment_num (gaspi_number_t * const segment_num)
   return GASPI_ERROR;
 }
 
+#pragma weak gaspi_segment_list = pgaspi_segment_list
 gaspi_return_t
 pgaspi_segment_list (const gaspi_number_t num,
 		    gaspi_segment_id_t * const segment_id_list)
@@ -1963,6 +1969,7 @@ pgaspi_segment_list (const gaspi_number_t num,
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_segment_ptr = pgaspi_segment_ptr
 gaspi_return_t
 pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 {
@@ -1994,6 +2001,7 @@ pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 
 }
 
+#pragma weak gaspi_segment_size = pgaspi_segment_size
 gaspi_return_t
 pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 		    const gaspi_rank_t rank, gaspi_size_t * const size)
@@ -2025,6 +2033,7 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_segment_max = pgaspi_segment_max
 gaspi_return_t
 pgaspi_segment_max (gaspi_number_t * const segment_max)
 {
@@ -2036,6 +2045,7 @@ pgaspi_segment_max (gaspi_number_t * const segment_max)
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_queue_size = pgaspi_queue_size
 gaspi_return_t
 pgaspi_queue_size (const gaspi_queue_id_t queue,
 		  gaspi_number_t * const queue_size)
@@ -2053,6 +2063,7 @@ pgaspi_queue_size (const gaspi_queue_id_t queue,
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_allreduce_buf_size = pgaspi_allreduce_buf_size
 gaspi_return_t
 pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
 {
@@ -2065,7 +2076,7 @@ pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
   return GASPI_SUCCESS;
 }
 
-#include "GPI2_IB_GRP.c"
-#include "GPI2_IB_ATOMIC.c"
-#include "GPI2_IB_PASSIVE.c"
-#include "GPI2_IB_IO.c"
+/* #include "GPI2_IB_GRP.c" */
+/* #include "GPI2_IB_ATOMIC.c" */
+/* #include "GPI2_IB_PASSIVE.c" */
+/* #include "GPI2_IB_IO.c" */

@@ -16,12 +16,20 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef GPI2_IB_H
-#define GPI2_IB_H
+#ifndef _GPI2_IB_H_
+#define _GPI2_IB_H_
 
 #include <infiniband/verbs.h>
+#include <infiniband/driver.h>
 
-typedef struct{
+#define GASPI_GID_INDEX   (0)
+#define PORT_LINK_UP      (5)
+#define MAX_INLINE_BYTES  (128)
+#define GASPI_QP_TIMEOUT  (20)
+#define GASPI_QP_RETRY    (7)
+
+typedef struct
+{
   int lid;
   union ibv_gid gid;
   int qpnGroup;
@@ -33,13 +41,15 @@ typedef struct{
 } gaspi_rc_all;
 
 
-typedef struct{
+typedef struct
+{
   unsigned int rkeyGroup;
   unsigned long vaddrGroup;
 } gaspi_rc_grp;
 
 
-typedef struct{
+typedef struct
+{
   union
   {
     unsigned char *buf;
@@ -51,7 +61,8 @@ typedef struct{
   int trans;
 } gaspi_rc_mseg;
 
-typedef struct{
+typedef struct
+{
   struct ibv_device **dev_list;
   struct ibv_device *ib_dev;
   struct ibv_context *context;
@@ -101,5 +112,16 @@ typedef struct{
   int *rank_grp;
   gaspi_rc_grp *rrcd;
 } gaspi_ib_group;
+
+gaspi_ib_ctx glb_gaspi_ctx_ib;// = {.rrcd=NULL, .lrcd=NULL};
+
+gaspi_ib_group glb_gaspi_group_ib[GASPI_MAX_GROUPS];
+
+void gaspi_init_collectives();
+int gaspi_connect_context(const int);
+int gaspi_create_endpoint(const int);
+int gaspi_init_ib_core();
+int gaspi_cleanup_ib_core();
+
 
 #endif
