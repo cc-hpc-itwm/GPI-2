@@ -27,13 +27,13 @@ $(GPI2): $(OBJS)
 	rm -f $(GPI2)
 	ar crs $(GPI2) $(OBJS)
 	cp $(GPI2) ../lib64
-	cp GASPI.h ../include
+	cp GASPI.h PGASPI.h ../include
 
 $(GPI2_DBG): $(OBJS_DBG) 
 	rm -f $(GPI2_DBG)
 	ar crs $(GPI2_DBG) $(OBJS_DBG)
 	cp $(GPI2_DBG) ../lib64
-	cp GASPI.h ../include
+	cp GASPI.h PGASPI.h ../include
 
 $(OBJ_FORTRAN): GASPI.f90
 	@if test "$(HAS_FORTRAN)" == "" ; then \
