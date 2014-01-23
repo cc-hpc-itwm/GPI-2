@@ -1,3 +1,7 @@
+import os
+
+os.system("python pyIBV.py")
+
 __docformat__ =  'restructuredtext'
 
 # Begin preamble
@@ -597,6 +601,9 @@ add_library_search_dirs([])
 # Begin libraries
 
 _libs["libGPI2.so"] = load_library("libGPI2.so")
+_libs["libibverbs.so.1"] = load_library("libibverbs.so.1")
+
+
 
 # 1 libraries
 # End libraries
