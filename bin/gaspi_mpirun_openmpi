@@ -1,0 +1,278 @@
+#!/bin/sh
+
+# Copyright (c) University of Heidelberg - Jens Breitbart <jens.breitbart@iwr.uni-heidelberg.de>, 2013
+# Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013
+
+# This file is part of GPI-2.
+
+# GPI-2 is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public License
+# version 3 as published by the Free Software Foundation.
+
+# GPI-2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
+
+SET_NUMA=0
+MFILE=""
+MASTER_PRG=""
+PRG=""
+KPRG=""
+PRGNAME=""
+TYP=GASPI_MASTER
+MAX_NUMA_NODES=1
+HAS_NUMA=0
+HN=`/bin/hostname`
+TMP_MFILE=".gaspi_tmp"`date +%N`
+UNIQ_MFILE=".gaspi_tmp_uniq"`date +%N`
+ORIG_MFILE=""
+NNODES=0
+DEBUG=0
+
+#helper functions
+usage()
+{
+    echo
+    echo "Usage: gaspi_mpirun -m <machinefile> [OPTIONS] <path GASPI program>"
+    echo
+    echo "Available options:"
+    echo "  -b <binary file> Use a different binary for first node (master)."
+    echo "  -N               Enable NUMA for processes on same node."
+    echo "  -n <procs>       Start as many <procs> from machine file."
+    echo "  -d               Run with GDB (debugger) on master node."
+    echo "  -h               This help."
+    echo
+}
+
+remove_temp_file()
+{
+    rm -f $TMP_MFILE
+    rm -f $UNIQ_MFILE
+}
+
+clean_exit()
+{
+#assumes the clean-up script is in the same directory as gaspi_run
+    BASEDIR=`dirname $0`
+    $BASEDIR/gaspi_cleanup -m $UNIQ_MFILE
+
+    remove_temp_file
+}
+
+print_error_exit()
+{
+    echo
+    echo $1
+    echo
+    remove_temp_file
+    exit 1
+}
+
+validate_machinefile()
+{
+    #empty
+    if [ ! -s $MFILE ]; then
+	echo "Empty machine file ($1)"
+	exit 1
+    fi
+
+    master=`head -n 1 $MFILE`
+
+    #create tmp_file
+    if [ -r $TMP_MFILE ]; then
+	rm -f $TMP_MFILE
+    fi
+    if [ `touch $TMP_MFILE 2> /dev/null; echo "$?"` -eq 0 ]; then
+	chmod 777 $TMP_MFILE
+    else
+	print_error_exit "User permissions failure: $PWD is not writable"
+    fi
+
+
+    ncount=0
+    while read LINE
+    do
+	args=`echo $LINE | gawk '{print NF}'`
+	i=`echo $LINE | gawk '{print $1}'   `
+	if [ "$i" != "" ]; then
+     	    ping -c 1 $i > /dev/null 2>&1
+     	    if [ $? != 0 ]; then
+     		print_error_exit "Host not reachable ($i)"
+     	    fi
+
+	    ncount=$(($ncount+1))
+	    if [ $NNODES -lt $ncount ]; then
+		break
+	    fi
+	    echo $i >> $TMP_MFILE
+	fi
+    done < $MFILE
+
+    ORIG_MFILE=$MFILE
+    MFILE=$TMP_MFILE
+
+    uniq $MFILE > $UNIQ_MFILE
+       #number of nodes (NNODES) must fit number of hosts
+    n=`wc -l $MFILE |gawk '{print $1}'`
+    if [ $n -lt $NNODES ]; then
+	print_error_exit "Not enough hosts ($n) for required number of nodes (-n $NNODES)"
+    fi
+
+}
+
+kill_procs()
+{
+    echo "Killing GASPI procs..."
+    for i in $hlist
+    do
+	ssh $i killall -s KILL $PRGNAME > /dev/null 2>&1 &
+    done
+    remove_temp_file
+    exit 1
+}
+
+#at least we need machinefile and binary
+if [ $# -lt 3 ]; then
+    usage
+    exit 1
+fi
+
+#command line parsing
+while [ "$1" != "" ]; do
+    case $1 in
+	-m | --machinefile)
+	    shift
+ 	    if [ -r $1 ]; then
+		MFILE=$1
+            else
+		print_error_exit "Error: Cannot read $1 (-m option) (or file does not exist)"
+	    fi
+	    ;;
+	-N | --NUMA)
+	    SET_NUMA=1
+	    ;;
+	-d | --debug)
+	    DEBUG=1
+	    ;;
+	-h | --help)
+	    usage
+	    ;;
+	-b | --binary)
+	    shift
+	    if [ -x $1 ]; then
+		MASTER_PRG=$1
+	    else
+		print_error_exit "Error: Cannot find $1 (-b option) (or file is not executable)"
+	    fi
+	    ;;
+	-n | --nodes)
+	    shift
+	    if [ $1 -gt 1 ]; then
+		NNODES=$1
+	    else
+		print_error_exit "Error: GASPI requires at least 2 nodes"
+	    fi
+	    ;;
+	*) #Sucks! we're taking a small risk here
+                PRG=$*
+		KPRG=$1
+		break
+    esac
+    shift
+done
+
+if [ "$PRG" = "" ]; then
+    print_error_exit "No binary file provided. See help (-h option)"
+fi
+
+trap kill_procs TERM INT QUIT
+
+#sanity check and settings
+if [ $SET_NUMA -eq 1 ]; then
+    which numactl > /dev/null
+    if [ $? = 0 ]; then
+	MAX_NUMA_NODES=`numactl --hardware|grep available|gawk '{print $2}'`
+	HAS_NUMA=1
+    else
+	MAX_NUMA_NODES=1
+	HAS_NUMA=0
+    fi
+else
+    MAX_NUMA_NODES=256
+fi
+
+#let's rock
+#use all host in machines file
+if [ $NNODES -eq 0 ]; then
+    NNODES=`sed /^$/d $MFILE  |wc -l`
+fi
+
+validate_machinefile $MFILE
+
+#master binary is the same
+if [ "$MASTER_PRG" = "" ]; then
+    MASTER_PRG=$PRG
+fi
+
+hlist=`cat $MFILE`
+t=0
+t0=$(date +%s)
+previous=`head -n 1 $MFILE`
+ncount=0
+
+own_count=1
+
+while read LINE
+do
+    i=$LINE
+
+    #ignore blank lines
+    if [ "$i" = "" ]; then
+	continue;
+    fi
+
+    if [ $t -eq 0 ]; then
+     	TYP=GASPI_MASTER
+     	t=$(($t+1))
+     	continue
+    else
+     	TYP=GASPI_WORKER
+    fi
+
+    if [ "$i" = "$previous" ]; then
+	j=$(($j+1))
+	if [ $j -eq $MAX_NUMA_NODES ]; then
+	    echo
+	    echo "Error: incorrect machine file (-m $ORIG_MFILE) (max procs per node: $MAX_NUMA_NODES)"
+	    echo
+	    clean_exit
+	    exit 1
+	fi
+    else
+	j=0
+    fi
+
+	cmd="$cmd : -np 1 -x GASPI_MASTER=$HN -x GASPI_SOCKET=$j -x GASPI_TYP=$TYP -x GASPI_MFILE=$MFILE $PRG"
+   	own_count=$(($own_count+1))
+    previous="$i"
+
+done < $MFILE
+
+PRGNAME=`basename $KPRG`
+echo $PRGNAME  > /tmp/.last_gaspi_prg
+chmod a+rw /tmp/.last_gaspi_prg
+
+echo "mpiexec --hostfile $MFILE -np 1 -x GASPI_SOCKET=0 -x GASPI_TYP=GASPI_MASTER -x GASPI_MFILE=$MFILE -x GASPI_MASTER=$HN $MASTER_PRG $cmd"
+
+#-f $ORIG_MFILE $ORIG_HOSTFILE
+mpiexec --prefix /usr/lib64/openmpi/ --hostfile $MFILE -np 1 -x GASPI_SOCKET=0 -x GASPI_TYP=GASPI_MASTER -x GASPI_MFILE=$MFILE -x GASPI_MASTER=$HN $MASTER_PRG $cmd
+
+
+#clean-up and exit
+#clean_exit
+
+exit 0
