@@ -1,3 +1,5 @@
+# Copyright (c) University of Heidelberg - Jens Breitbart <jens.breitbart@iwr.uni-heidelberg.de>, 2014
+
 import os
 
 os.system("python pyIBV.py")
