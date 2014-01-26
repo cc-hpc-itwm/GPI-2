@@ -4,7 +4,7 @@ CC = gcc
 FORTRANC = gfortran
 HAS_FORTRAN:=$(shell which $(FORTRANC))
 
-CFLAGS = -Wall -Winline -Wunused-macros -Werror -D_GNU_SOURCE -O2
+CFLAGS = -Wall -Wunused-macros -Werror -D_GNU_SOURCE -O2
 DBG_CFLAGS = -Wall -Werror -g -D_GNU_SOURCE -O0
 INCLUDES = -I$(OFED_PATH)/include -I../include -I.
 
@@ -58,3 +58,4 @@ depend: $(SRCS)
 
 # DO NOT DELETE THIS LINE -- make depend needs it
 
+€kd:q
