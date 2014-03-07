@@ -246,6 +246,15 @@ extern "C"
    */
   gaspi_return_t gaspi_proc_init (const gaspi_timeout_t timeout_ms);
 
+  /** Check if GPI-2 is initialized
+   *
+   * @param initialized Output parameter with flag value.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
+   * error.
+   */
+  gaspi_return_t gaspi_initialized (gaspi_number_t * initialized);
+  
   /** Shutdown procedure.
    * It is a synchronous local time-based blocking operation that
    * releases resources and performs the required clean-up.

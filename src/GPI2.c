@@ -599,6 +599,22 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   return eret;
 }
 
+#pragma weak gaspi_initialized = pgaspi_initialized
+gaspi_return_t
+pgaspi_initialized (gaspi_number_t *initialized)
+{
+
+#ifdef DEBUG
+  gaspi_verify_null_ptr(initialized);
+  
+#endif
+  if( glb_gaspi_init < glb_gaspi_ctx.tnc)
+    *initialized = 0;
+  else
+    *initialized = 1;
+  
+  return GASPI_SUCCESS;
+}
 
 //cleanup
 #pragma weak gaspi_proc_term = pgaspi_proc_term

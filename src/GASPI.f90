@@ -164,6 +164,15 @@ module GASPI
       end function gaspi_proc_init
     end interface
 
+    interface !gaspi_initialized
+      function gaspi_initialized(initialized) &
+&         result( res ) bind(C, name="gaspi_initialized")
+        import
+        integer(gaspi_number_t), value :: initialized
+        integer(gaspi_return_t) :: res
+      end function gaspi_initialized
+    end interface
+
     interface ! gaspi_proc_term
       function gaspi_proc_term(timeout_ms) &
 &         result( res ) bind(C, name="gaspi_proc_term")

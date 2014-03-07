@@ -35,6 +35,8 @@ extern "C"
 
   gaspi_return_t pgaspi_proc_init (const gaspi_timeout_t timeout_ms);
 
+  gaspi_return_t pgaspi_initialized (gaspi_number_t * initialized);
+  
   gaspi_return_t pgaspi_proc_term (const gaspi_timeout_t timeout_ms);
 
   gaspi_return_t pgaspi_proc_rank (gaspi_rank_t * const rank);
