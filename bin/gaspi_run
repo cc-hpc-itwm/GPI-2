@@ -35,7 +35,7 @@ RUN_FILE=$(TMPDIR=. mktemp ${RUN_PATTERN})
 ORIG_MFILE=""
 NNODES=0
 DEBUG=0
-GASPI_LAUNCHER=ssh
+GASPI_LAUNCHER="ssh -f"
 
 remove_temp_file()
 {
@@ -231,14 +231,12 @@ t0=$(date +%s)
 #who's master
 master_node=`head -n 1 $MFILE`
 previous="$master_node"
+j=0
 
 for LINE in $(tail -n +2 $MFILE)
 do
     if [ "$LINE" = "$previous" ]; then
 	j=$((j+1))
-	if [ `expr $j % $MAX_IMMED_CONN` = 0 ]; then
-	    sleep 1
-	fi
 	if [ $j -eq $MAX_NUMA_NODES ]; then
 	    echo
 	    echo "Error: incorrect machine file (-m $ORIG_MFILE) (max procs per node: $MAX_NUMA_NODES)"
@@ -247,24 +245,43 @@ do
 	    exit 1
 	fi
     else
+	location=$(readlink -f `dirname $0`)
+	if [ "$previous" != "$master_node" ]; then
+	    cmd="${location}/ssh.spawner ${master_node} 0 $(readlink -f $MFILE) $j "
+	else
+	    if [ $j -eq 0 ]; then
+	        previous="$LINE"
+		continue;
+	    else
+	    cmd="${location}/ssh.spawner ${master_node} 1 $(readlink -f $MFILE) $j "
+	    fi
+	fi
+	if [ $SET_NUMA -eq 1 ]; then
+     	    cmd="$cmd 1"
+	else
+            cmd="$cmd 0"
+	fi
+	cmd="$cmd ${MASTER_PRG}"
+
+	$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null` > $PWD/${previous}.log.out 2>&1 &"
+	
 	j=0
     fi
-
-    cmd="/bin/sh -c"
-    cmd="$cmd 'export GASPI_MASTER=$master_node"
-    cmd="$cmd; export GASPI_SOCKET=$j"
-    cmd="$cmd; export GASPI_TYPE=GASPI_WORKER"
-    cmd="$cmd; export GASPI_MFILE=$(readlink -f $MFILE)"
-    if [ $SET_NUMA -eq 1 ]; then
-	cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
-    fi
-    cmd="$cmd; if [ -x $KPRG ]; then $PRG;else echo '$LINE': '$KPRG' not found;exit 1;fi 2> /dev/null &'"
-
-    $GASPI_LAUNCHER $LINE $cmd  >> $RUN_FILE &
-
+    
     previous="$LINE"
-
 done
+
+location=$(readlink -f `dirname $0`)
+cmd="${location}/ssh.spawner ${master_node} 0 $(readlink -f $MFILE) $j"
+if [ $SET_NUMA -eq 1 ]; then
+    cmd="$cmd 1"
+else
+    cmd="$cmd 0"
+fi
+cmd="$cmd ${MASTER_PRG}"
+
+
+$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null` >nohup.out 2>&1 &"
 
 echo $PRGNAME  > /tmp/.last_gaspi_prg
 if [ -O /tmp/.last_gaspi_prg ]; then
@@ -315,6 +332,7 @@ if [ "$master_node" != "$HN" ]; then
     fi
     cmd="$cmd; $MASTER_PRG'"
     $GASPI_LAUNCHER $master_node $cmd
+   
     if [ $? != 0 ]; then
 	echo "Error: Failed to start $MASTER_PRG on $master_node"
 	clean_exit
