@@ -474,8 +474,11 @@ gaspi_init_ib_core ()
   if(!glb_gaspi_ctx_ib.lrcd) return -1;
 
   glb_gaspi_ctx_ib.rrcd = (gaspi_rc_all *) calloc (glb_gaspi_ctx.tnc,sizeof (gaspi_rc_all));
+ 
   if(!glb_gaspi_ctx_ib.rrcd) return -1;
 
+
+  
   for(i = 0; i < glb_gaspi_ctx.tnc; i++){
 
     glb_gaspi_ctx_ib.lrcd[i].lid = glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].lid;
@@ -523,7 +526,6 @@ gaspi_create_endpoint(const int i)
 
   lock_gaspi_tout(&gaspi_create_lock, GASPI_BLOCK);
 
-
   if(glb_gaspi_ctx_ib.lrcd[i].istat) goto okL;//already created
 
   //create
@@ -539,32 +541,38 @@ gaspi_create_endpoint(const int i)
   qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqGroups;
 
   glb_gaspi_ctx_ib.qpGroups[i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
-  if(!glb_gaspi_ctx_ib.qpGroups[i]){
-    gaspi_print_error ("Failed to create QP (libibverbs)");
-    goto errL;
-  }
-
-  for(c = 0; c < glb_gaspi_cfg.queue_num; c++){
-    qpi_attr.send_cq = glb_gaspi_ctx_ib.scqC[c];
-    qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqC[c];
-  
-    glb_gaspi_ctx_ib.qpC[c][i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
-    if(!glb_gaspi_ctx_ib.qpC[c][i]){
+  if(!glb_gaspi_ctx_ib.qpGroups[i])
+    {
       gaspi_print_error ("Failed to create QP (libibverbs)");
       goto errL;
     }
-  }
-    
+
+  
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
+    {
+      qpi_attr.send_cq = glb_gaspi_ctx_ib.scqC[c];
+      qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqC[c];
+      
+      glb_gaspi_ctx_ib.qpC[c][i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
+      if(!glb_gaspi_ctx_ib.qpC[c][i])
+	{
+	  gaspi_print_error ("Failed to create QP (libibverbs)");
+	  goto errL;
+	}
+    }
+  
   qpi_attr.send_cq = glb_gaspi_ctx_ib.scqP;
   qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqP;
   qpi_attr.srq = glb_gaspi_ctx_ib.srqP;
 
   glb_gaspi_ctx_ib.qpP[i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
-  if(!glb_gaspi_ctx_ib.qpP[i]){
+  if(!glb_gaspi_ctx_ib.qpP[i])
+    {
     gaspi_print_error ("Failed to create QP (libibverbs)");
     goto errL;
-  }
+    }
   
+
 
   //init
   struct ibv_qp_attr qp_attr;
@@ -653,11 +661,17 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   cdh.rank = glb_gaspi_ctx.rank;
            
   int ret;
+  if(-1 == glb_gaspi_ctx.sockfd[i])
+    {
+      gaspi_printf("Invalid socket fd %d for rank %u\n", glb_gaspi_ctx.sockfd[i], i);
+      goto errL;
+    }
+  
   ret=write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header));
   if(ret !=sizeof(gaspi_cd_header))
     {
       gaspi_print_error("Failed to write");
-      gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+      gaspi_printf("Error %d: (%s) socket %d\n",ret, (char*)strerror(errno), glb_gaspi_ctx.sockfd[i]);
       eret=GASPI_ERROR;
       goto errL;
     }
@@ -666,16 +680,18 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   if(ret != sizeof(gaspi_rc_all))
     {
       gaspi_print_error("Failed to write");
-      gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
-      eret=GASPI_ERROR;
+      gaspi_printf("Error %d: (%s) socket %d\n",ret, (char*)strerror(errno), glb_gaspi_ctx.sockfd[i]);
+      eret = GASPI_ERROR;
       goto errL;
     }
 
   ret=read(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all));
   if(ret != sizeof(gaspi_rc_all))
     {
-      gaspi_print_error("Failed to read");
-      gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+      int errsv = errno;
+      //      gaspi_print_error("Failed to read");
+      gaspi_printf("Failed to read from %d: ret %d error %d: (%s) socket %d\n",
+		   i, ret, errsv, (char*)strerror(errsv), glb_gaspi_ctx.sockfd[i]);
       eret=GASPI_ERROR;
       goto errL;
     }
@@ -1431,7 +1447,9 @@ pgaspi_group_commit (const gaspi_group_t group,
 	    if(delta_ms > timeout_ms){eret=GASPI_TIMEOUT;goto errL;}
 	    
 	    //TODO: why not more, why not less
-	    usleep(250000);
+	    gaspi_thread_sleep(250000);
+	    
+  //	    usleep(250000);
 	    //gaspi_delay();
         }
         else
@@ -1914,7 +1932,12 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 	  eret=GASPI_TIMEOUT;
 	  goto errL;
 	}
-      usleep(250000);
+      struct timespec sleep_time,rem;
+      sleep_time.tv_sec = 0;
+      sleep_time.tv_nsec = 250000000;
+      nanosleep(&sleep_time, &rem);
+      
+      //      usleep(250000);
     }
   
   unlock_gaspi (&glb_gaspi_ctx_lock);

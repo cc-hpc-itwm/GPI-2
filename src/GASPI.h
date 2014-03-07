@@ -1040,7 +1040,6 @@ extern "C"
    */
   gaspi_return_t gaspi_state_vec_get (gaspi_state_vector_t state_vector);
 
-
   /** GASPI printf to print the gaspi_logger. 
    * 
    * 

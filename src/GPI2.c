@@ -18,6 +18,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <errno.h>
 #include <pthread.h>
 #include <signal.h>
+#include <sys/resource.h>
 #include <sys/socket.h>
 #include <sys/timeb.h>
 #include <sys/utsname.h>
@@ -27,6 +28,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2.h"
 #include "GPI2_Env.h"
 #include "GPI2_IB.h"
+#include "GPI2_Mem.h"
 #include "GPI2_SN.h"
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
@@ -211,17 +213,18 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
 gaspi_return_t
 pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 {
-
   gaspi_return_t eret = GASPI_ERROR;
   int i;
 
+  struct timeb tup0, tinit0;
+  ftime(&tup0);
+  ftime(&tinit0);
+  
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
-
-  if(glb_gaspi_sn_init==0)
+  if(glb_gaspi_sn_init == 0)
     {
-
       glb_gaspi_ctx.lockPS.lock = 0;
       glb_gaspi_ctx.lockPR.lock = 0;
     
@@ -264,6 +267,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
     }//glb_gaspi_sn_init
 
+  
   if(glb_gaspi_ctx.procType == MASTER_PROC)
     {
 
@@ -353,7 +357,11 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   
 	  fclose (fp);
 	  
-	  if(line) free (line);
+	  if(line)
+	    {
+	      free (line);
+	    }
+	  
 	  //master
 	  glb_gaspi_ctx.rank = 0;
 	  glb_gaspi_ctx.tnc = glb_gaspi_ctx.tnc;
@@ -370,12 +378,12 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	    }
 #endif      
 	  
-	  for(i=0;i<glb_gaspi_ctx.tnc;i++) 
+	  for(i = 0; i < glb_gaspi_ctx.tnc; i++) 
 	    glb_gaspi_ctx.sockfd[i]=-1;
   
-	  if(gaspi_init_ib_core()!=GASPI_SUCCESS)
+	  if(gaspi_init_ib_core() != GASPI_SUCCESS)
 	    {
-	      eret=GASPI_ERROR;
+	      eret = GASPI_ERROR;
 	      goto errL;
 	    }
 	  
@@ -384,19 +392,25 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       struct timeb t0,t1;
       ftime(&t0);
       
-      for(i=0;i<glb_gaspi_ctx.tnc;i++)
+      for(i = 0; i < glb_gaspi_ctx.tnc; i++)
 	{
 	  if(glb_gaspi_ctx.sockfd[i] != -1)
 	    continue;
 	  
-	  while(glb_gaspi_ctx.sockfd[i]==-1)
+	  while(glb_gaspi_ctx.sockfd[i] == -1)
 	    {
-	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),GASPI_INT_PORT+glb_gaspi_ctx.poff[i],1000);
+	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),GASPI_INT_PORT+glb_gaspi_ctx.poff[i],100000);
+
+	      if(glb_gaspi_ctx.sockfd[i] == -2)
+		{
+		  eret = GASPI_ERROR;
+		  goto errL;
+		}
 	      
-	      if(glb_gaspi_ctx.sockfd[i]==-1)
+	      if(glb_gaspi_ctx.sockfd[i] == -1)
 		{
 		  ftime(&t1);
-		  const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
+		  const unsigned int delta_ms = (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
 		  
 		  if(delta_ms > timeout_ms)
 		    {
@@ -416,16 +430,20 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 		      int ret;
 		      if( (ret=write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header)))!=sizeof(gaspi_cd_header))
 			{
+			  int errsv = errno;
 			  printf("write failed:%d !\n",ret);
-			  printf("write error ! (%s)\n",(char*)strerror(errno));
-			  eret=GASPI_ERROR;goto errL;
+			  printf("write error ! %d - (%s)\n", errsv, (char*)strerror(errsv));
+			  eret=GASPI_ERROR;
+			  goto errL;
 			}
 		      
 		      if( (ret=write(glb_gaspi_ctx.sockfd[i],glb_gaspi_ctx.hn_poff,glb_gaspi_ctx.tnc*65))!=glb_gaspi_ctx.tnc*65)
 			{
+			  int errsv = errno;
 			  printf("write failed:%d !\n",ret);
-			  printf("write error ! (%s)\n",(char*)strerror(errno));
-			  eret=GASPI_ERROR;goto errL;
+			  printf("write error ! %d - (%s)\n", errsv, (char*)strerror(errsv));
+			  eret=GASPI_ERROR;
+			  goto errL;
 			}
 		    }
 		}
@@ -440,21 +458,20 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       //wait for topo data
       struct timeb t0,t1;
       ftime(&t0);
-      while(gaspi_master_topo_data==0)
+      while(gaspi_master_topo_data == 0)
 	{
-	
 	  gaspi_delay();
 	  
 	  ftime(&t1);
 	  const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
 	  if(delta_ms > timeout_ms)
 	    {
-	      eret=GASPI_TIMEOUT;
+	      eret = GASPI_TIMEOUT;
 	      goto errL;
 	    }
 	}
       
-      if(glb_gaspi_ib_init==0)
+      if(glb_gaspi_ib_init == 0)
 	{
 	  eret=GASPI_ERROR;
 	  goto errL;
@@ -463,14 +480,20 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       //do connections
       for(i=0;i<glb_gaspi_ctx.tnc;i++)
 	{
-	  if(glb_gaspi_ctx.sockfd[i]!=-1)
+	  if(glb_gaspi_ctx.sockfd[i] != -1)
 	    continue;
   
-	  while(glb_gaspi_ctx.sockfd[i]==-1)
+	  while(glb_gaspi_ctx.sockfd[i] == -1)
 	    {
-	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),GASPI_INT_PORT+glb_gaspi_ctx.poff[i],100);
+	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),GASPI_INT_PORT+glb_gaspi_ctx.poff[i],100000);
 	    
-	      if(glb_gaspi_ctx.sockfd[i]==-1)
+	      if(glb_gaspi_ctx.sockfd[i] == -2)
+		{
+		  eret = GASPI_ERROR;
+		  goto errL;
+		}
+
+	      if(glb_gaspi_ctx.sockfd[i] == -1)
 		{
 		  ftime(&t1);
 		  const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
@@ -486,19 +509,35 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
     }
   else
     {
-      gaspi_print_error ("Invalid node type (GASPI_TYP)");
+      gaspi_print_error ("Invalid node type (GASPI_TYPE)");
       goto errL;
     }
   
-  glb_gaspi_init = 1;
+  //  glb_gaspi_init = 1;
+  // need to wait to make sure everyone is connected
+  // avoid problem of connecting to a node which doesn't yet have it
+  // TODO: should only be done when building infrastructure?
+  while(glb_gaspi_init < glb_gaspi_ctx.tnc )
+    {
+      gaspi_delay();
+    }
+  
   unlock_gaspi (&glb_gaspi_ctx_lock);
+
+  struct timeb tup1,tinit1;
+  ftime(&tup1);
+  const unsigned int delta_s = (tup1.time-tup0.time)+((tup1.millitm-tup0.millitm)/1000);
+  
+  gaspi_printf("Rank %i is ready to build (took %u secs %llu Mbytes)\n",
+    	       glb_gaspi_ctx.rank, delta_s, gaspi_get_mem_in_use() / 1024 / 1024);
 
   if(glb_gaspi_cfg.build_infrastructure)
     {
       //connect all ranks
       for(i = glb_gaspi_ctx.rank; i < glb_gaspi_ctx.tnc; i++)
 	{
-	  if(gaspi_connect(i,GASPI_BLOCK)!=GASPI_SUCCESS)
+	  //TODO: timeout?
+	  if(gaspi_connect(i, GASPI_BLOCK) != GASPI_SUCCESS)
 	    {
 	      gaspi_printf("Connection to %d failed\n", i);
 	      return GASPI_ERROR;
@@ -528,11 +567,17 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       //commit GASPI_GROUP_ALL
       const gaspi_group_t g0 = 0;
 
-      eret = gaspi_group_commit(g0,timeout_ms);
+      eret = gaspi_group_commit(g0, timeout_ms);
 
       if(eret == GASPI_SUCCESS)
-	eret = gaspi_barrier(GASPI_GROUP_ALL, timeout_ms);
-
+	{
+	  eret = gaspi_barrier(GASPI_GROUP_ALL, timeout_ms);
+	}
+      else
+	{
+	  gaspi_printf("Group commit has failed (GASPI_GROUP_ALL)\n");
+	  return GASPI_ERROR;
+	}
     }
   else //dont build_infrastructure
     {
@@ -541,7 +586,12 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       glb_gaspi_group_ib[GASPI_GROUP_ALL].id = -2;//disable
       eret = GASPI_SUCCESS;
     }
-  
+
+  ftime(&tinit1);
+  const unsigned int delta_s1 = (tinit1.time-tinit0.time)+((tinit1.millitm-tinit0.millitm)/1000);
+  gaspi_printf("Rank %i is done with init (took %u secs %lu Mbytes peak %lu Mbytes )\n",
+	       glb_gaspi_ctx.rank, delta_s1, gaspi_get_mem_in_use()/1024/1024, gaspi_get_mem_peak()/1024/1024 );
+
   return eret;
   
  errL:
@@ -551,7 +601,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
 
 //cleanup
-#pragma weak gaspi_proc_term    = pgaspi_proc_term
+#pragma weak gaspi_proc_term = pgaspi_proc_term
 gaspi_return_t
 pgaspi_proc_term (const gaspi_timeout_t timeout)
 {
@@ -621,8 +671,9 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   ret = write(glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header));
   if(ret != sizeof(gaspi_cd_header))
     {
+      int errsv = errno;
       gaspi_print_error("Failed to contact SN thread");
-      gaspi_printf("Error %d: %s\n",ret, (char*) strerror(errno));
+      gaspi_printf("Ret %d Error %d: %s\n",ret, errsv, (char*) strerror(errsv));
       goto errL;
     }
 

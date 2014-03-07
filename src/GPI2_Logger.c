@@ -68,7 +68,6 @@ _set_local_log_conn(int *sockL, struct sockaddr_in * client)
 
   if ((*sockL = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
     {
-      pthread_mutex_unlock (&gaspi_logger_lock);
       return -1;
     }
 
@@ -138,21 +137,22 @@ gaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
   int sockL;
   if(_set_local_log_conn(&sockL, &client) < 0)
     {
-      pthread_mutex_unlock (&gaspi_logger_lock);
-      return;
+      goto endL;
     }
 
   if ((server_dataL = gethostbyname (gaspi_get_hn(log_rank))) == 0)
     {
-      pthread_mutex_unlock (&gaspi_logger_lock);
-      return;
+      goto endL;
     }
 
   _send_to_log(&serverL, server_dataL, sockL, buf);
 
   close (sockL);
-
+  
+ endL:
   pthread_mutex_unlock (&gaspi_logger_lock);
+  return;
+  
 }
 
 void
@@ -176,22 +176,28 @@ gaspi_printf (const char *fmt, ...)
   /* check required initialization */
   _check_log_init();
 
+  time_t ltime;
+  ltime=time(NULL);
+
   if (strcmp (gaspi_master_log_ptr, hn) == 0 && gaspi_log_socket == 0)
     {
+      //      sprintf (buf, "[%s:%d:%u - %s] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank, asctime(localtime(&ltime)));
+      sprintf (buf, "[%s:%d:%u] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank);
+      const int sl = strlen (buf);
+
       va_list ap;
       va_start (ap, fmt);
-      vsnprintf (buf, 1024, fmt, ap);
+      vsnprintf (buf + sl, 1024 - sl, fmt, ap);
       va_end (ap);
 
       fprintf (stdout, buf);
       fflush (stdout);
 
-      pthread_mutex_unlock (&gaspi_logger_lock);
-      return;
+      goto endL;
     }
 
-
-  sprintf (buf, "[%s:%d] ", hn, gaspi_log_socket);
+  //  sprintf (buf, "[%s:%d:%u - %s] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank, asctime(localtime(&ltime)));
+  sprintf (buf, "[%s:%d:%u] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank);
   const int sl = strlen (buf);
 
   va_list ap;
@@ -203,21 +209,21 @@ gaspi_printf (const char *fmt, ...)
   int sockL;
   if(_set_local_log_conn(&sockL, &client) < 0)
     {
-      pthread_mutex_unlock (&gaspi_logger_lock);
-      return;
+      goto endL;
     }
 
   if ((server_dataL = gethostbyname (gaspi_master_log_ptr)) == 0)
     {
-      pthread_mutex_unlock (&gaspi_logger_lock);
-      return;
+      goto endL;
     }
 
   _send_to_log(&serverL, server_dataL, sockL, buf);
 
   close (sockL);
 
+ endL:
   pthread_mutex_unlock (&gaspi_logger_lock);
+  return;
 }
 
 

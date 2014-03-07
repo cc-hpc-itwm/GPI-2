@@ -33,6 +33,7 @@ gaspi_handle_env(gaspi_context *ctx)
   typePtr = getenv ("MP_CHILD");
   mfilePtr = getenv ("GASPI_MFILE");
 
+ 
   if (socketPtr)
     {
       if(typePtr)
@@ -96,9 +97,15 @@ gaspi_handle_env(gaspi_context *ctx)
 #endif
 
   if(_proc_number == 0)
-    ctx->procType = MASTER_PROC;
+    {
+      ctx->procType = MASTER_PROC;
+    }
+  
   else if (_proc_number > 0)
-    ctx->procType = WORKER_PROC;
+    {
+      ctx->procType = WORKER_PROC;
+    }
+
   else
     {
       gaspi_print_error ("Incorrect node type!\n");
@@ -113,7 +120,7 @@ gaspi_handle_env(gaspi_context *ctx)
   return 0;
 }
 
-#else //default
+#else //default environment (gaspi_run w/ ssh)
 inline int
 gaspi_handle_env(gaspi_context *ctx) 
 {
@@ -122,10 +129,10 @@ gaspi_handle_env(gaspi_context *ctx)
   numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
   typePtr = getenv ("GASPI_TYPE");
   mfilePtr = getenv ("GASPI_MFILE");
-  
+
   if(socketPtr)
-    ctx->localSocket = MIN(MAX(atoi(socketPtr),0),3);
-  
+    //  ctx->localSocket = MIN(MAX(atoi(socketPtr),0),3);
+    ctx->localSocket = atoi(socketPtr);
   
   if(numaPtr)
     {
@@ -155,9 +162,15 @@ gaspi_handle_env(gaspi_context *ctx)
   
   
   if(strcmp (typePtr, "GASPI_WORKER") == 0)
-    ctx->procType = WORKER_PROC;
+    {
+      ctx->procType = WORKER_PROC;
+    }
+  
   else if (strcmp (typePtr, "GASPI_MASTER") == 0)
-    ctx->procType = MASTER_PROC;
+    {
+      ctx->procType = MASTER_PROC;
+    }
+  
   else
     {
       gaspi_print_error ("Incorrect node type!\n");
@@ -165,7 +178,9 @@ gaspi_handle_env(gaspi_context *ctx)
     }
   
   if (mfilePtr)
-    snprintf (ctx->mfile, 1024, "%s", mfilePtr);
+    {
+      snprintf (ctx->mfile, 1024, "%s", mfilePtr);
+    }
   
   return 0;
 }

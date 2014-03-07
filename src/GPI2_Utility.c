@@ -17,7 +17,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "GPI2_Utility.h"
 
-ulong gaspi_load_ulong(volatile ulong *ptr)
+ulong
+gaspi_load_ulong(volatile ulong *ptr)
 {
   ulong v=*ptr;
   asm volatile("" ::: "memory");
@@ -132,3 +133,11 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
   return 0;
 }
 
+void
+gaspi_thread_sleep(int msecs)
+{
+  struct timespec sleep_time, rem;
+  sleep_time.tv_sec = 0;
+  sleep_time.tv_nsec = msecs * 10000;
+  nanosleep(&sleep_time, &rem);
+}

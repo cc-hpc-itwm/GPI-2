@@ -27,7 +27,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_INT_PORT    (12121)
 
 #define GASPI_EPOLL_CREATE  (256)
-#define GASPI_EPOLL_MAX_EVENTS  (64)
+#define GASPI_EPOLL_MAX_EVENTS  (2048)
 
 #define FINLINE inline
 
@@ -62,7 +62,7 @@ typedef struct{
   gaspi_mgmt_header *mgmt;
 }gaspi_rank_data;
 
-
+extern volatile int glb_gaspi_init;
 extern volatile int glb_gaspi_ib_init;
 extern volatile int gaspi_master_topo_data;
 
