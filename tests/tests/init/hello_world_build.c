@@ -3,6 +3,7 @@
 #include <execinfo.h>
 #include <signal.h>
 #include <unistd.h>
+#include <sys/resource.h>
 #include <sys/syscall.h>
 #include <test_utils.h>
 
@@ -49,8 +50,6 @@ void sighandler(int signum, siginfo_t *info, void *ptr)
 
   do_backtrace(ptid, nodeRank, bt_file);
 
-  sleep(30);
-
   exit(-1);
 }
 
@@ -60,6 +59,7 @@ int main(int argc, char *argv[])
 {
   //Debugging
   struct sigaction act;
+  struct rlimit ofiles;
 
   memset(&act, 0, sizeof(act));
   act.sa_sigaction = sighandler;
@@ -67,18 +67,18 @@ int main(int argc, char *argv[])
 
   sigaction(SIGABRT, &act, NULL);
   sigaction(SIGTERM, &act, NULL);
-  sigaction(SIGKILL, &act, NULL);
   sigaction(SIGFPE, &act, NULL);
   sigaction(SIGBUS, &act, NULL);
   sigaction(SIGSEGV, &act, NULL);
   sigaction(SIGIO, &act, NULL);
   sigaction(SIGHUP, &act, NULL);
-
+  
   gaspi_config_t conf;
   ASSERT(gaspi_config_get(&conf));
-  conf.mtu = 2048;
-  conf.build_infrastructure = 0;
+  conf.mtu = 4096;
+  conf.queue_num = 1;
   ASSERT(gaspi_config_set(conf));
+ 
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
@@ -90,6 +90,15 @@ int main(int argc, char *argv[])
   gaspi_printf("Hello from rank %d of %d -> %d\n", 
 	       rank, num, (rank + 1 ) % num );
 
+  int i;
+
+  gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK);
+
+/*   struct timespec sleep_time, rem; */
+/*   sleep_time.tv_sec = 60; */
+/*   sleep_time.tv_nsec = 0; */
+/*   nanosleep(&sleep_time, &rem); */
+  
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 
   return EXIT_SUCCESS;
