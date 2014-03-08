@@ -208,6 +208,54 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
   
   return GASPI_ERROR;
 }
+#pragma weak gaspi_proc_local_rank = pgaspi_proc_local_rank
+gaspi_return_t
+pgaspi_proc_local_rank(gaspi_rank_t * const local_rank)
+{
+  if (glb_gaspi_init)
+    {
+#ifdef DEBUG
+      gaspi_verify_null_ptr(local_rank);
+#endif
+      *local_rank = (gaspi_rank_t) glb_gaspi_ctx.localSocket;
+      return GASPI_SUCCESS;
+    }
+  else
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
+}
+
+#pragma weak gaspi_proc_local_num = pgaspi_proc_local_num
+gaspi_return_t
+pgaspi_proc_local_num(gaspi_rank_t * const local_num)
+{
+  gaspi_rank_t rank;
+  
+  if (glb_gaspi_init)
+    {
+#ifdef DEBUG
+      gaspi_verify_null_ptr(local_num);
+#endif
+
+      if(gaspi_proc_rank(&rank) != GASPI_SUCCESS)
+	return GASPI_ERROR;
+
+      while(glb_gaspi_ctx.poff[rank + 1] != 0)
+	rank++;
+	    
+      *local_num  = glb_gaspi_ctx.poff[rank] + 1;
+      
+      return GASPI_SUCCESS;
+    }
+  else
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
+}
+
 
 #pragma weak gaspi_proc_init = pgaspi_proc_init
 gaspi_return_t
@@ -342,9 +390,10 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 		{
 		  //already in list ?
 		  const int hnlen = MAX (strlen (glb_gaspi_ctx.hn_poff + i * 64), MIN (strlen (line) - 1, 63));
-		  if(strncmp (glb_gaspi_ctx.hn_poff + i * 64, line, hnlen) == 0){
-		    inList++;
-		  }
+		  if(strncmp (glb_gaspi_ctx.hn_poff + i * 64, line, hnlen) == 0)
+		    {
+		      inList++;
+		    }
 		}
 	      
 	      glb_gaspi_ctx.poff[id] = inList;

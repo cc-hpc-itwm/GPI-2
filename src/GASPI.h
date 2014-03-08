@@ -266,6 +266,25 @@ extern "C"
    */
   gaspi_return_t gaspi_proc_term (const gaspi_timeout_t timeout_ms);
 
+    /** Get the process rank.
+   * 
+   * 
+   * @param local_rank Rank within a node of calling process.
+   * 
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_proc_local_rank (gaspi_rank_t * const local_rank);
+
+  /** Get the number of processes (ranks) started by the application.
+   * 
+   * 
+   * @param local_num The number of processes (ranks) in the same node
+   *
+   * 
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_proc_num (gaspi_rank_t * const local_num);
+
   /** Get the process rank.
    * 
    * 
