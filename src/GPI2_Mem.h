@@ -18,6 +18,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/resource.h>
 #include <unistd.h>
 #include "GASPI.h"
