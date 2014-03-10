@@ -40,7 +40,7 @@ extern "C"
 
 #define GASPI_BLOCK       (0xffffffff)
 #define GASPI_TEST        (0x0)
-#define GASPI_MAX_NODES   (65536)
+#define GASPI_MAX_NODES   (1000)
 #define GASPI_SN_PORT     (10840)
 #define GASPI_MAX_GROUPS  (32)
 #define GASPI_MAX_MSEGS   (32)
