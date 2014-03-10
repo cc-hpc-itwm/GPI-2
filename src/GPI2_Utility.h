@@ -26,12 +26,13 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <time.h>
 #include <xmmintrin.h>
 
+#define gaspi_print_error(msg, ...) gaspi_printf("Error (%s:%d): " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 #define gaspi_verify_null_ptr(ptr)				\
   if(ptr == NULL)						\
     {								\
-  gaspi_print_error ("Passed argument is a NULL pointer");	\
-  return GASPI_ERROR;						\
+      gaspi_print_error ("Passed argument is a NULL pointer");	\
+      return GASPI_ERROR;					\
     } 
 
 
@@ -41,7 +42,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define gaspi_delay()   _mm_pause()
 #endif
 
-#define gaspi_print_error(msg) gaspi_printf("Error: %s (%s:%d)\n", msg, __FILE__, __LINE__);
+
 #define MAX(a,b)  (((a)<(b)) ? (b) : (a))
 #define MIN(a,b)  (((a)>(b)) ? (b) : (a))
 
