@@ -1,9 +1,9 @@
 ifndef GPI2_HOME
-  GPI2_HOME = ../../../../
+  GPI2_HOME = $(HOME)/GPI2-1.0.1
 endif
 
 ifndef CMD_RUN
-  CMD_RUN = gaspi_run -m $$PBS_NODEFILE
+  CMD_RUN = $(GPI2_HOME)/bin/gaspi_run -m $$PBS_NODEFILE -N
 endif
 
 CC= icc

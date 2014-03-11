@@ -38,7 +38,7 @@ int main (int argc, char *argv[])
   SUCCESS_OR_DIE (gaspi_proc_num (&nProc));
 
   // number of threads
-  const int NTHREADS = 12;
+  const int NTHREADS = 6;
 
   // number of buffers
   const int NWAY     = 2;
@@ -117,6 +117,8 @@ int main (int argc, char *argv[])
 
 	// compute data, read from id "buffer_id", write to id "1 - buffer_id"
 	data_compute ( NTHREADS, array, 1 - buffer_id, buffer_id, slice_id);
+
+#pragma omp barrier
 
 	// alternate the buffer
 	buffer_id = 1 - buffer_id;

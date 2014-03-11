@@ -69,7 +69,7 @@ int main (int argc, char *argv[])
       int left_halo   = 0;
 
       // issue send
-      MPI_Issend ( &array_ELEM_right (buffer_id, left_halo + 1, 0), VLEN, MPI_DOUBLE
+      MPI_Isend ( &array_ELEM_right (buffer_id, left_halo + 1, 0), VLEN, MPI_DOUBLE
 	         , right, i, MPI_COMM_WORLD, &request);
 
       // post recv
@@ -79,7 +79,7 @@ int main (int argc, char *argv[])
       // compute data, read from id "buffer_id", write to id "1 - buffer_id"
       data_compute (NTHREADS, array, 1 - buffer_id, buffer_id, slice_id);
 
-      // wait for Issend
+      // wait for Isend
       MPI_Wait (&request, MPI_STATUS_IGNORE);
 
       // alternate the buffers
@@ -90,7 +90,7 @@ int main (int argc, char *argv[])
 
   time += now();
 
-  data_verify (NTHREADS, iProc, (NITER * nProc) % NWAY, array);
+//  data_verify (NTHREADS, iProc, (NITER * nProc) % NWAY, array);
 
   printf ("# mpi %s nProc %d vlen %i niter %d nthreads %i nway %i time %g\n"
          , argv[0], nProc, VLEN, NITER, NTHREADS, NWAY, time

@@ -36,7 +36,7 @@ int main (int argc, char *argv[])
   MPI_Comm_size (MPI_COMM_WORLD, &nProc);
 
   // number of threads
-  const int NTHREADS = 12;
+  const int NTHREADS = 6;
 
   // number of buffers
   const int NWAY     = 2;
@@ -91,11 +91,11 @@ int main (int argc, char *argv[])
 		       , right, i, MPI_COMM_WORLD, &recv_req[1]);
 
 	    // issue send
-	    MPI_Issend ( &array_ELEM_right (buffer_id, right_halo - 1, 0), VLEN, MPI_DOUBLE
+	    MPI_Isend ( &array_ELEM_right (buffer_id, right_halo - 1, 0), VLEN, MPI_DOUBLE
 			 , right, i, MPI_COMM_WORLD, &send_req[0]);
 
 	    // issue send
-	    MPI_Issend ( &array_ELEM_left (buffer_id, left_halo + 1, 0), VLEN, MPI_DOUBLE
+	    MPI_Isend ( &array_ELEM_left (buffer_id, left_halo + 1, 0), VLEN, MPI_DOUBLE
 			 , left, i, MPI_COMM_WORLD, &send_req[1]);
 
 	    // free send request
@@ -103,7 +103,7 @@ int main (int argc, char *argv[])
 	    
 	    MPI_Request_free(&send_req[1]);
 
-	    // wait for Irecv, Issend
+	    // wait for Irecv, Isend
 	    MPI_Waitall (2, recv_req, MPI_STATUSES_IGNORE);
 
 	  }
@@ -113,6 +113,8 @@ int main (int argc, char *argv[])
 	// compute data, read from id "buffer_id", write to id "1 - buffer_id"
 	data_compute (NTHREADS, array, 1 - buffer_id, buffer_id, slice_id);
 
+#pragma omp barrier
+
 	// alternate the buffer
 	buffer_id = 1 - buffer_id;
 
@@ -121,7 +123,7 @@ int main (int argc, char *argv[])
   }
   time += now();
 
-  data_verify (NTHREADS, iProc, (NITER * nProc) % NWAY, array);
+  data_verify (NTHREADS, iProc, ( NITER * nProc * NTHREADS ) % NWAY, array);
 
   printf ("# mpi %s nProc %d vlen %i niter %d nthreads %i nway %i time %g\n"
          , argv[0], nProc, VLEN, NITER, NTHREADS, NWAY, time

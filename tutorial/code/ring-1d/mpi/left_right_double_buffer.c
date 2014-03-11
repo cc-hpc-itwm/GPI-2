@@ -77,10 +77,10 @@ int main (int argc, char *argv[])
 		  , right, i, MPI_COMM_WORLD, &recv_req[1]);
 
       // issue send
-      MPI_Issend ( &array_ELEM_right (buffer_id, right_halo - 1, 0), VLEN, MPI_DOUBLE
+      MPI_Isend ( &array_ELEM_right (buffer_id, right_halo - 1, 0), VLEN, MPI_DOUBLE
 		  , right, i, MPI_COMM_WORLD, &send_req[0]);
 
-      MPI_Issend ( &array_ELEM_left (buffer_id, left_halo + 1, 0), VLEN, MPI_DOUBLE
+      MPI_Isend ( &array_ELEM_left (buffer_id, left_halo + 1, 0), VLEN, MPI_DOUBLE
 		  , left, i, MPI_COMM_WORLD, &send_req[1]);
 
       // wait for recv

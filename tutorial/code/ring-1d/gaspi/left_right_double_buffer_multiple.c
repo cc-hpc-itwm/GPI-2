@@ -38,7 +38,7 @@ int main (int argc, char *argv[])
   SUCCESS_OR_DIE (gaspi_proc_num (&nProc));
 
   // number of threads
-  const int NTHREADS = 12;
+  const int NTHREADS = 6;
 
   // number of buffers
   const int NWAY     = 2;

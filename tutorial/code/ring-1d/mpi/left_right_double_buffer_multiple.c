@@ -38,7 +38,7 @@ int main (int argc, char *argv[])
   MPI_Comm_size (MPI_COMM_WORLD, &nProc);
 
   // number of threads
-  const int NTHREADS = 12;
+  const int NTHREADS = 6;
 
   // number of buffers
   const int NWAY     = 2;
@@ -81,41 +81,42 @@ int main (int argc, char *argv[])
 	if (tid == 0)
 	  {
 	    MPI_Request send_req;
+
 	    // issue send
-	    MPI_Issend ( &array_ELEM_left (buffer_id, left_halo + 1, 0), VLEN, MPI_DOUBLE
-			 , left, i, MPI_COMM_WORLD, &send_req);
+	    MPI_Isend ( &array_ELEM_left (buffer_id, left_halo + 1, 0), VLEN, MPI_DOUBLE
+			, left, i, MPI_COMM_WORLD, &send_req);
 
 	    // free send request
 	    MPI_Request_free(&send_req);
 
-	    // post recv
-	    MPI_Recv ( &array_ELEM_right (buffer_id, left_halo, 0), VLEN, MPI_DOUBLE
+            // post recv
+            MPI_Recv ( &array_ELEM_right (buffer_id, left_halo, 0), VLEN, MPI_DOUBLE
 		       , left, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
 	    // compute data, read from id "buffer_id", write to id "1 - buffer_id"
 	    data_compute (NTHREADS, array, 1 - buffer_id, buffer_id, slice_id);
 
-
 	  }
-	if (tid == NTHREADS - 1)
+	if (tid == ( NTHREADS - 1 ) )
 	  {
 	    MPI_Request send_req;
-	    // issue send
-	    MPI_Issend ( &array_ELEM_right (buffer_id, right_halo - 1, 0), VLEN, MPI_DOUBLE
-			 , right, i, MPI_COMM_WORLD, &send_req);
 
+            // issue send
+            MPI_Isend ( &array_ELEM_right (buffer_id, right_halo - 1, 0), VLEN, MPI_DOUBLE
+                        , right, i, MPI_COMM_WORLD, &send_req);           
+ 
 	    // free send request
 	    MPI_Request_free(&send_req);
 
-	    // post recv
-	    MPI_Recv ( &array_ELEM_left (buffer_id, right_halo, 0), VLEN, MPI_DOUBLE
-		       , right, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            // post recv
+            MPI_Recv ( &array_ELEM_left (buffer_id, right_halo, 0), VLEN, MPI_DOUBLE
+                        , right, i, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
 	    // compute data, read from id "buffer_id", write to id "1 - buffer_id"
 	    data_compute (NTHREADS, array, 1 - buffer_id, buffer_id, slice_id);
-	      
+
 	  }
-	if (tid > 0 && tid < NTHREADS - 1)
+	if (tid > 0 && tid < ( NTHREADS - 1) ) 
 	  {
 	    data_compute (NTHREADS, array, 1 - buffer_id, buffer_id, slice_id);
 	  }
@@ -130,7 +131,7 @@ int main (int argc, char *argv[])
   }
   time += now();
 
-  data_verify (NTHREADS, iProc, (NITER * nProc) % NWAY, array);
+  data_verify (NTHREADS, iProc, (NITER * nProc * NTHREADS ) % NWAY, array);
 
   printf ("# mpi %s nProc %d vlen %i niter %d nthreads %i nway %i time %g\n"
          , argv[0], nProc, VLEN, NITER, NTHREADS, NWAY, time
