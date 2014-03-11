@@ -389,6 +389,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	      for(i = 0; i < id; i++)
 		{
 		  //already in list ?
+		  //TODO: 64? 63? Magic numbers -> just get cacheline from system or define as such
 		  const int hnlen = MAX (strlen (glb_gaspi_ctx.hn_poff + i * 64), MIN (strlen (line) - 1, 63));
 		  if(strncmp (glb_gaspi_ctx.hn_poff + i * 64, line, hnlen) == 0)
 		    {
@@ -401,7 +402,8 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	      strncpy (glb_gaspi_ctx.hn_poff + id * 64, line, MIN (read - 1, 63));
 	      id++; 
 	      
-	      if(id >= GASPI_MAX_NODES) break;
+	      if(id >= GASPI_MAX_NODES)
+		break;
 	    }
   
 	  fclose (fp);
@@ -448,6 +450,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  
 	  while(glb_gaspi_ctx.sockfd[i] == -1)
 	    {
+	      //TODO: timeout is magic number; has nothing to do with user input
 	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),GASPI_INT_PORT+glb_gaspi_ctx.poff[i],100000);
 
 	      if(glb_gaspi_ctx.sockfd[i] == -2)
@@ -469,6 +472,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 		}
 	      else
 		{
+		  //TODO: 65 is magic
 		  if(i > 0)
 		    {//we already have everything
 		      gaspi_cd_header cdh;
@@ -534,6 +538,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   
 	  while(glb_gaspi_ctx.sockfd[i] == -1)
 	    {
+	      //TODO: again the magic number for timeout with nothing to do with user input or resources
 	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),GASPI_INT_PORT+glb_gaspi_ctx.poff[i],100000);
 	    
 	      if(glb_gaspi_ctx.sockfd[i] == -2)
@@ -564,7 +569,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   
   //  glb_gaspi_init = 1;
   // need to wait to make sure everyone is connected
-  // avoid problem of connecting to a node which doesn't yet have it
+  // avoid problem of connecting to a node which is not yet ready (sn side)
   // TODO: should only be done when building infrastructure?
   while(glb_gaspi_init < glb_gaspi_ctx.tnc )
     {
@@ -575,6 +580,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   struct timeb tup1,tinit1;
   ftime(&tup1);
+  //TODO: delta calculations as a macro or inlined
   const unsigned int delta_s = (tup1.time-tup0.time)+((tup1.millitm-tup0.millitm)/1000);
   
   gaspi_printf("Rank %i is ready to build (took %u secs %llu Mbytes)\n",
@@ -594,7 +600,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	}
       
       //create GASPI_GROUP_ALL
-      if(glb_gaspi_group_ib[GASPI_GROUP_ALL].id==-1)
+      if(glb_gaspi_group_ib[GASPI_GROUP_ALL].id == -1)
 	{
 	  gaspi_group_t g0;
 	  if(gaspi_group_create(&g0) != GASPI_SUCCESS)
@@ -733,10 +739,11 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   cdh.rank = glb_gaspi_ctx.rank;
            
   int ret;
-  ret = write(glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header));
+  ret = write(glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
   if(ret != sizeof(gaspi_cd_header))
     {
       int errsv = errno;
+      //TODO: one coherent message is enough
       gaspi_print_error("Failed to contact SN thread");
       gaspi_printf("Ret %d Error %d: %s\n",ret, errsv, (char*) strerror(errsv));
       goto errL;
@@ -750,7 +757,7 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   return GASPI_ERROR;
 }
 
-#pragma weak gaspi_proc_rank    = pgaspi_proc_rank
+#pragma weak gaspi_proc_rank = pgaspi_proc_rank
 gaspi_return_t
 pgaspi_proc_rank (gaspi_rank_t * const rank)
 {
@@ -791,6 +798,7 @@ pgaspi_proc_num (gaspi_rank_t * const proc_num)
     }
 }
 
+//TODO: utility? (GPI2_Utility.[ch]
 char *
 gaspi_get_hn (const unsigned int id)
 {
@@ -860,8 +868,7 @@ pgaspi_notification_num (gaspi_number_t * const notification_num)
 
 #pragma weak gaspi_passive_transfer_size_max = pgaspi_passive_transfer_size_max
 gaspi_return_t
-pgaspi_passive_transfer_size_max (gaspi_size_t *
-				 const passive_transfer_size_max)
+pgaspi_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max)
 {
 #ifdef DEBUG
   gaspi_verify_null_ptr(passive_transfer_size_max);

@@ -91,7 +91,7 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
       return -1;
     }
 
-  if (queue >= glb_gaspi_cfg.queue_num)
+  if (queue > glb_gaspi_cfg.queue_num - 1)
     {
       
       gaspi_printf("Debug: Invalid queue: %d (%s)\n", queue, func_name);    

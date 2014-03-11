@@ -34,6 +34,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define PORT_LOGGER 17825
 
 static pthread_mutex_t gaspi_logger_lock = PTHREAD_MUTEX_INITIALIZER;
+//TODO: 128? or 255?
 static char gaspi_master_log_ptr[128];
 static int gaspi_master_log_init = 0;
 static int gaspi_log_socket = 0;
@@ -107,7 +108,7 @@ void
 gaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
 {
   char buf[1024];
-  char hn[128];
+  char hn[128]; //TODO: 128? or 255?
   struct sockaddr_in serverL, client;
   struct hostent *server_dataL;
 
@@ -126,7 +127,7 @@ gaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
       gaspi_log_socket = atoi (ptr2);
     }
   
-  sprintf (buf, "[%s:%d] ", hn, gaspi_log_socket);
+  sprintf (buf, "[%s:%d:%u] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank);
   const int sl = strlen (buf);
 
   va_list ap;
@@ -226,7 +227,6 @@ gaspi_printf (const char *fmt, ...)
   return;
 }
 
-
 void
 gaspi_print_affinity_mask ()
 {
@@ -277,3 +277,4 @@ gaspi_print_affinity_mask ()
 
   gaspi_printf ("%s\n", buf);
 }
+

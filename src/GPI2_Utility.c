@@ -25,6 +25,7 @@ gaspi_load_ulong(volatile ulong *ptr)
   return v;
 }
 
+//TODO: sample it instead of trusting OS? like mctp?
 float
 gaspi_get_cpufreq ()
 {
@@ -132,6 +133,7 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
   fclose (f);
   return 0;
 }
+
 
 void
 gaspi_thread_sleep(int msecs)
