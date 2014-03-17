@@ -127,7 +127,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   else
     glb_gaspi_cfg.queue_depth = nconf.queue_depth;
 
-  if (nconf.mtu == 1024 || nconf.mtu == 2048 || nconf.mtu == 4096)
+  if (nconf.mtu == 0 || nconf.mtu == 1024 || nconf.mtu == 2048 || nconf.mtu == 4096)
     glb_gaspi_cfg.mtu = nconf.mtu;
   else
     {
