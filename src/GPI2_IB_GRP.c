@@ -23,11 +23,12 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 const unsigned int glb_gaspi_typ_size[6] = { 4, 4, 4, 8, 8, 8 };
 void (*fctArrayGASPI[18]) (void *, void *, void *, const unsigned char cnt) ={NULL};
 
+
 #pragma weak gaspi_barrier      = pgaspi_barrier
 gaspi_return_t
 pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 {
-
+  
 #ifdef DEBUG
   if (!glb_gaspi_init)
     {
@@ -45,23 +46,39 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   struct ibv_sge slist;
   struct ibv_send_wr swr;
   struct ibv_send_wr *bad_wr_send;
-  int i;
+  int i,index;
 
   if(lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, timeout_ms))
-     return GASPI_TIMEOUT;
+    {
+      return GASPI_TIMEOUT;
+    }
+  
+  //other collectives active ?
+  if(!(glb_gaspi_group_ib[g].coll_op & GASPI_BARRIER))
+    {
+      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+      gaspi_printf("barrier: other coll. are active !\n");
+      return GASPI_ERROR;
+    }
+  
+  glb_gaspi_group_ib[g].coll_op = GASPI_BARRIER;
 
   const int size = glb_gaspi_group_ib[g].tnc;
 
-  glb_gaspi_group_ib[g].barrier_cnt++;
-  unsigned char *barrier_ptr =
-    glb_gaspi_group_ib[g].buf + 2 * size + glb_gaspi_group_ib[g].togle;
+  if(glb_gaspi_group_ib[g].lastmask==0x1)
+    {
+      glb_gaspi_group_ib[g].barrier_cnt++;
+    }
+  
+
+  unsigned char *barrier_ptr = glb_gaspi_group_ib[g].buf + 2 * size + glb_gaspi_group_ib[g].togle;
   barrier_ptr[0] = glb_gaspi_group_ib[g].barrier_cnt;
 
-  volatile unsigned char *rbuf =
-    (volatile unsigned char *) (glb_gaspi_group_ib[g].buf);
+  volatile unsigned char *rbuf = (volatile unsigned char *) (glb_gaspi_group_ib[g].buf);
 
   const int rank = glb_gaspi_group_ib[g].rank;
-  int mask = 0x1;
+  int mask = glb_gaspi_group_ib[g].lastmask&0x7fffffff;
+  int jmp = glb_gaspi_group_ib[g].lastmask>>31;
 
   slist.addr = (uintptr_t) barrier_ptr;
   slist.length = 1;
@@ -73,73 +90,88 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   swr.send_flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;
   swr.next = NULL;
 
+  const gaspi_cycles_t s0 = gaspi_get_cycles();
+
   while (mask < size)
     {
-
+      
       const int dst = glb_gaspi_group_ib[g].rank_grp[(rank + mask) % size];
       const int src = (rank - mask + size) % size;
-
-      swr.wr.rdma.remote_addr =
-	glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank +
-						      glb_gaspi_group_ib
-						      [g].togle);
+      if(jmp){jmp=0;goto B0;}
+      swr.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle);
       swr.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
       swr.wr_id = dst;
 
       if (ibv_post_send (glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
 	{
+	  
 	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	  unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
-	  gaspi_printf("Debug: failed to post request to %u for barrier (gaspi_barrier)\n",
-		       dst);
-#endif	  
+	  gaspi_printf("Debug: failed to post request to %u for barrier (%d)\n",dst,glb_gaspi_ctx_ib.ne_count_grp);
 	  return GASPI_ERROR;
 	}
 
       glb_gaspi_ctx_ib.ne_count_grp++;
-      const int index = 2 * src + glb_gaspi_group_ib[g].togle;
+
+    B0:
+      index = 2 * src + glb_gaspi_group_ib[g].togle;
 
       while (rbuf[index] != glb_gaspi_group_ib[g].barrier_cnt)
 	{
-	  gaspi_delay ();
-	};
+	  //here we check for timeout to avoid active polling
+	  const gaspi_cycles_t s1 = gaspi_get_cycles();
+	  const gaspi_cycles_t tdelta = s1 - s0;
+	  const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+      
+	  if(ms > timeout_ms){
+        
+	    glb_gaspi_group_ib[g].lastmask = mask|0x80000000;
+	    unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+	    //gaspi_printf("barrier: timeout in poll !\n");
+	    return GASPI_TIMEOUT;
+	  }
+	  //gaspi_delay (); 
+	}
 
       mask <<= 1;
     } //while...
 
 
-  const int pret =
-    ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.ne_count_grp,
-		 glb_gaspi_ctx_ib.wc_grp_send);
+  const int pret = ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.ne_count_grp,glb_gaspi_ctx_ib.wc_grp_send);
+  
   if (pret < 0)
     {
+
       for (i = 0; i < glb_gaspi_ctx_ib.ne_count_grp; i++)
 	{
+
 	  if (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS)
 	    {
-	      glb_gaspi_ctx.
-		qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send
-					    [i].wr_id] = 1;
+	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = 1;
 	    }
 	}
+      
       unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
-	  gaspi_printf("Debug: Failed request to %u. Collectives queue might be broken\n",
-		       glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
-  
-#endif	  
+
+      gaspi_printf("Debug: Failed request to %u. Collectives queue might be broken\n",glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
       return GASPI_ERROR;
     }
 
   glb_gaspi_ctx_ib.ne_count_grp -= pret;
 
   glb_gaspi_group_ib[g].togle = (glb_gaspi_group_ib[g].togle ^ 0x1);
+  glb_gaspi_group_ib[g].coll_op = GASPI_NONE;
+  glb_gaspi_group_ib[g].lastmask = 0x1;
 
   unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
   return GASPI_SUCCESS;
 }
+
+
+
+
+
 
 //pre-defined coll. operations
 void
@@ -512,10 +544,10 @@ gaspi_init_collectives ()
 #pragma weak gaspi_allreduce = pgaspi_allreduce
 gaspi_return_t
 pgaspi_allreduce (gaspi_pointer_t const buf_send,
-		 gaspi_pointer_t const buf_recv,
-		 const gaspi_number_t elem_cnt, const gaspi_operation_t op,
-		 const gaspi_datatype_t type, const gaspi_group_t g,
-		 const gaspi_timeout_t timeout_ms)
+		  gaspi_pointer_t const buf_recv,
+		  const gaspi_number_t elem_cnt, const gaspi_operation_t op,
+		  const gaspi_datatype_t type, const gaspi_group_t g,
+		  const gaspi_timeout_t timeout_ms)
 {
 
 #ifdef DEBUG
@@ -550,6 +582,8 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
     }
 #endif  
 
+
+
   struct ibv_send_wr *bad_wr_send;
   struct ibv_sge slist, slistN;
   struct ibv_send_wr swr, swrN;
@@ -558,25 +592,38 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 
 
   if(lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, timeout_ms))
-    return GASPI_TIMEOUT;
+    {
+      return GASPI_TIMEOUT;
+    }
+  
+
+  //other collectives active ?
+  if(!(glb_gaspi_group_ib[g].coll_op & GASPI_ALLREDUCE))
+    {
+      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+      gaspi_printf("allreduce: other coll. are active !\n");
+      return GASPI_ERROR;
+    }
+
+  glb_gaspi_group_ib[g].coll_op = GASPI_ALLREDUCE;
 
   const int dsize = glb_gaspi_typ_size[type] * elem_cnt;
 
-  glb_gaspi_group_ib[g].barrier_cnt++;
+  if( glb_gaspi_group_ib[g].level==0 )
+    {
+      glb_gaspi_group_ib[g].barrier_cnt++;
+    }
+  
 
   const int size = glb_gaspi_group_ib[g].tnc;
   const int rank = glb_gaspi_group_ib[g].rank;
 
-  unsigned char *barrier_ptr =
-    glb_gaspi_group_ib[g].buf + 2 * size + glb_gaspi_group_ib[g].togle;
+  unsigned char *barrier_ptr = glb_gaspi_group_ib[g].buf + 2 * size + glb_gaspi_group_ib[g].togle;
   barrier_ptr[0] = glb_gaspi_group_ib[g].barrier_cnt;
 
-  volatile unsigned char *poll_buf =
-    (volatile unsigned char *) (glb_gaspi_group_ib[g].buf);
+  volatile unsigned char *poll_buf = (volatile unsigned char *) (glb_gaspi_group_ib[g].buf);
 
-  unsigned char *send_ptr =
-    glb_gaspi_group_ib[g].buf + COLL_MEM_SEND +
-    (glb_gaspi_group_ib[g].togle * 18 * 2048);
+  unsigned char *send_ptr = glb_gaspi_group_ib[g].buf + COLL_MEM_SEND + (glb_gaspi_group_ib[g].togle * 18 * 2048);
   memcpy (send_ptr, buf_send, dsize);
 
   unsigned char *recv_ptr = glb_gaspi_group_ib[g].buf + COLL_MEM_RECV;
@@ -602,40 +649,39 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
   swrN.send_flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;
   swrN.next = NULL;
 
+  const gaspi_cycles_t s0 = gaspi_get_cycles();
 
-  if (rank < 2 * rest)
+  if(glb_gaspi_group_ib[g].level >= 2)
+    {
+      tmprank = glb_gaspi_group_ib[g].tmprank;
+      bid=glb_gaspi_group_ib[g].bid;
+      send_ptr += glb_gaspi_group_ib[g].dsize;
+      //goto L2;
+      if(glb_gaspi_group_ib[g].level==2) goto L2;
+      else if(glb_gaspi_group_ib[g].level==3) goto L3;
+    }
+
+  if(rank < 2 * rest)
     {
 
-      if (rank % 2 == 0)
+      if(rank % 2 == 0)
 	{
-
+      
 	  dst = glb_gaspi_group_ib[g].rank_grp[rank + 1];
-
 	  slist.addr = (uintptr_t) send_ptr;
-	  swr.wr.rdma.remote_addr =
-	    glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV +
-							  (2 * bid +
-							   glb_gaspi_group_ib
-							   [g].togle) * 2048);
+	  swr.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
 	  swr.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
 	  swr.wr_id = dst;
-	  swrN.wr.rdma.remote_addr =
-	    glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank +
-							  glb_gaspi_group_ib
-							  [g].togle);
+	  swrN.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle);
 	  swrN.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
 	  swrN.wr_id = dst;
 
-	  if (ibv_post_send
-	      (glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
+	  if (ibv_post_send(glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
-	  gaspi_printf("Debug: failed to post request to %u for allreduce (gaspi_allreduce)\n",
-		       dst);	  
-#endif	  
 
+	      gaspi_printf("Debug: failed to post request to %u for allreduce (gaspi_allreduce)\n",dst);	  
 	      return GASPI_ERROR;
 	    }
 
@@ -649,17 +695,27 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 
 	  while (poll_buf[dst] != glb_gaspi_group_ib[g].barrier_cnt)
 	    {
-	      gaspi_delay ();
-	    };
+	      //timeout...    
+	      const gaspi_cycles_t s1 = gaspi_get_cycles();
+	      const gaspi_cycles_t tdelta = s1 - s0;
+	      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+      
+	      if(ms > timeout_ms){
+		glb_gaspi_group_ib[g].level = 1;
+		unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+		//gaspi_printf("allreduce: timeout phase1 !\n");
+		return GASPI_TIMEOUT;
+	      }
 
-	  void *dst_val =
-	    (void *) (recv_ptr +
-		      (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
+	      //gaspi_delay ();
+	    }
+
+	  void *dst_val = (void *) (recv_ptr + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
 	  void *local_val = (void *) send_ptr;
 	  send_ptr += dsize;
-	  fctArrayGASPI[op * 6 + type] ((void *) send_ptr, local_val, dst_val,
-					elem_cnt);
+	  glb_gaspi_group_ib[g].dsize+=dsize;
 
+	  fctArrayGASPI[op * 6 + type] ((void *) send_ptr, local_val, dst_val,elem_cnt);
 	  tmprank = rank >> 1;
 	}
 
@@ -668,16 +724,24 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
     }
   else
     {
+      
       tmprank = rank - rest;
-      if (rest)
-	bid++;
+      if (rest) bid++;
     }
 
+  glb_gaspi_group_ib[g].tmprank = tmprank;
+  glb_gaspi_group_ib[g].bid = bid;
+  glb_gaspi_group_ib[g].level = 2;
+
+  //second phase
+ L2:
 
   if (tmprank != -1)
     {
 
-      mask = 0x1;
+      //mask = 0x1;
+      mask = glb_gaspi_group_ib[g].lastmask&0x7fffffff;
+      int jmp = glb_gaspi_group_ib[g].lastmask>>31;
 
       while (mask < glb_gaspi_group_ib[g].next_pof2)
 	{
@@ -685,51 +749,53 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 	  tmpdst = tmprank ^ mask;
 	  idst = (tmpdst < rest) ? tmpdst * 2 + 1 : tmpdst + rest;
 	  dst = glb_gaspi_group_ib[g].rank_grp[idst];
+	  if(jmp){jmp=0;goto J2;}
 
 	  slist.addr = (uintptr_t) send_ptr;
-	  swr.wr.rdma.remote_addr =
-	    glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV +
-							  (2 * bid +
-							   glb_gaspi_group_ib
-							   [g].togle) * 2048);
+	  swr.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid +glb_gaspi_group_ib[g].togle) * 2048);
 	  swr.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
 	  swr.wr_id = dst;
-	  swrN.wr.rdma.remote_addr =
-	    glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank +
-							  glb_gaspi_group_ib
-							  [g].togle);
+	  swrN.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle);
 	  swrN.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
 	  swrN.wr_id = dst;
 
-	  if (ibv_post_send
-	      (glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
+	  if (ibv_post_send(glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
 	    {
+
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
-	      gaspi_printf("Debug: failed to post request to %u for allreduce (gaspi_allreduce)\n",
-			   dst);	      
-#endif	  
 
+	      gaspi_printf("Debug: failed to post request to %u for allreduce (gaspi_allreduce)\n",dst);	      
 	      return GASPI_ERROR;
 	    }
 
 	  glb_gaspi_ctx_ib.ne_count_grp += 2;
+	J2:
 	  dst = 2 * idst + glb_gaspi_group_ib[g].togle;
 
 	  while (poll_buf[dst] != glb_gaspi_group_ib[g].barrier_cnt)
 	    {
-	      gaspi_delay ();
-	    };
+	      //timeout...
+	      const gaspi_cycles_t s1 = gaspi_get_cycles();
+	      const gaspi_cycles_t tdelta = s1 - s0;
+	      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+      
+	      if(ms > timeout_ms){
+		glb_gaspi_group_ib[g].lastmask = mask|0x80000000;
+		glb_gaspi_group_ib[g].bid = bid;
+		unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+		//gaspi_printf("allreduce: timeout phase2 !\n");
+		return GASPI_TIMEOUT;
+	      }
 
-	  void *dst_val =
-	    (void *) (recv_ptr +
-		      (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
+	    }
+
+	  void *dst_val = (void *) (recv_ptr + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
 	  void *local_val = (void *) send_ptr;
 	  send_ptr += dsize;
+	  glb_gaspi_group_ib[g].dsize+=dsize;
 
-	  fctArrayGASPI[op * 6 + type] ((void *) send_ptr, local_val, dst_val,
-					elem_cnt);
+	  fctArrayGASPI[op * 6 + type] ((void *) send_ptr, local_val, dst_val,elem_cnt);
 
 	  mask <<= 1;
 	  bid++;
@@ -737,44 +803,38 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 
     }
 
+  glb_gaspi_group_ib[g].bid = bid;
+  glb_gaspi_group_ib[g].level = 3;
+  //third phase
+ L3:
 
   if (rank < 2 * rest)
     {
-      if (rank % 2)
-	{
+      
+      if (rank % 2){
 
-	  dst = glb_gaspi_group_ib[g].rank_grp[rank - 1];
+	dst = glb_gaspi_group_ib[g].rank_grp[rank - 1];
 
-	  slist.addr = (uintptr_t) send_ptr;
-	  swr.wr.rdma.remote_addr =
-	    glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV +
-							  (2 * bid +
-							   glb_gaspi_group_ib
-							   [g].togle) * 2048);
-	  swr.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
-	  swr.wr_id = dst;
-	  swrN.wr.rdma.remote_addr =
-	    glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank +
-							  glb_gaspi_group_ib
-							  [g].togle);
-	  swrN.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
-	  swrN.wr_id = dst;
-	  if (ibv_post_send
-	      (glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
-	    {
-	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
-	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
-	      gaspi_printf("Debug: failed to post request to %u for allreduce (gaspi_allreduce)\n",
-			   dst);	      
-#endif	  
+	slist.addr = (uintptr_t) send_ptr;
+	swr.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
+	swr.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
+	swr.wr_id = dst;
+	swrN.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle);
+	swrN.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
+	swrN.wr_id = dst;
+	  
+	if (ibv_post_send(glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send)){
 	      
-	      return GASPI_ERROR;
-	    }
+	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
+	  unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
-	  glb_gaspi_ctx_ib.ne_count_grp += 2;
-
+	  gaspi_printf("Debug: failed to post request to %u for allreduce (gaspi_allreduce)\n",dst);	      
+	  return GASPI_ERROR;
 	}
+
+	glb_gaspi_ctx_ib.ne_count_grp += 2;
+
+      }
       else
 	{
 
@@ -782,62 +842,72 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 
 	  while (poll_buf[dst] != glb_gaspi_group_ib[g].barrier_cnt)
 	    {
-	      gaspi_delay ();
-	    };
+	      //timeout...
+	      const gaspi_cycles_t s1 = gaspi_get_cycles();
+	      const gaspi_cycles_t tdelta = s1 - s0;
+	      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+      
+	      if(ms > timeout_ms){
+		unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+		//gaspi_printf("allreduce: timeout phase3 !\n");
+		return GASPI_TIMEOUT;
+	      }   
+	      //gaspi_delay ();
+	    }
 
 	  bid += glb_gaspi_group_ib[g].pof2_exp;
-	  send_ptr =
-	    (recv_ptr + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
+	  send_ptr = (recv_ptr + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
 	}
 
 
     }
 
 
-  const int pret =
-    ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.ne_count_grp,
-		 glb_gaspi_ctx_ib.wc_grp_send);
+  const int pret = ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.ne_count_grp,glb_gaspi_ctx_ib.wc_grp_send);
+  
   if (pret < 0)
     {
+  
       for (i = 0; i < glb_gaspi_ctx_ib.ne_count_grp; i++)
 	{
 	  if (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS)
 	    {
-	      glb_gaspi_ctx.
-		qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send
-					    [i].wr_id] = 1;
+	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = 1;
 	    }
 	}
+      
       unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
-      gaspi_printf("Debug: Failed request to %u. Collectives queue might be broken\n",
-		   glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
-  
-#endif	  
 
+      gaspi_printf("Debug: Failed request to %u. Collectives queue might be broken\n",glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
       return GASPI_ERROR;
     }
 
+  
   glb_gaspi_ctx_ib.ne_count_grp -= pret;
-
   glb_gaspi_group_ib[g].togle = (glb_gaspi_group_ib[g].togle ^ 0x1);
 
-  memcpy (buf_recv, send_ptr, dsize);
+  glb_gaspi_group_ib[g].coll_op = GASPI_NONE;
+  glb_gaspi_group_ib[g].lastmask = 0x1;
+  glb_gaspi_group_ib[g].level = 0;
+  glb_gaspi_group_ib[g].dsize = 0;
+  glb_gaspi_group_ib[g].bid   = 0;
 
+  memcpy (buf_recv, send_ptr, dsize);
   unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
   return GASPI_SUCCESS;
 }
 
+
 #pragma weak gaspi_allreduce_user = pgaspi_allreduce_user
 gaspi_return_t
 pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
-		      gaspi_pointer_t const buf_recv,
-		      const gaspi_number_t elem_cnt,
-		      const gaspi_size_t elem_size,
-		      gaspi_reduce_operation_t const user_fct,
-		      gaspi_state_t const rstate, const gaspi_group_t g,
-		      const gaspi_timeout_t timeout_ms)
+		       gaspi_pointer_t const buf_recv,
+		       const gaspi_number_t elem_cnt,
+		       const gaspi_size_t elem_size,
+		       gaspi_reduce_operation_t const user_fct,
+		       gaspi_state_t const rstate, const gaspi_group_t g,
+		       const gaspi_timeout_t timeout_ms)
 {
 
 #ifdef DEBUG
@@ -866,6 +936,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
     }
 #endif  
 
+
   struct ibv_send_wr *bad_wr_send;
   struct ibv_sge slist, slistN;
   struct ibv_send_wr swr, swrN;
@@ -874,25 +945,38 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 
 
   if(lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, timeout_ms))
-    return GASPI_TIMEOUT;
+    {
+      return GASPI_TIMEOUT;
+    }
+  
+
+  //other collectives active ?
+  if(!(glb_gaspi_group_ib[g].coll_op & GASPI_ALLREDUCE_USER))
+    {
+      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+      gaspi_printf("allreduce_user: other coll. are active !\n");
+      return GASPI_ERROR;
+    }
+
+  glb_gaspi_group_ib[g].coll_op = GASPI_ALLREDUCE_USER;
 
   const int dsize = elem_size * elem_cnt;
 
-  glb_gaspi_group_ib[g].barrier_cnt++;
+  if( glb_gaspi_group_ib[g].level==0 )
+    {
+      glb_gaspi_group_ib[g].barrier_cnt++;
+    }
+  
 
   const int size = glb_gaspi_group_ib[g].tnc;
   const int rank = glb_gaspi_group_ib[g].rank;
 
-  unsigned char *barrier_ptr =
-    glb_gaspi_group_ib[g].buf + 2 * size + glb_gaspi_group_ib[g].togle;
+  unsigned char *barrier_ptr = glb_gaspi_group_ib[g].buf + 2 * size + glb_gaspi_group_ib[g].togle;
   barrier_ptr[0] = glb_gaspi_group_ib[g].barrier_cnt;
 
-  volatile unsigned char *poll_buf =
-    (volatile unsigned char *) (glb_gaspi_group_ib[g].buf);
+  volatile unsigned char *poll_buf = (volatile unsigned char *) (glb_gaspi_group_ib[g].buf);
 
-  unsigned char *send_ptr =
-    glb_gaspi_group_ib[g].buf + COLL_MEM_SEND +
-    (glb_gaspi_group_ib[g].togle * 18 * 2048);
+  unsigned char *send_ptr = glb_gaspi_group_ib[g].buf + COLL_MEM_SEND + (glb_gaspi_group_ib[g].togle * 18 * 2048);
   memcpy (send_ptr, buf_send, dsize);
 
   unsigned char *recv_ptr = glb_gaspi_group_ib[g].buf + COLL_MEM_RECV;
@@ -918,6 +1002,17 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
   swrN.send_flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;
   swrN.next = NULL;
 
+  const gaspi_cycles_t s0 = gaspi_get_cycles();
+
+  if(glb_gaspi_group_ib[g].level >= 2)
+    {
+      tmprank = glb_gaspi_group_ib[g].tmprank;
+      bid=glb_gaspi_group_ib[g].bid;
+      send_ptr += glb_gaspi_group_ib[g].dsize;
+      if(glb_gaspi_group_ib[g].level==2) goto L2;
+      else if(glb_gaspi_group_ib[g].level==3) goto L3;
+    }
+
 
   if (rank < 2 * rest)
     {
@@ -928,30 +1023,20 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 	  dst = glb_gaspi_group_ib[g].rank_grp[rank + 1];
 
 	  slist.addr = (uintptr_t) send_ptr;
-	  swr.wr.rdma.remote_addr =
-	    glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV +
-							  (2 * bid +
-							   glb_gaspi_group_ib
-							   [g].togle) * 2048);
+	  swr.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
 	  swr.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
 	  swr.wr_id = dst;
-	  swrN.wr.rdma.remote_addr =
-	    glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank +
-							  glb_gaspi_group_ib
-							  [g].togle);
+	  swrN.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle);
 	  swrN.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
 	  swrN.wr_id = dst;
 
-	  if (ibv_post_send
-	      (glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
+	  if (ibv_post_send(glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
 	    {
+
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
-	      gaspi_printf("Debug: failed to post request to %u (gaspi_allreduce_user)\n",
-			   dst);	      
-#endif	  
-	      
+
+	      gaspi_printf("Debug: failed to post request to %u (gaspi_allreduce_user)\n",dst);	      
 	      return GASPI_ERROR;
 	    }
 
@@ -965,16 +1050,25 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 
 	  while (poll_buf[dst] != glb_gaspi_group_ib[g].barrier_cnt)
 	    {
-	      gaspi_delay ();
-	    };
+	      //timeout...
+	      const gaspi_cycles_t s1 = gaspi_get_cycles();
+	      const gaspi_cycles_t tdelta = s1 - s0;
+	      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+      
+	      if(ms > timeout_ms){
+		glb_gaspi_group_ib[g].level = 1;
+		unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+		//gaspi_printf("allreduce_user: timeout phase1 !\n");
+		return GASPI_TIMEOUT;
+	      }
+	      //gaspi_delay ();
+	    }
 
-	  void *dst_val =
-	    (void *) (recv_ptr +
-		      (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
+	  void *dst_val = (void *) (recv_ptr + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
 	  void *local_val = (void *) send_ptr;
 	  send_ptr += dsize;
-	  user_fct (local_val, dst_val, (void *) send_ptr, rstate, elem_cnt,
-		    elem_size, timeout_ms);
+	  glb_gaspi_group_ib[g].dsize+=dsize;
+	  user_fct (local_val, dst_val, (void *) send_ptr, rstate, elem_cnt,elem_size, timeout_ms);
 
 	  tmprank = rank >> 1;
 	}
@@ -984,16 +1078,24 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
     }
   else
     {
+
       tmprank = rank - rest;
-      if (rest)
-	bid++;
+      if (rest) bid++;
     }
 
+  glb_gaspi_group_ib[g].tmprank = tmprank;
+  glb_gaspi_group_ib[g].bid = bid;
+  glb_gaspi_group_ib[g].level = 2;
+
+  //second phase
+ L2:
 
   if (tmprank != -1)
     {
 
-      mask = 0x1;
+      //mask = 0x1;
+      mask = glb_gaspi_group_ib[g].lastmask&0x7fffffff;
+      int jmp = glb_gaspi_group_ib[g].lastmask>>31;
 
       while (mask < glb_gaspi_group_ib[g].next_pof2)
 	{
@@ -1001,57 +1103,64 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 	  tmpdst = tmprank ^ mask;
 	  idst = (tmpdst < rest) ? tmpdst * 2 + 1 : tmpdst + rest;
 	  dst = glb_gaspi_group_ib[g].rank_grp[idst];
+	  if(jmp){jmp=0;goto J2;}
 
 	  slist.addr = (uintptr_t) send_ptr;
-	  swr.wr.rdma.remote_addr =
-	    glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV +
-							  (2 * bid +
-							   glb_gaspi_group_ib
-							   [g].togle) * 2048);
+	  swr.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
 	  swr.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
 	  swr.wr_id = dst;
-	  swrN.wr.rdma.remote_addr =
-	    glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank +
-							  glb_gaspi_group_ib
-							  [g].togle);
+	  swrN.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle);
 	  swrN.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
 	  swrN.wr_id = dst;
 
-	  if (ibv_post_send
-	      (glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
+	  if (ibv_post_send(glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
-	      gaspi_printf("Debug: failed to post request to %u (gaspi_allreduce_user)\n",
-			   dst);	      
-#endif	  
-	      
+	  
+	      gaspi_printf("Debug: failed to post request to %u (gaspi_allreduce_user)\n",dst);	      
 	      return GASPI_ERROR;
 	    }
 
 	  glb_gaspi_ctx_ib.ne_count_grp += 2;
+
+	J2:
 	  dst = 2 * idst + glb_gaspi_group_ib[g].togle;
 
 	  while (poll_buf[dst] != glb_gaspi_group_ib[g].barrier_cnt)
 	    {
-	      gaspi_delay ();
-	    };
+	      //timeout...
+	      const gaspi_cycles_t s1 = gaspi_get_cycles();
+	      const gaspi_cycles_t tdelta = s1 - s0;
+	      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+      
+	      if(ms > timeout_ms)
+		{
+		  glb_gaspi_group_ib[g].lastmask = mask|0x80000000;
+		  glb_gaspi_group_ib[g].bid = bid;
+		  unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+		  //gaspi_printf("allreduce_user: timeout phase2 !\n");
+		  return GASPI_TIMEOUT;
+		}
+	      //gaspi_delay ();
+	    }
 
-	  void *dst_val =
-	    (void *) (recv_ptr +
-		      (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
+	  void *dst_val = (void *) (recv_ptr + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
 	  void *local_val = (void *) send_ptr;
 	  send_ptr += dsize;
+	  glb_gaspi_group_ib[g].dsize+=dsize;
 
-	  user_fct (local_val, dst_val, (void *) send_ptr, rstate, elem_cnt,
-		    elem_size, timeout_ms);
+	  user_fct (local_val, dst_val, (void *) send_ptr, rstate, elem_cnt,elem_size, timeout_ms);
 	  mask <<= 1;
 	  bid++;
 	}
 
     }
 
+  glb_gaspi_group_ib[g].bid = bid;
+  glb_gaspi_group_ib[g].level = 3;
+  //third phase
+ L3:
 
   if (rank < 2 * rest)
     {
@@ -1061,30 +1170,19 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 	  dst = glb_gaspi_group_ib[g].rank_grp[rank - 1];
 
 	  slist.addr = (uintptr_t) send_ptr;
-	  swr.wr.rdma.remote_addr =
-	    glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV +
-							  (2 * bid +
-							   glb_gaspi_group_ib
-							   [g].togle) * 2048);
+	  swr.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid +glb_gaspi_group_ib[g].togle) * 2048);
 	  swr.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
 	  swr.wr_id = dst;
-	  swrN.wr.rdma.remote_addr =
-	    glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank +
-							  glb_gaspi_group_ib
-							  [g].togle);
+	  swrN.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank +glb_gaspi_group_ib[g].togle);
 	  swrN.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
 	  swrN.wr_id = dst;
 
-	  if (ibv_post_send
-	      (glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
+	  if (ibv_post_send(glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
-	      gaspi_printf("Debug: failed to post request to %u (gaspi_allreduce_user)\n",
-			   dst);	      
-#endif	  
-	      
+	  
+	      gaspi_printf("Debug: failed to post request to %u (gaspi_allreduce_user)\n",dst);	      
 	      return GASPI_ERROR;
 	    }
 
@@ -1098,45 +1196,52 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 
 	  while (poll_buf[dst] != glb_gaspi_group_ib[g].barrier_cnt)
 	    {
-	      gaspi_delay ();
-	    };
+	      //timeout...	    
+	      const gaspi_cycles_t s1 = gaspi_get_cycles();
+	      const gaspi_cycles_t tdelta = s1 - s0;
+	      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+      
+	      if(ms > timeout_ms){
+		unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+		//gaspi_printf("allreduce_user: timeout phase3 !\n");
+		return GASPI_TIMEOUT;
+	      }   
+	      //gaspi_delay ();
+	    }
 
 	  bid += glb_gaspi_group_ib[g].pof2_exp;
-	  send_ptr =
-	    (recv_ptr + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
+	  send_ptr = (recv_ptr + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
 	}
-
 
     }
 
-
-  const int pret =
-    ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.ne_count_grp,
-		 glb_gaspi_ctx_ib.wc_grp_send);
+  const int pret = ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.ne_count_grp,glb_gaspi_ctx_ib.wc_grp_send);
   if (pret < 0)
     {
+
       for (i = 0; i < glb_gaspi_ctx_ib.ne_count_grp; i++)
 	{
 	  if (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS)
 	    {
-	      glb_gaspi_ctx.
-		qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send
-					    [i].wr_id] = 1;
+	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = 1;
 	    }
 	}
-      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-#ifdef DEBUG
-      gaspi_printf("Debug: Failed request to %u. Collectives queue might be broken\n",
-		   glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
-  
-#endif	  
       
+      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+
+      gaspi_printf("Debug: Failed request to %u. Collectives queue might be broken\n",glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);    
       return GASPI_ERROR;
     }
 
   glb_gaspi_ctx_ib.ne_count_grp -= pret;
 
   glb_gaspi_group_ib[g].togle = (glb_gaspi_group_ib[g].togle ^ 0x1);
+
+  glb_gaspi_group_ib[g].coll_op = GASPI_NONE;
+  glb_gaspi_group_ib[g].lastmask = 0x1;
+  glb_gaspi_group_ib[g].level = 0;
+  glb_gaspi_group_ib[g].dsize = 0;
+  glb_gaspi_group_ib[g].bid   = 0;
 
   memcpy (buf_recv, send_ptr, dsize);
 

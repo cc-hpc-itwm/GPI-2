@@ -110,7 +110,13 @@ gaspi_init_ib_core ()
 
   for(i = 0; i < 256; i++){glb_gaspi_ctx_ib.rrmd[i] = NULL;}
 
-  for (i = 0; i < GASPI_MAX_GROUPS; i++) glb_gaspi_group_ib[i].id = -1;
+  for (i = 0; i < GASPI_MAX_GROUPS; i++){ 
+    glb_gaspi_group_ib[i].id = -1;
+    glb_gaspi_group_ib[i].coll_op = GASPI_NONE;
+    glb_gaspi_group_ib[i].lastmask = 0x1;
+    glb_gaspi_group_ib[i].level = 0;
+    glb_gaspi_group_ib[i].dsize = 0;
+  }
 
   for (i = 0; i < 64; i++) glb_gaspi_ctx_ib.wc_grp_send[i].status = IBV_WC_SUCCESS;
 
@@ -1706,7 +1712,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size)
     {
-      gaspi_printf("Info: Segment %d already allocated!\n", segment_id);
+      //gaspi_printf("Info: Segment %d already allocated!\n", segment_id);
       goto okL;
     }
 

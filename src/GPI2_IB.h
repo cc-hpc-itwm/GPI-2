@@ -28,6 +28,13 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_QP_TIMEOUT  (20)
 #define GASPI_QP_RETRY    (7)
 
+typedef enum{
+  GASPI_BARRIER = 1,
+  GASPI_ALLREDUCE = 2,
+  GASPI_ALLREDUCE_USER = 4,
+  GASPI_NONE = 7
+}gaspi_async_coll_t;
+
 typedef struct
 {
   int lid;
@@ -106,6 +113,9 @@ typedef struct{
   gaspi_lock_t gl;
   volatile unsigned char barrier_cnt;
   volatile unsigned char togle;
+  gaspi_async_coll_t coll_op;
+  int lastmask;
+  int level,tmprank,dsize,bid;
   int rank, tnc;
   int next_pof2;
   int pof2_exp;
