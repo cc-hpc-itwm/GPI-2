@@ -1178,7 +1178,18 @@ extern "C"
    * @return GASPI_SUCCESS in case of SUCCESS, GASPI_ERROR in case of error.
    */
   gaspi_return_t gaspi_statistic_counter_reset (gaspi_statistic_counter_t counter);
+
+  /** Get string describing return value.
+   * 
+   * 
+   * @param error_code The return value to be described.
+   * 
+   * @return A string that describes the return value.
+   */
+
+  gaspi_string_t gaspi_error_str(gaspi_return_t error_code);
   
+
 //@}
 
 #ifdef __cplusplus

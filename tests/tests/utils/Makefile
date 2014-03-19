@@ -1,4 +1,4 @@
-BIN =  time_get.bin
+BIN =  time_get.bin print_error.bin
 
 CFLAGS+=-I../
 

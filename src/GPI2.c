@@ -928,7 +928,7 @@ pgaspi_time_ticks (gaspi_cycles_t * const ticks)
 }
 
 #pragma weak gaspi_time_get = pgaspi_time_get
-inline gaspi_return_t
+gaspi_return_t
 pgaspi_time_get (gaspi_time_t * const wtime)
 {
 #ifdef DEBUG
@@ -977,4 +977,24 @@ pgaspi_cpu_frequency (gaspi_float * const cpu_mhz)
       return GASPI_ERROR;
     }
   return GASPI_SUCCESS;
+}
+
+#pragma weak gaspi_error_str = pgaspi_error_str
+gaspi_string_t
+pgaspi_error_str(gaspi_return_t error_code)
+{
+
+  static const char * gaspi_return_str[] = 
+    {
+      [GASPI_SUCCESS] = "success",
+      [GASPI_TIMEOUT] = "timeout"
+    };
+
+  if(error_code == GASPI_ERROR)
+    return "general error";
+
+  if(error_code < GASPI_ERROR || error_code > GASPI_TIMEOUT)
+    return "unknown";
+
+  return gaspi_return_str[error_code];
 }
