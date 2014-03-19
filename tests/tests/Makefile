@@ -1,5 +1,5 @@
 SUBDIRS = fortran init config groups collectives comm passive atomic lists segments notifications error_vec \
-	threads
+	threads utils
 
 .PHONY: subdirs $(SUBDIRS) clean
 

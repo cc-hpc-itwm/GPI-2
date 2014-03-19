@@ -25,8 +25,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define ALIGN64  __attribute__ ((aligned (64)))
 
-typedef unsigned long gaspi_cycles_t;
-
 typedef struct
 {
   ALIGN64 volatile unsigned char lock;

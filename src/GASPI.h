@@ -78,7 +78,8 @@ extern "C"
   typedef unsigned char gaspi_segment_id_t;
   typedef unsigned long gaspi_offset_t;
   typedef unsigned long gaspi_atomic_value_t;
-  typedef unsigned long gaspi_time_t;
+  typedef float gaspi_time_t;
+  typedef unsigned long gaspi_cycles_t;
   typedef unsigned short gaspi_notification_id_t;
   typedef unsigned int gaspi_notification_t;
   typedef unsigned int gaspi_statistic_counter_t;
@@ -1034,12 +1035,22 @@ extern "C"
   /** Get the number of cycles (ticks). 
    * 
    * 
-   * @param ticks Output paramter with the ticks.
+   * @param ticks Output parameter with the ticks.
    * 
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
-  gaspi_return_t gaspi_time_ticks (gaspi_time_t * const ticks);
+  gaspi_return_t gaspi_time_ticks (gaspi_cycles_t * const ticks);
 
+    /** Get elapsed time (in milliseconds).
+   * 
+   * 
+   * @param ticks Output parameter with the time in milliseconds.
+   * 
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+
+  gaspi_return_t gaspi_time_get (gaspi_time_t * const wtime);
+    
   /** Get the CPU frequency. 
    * 
    * 

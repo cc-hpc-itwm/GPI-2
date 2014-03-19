@@ -917,7 +917,7 @@ pgaspi_network_type (gaspi_network_t * const network_type)
 
 #pragma weak gaspi_time_ticks = pgaspi_time_ticks
 gaspi_return_t
-pgaspi_time_ticks (gaspi_time_t * const ticks)
+pgaspi_time_ticks (gaspi_cycles_t * const ticks)
 {
 #ifdef DEBUG
   gaspi_verify_null_ptr(ticks);
@@ -927,20 +927,54 @@ pgaspi_time_ticks (gaspi_time_t * const ticks)
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_time_get = pgaspi_time_get
+inline gaspi_return_t
+pgaspi_time_get (gaspi_time_t * const wtime)
+{
+#ifdef DEBUG
+  gaspi_verify_null_ptr(wtime);
+#endif
+
+  float cycles_to_msecs;
+
+  if (!glb_gaspi_init)
+    {
+      const float cpu_mhz = gaspi_get_cpufreq ();
+      cycles_to_msecs = 1.0f / (cpu_mhz * 1000.0f);
+    }
+  else
+    {
+      cycles_to_msecs = glb_gaspi_ctx.cycles_to_msecs;
+    }
+
+  const gaspi_cycles_t s1 = gaspi_get_cycles ();
+  *wtime = (float) s1 * cycles_to_msecs;
+  
+  return GASPI_SUCCESS;
+}
+
 #pragma weak gaspi_cpu_frequency  = pgaspi_cpu_frequency 
 gaspi_return_t
 pgaspi_cpu_frequency (gaspi_float * const cpu_mhz)
 {
 
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
 #ifdef DEBUG
   gaspi_verify_null_ptr(cpu_mhz);
 #endif
 
-  *cpu_mhz = glb_gaspi_ctx.mhz;
+  if (!glb_gaspi_init)
+    {
+      *cpu_mhz = gaspi_get_cpufreq ();
+    }
+  else
+    {
+      *cpu_mhz = glb_gaspi_ctx.mhz;
+    }
+
+  if (*cpu_mhz == 0.0f)
+    {
+      gaspi_print_error ("Failed to get CPU frequency");
+      return GASPI_ERROR;
+    }
   return GASPI_SUCCESS;
 }
