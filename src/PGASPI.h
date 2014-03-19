@@ -289,9 +289,10 @@ extern "C"
 
   gaspi_return_t pgaspi_network_type (gaspi_network_t * const network_type);
 
-  gaspi_return_t pgaspi_time_ticks (gaspi_time_t * const ticks);
+  gaspi_return_t pgaspi_time_ticks (gaspi_cycles_t * const ticks);
 
-
+  gaspi_return_t pgaspi_time_get (gaspi_time_t * const wtime);
+  
   gaspi_return_t pgaspi_cpu_frequency (gaspi_float * const cpu_mhz);
 
   gaspi_return_t pgaspi_machine_type (char const machine_type[16]);
@@ -329,6 +330,8 @@ extern "C"
 
   gaspi_return_t pgaspi_statistic_counter_reset (gaspi_statistic_counter_t counter);
 
+  gaspi_string_t pgaspi_error_str(gaspi_return_t error_code);
+  
 #ifdef __cplusplus
 }
 #endif
