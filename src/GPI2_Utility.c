@@ -15,6 +15,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
+
+#include <errno.h>
+
 #include "GPI2_Utility.h"
 
 ulong
@@ -135,11 +138,15 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 }
 
 
+
 void
 gaspi_thread_sleep(int msecs)
 {
+
   struct timespec sleep_time, rem;
-  sleep_time.tv_sec = 0;
-  sleep_time.tv_nsec = msecs * 10000;
+  sleep_time.tv_sec = msecs / 1000;
+  sleep_time.tv_nsec = 0;// msecs * 1000000;
+
   nanosleep(&sleep_time, &rem);
+  
 }
