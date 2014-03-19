@@ -223,7 +223,7 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
   swr.num_sge = 1;
   swr.wr_id = rank;
   swr.opcode = IBV_WR_RDMA_READ;
-  swr.send_flags = IBV_SEND_SIGNALED;
+  swr.send_flags = IBV_SEND_SIGNALED;// | IBV_SEND_FENCE;
   swr.next = NULL;
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr, &bad_wr))

@@ -1,6 +1,6 @@
 include ../make.defines
 
-BIN = write_bw.bin write_lat.bin ping_pong.bin
+BIN = write_bw.bin write_lat.bin read_bw.bin ping_pong.bin
 
 build: $(BIN)
 

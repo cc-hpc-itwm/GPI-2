@@ -13,10 +13,13 @@ int main(int argc, char *argv[])
   gaspi_rank_t numranks, myrank;
   gaspi_rank_t rankSend;
   gaspi_size_t segSize;
-  const  gaspi_offset_t localOff= 0;
-  const gaspi_offset_t remOff = 0;
+  const  gaspi_offset_t localOff_r= 0;
+  const gaspi_offset_t remOff_r = 0;
+  const  gaspi_offset_t localOff_w = _2GB / 2 ;
+  const gaspi_offset_t remOff_w = _2GB / 2;
   gaspi_number_t queueSize, qmax;
-  gaspi_size_t commSize ;
+  const gaspi_size_t commSize = _500MB;
+  int i;
 
   TSUITE_INIT(argc, argv);
 
@@ -33,24 +36,33 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_queue_size_max(&qmax));
 
-  for(commSize= 1; commSize < _8MB; commSize*=2 )
+  for(i = 0; i < 100; i++ )
     {
       for(rankSend = 0; rankSend < numranks; rankSend++)
 	{
 	  if(rankSend == myrank)
 	    continue;
 	  
-	  gaspi_printf("partner rank: %d - %lu bytes\n", rankSend, commSize);
+	  gaspi_printf("partner rank: %d - %lu bytes (%d)\n", rankSend, commSize, i);
 
-	  //FAILS with or without outstanding requests
-	  gaspi_queue_size(1, &queueSize);
+	  ASSERT (gaspi_queue_size(1, &queueSize));
 	  if (queueSize > qmax - 24)
 	    ASSERT (gaspi_wait(1, GASPI_BLOCK));
 	  
-	  ASSERT (gaspi_read(0, localOff, rankSend, 0,  remOff,  commSize, 1, GASPI_BLOCK));
+	  ASSERT (gaspi_read(0, localOff_r, rankSend, 0,  remOff_r,  commSize, 1, GASPI_BLOCK));
 	}
     }
-  
+  for(i = 0; i < 100; i++ )
+    {
+      for(rankSend = 0; rankSend < numranks; rankSend++)
+	{
+	  if(rankSend == myrank)
+	    continue;
+
+	  ASSERT (gaspi_write(0, localOff_r, rankSend, 0,  remOff_r,  commSize, 1, GASPI_BLOCK));
+	}
+    }
+
   ASSERT (gaspi_wait(1, GASPI_BLOCK));
   
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
