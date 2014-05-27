@@ -2,7 +2,7 @@
 				  GPI-2
 			  http://www.gpi-site.com
 		  
-		  	      Version: 1.0.1
+		  	      Version: 1.0.2
     	          	    Copyright (C) 2013
 			     Fraunhofer ITWM
 			     
@@ -48,6 +48,7 @@ The current version of GPI-2 has the following requirements.
 Software:
 - libibverbs (Verbs library from OFED).
 - ssh server running on compute nodes (requiring no password).
+- gawk (GNU Awk)
 
 Hardware:
 - Infiniband or RoCE devices.
@@ -106,8 +107,8 @@ The gaspi_run utility is invoked as follows:
 
 	gaspi_run -m <machinefile> [OPTIONS] <path GASPI program>
 
-IMPORTANT: The path to the program must be the full path and that same
-path must exist on all nodes where the program should be started.
+IMPORTANT: The path to the program must exist on all nodes where the
+program should be started.
 	
 The gaspi_run utility has the following further options [OPTIONS]:
 

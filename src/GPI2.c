@@ -64,6 +64,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #pragma weak gaspi_proc_kill = pgaspi_proc_kill
 #pragma weak gaspi_proc_term    = pgaspi_proc_term
 #pragma weak gaspi_machine_type = pgaspi_machine_type
+#pragma weak gaspi_numa_socket = pgaspi_numa_socket
 #pragma weak gaspi_set_socket_affinity = pgaspi_set_socket_affinity
 #pragma weak gaspi_disconnect = pgaspi_disconnect
 #pragma weak gaspi_connect = pgaspi_connect
@@ -131,6 +132,13 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define NOTIFY_OFF_LOCAL  (NEXT_OFFSET+128)
 
 #define gaspi_print_error(msg) gaspi_printf("Error: %s (%s:%d)\n", msg, __FILE__, __LINE__);
+
+#define gaspi_verify_null_ptr(ptr)				\
+  if(ptr == NULL)						\
+    {								\
+  gaspi_print_error ("Passed argument is a NULL pointer");	\
+  return GASPI_ERROR;						\
+    } 
 
 typedef unsigned long gaspi_cycles_t;
 
@@ -350,6 +358,9 @@ pgaspi_version (float *const version)
 gaspi_return_t
 pgaspi_config_get (gaspi_config_t * const config)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(config);
+#endif
 
   memcpy (config, &glb_gaspi_cfg, sizeof (gaspi_config_t));
   return GASPI_SUCCESS;
@@ -360,7 +371,10 @@ pgaspi_config_set (const gaspi_config_t nconf)
 {
 
   if (glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Cannot set configuration after GPI-2 is started");
+      return GASPI_ERROR;
+    }
 
   if (nconf.net_typ == GASPI_IB || nconf.net_typ == GASPI_ETHERNET)
     {
@@ -368,28 +382,42 @@ pgaspi_config_set (const gaspi_config_t nconf)
       glb_gaspi_cfg.user_net = 1;
     }
   else
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid value for parameter net_typ");
+      return GASPI_ERROR;
+    }
 
   if (nconf.netdev_id > 1)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid value for parameter netdev_id");
+      return GASPI_ERROR;
+    }
   else
     glb_gaspi_cfg.netdev_id = nconf.netdev_id;
 
-  if (nconf.qp_count > GASPI_MAX_QP || nconf.qp_count < 1)
-    return GASPI_ERROR;
+  if (nconf.queue_num > GASPI_MAX_QP || nconf.queue_num < 1)
+    {
+      gaspi_print_error("Invalid value for parameter queue_num (min=1 and max=GASPI_MAX_QP");
+      return GASPI_ERROR;
+    }
   else
-    glb_gaspi_cfg.qp_count = nconf.qp_count;
+    glb_gaspi_cfg.queue_num = nconf.queue_num;
 
   if (nconf.queue_depth > GASPI_MAX_QSIZE || nconf.queue_depth < 1)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid value for parameter queue_depth (min=1 and max=GASPI_MAX_QSIZE");
+      return GASPI_ERROR;
+    }
   else
     glb_gaspi_cfg.queue_depth = nconf.queue_depth;
 
   if (nconf.mtu == 1024 || nconf.mtu == 2048 || nconf.mtu == 4096)
     glb_gaspi_cfg.mtu = nconf.mtu;
   else
-    return GASPI_ERROR;
-
+    {
+      gaspi_print_error("Invalid value for parameter mtu (supported: 1024, 2048,4096)");
+      return GASPI_ERROR;
+    }
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.logger = nconf.logger;
   glb_gaspi_cfg.port_check = nconf.port_check;
@@ -400,6 +428,9 @@ pgaspi_config_set (const gaspi_config_t nconf)
 gaspi_return_t
 pgaspi_machine_type (char const machine_type[16])
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(machine_type);
+#endif
 
   memset ((void *) machine_type, 16, 0);
   snprintf ((char *) machine_type, 16, "%s", glb_gaspi_ctx.mtyp);
@@ -439,13 +470,36 @@ pgaspi_set_socket_affinity (const gaspi_uchar socket)
 }
 
 gaspi_return_t
+pgaspi_numa_socket(gaspi_uchar * const socket)
+{
+  char * numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
+  if(numaPtr)
+    {
+      if(atoi(numaPtr) == 1)
+	{
+	  *socket = glb_gaspi_ctx.localSocket;
+	  
+	  return GASPI_SUCCESS;
+	}
+    }
+
+#ifdef DEBUG
+  gaspi_print_error("Debug: NUMA was not enabled (-N option of gaspi_run)");
+#endif
+  
+  return GASPI_ERROR;
+}
+
+
+gaspi_return_t
 pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 {
   char *socketPtr, *typPtr, *mfilePtr, *numaPtr;
   gaspi_return_t eret = GASPI_ERROR;
   int i;
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
   if (glb_gaspi_init)
     goto errL;
@@ -453,7 +507,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   glb_gaspi_ctx.lockPS.lock = 0;
   glb_gaspi_ctx.lockPR.lock = 0;
 
-  for (i = 0; i < glb_gaspi_cfg.qp_count; i++)
+  for (i = 0; i < glb_gaspi_cfg.queue_num; i++)
     glb_gaspi_ctx.lockC[i].lock = 0;
 
   memset (&glb_gaspi_ctx, 0, sizeof (gaspi_context));
@@ -479,7 +533,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   socketPtr = getenv ("GASPI_SOCKET");
   numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
-  typPtr = getenv ("GASPI_TYP");
+  typPtr = getenv ("GASPI_TYPE");
   mfilePtr = getenv ("GASPI_MFILE");
 
   if (socketPtr)
@@ -508,7 +562,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   if (!typPtr)
     {
-      gaspi_print_error ("No node type defined (GASPI_TYP)");
+      gaspi_print_error ("No node type defined (GASPI_TYPE)");
       goto errL;
     }
 
@@ -656,7 +710,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
     }
   else
     {
-      gaspi_print_error ("Invalid node type (GASPI_TYP)");
+      gaspi_print_error ("Invalid node type (GASPI_TYPE)");
       goto errL;
     }
 
@@ -677,9 +731,14 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
   gaspi_sn_packet snp;
   int i;
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if (lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout))
+    return GASPI_TIMEOUT;
+  
   if (glb_gaspi_init == 0)
-    goto errL;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      goto errL;
+    }
 
   gaspi_cleanup_ib_core ();
 
@@ -727,11 +786,19 @@ pgaspi_proc_rank (gaspi_rank_t * const rank)
 {
   if (glb_gaspi_init)
     {
+
+#ifdef DEBUG
+      gaspi_verify_null_ptr(rank);
+#endif
+
       *rank = glb_gaspi_ctx.rank;
       return GASPI_SUCCESS;
     }
   else
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 }
 
 gaspi_return_t
@@ -739,17 +806,27 @@ pgaspi_proc_num (gaspi_rank_t * const proc_num)
 {
   if (glb_gaspi_init)
     {
+#ifdef DEBUG
+      gaspi_verify_null_ptr(proc_num);
+#endif
+
       *proc_num = glb_gaspi_ctx.tnc;
       return GASPI_SUCCESS;
     }
   else
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 }
 
 char *
 gaspi_get_hn (const unsigned int id)
 {
-  return glb_gaspi_ctx.hn + id * 64;
+  if(id < glb_gaspi_ctx.tnc)
+    return glb_gaspi_ctx.hn + id * 64;
+  else
+    return NULL;
 }
 
 gaspi_return_t
@@ -862,7 +939,9 @@ buildMaster (gaspi_timeout_t timeout_ms)
 	}
 
       if (gaspi_connect_context (i) != 0)
-	return GASPI_ERROR;
+	{
+	  return GASPI_ERROR;
+	}
     }//for
 
   gaspi_init_master_grp ();
@@ -879,6 +958,7 @@ buildMaster (gaspi_timeout_t timeout_ms)
 			GASPI_INT_PORT +
 			glb_gaspi_ctx.p_off[glb_gaspi_ctx.rank],
 			GASPI_SN_TIMEOUT);
+
   if (glb_gaspi_ctx.sockfd[glb_gaspi_ctx.rank] < 0)
     {
       for (k = 0; k < glb_gaspi_ctx.tnc; k++)
@@ -947,12 +1027,23 @@ buildWorker (gaspi_timeout_t timeout_ms)
   if (glb_gaspi_ctx.hn)
     free (glb_gaspi_ctx.hn);
   glb_gaspi_ctx.hn = (char *) calloc (glb_gaspi_ctx.tnc, 64);
+
   if (glb_gaspi_ctx.p_off)
     free (glb_gaspi_ctx.p_off);
   glb_gaspi_ctx.p_off = (char *) calloc (glb_gaspi_ctx.tnc, 1);
+
   if (glb_gaspi_ctx.sockfd)
     free (glb_gaspi_ctx.sockfd);
   glb_gaspi_ctx.sockfd = (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
+
+#ifdef DEBUG
+  if(glb_gaspi_ctx.sockfd == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return GASPI_ERROR;
+    }
+#endif
+
 
   int size = glb_gaspi_ctx.tnc * 64;
 
@@ -994,6 +1085,7 @@ buildWorker (gaspi_timeout_t timeout_ms)
 
   if (gaspi_init_ib_core () != 0)
     return GASPI_ERROR;
+
   if (gaspi_recv_ib_info (0) != 0)
     {
       shutdown (glb_gaspi_ctx.sockfd[0], 2);
@@ -1216,13 +1308,20 @@ pgaspi_disconnect (const gaspi_rank_t rank,
 gaspi_return_t
 pgaspi_queue_num (gaspi_number_t * const queue_num)
 {
-  *queue_num = glb_gaspi_cfg.qp_count;
+#ifdef DEBUG
+  gaspi_verify_null_ptr(queue_num);
+#endif
+
+  *queue_num = glb_gaspi_cfg.queue_num;
   return GASPI_SUCCESS;
 }
 
 gaspi_return_t
 pgaspi_queue_size_max (gaspi_number_t * const queue_size_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(queue_size_max);
+#endif
 
   *queue_size_max = glb_gaspi_cfg.queue_depth;
   return GASPI_SUCCESS;
@@ -1231,6 +1330,9 @@ pgaspi_queue_size_max (gaspi_number_t * const queue_size_max)
 gaspi_return_t
 pgaspi_transfer_size_min (gaspi_size_t * const transfer_size_min)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(transfer_size_min);
+#endif
 
   *transfer_size_min = 1;
   return GASPI_SUCCESS;
@@ -1239,6 +1341,9 @@ pgaspi_transfer_size_min (gaspi_size_t * const transfer_size_min)
 gaspi_return_t
 pgaspi_transfer_size_max (gaspi_size_t * const transfer_size_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(transfer_size_max);
+#endif
 
   *transfer_size_max = GASPI_MAX_TSIZE_C;
   return GASPI_SUCCESS;
@@ -1247,6 +1352,9 @@ pgaspi_transfer_size_max (gaspi_size_t * const transfer_size_max)
 gaspi_return_t
 pgaspi_notification_num (gaspi_number_t * const notification_num)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(notification_num);
+#endif
 
   *notification_num = ((1 << 16) - 1);
   return GASPI_SUCCESS;
@@ -1256,6 +1364,9 @@ gaspi_return_t
 pgaspi_passive_transfer_size_max (gaspi_size_t *
 				 const passive_transfer_size_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(passive_transfer_size_max);
+#endif
 
   *passive_transfer_size_max = GASPI_MAX_TSIZE_P;
   return GASPI_SUCCESS;
@@ -1264,6 +1375,9 @@ pgaspi_passive_transfer_size_max (gaspi_size_t *
 gaspi_return_t
 pgaspi_allreduce_elem_max (gaspi_number_t * const elem_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(elem_max);
+#endif
 
   *elem_max = ((1 << 8) - 1);
   return GASPI_SUCCESS;
@@ -1272,6 +1386,10 @@ pgaspi_allreduce_elem_max (gaspi_number_t * const elem_max)
 gaspi_return_t
 pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(elem_max);
+#endif
+
   *elem_max = ((1 << 8) - 1);
   return GASPI_SUCCESS;
 }
@@ -1280,6 +1398,10 @@ gaspi_return_t
 pgaspi_network_type (gaspi_network_t * const network_type)
 {
   
+#ifdef DEBUG
+  gaspi_verify_null_ptr(network_type);
+#endif
+
   *network_type = glb_gaspi_cfg.net_typ;
   return GASPI_SUCCESS;
 }
@@ -1287,6 +1409,9 @@ pgaspi_network_type (gaspi_network_t * const network_type)
 gaspi_return_t
 pgaspi_time_ticks (gaspi_time_t * const ticks)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(ticks);
+#endif
 
   *ticks = gaspi_get_cycles ();
   return GASPI_SUCCESS;
@@ -1297,7 +1422,13 @@ pgaspi_cpu_frequency (gaspi_float * const cpu_mhz)
 {
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
+#ifdef DEBUG
+  gaspi_verify_null_ptr(cpu_mhz);
+#endif
 
   *cpu_mhz = glb_gaspi_ctx.mhz;
   return GASPI_SUCCESS;

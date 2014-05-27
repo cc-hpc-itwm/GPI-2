@@ -55,7 +55,8 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
   struct ibv_wc wc_send;
   gaspi_cycles_t s0;
 
-  lock_gaspi_tout (&glb_gaspi_ctx.lockPS, timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockPS, timeout_ms))
+    return GASPI_TIMEOUT;
 
   const int byte_id = rank >> 3;
   const int bit_pos = rank - (byte_id * 8);
@@ -170,7 +171,8 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
   struct timeval tout;
 
 
-  lock_gaspi_tout (&glb_gaspi_ctx.lockPR, timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockPR, timeout_ms))
+    return GASPI_TIMEOUT;
 
   rlist.addr =
     (uintptr_t) (glb_gaspi_ctx_ib.

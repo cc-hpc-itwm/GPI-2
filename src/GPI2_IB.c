@@ -421,8 +421,10 @@ gaspi_init_ib_core ()
   if (glb_gaspi_cfg.net_typ == GASPI_IB)
     {
 
-      switch (glb_gaspi_ctx_ib.
-	      port_attr[glb_gaspi_ctx_ib.ib_port - 1].max_mtu)
+      const gaspi_uint active_mtu = 
+	glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].active_mtu;
+
+      switch (active_mtu)
 	{
 
 	case IBV_MTU_1024:
@@ -538,7 +540,7 @@ gaspi_init_ib_core ()
       return 1;
     }
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
 
       glb_gaspi_ctx_ib.scqC[c] =
@@ -573,6 +575,13 @@ gaspi_init_ib_core ()
 
   glb_gaspi_ctx_ib.qpGroups =
     (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
+#ifdef DEBUG
+  if(glb_gaspi_ctx_ib.qpGroups == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return -1;
+    }
+#endif
 
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
@@ -586,7 +595,7 @@ gaspi_init_ib_core ()
     }
 
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
 
       glb_gaspi_ctx_ib.qpC[c] =
@@ -611,6 +620,14 @@ gaspi_init_ib_core ()
 
   glb_gaspi_ctx_ib.qpP =
     (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
+#ifdef DEBUG
+  if(glb_gaspi_ctx_ib.qpP == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return -1;
+    }
+#endif
+
   qpi_attr.send_cq = glb_gaspi_ctx_ib.scqP;
   qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqP;
   qpi_attr.srq = glb_gaspi_ctx_ib.srqP;
@@ -651,7 +668,7 @@ gaspi_init_ib_core ()
 	}
     }
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       for (i = 0; i < glb_gaspi_ctx.tnc; i++)
 	{
@@ -709,8 +726,24 @@ gaspi_init_ib_core ()
 
   glb_gaspi_ctx_ib.lrcd =
     (gaspi_rc_all *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_all));
+#ifdef DEBUG
+  if(glb_gaspi_ctx_ib.lrcd == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return -1;
+    }
+#endif
+
   glb_gaspi_ctx_ib.rrcd =
     (gaspi_rc_all *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_all));
+#ifdef DEBUG
+  if(glb_gaspi_ctx_ib.rrcd == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return -1;
+    }
+#endif
+
 
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
@@ -748,7 +781,7 @@ gaspi_init_ib_core ()
 
     }
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       for (i = 0; i < glb_gaspi_ctx.tnc; i++)
 	{
@@ -812,7 +845,7 @@ gaspi_init_ib_core ()
     }
 
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       qp_attr.dest_qp_num =
 	glb_gaspi_ctx_ib.qpC[c][glb_gaspi_ctx.rank]->qp_num;
@@ -859,7 +892,7 @@ gaspi_init_ib_core ()
       return -1;
     }
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       if (ibv_modify_qp
 	  (glb_gaspi_ctx_ib.qpC[c][glb_gaspi_ctx.rank], &qp_attr,
@@ -912,11 +945,27 @@ gaspi_init_ib_core ()
 
   glb_gaspi_group_ib[0].rank_grp =
     (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
+#ifdef DEBUG
+  if(glb_gaspi_group_ib[0].rank_grp == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return -1;
+    }
+#endif
+
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     glb_gaspi_group_ib[0].rank_grp[i] = i;
 
   glb_gaspi_group_ib[0].rrcd =
     (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
+#ifdef DEBUG
+  if(glb_gaspi_group_ib[0].rrcd == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      return -1;
+    }
+#endif
+
   memset (glb_gaspi_group_ib[0].rrcd, 0,
 	  glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
 
@@ -978,7 +1027,7 @@ gaspi_cleanup_ib_core ()
   glb_gaspi_ctx_ib.qpP = NULL;
 
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
 
       for (i = 0; i < glb_gaspi_ctx.tnc; i++)
@@ -1025,7 +1074,7 @@ gaspi_cleanup_ib_core ()
       return -1;
     }
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       if (ibv_destroy_cq (glb_gaspi_ctx_ib.scqC[c]))
 	{
@@ -1231,7 +1280,7 @@ gaspi_connect_context (const int i)
       return -1;
     }
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       qp_attr.dest_qp_num = glb_gaspi_ctx_ib.rrcd[i].qpnC[c];
 
@@ -1282,7 +1331,7 @@ gaspi_connect_context (const int i)
     }
 
 
-  for (c = 0; c < glb_gaspi_cfg.qp_count; c++)
+  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       if (ibv_modify_qp (glb_gaspi_ctx_ib.qpC[c][i], &qp_attr,
 			 IBV_QP_STATE |
@@ -1332,7 +1381,10 @@ pgaspi_group_create (gaspi_group_t * const group)
   unsigned int size, page_size;
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
@@ -1348,7 +1400,10 @@ pgaspi_group_create (gaspi_group_t * const group)
 	}
     }
   if (id == GASPI_MAX_GROUPS)
-    goto errL;
+    {
+      gaspi_print_error("Exhausted max number of groups (GASPI_MAX_GROUPS)");
+      goto errL;
+    }
 
   size = NEXT_OFFSET;
   page_size = sysconf (_SC_PAGESIZE);
@@ -1391,11 +1446,27 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   glb_gaspi_group_ib[id].rank_grp =
     (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
+#ifdef DEBUG
+  if(glb_gaspi_group_ib[id].rank_grp == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      goto errL;
+    }
+#endif
+
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     glb_gaspi_group_ib[id].rank_grp[i] = -1;
 
   glb_gaspi_group_ib[id].rrcd =
     (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
+#ifdef DEBUG
+  if(glb_gaspi_group_ib[id].rrcd == NULL)
+    {
+      gaspi_print_error("Memory allocation failed (malloc)");
+      goto errL;
+    }
+#endif
+
   memset (glb_gaspi_group_ib[id].rrcd, 0,
 	  glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
 
@@ -1420,14 +1491,17 @@ pgaspi_group_delete (const gaspi_group_t group)
 {
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
   if (group == 0 || group >= GASPI_MAX_GROUPS
       || glb_gaspi_group_ib[group].id == -1)
     {
-      gaspi_print_error ("Invalid group");
+      gaspi_print_error ("Invalid group to delete");
       goto errL;
     }
 
@@ -1478,21 +1552,33 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
   int i;
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
   if (group == 0 || group >= GASPI_MAX_GROUPS
       || glb_gaspi_group_ib[group].id == -1)
-    goto errL;
+    {
+      gaspi_print_error("Invalid group to add to");
+      goto errL;
+    }
 
   if (rank >= glb_gaspi_ctx.tnc)
-    goto errL;
+    {
+      gaspi_print_error("Invalid rank to add to group");
+      goto errL;
+    }
 
   for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
     {
       if (glb_gaspi_group_ib[group].rank_grp[i] == rank)
-	goto errL;
+	{
+	  gaspi_print_error("Rank already present in group");
+	  goto errL;
+	}
     }
 
   glb_gaspi_group_ib[group].rank_grp[glb_gaspi_group_ib[group].tnc++] = rank;
@@ -1601,16 +1687,27 @@ pgaspi_group_commit (const gaspi_group_t group,
   gaspi_return_t eret = GASPI_ERROR;
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
   if (group == 0 || group >= GASPI_MAX_GROUPS
       || glb_gaspi_group_ib[group].id == -1)
-    goto errL;
-  if (glb_gaspi_group_ib[group].tnc < 2)
-    goto errL;
+    {
+      gaspi_print_error("Invalid group to commit to");
+      goto errL;
+    }
 
+  if (glb_gaspi_group_ib[group].tnc < 2)
+    {
+      gaspi_print_error("Group must have at least 2 ranks to be committed");
+      goto errL;
+    }
+  
   glb_gaspi_group_ib[group].rank = -1;
 
   for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
@@ -1623,7 +1720,10 @@ pgaspi_group_commit (const gaspi_group_t group,
     }
 
   if (glb_gaspi_group_ib[group].rank == -1)
-    goto errL;
+    {
+      gaspi_print_error("Invalid group to commit to");
+      goto errL;
+    }
 
   glb_gaspi_group_ib[group].next_pof2 = 1;
 
@@ -1735,7 +1835,11 @@ pgaspi_group_commit (const gaspi_group_t group,
 	}
     }				//for
 
-  gaspi_grp_barrier_sn (group, GASPI_BLOCK);
+  if(gaspi_grp_barrier_sn (group, GASPI_BLOCK) != 0)
+    {
+      gaspi_print_error("Failed to sync committed group");
+      goto errL;
+    }
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
@@ -1751,9 +1855,13 @@ pgaspi_group_num (gaspi_number_t * const group_num)
 
   if (glb_gaspi_init)
     {
+#ifdef DEBUG
+      gaspi_verify_null_ptr(group_num);
+#endif
       *group_num = glb_gaspi_ctx.group_cnt;
       return GASPI_SUCCESS;
     }
+  gaspi_print_error("Invalid function before gaspi_proc_init");
   return GASPI_ERROR;
 }
 
@@ -1764,9 +1872,15 @@ pgaspi_group_size (const gaspi_group_t group,
 
   if (glb_gaspi_init && group < glb_gaspi_ctx.group_cnt)
     {
+#ifdef DEBUG
+      gaspi_verify_null_ptr(group_size);
+#endif
+
       *group_size = glb_gaspi_group_ib[group].tnc;
       return GASPI_SUCCESS;
     }
+
+  gaspi_print_error("Invalid function before gaspi_proc_init or invalid group parameter");
   return GASPI_ERROR;
 }
 
@@ -1781,12 +1895,17 @@ pgaspi_group_ranks (const gaspi_group_t group,
 	group_ranks[i] = glb_gaspi_group_ib[group].rank_grp[i];
       return GASPI_SUCCESS;
     }
+  gaspi_print_error("Invalid function before gaspi_proc_init or invalid group parameter");
   return GASPI_ERROR;
 }
 
 gaspi_return_t
 pgaspi_group_max (gaspi_number_t * const group_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(group_max);
+#endif
+
   *group_max = GASPI_MAX_GROUPS;
   return GASPI_SUCCESS;
 }
@@ -1799,23 +1918,46 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
   unsigned int page_size;
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
-  if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS || size == 0)
-    goto errL;
+  if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS)
+    {
+      gaspi_print_error("Too many allocated segments");
+      goto errL;
+    }
+  if( size == 0)
+    {
+      gaspi_print_error("Cannot allocate segment of size 0");
+      goto errL;
+    }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
     {
       glb_gaspi_ctx_ib.rrmd[segment_id] =
 	(gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+#ifdef DEBUG
+      if(glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
+	{
+	  gaspi_print_error("Memory allocation failed (malloc)");
+	  goto errL;
+	}
+#endif
+
+
       memset (glb_gaspi_ctx_ib.rrmd[segment_id], 0,
 	      glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
     }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size)
-    goto errL;
+    {
+      gaspi_print_error("Segment already exists");
+      goto errL;
+    }
 
   page_size = sysconf (_SC_PAGESIZE);
   glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size = size;
@@ -1828,6 +1970,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       goto errL;
     }
 
+  //TODO: avoid 2 memsets in case of GASPI_MEM_INITIALIZED
   memset (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].ptr, 0,
 	  NOTIFY_OFFSET);
 
@@ -1877,15 +2020,24 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 {
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function call before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    goto errL;
+    {
+      gaspi_print_error("Invalid segment to delete");
+      goto errL;
+    }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
-    goto errL;
+    {
+      gaspi_print_error("Invalid segment to delete");
+      goto errL;
+    }
 
   if (munlock
       (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf,
@@ -1927,17 +2079,32 @@ pgaspi_segment_register (const gaspi_segment_id_t segment_id,
   gaspi_return_t gret;
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   if (rank >= glb_gaspi_ctx.tnc || rank == glb_gaspi_ctx.rank)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid rank to register segment");
+      return GASPI_ERROR;
+    }
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid segment to register (non-allocated)");
+      return GASPI_ERROR;
+    }
+
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid segment to register (size = 0)");
+      return GASPI_ERROR;
+    }
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
+  //TODO: replace command numbers for readable versions
   snp.cmd = 4;
   snp.seg_id = segment_id;
   snp.rkey = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].rkey;
@@ -1946,7 +2113,10 @@ pgaspi_segment_register (const gaspi_segment_id_t segment_id,
 
   gret = gaspi_call_sn_threadDG (rank, snp, timeout_ms);
   if (gret != 0)
-    goto errL;
+    {
+      gaspi_print_error("Failed segment registration");
+      goto errL;
+    }
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
@@ -1966,6 +2136,14 @@ gaspi_seg_reg_sn (const gaspi_sn_packet snp)
     {
       glb_gaspi_ctx_ib.rrmd[snp.seg_id] =
 	(gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+#ifdef DEBUG
+      if(glb_gaspi_ctx_ib.rrmd[snp.seg_id] == NULL)
+	{
+	  gaspi_print_error("Memory allocation failed (malloc)");
+	  return -1;
+	}
+#endif
+      
       memset (glb_gaspi_ctx_ib.rrmd[snp.seg_id], 0,
 	      glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
     }
@@ -2055,12 +2233,15 @@ pgaspi_segment_create (const gaspi_segment_id_t segment_id,
   int i, j;
   gaspi_return_t eret = GASPI_ERROR;
 
+  //TODO: do not exit, send empty seg info
   if (gaspi_segment_alloc (segment_id, size, alloc_policy) != 0)
     return GASPI_ERROR;
+  
   if (group >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[group].id == -1)
     return GASPI_ERROR;
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
   //exchange data inside group
   for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
@@ -2104,13 +2285,18 @@ errL:
 
 gaspi_return_t
 pgaspi_segment_num (gaspi_number_t * const segment_num)
- {
-
+{
   if (glb_gaspi_init)
     {
+#ifdef DEBUG
+      gaspi_verify_null_ptr(segment_num);
+#endif
+
       *segment_num = glb_gaspi_ctx.mseg_cnt;
       return GASPI_SUCCESS;
     }
+
+  gaspi_print_error("Invalid function before gaspi_proc_init");
   return GASPI_ERROR;
 }
 
@@ -2121,8 +2307,12 @@ pgaspi_segment_list (const gaspi_number_t num,
   int i, idx = 0;
 
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
+  //TODO: 256 -> readable
   for (i = 0; i < 256; i++)
     {
       if (glb_gaspi_ctx_ib.rrmd[i] != NULL)
@@ -2130,7 +2320,9 @@ pgaspi_segment_list (const gaspi_number_t num,
     }
 
   if (idx != glb_gaspi_ctx.mseg_cnt)
-    return GASPI_ERROR;
+    {
+      return GASPI_ERROR;
+    }
 
   return GASPI_SUCCESS;
 }
@@ -2138,33 +2330,60 @@ pgaspi_segment_list (const gaspi_number_t num,
 gaspi_return_t
 pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 {
-
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid segment id");
+      return GASPI_ERROR;
+    }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid segment (size = 0)");
+      return GASPI_ERROR;
+    }
+
+#ifdef DEBUG
+  gaspi_verify_null_ptr(ptr);
+#endif
 
   *ptr =
     glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf + NOTIFY_OFFSET;
   return GASPI_SUCCESS;
+
 }
 
 gaspi_return_t
 pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 		    const gaspi_rank_t rank, gaspi_size_t * const size)
 {
+
   if (!glb_gaspi_init)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid segment id");
+      return GASPI_ERROR;
+    }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id][rank].size == 0)
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Invalid segment (size = 0)");
+      return GASPI_ERROR;
+    }
+
+#ifdef DEBUG
+  gaspi_verify_null_ptr(size);
+#endif
 
   *size = glb_gaspi_ctx_ib.rrmd[segment_id][rank].size;
   return GASPI_SUCCESS;
@@ -2173,6 +2392,10 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_segment_max (gaspi_number_t * const segment_max)
 {
+#ifdef DEBUG
+  gaspi_verify_null_ptr(segment_max);
+#endif
+
   *segment_max = GASPI_MAX_MSEGS;
   return GASPI_SUCCESS;
 }
@@ -2181,9 +2404,14 @@ gaspi_return_t
 pgaspi_queue_size (const gaspi_queue_id_t queue,
 		  gaspi_number_t * const queue_size)
 {
-
-  if (queue >= glb_gaspi_cfg.qp_count)
-    return GASPI_ERROR;
+  if (queue >= glb_gaspi_cfg.queue_num)
+    {
+      gaspi_print_error("Invalid queue id provided");
+      return GASPI_ERROR;
+    }
+#ifdef DEBUG
+  gaspi_verify_null_ptr(queue_size);
+#endif
 
   *queue_size = glb_gaspi_ctx_ib.ne_count_c[queue];
   return GASPI_SUCCESS;
@@ -2192,6 +2420,11 @@ pgaspi_queue_size (const gaspi_queue_id_t queue,
 gaspi_return_t
 pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
 {
+
+#ifdef DEBUG
+  gaspi_verify_null_ptr(buf_size);
+#endif
+
   *buf_size = NEXT_OFFSET;
   return GASPI_SUCCESS;
 }

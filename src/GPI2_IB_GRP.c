@@ -39,7 +39,8 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   struct ibv_send_wr *bad_wr_send;
   int i;
 
-  lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, timeout_ms))
+     return GASPI_TIMEOUT;
 
   const int size = glb_gaspi_group_ib[g].tnc;
 
@@ -547,7 +548,8 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
   int i, mask, tmprank, tmpdst;
 
 
-  lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, timeout_ms))
+    return GASPI_TIMEOUT;
 
   const int dsize = glb_gaspi_typ_size[type] * elem_cnt;
 
@@ -862,7 +864,8 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
   int i, mask, tmprank, tmpdst;
 
 
-  lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, timeout_ms))
+    return GASPI_TIMEOUT;
 
   const int dsize = elem_size * elem_cnt;
 
@@ -1131,6 +1134,4 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
   unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
   return GASPI_SUCCESS;
-
-
 }

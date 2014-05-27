@@ -56,11 +56,13 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
   if (offset & 0x7)
     {
-      gaspi_print_error("Unaligned offset");
+      gaspi_print_error("Unaligned offset for atomic operation (fetch_add)");
       return GASPI_ERROR;
     }
   
-  lock_gaspi_tout (&glb_gaspi_group_ib[0].gl, timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_group_ib[0].gl, timeout_ms))
+    return GASPI_TIMEOUT;
+  
 
   slist.addr = (uintptr_t) (glb_gaspi_group_ib[0].buf + NEXT_OFFSET);
   slist.length = 8;
@@ -164,11 +166,12 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 
   if (offset & 0x7)
     {
-      gaspi_print_error("Unaligned offset");
+      gaspi_print_error("Unaligned offset for atomic operation (compare_swap");
       return GASPI_ERROR;
     }
 
-  lock_gaspi_tout (&glb_gaspi_group_ib[0].gl, timeout_ms);
+  if(lock_gaspi_tout (&glb_gaspi_group_ib[0].gl, timeout_ms))
+    return GASPI_TIMEOUT;
 
   slist.addr = (uintptr_t) (glb_gaspi_group_ib[0].buf + NEXT_OFFSET);
   slist.length = 8;

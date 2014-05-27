@@ -32,6 +32,121 @@ static char gaspi_master_log_ptr[128];
 static int gaspi_master_log_init = 0;
 static int gaspi_log_socket = 0;
 
+static inline void
+_check_log_init(void)
+{
+
+  if (gaspi_master_log_init == 0)
+    {
+      gaspi_master_log_init = 1;
+      char *ptr = getenv ("GASPI_MASTER");
+      
+      if (ptr)
+	{
+	  memset (gaspi_master_log_ptr, 0, 128);
+	  snprintf (gaspi_master_log_ptr, 128, "%s", ptr);
+	}
+      
+      char *ptr2 = getenv ("GASPI_SOCKET");
+      if (ptr2)
+	{
+	  gaspi_log_socket = atoi (ptr2);
+	}
+    }
+}
+
+static inline int
+_set_local_log_conn(int *sockL, struct sockaddr_in * client)
+{
+
+  if ((*sockL = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
+    {
+      pthread_mutex_unlock (&gaspi_logger_lock);
+      return -1;
+    }
+
+  client->sin_family = AF_INET;
+  client->sin_addr.s_addr = htonl (INADDR_ANY);
+  client->sin_port = htons (0);
+
+  int rc = bind (*sockL, (struct sockaddr *) client, sizeof (*client));
+  if (rc < 0)
+    {
+      printf ("Setting connection to logger (local bind) failed\n");
+      return -1;
+    }
+
+  return 0;
+}
+
+static inline int
+_send_to_log(struct sockaddr_in *serverL, 
+	     struct hostent *server_dataL,
+	     int sockL,
+	     char *buf)
+{
+
+  memcpy (&(serverL->sin_addr), server_dataL->h_addr, server_dataL->h_length);
+  serverL->sin_family = AF_INET;
+  serverL->sin_port = htons (PORT_LOGGER);
+
+  connect (sockL, (struct sockaddr *) serverL, sizeof (*serverL));
+  sendto (sockL, buf, strlen (buf), 0, (struct sockaddr *) serverL,
+	  sizeof (*serverL));
+
+  return 0;
+}
+
+void
+gaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
+{
+  char buf[1024];
+  char hn[128];
+  struct sockaddr_in serverL, client;
+  struct hostent *server_dataL;
+
+  if (!glb_gaspi_cfg.logger)
+    return;
+
+  pthread_mutex_lock (&gaspi_logger_lock);
+
+  memset (buf, 0, 1024);
+  memset (hn, 0, 128);
+  gethostname (hn, 128);
+
+  char *ptr2 = getenv ("GASPI_SOCKET");
+  if (ptr2)
+    {
+      gaspi_log_socket = atoi (ptr2);
+    }
+  
+  sprintf (buf, "[%s:%d] ", hn, gaspi_log_socket);
+  const int sl = strlen (buf);
+
+  va_list ap;
+  va_start (ap, fmt);
+  vsnprintf (buf + sl, 1024 - sl, fmt, ap);
+  va_end (ap);
+
+  int sockL;
+  if(_set_local_log_conn(&sockL, &client) < 0)
+    {
+      pthread_mutex_unlock (&gaspi_logger_lock);
+      return;
+    }
+
+  if ((server_dataL = gethostbyname (gaspi_get_hn(log_rank))) == 0)
+    {
+      pthread_mutex_unlock (&gaspi_logger_lock);
+      return;
+    }
+
+  _send_to_log(&serverL, server_dataL, sockL, buf);
+
+  close (sockL);
+
+  pthread_mutex_unlock (&gaspi_logger_lock);
+}
 
 void
 gaspi_printf (const char *fmt, ...)
@@ -51,29 +166,11 @@ gaspi_printf (const char *fmt, ...)
   memset (hn, 0, 128);
   gethostname (hn, 128);
 
-  if (gaspi_master_log_init == 0)
-    {
-      gaspi_master_log_init = 1;
-      char *ptr = getenv ("GASPI_MASTER");
-
-      if (ptr)
-	{
-	  memset (gaspi_master_log_ptr, 0, 128);
-	  snprintf (gaspi_master_log_ptr, 128, "%s", ptr);
-	}
-
-      char *ptr2 = getenv ("GASPI_SOCKET");
-
-      if (ptr2)
-	{
-	  gaspi_log_socket = atoi (ptr2);
-	}
-
-    }
+  /* check required initialization */
+  _check_log_init();
 
   if (strcmp (gaspi_master_log_ptr, hn) == 0 && gaspi_log_socket == 0)
     {
-
       va_list ap;
       va_start (ap, fmt);
       vsnprintf (buf, 1024, fmt, ap);
@@ -95,22 +192,10 @@ gaspi_printf (const char *fmt, ...)
   vsnprintf (buf + sl, 1024 - sl, fmt, ap);
   va_end (ap);
 
-  //call the logger
+  /* call the logger */
   int sockL;
-  if ((sockL = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
+  if(_set_local_log_conn(&sockL, &client) < 0)
     {
-      pthread_mutex_unlock (&gaspi_logger_lock);
-      return;
-    }
-
-  client.sin_family = AF_INET;
-  client.sin_addr.s_addr = htonl (INADDR_ANY);
-  client.sin_port = htons (0);
-
-  int rc = bind (sockL, (struct sockaddr *) &client, sizeof (client));
-  if (rc < 0)
-    {
-      printf ("bind failed\n");
       pthread_mutex_unlock (&gaspi_logger_lock);
       return;
     }
@@ -120,18 +205,12 @@ gaspi_printf (const char *fmt, ...)
       pthread_mutex_unlock (&gaspi_logger_lock);
       return;
     }
-  memcpy (&serverL.sin_addr, server_dataL->h_addr, server_dataL->h_length);
-  serverL.sin_family = AF_INET;
-  serverL.sin_port = htons (PORT_LOGGER);
 
-  connect (sockL, (struct sockaddr *) &serverL, sizeof (serverL));
-  sendto (sockL, buf, strlen (buf), 0, (struct sockaddr *) &serverL,
-	  sizeof (serverL));
+  _send_to_log(&serverL, server_dataL, sockL, buf);
 
   close (sockL);
 
   pthread_mutex_unlock (&gaspi_logger_lock);
-
 }
 
 
