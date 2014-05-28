@@ -263,7 +263,7 @@ do
 	fi
 	cmd="$cmd ${MASTER_PRG}"
 
-	$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null` > $PWD/${previous}.log.out 2>&1 &"
+	$GASPI_LAUNCHER $previous "nohup $cmd 2>&1 &"
 	
 	j=0
     fi
@@ -281,7 +281,7 @@ fi
 cmd="$cmd ${MASTER_PRG}"
 
 
-$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null` >nohup.out 2>&1 &"
+$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null` 2>&1 &"
 
 echo $PRGNAME  > /tmp/.last_gaspi_prg
 if [ -O /tmp/.last_gaspi_prg ]; then

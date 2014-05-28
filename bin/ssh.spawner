@@ -24,8 +24,6 @@
 # 5: set numa?
 # 6 and beyond: programs <args>
 
-set -x
-
 if [ $# -lt 5 ]; then
     echo "Missing args (need at least 5, have $#)"
     exit 1
@@ -38,8 +36,6 @@ do
     ARGS="$ARGS ${!i}"
 done
 
-echo $ARGS
-
 for i in $(seq $2 1 $4)
 do
     cmd="/bin/sh -c"
@@ -47,7 +43,7 @@ do
     cmd="$cmd; export GASPI_SOCKET=$i"
     cmd="$cmd; export GASPI_TYPE=GASPI_WORKER"
     cmd="$cmd; export GASPI_MFILE=$3"
-    if [ $4 -eq 1 ]; then
+    if [ $5 -eq 1 ]; then
         cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
     fi
 
