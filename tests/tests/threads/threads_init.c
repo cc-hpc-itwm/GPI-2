@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <GPI2_Threads.h>
+#include <GASPI_Threads.h>
 
 #include "test_utils.h"
 
