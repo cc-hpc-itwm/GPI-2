@@ -22,6 +22,8 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_segment_delete(0));
 
+  ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+  
   ASSERT (gaspi_segment_create(0, 2048,
   			       GASPI_GROUP_ALL,
   			       GASPI_BLOCK,
