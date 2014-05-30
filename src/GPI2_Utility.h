@@ -50,6 +50,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 ulong gaspi_load_ulong(volatile ulong *ptr);
 float gaspi_get_cpufreq ();
 int gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset);
-void gaspi_thread_sleep(int msecs);
+inline int gaspi_thread_sleep(int msecs);
 
 #endif

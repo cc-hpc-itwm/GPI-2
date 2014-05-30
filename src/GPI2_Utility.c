@@ -139,7 +139,7 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 
 
 
-void
+inline int
 gaspi_thread_sleep(int msecs)
 {
 
@@ -147,6 +147,5 @@ gaspi_thread_sleep(int msecs)
   sleep_time.tv_sec = msecs / 1000;
   sleep_time.tv_nsec = 0;// msecs * 1000000;
 
-  nanosleep(&sleep_time, &rem);
-  
+  return nanosleep(&sleep_time, &rem);
 }

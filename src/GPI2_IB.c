@@ -1564,9 +1564,9 @@ pgaspi_group_commit (const gaspi_group_t group,
 	    const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
 	    if(delta_ms > timeout_ms){eret=GASPI_TIMEOUT;goto errL;}
 	    
-	    gaspi_thread_sleep(250);
-	    
-  //	    usleep(250000);
+	    if(gaspi_thread_sleep(250) < 0)
+	      gaspi_printf("gaspi_thread_sleep Error %d: (%s)\n",ret, (char*)strerror(errno));
+	    //usleep(250000);
 	    //gaspi_delay();
         }
         else
