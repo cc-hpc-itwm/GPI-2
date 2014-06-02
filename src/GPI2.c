@@ -578,14 +578,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
-  struct timeb tup1,tinit1;
-  ftime(&tup1);
-  //TODO: delta calculations as a macro or inlined
-  const unsigned int delta_s = (tup1.time-tup0.time)+((tup1.millitm-tup0.millitm)/1000);
-  
-  gaspi_printf("Rank %i is ready to build (took %u secs %llu Mbytes)\n",
-    	       glb_gaspi_ctx.rank, delta_s, gaspi_get_mem_in_use() / 1024 / 1024);
-
   if(glb_gaspi_cfg.build_infrastructure)
     {
       //connect all ranks
@@ -641,11 +633,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       glb_gaspi_group_ib[GASPI_GROUP_ALL].id = -2;//disable
       eret = GASPI_SUCCESS;
     }
-
-  ftime(&tinit1);
-  const unsigned int delta_s1 = (tinit1.time-tinit0.time)+((tinit1.millitm-tinit0.millitm)/1000);
-  gaspi_printf("Rank %i is done with init (took %u secs %lu Mbytes peak %lu Mbytes )\n",
-	       glb_gaspi_ctx.rank, delta_s1, gaspi_get_mem_in_use()/1024/1024, gaspi_get_mem_peak()/1024/1024 );
 
   return eret;
   
