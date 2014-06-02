@@ -105,6 +105,16 @@ gaspi_init_ib_core ()
   if (glb_gaspi_ib_init)
     return -1;
 
+  //change/override num of queues at large scale
+  if (glb_gaspi_ctx.tnc > 1000 && glb_gaspi_cfg.queue_num > 1)
+    {
+#ifdef DEBUG
+      gaspi_printf("Warning: setting number of queues to 1\n");
+#endif      
+      glb_gaspi_cfg.queue_num = 1;
+    }
+  
+      
   memset (&glb_gaspi_ctx_ib, 0, sizeof (gaspi_ib_ctx));
   memset (&glb_gaspi_group_ib, 0, GASPI_MAX_GROUPS * sizeof (gaspi_ib_group));
 
