@@ -1,5 +1,5 @@
 ifndef GPI2_HOME
-  GPI2_HOME = $(HOME)/GPI2-1.0.1
+  GPI2_HOME = ../../../..
 endif
 
 ifndef CMD_RUN

@@ -1,5 +1,5 @@
 ifndef GPI2_HOME
-  GPI2_HOME=$(HOME)/gpi2.inst
+  GPI2_HOME=../../..
 endif
 
 BIN += helloworld.exe
