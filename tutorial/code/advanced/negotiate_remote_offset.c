@@ -330,6 +330,7 @@ int main(int argc, char *argv[])
 	}
     }
 
+
   // write initialized data at respectively negotiated remote offsets
   for (int i = 0; i < nProc; ++i)
     {
@@ -365,6 +366,9 @@ int main(int argc, char *argv[])
 			 );
 	}
     }
+
+  // required because of potential race in local_recv_len update
+  SUCCESS_OR_DIE (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   // wait for data notification and validate
   for (int i = 0; i < nProc; ++i)
