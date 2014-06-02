@@ -125,10 +125,6 @@ static int gaspi_connect2port_intern(const char *hn,const unsigned short port)
   ret = connect(sockfd,(struct sockaddr*)&Host,sizeof(Host));
   if(ret != 0)
     {
-      int errsv = errno;
-      gaspi_printf("Failed to connect to %s (err %d %s\n",
-		   hn, errsv, strerror(errsv) );
-
       close(sockfd);
       return -1;
     }
