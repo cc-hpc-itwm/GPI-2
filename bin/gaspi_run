@@ -35,7 +35,7 @@ RUN_FILE=$(TMPDIR=. mktemp ${RUN_PATTERN})
 ORIG_MFILE=""
 NNODES=0
 DEBUG=0
-GASPI_LAUNCHER="ssh -f"
+GASPI_LAUNCHER="ssh"
 
 remove_temp_file()
 {
@@ -130,7 +130,7 @@ validate_machinefile()
 kill_procs()
 {
     echo "Killing GASPI procs..."
-    for i in $(cat $MFILE)
+    for i in $(cat $UNIQ_MFILE)
     do
 	$GASPI_LAUNCHER $i killall -s KILL $PRGNAME > /dev/null 2>&1 &
     done
@@ -263,7 +263,7 @@ do
 	fi
 	cmd="$cmd ${MASTER_PRG}"
 
-	$GASPI_LAUNCHER $previous "nohup $cmd 2>&1 &"
+	$GASPI_LAUNCHER $previous "nohup $cmd 2>&1" &
 	
 	j=0
     fi
@@ -281,7 +281,7 @@ fi
 cmd="$cmd ${MASTER_PRG}"
 
 
-$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null` 2>&1 &"
+$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null` 2>&1" &
 
 echo $PRGNAME  > /tmp/.last_gaspi_prg
 if [ -O /tmp/.last_gaspi_prg ]; then
