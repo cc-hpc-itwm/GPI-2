@@ -659,6 +659,7 @@ pgaspi_initialized (gaspi_number_t *initialized)
 }
 
 //cleanup
+//TODO: need to remove tmp file if running mpi mixed mode
 #pragma weak gaspi_proc_term = pgaspi_proc_term
 gaspi_return_t
 pgaspi_proc_term (const gaspi_timeout_t timeout)
@@ -673,11 +674,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
       goto errL;
     }
 
-  if(pthread_kill(glb_gaspi_ctx.snt,SIGSTKFLT) != 0)
-    {
-      gaspi_print_error("Failed to kill SN thread");
-      goto errL;
-    }
+  pthread_kill(glb_gaspi_ctx.snt, SIGUSR1);
 
   if(glb_gaspi_ctx.sockfd != NULL)
     {
