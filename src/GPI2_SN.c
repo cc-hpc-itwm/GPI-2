@@ -113,9 +113,6 @@ static int gaspi_connect2port_intern(const char *hn,const unsigned short port)
 
   if((serverData = gethostbyname(hn)) == NULL)
     {
-      int errsv = h_errno;
-/*       gaspi_printf("Failed gethostbyname (%s). Error %d (%s)\n", */
-/* 		   hn, errsv, hstrerror(errsv)); */
       close(sockfd);
       return -1;
     }
