@@ -208,53 +208,6 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
   
   return GASPI_ERROR;
 }
-#pragma weak gaspi_proc_local_rank = pgaspi_proc_local_rank
-gaspi_return_t
-pgaspi_proc_local_rank(gaspi_rank_t * const local_rank)
-{
-  if (glb_gaspi_init)
-    {
-#ifdef DEBUG
-      gaspi_verify_null_ptr(local_rank);
-#endif
-      *local_rank = (gaspi_rank_t) glb_gaspi_ctx.localSocket;
-      return GASPI_SUCCESS;
-    }
-  else
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
-}
-
-#pragma weak gaspi_proc_local_num = pgaspi_proc_local_num
-gaspi_return_t
-pgaspi_proc_local_num(gaspi_rank_t * const local_num)
-{
-  gaspi_rank_t rank;
-  
-  if (glb_gaspi_init)
-    {
-#ifdef DEBUG
-      gaspi_verify_null_ptr(local_num);
-#endif
-
-      if(gaspi_proc_rank(&rank) != GASPI_SUCCESS)
-	return GASPI_ERROR;
-
-      while(glb_gaspi_ctx.poff[rank + 1] != 0)
-	rank++;
-	    
-      *local_num  = glb_gaspi_ctx.poff[rank] + 1;
-      
-      return GASPI_SUCCESS;
-    }
-  else
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
-}
 
 
 #pragma weak gaspi_proc_init = pgaspi_proc_init
@@ -674,7 +627,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
       goto errL;
     }
 
-  pthread_kill(glb_gaspi_ctx.snt, SIGUSR1);
+  pthread_kill(glb_gaspi_ctx.snt, SIGSTKFLT);
 
   if(glb_gaspi_ctx.sockfd != NULL)
     {
@@ -773,6 +726,54 @@ pgaspi_proc_num (gaspi_rank_t * const proc_num)
 #endif
 
       *proc_num = glb_gaspi_ctx.tnc;
+      return GASPI_SUCCESS;
+    }
+  else
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
+}
+
+#pragma weak gaspi_proc_local_rank = pgaspi_proc_local_rank
+gaspi_return_t
+pgaspi_proc_local_rank(gaspi_rank_t * const local_rank)
+{
+  if (glb_gaspi_init)
+    {
+#ifdef DEBUG
+      gaspi_verify_null_ptr(local_rank);
+#endif
+      *local_rank = (gaspi_rank_t) glb_gaspi_ctx.localSocket;
+      return GASPI_SUCCESS;
+    }
+  else
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
+}
+
+#pragma weak gaspi_proc_local_num = pgaspi_proc_local_num
+gaspi_return_t
+pgaspi_proc_local_num(gaspi_rank_t * const local_num)
+{
+  gaspi_rank_t rank;
+  
+  if (glb_gaspi_init)
+    {
+#ifdef DEBUG
+      gaspi_verify_null_ptr(local_num);
+#endif
+
+      if(gaspi_proc_rank(&rank) != GASPI_SUCCESS)
+	return GASPI_ERROR;
+
+      while(glb_gaspi_ctx.poff[rank + 1] != 0)
+	rank++;
+	    
+      *local_num  = glb_gaspi_ctx.poff[rank] + 1;
+      
       return GASPI_SUCCESS;
     }
   else
@@ -980,5 +981,5 @@ pgaspi_error_str(gaspi_return_t error_code)
   if(error_code < GASPI_ERROR || error_code > GASPI_TIMEOUT)
     return "unknown";
 
-  return gaspi_return_str[error_code];
+  return (gaspi_string_t) gaspi_return_str[error_code];
 }
