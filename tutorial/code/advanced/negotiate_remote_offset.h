@@ -6,7 +6,7 @@ typedef struct offset_entry_t
   gaspi_size_t   local_send_len; // num send int
   gaspi_offset_t local_send_offset;
   volatile gaspi_size_t local_recv_len; // num recv int
-  gaspi_offset_t local_recv_offset;
+  volatile gaspi_offset_t local_recv_offset;
   gaspi_offset_t remote_recv_offset;
 } offset_entry;
 

@@ -63,7 +63,7 @@ void *handle_passive(void *arg)
 					   , sizeof(packet)
 					   , GASPI_BLOCK
 					   ));
-      volatile packet *t = (packet *) (_vptr + sizeof(packet));
+      packet *t = (packet *) (_vptr + sizeof(packet));
       passive_handler handler = t->handler;
       ASSERT(sender == t->rank);
       
@@ -97,7 +97,7 @@ static void call_say_hello(gaspi_rank_t rank
 
   // start of passive segment
   const gaspi_offset_t passive_offset = 0;
-  volatile packet *t = (packet *) (_vptr + passive_offset);
+  packet *t = (packet *) (_vptr + passive_offset);
   t->handler = say_hello;
   t->rank = myrank;
   t->len = len;      
@@ -173,7 +173,7 @@ static void call_return_offset(gaspi_rank_t rank
 
   // start of passive segment
   const gaspi_offset_t passive_offset = 0;
-  volatile packet *t = (packet *) (_vptr + passive_offset);
+  packet *t = (packet *) (_vptr + passive_offset);
   t->handler = return_offset;
   t->rank = myrank;
   t->len = len;      
