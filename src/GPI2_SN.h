@@ -24,8 +24,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Types.h"
 #include "GPI2_IB.h"
 
-#define GASPI_INT_PORT    (12121)
-
 #define GASPI_EPOLL_CREATE  (256)
 #define GASPI_EPOLL_MAX_EVENTS  (2048)
 

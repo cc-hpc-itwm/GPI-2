@@ -41,7 +41,6 @@ extern "C"
 #define GASPI_BLOCK       (0xffffffff)
 #define GASPI_TEST        (0x0)
 #define GASPI_MAX_NODES   (65536)
-#define GASPI_SN_PORT     (10840)
 #define GASPI_MAX_GROUPS  (32)
 #define GASPI_MAX_MSEGS   (32)
 #define GASPI_GROUP_ALL   (0)
@@ -162,15 +161,16 @@ extern "C"
    */
   typedef struct gaspi_config
   {
-    gaspi_uint logger;	     /**< flag to set logging */
-    gaspi_uint net_info;     /**< flag to set network information display*/
-    gaspi_int netdev_id;     /**< the network device to use */
-    gaspi_uint mtu;	     /**< the MTU value to use */
-    gaspi_uint port_check;   /**< flag to whether to perform a network check */
-    gaspi_uint user_net;     /**< */
-    gaspi_network_t net_typ; /**< network type */
-    gaspi_uint queue_depth;  /**< the queue depth (size) to use */
-    gaspi_uint queue_num;     /**< the number of queues to use */
+    gaspi_uint logger;	     /* flag to set logging */
+    gaspi_uint sn_port;      /* port for internal comm */    
+    gaspi_uint net_info;     /* flag to set network information display*/
+    gaspi_int netdev_id;     /* the network device to use */
+    gaspi_uint mtu;	     /* the MTU value to use */
+    gaspi_uint port_check;   /* flag to whether to perform a network check */
+    gaspi_uint user_net;     /* */
+    gaspi_network_t net_typ; /* network type */
+    gaspi_uint queue_depth;  /* the queue depth (size) to use */
+    gaspi_uint queue_num;    /* the number of queues to use */
     gaspi_number_t group_max;
     gaspi_number_t segment_max;
     gaspi_size_t transfer_size_max;

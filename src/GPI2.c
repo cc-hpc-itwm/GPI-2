@@ -39,6 +39,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 gaspi_config_t glb_gaspi_cfg = {
   1,				//logout
+  12121,                        //sn port 
   0,				//netinfo
   -1,				//netdev
   0,				//mtu
@@ -134,10 +135,19 @@ pgaspi_config_set (const gaspi_config_t nconf)
       gaspi_print_error("Invalid value for parameter mtu (supported: 1024, 2048,4096)");
       return GASPI_ERROR;
     }
+
+  if(nconf.sn_port < 1024 || nconf.sn_port > 65536)
+    {
+      gaspi_print_error("Invalid value for parameter sn_port ( from 1024 to 65536)");
+      return GASPI_ERROR;
+    }
+  else  
+    glb_gaspi_cfg.sn_port = nconf.sn_port;
+  
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.logger = nconf.logger;
   glb_gaspi_cfg.port_check = nconf.port_check;
-
+  
   return GASPI_SUCCESS;
 }
 
@@ -404,7 +414,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  while(glb_gaspi_ctx.sockfd[i] == -1)
 	    {
 	      //TODO: timeout is magic number; has nothing to do with user input
-	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),GASPI_INT_PORT+glb_gaspi_ctx.poff[i],100000);
+	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),glb_gaspi_cfg.sn_port+glb_gaspi_ctx.poff[i],100000);
 
 	      if(glb_gaspi_ctx.sockfd[i] == -2)
 		{
@@ -492,7 +502,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  while(glb_gaspi_ctx.sockfd[i] == -1)
 	    {
 	      //TODO: again the magic number for timeout with nothing to do with user input or resources
-	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),GASPI_INT_PORT+glb_gaspi_ctx.poff[i],100000);
+	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),glb_gaspi_cfg.sn_port+glb_gaspi_ctx.poff[i],100000);
 	    
 	      if(glb_gaspi_ctx.sockfd[i] == -2)
 		{

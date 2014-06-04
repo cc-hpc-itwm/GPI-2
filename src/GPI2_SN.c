@@ -28,7 +28,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
 #include "GPI2_SN.h"
+
+extern gaspi_config_t glb_gaspi_cfg;
 
 int gaspi_set_non_blocking(int sock)
 {
@@ -220,7 +223,7 @@ void *gaspi_sn_backend(void *arg)
 
   struct sockaddr_in listeningAddress;
   listeningAddress.sin_family = AF_INET;
-  listeningAddress.sin_port = htons((GASPI_INT_PORT + glb_gaspi_ctx.localSocket));
+  listeningAddress.sin_port = htons((glb_gaspi_cfg.sn_port + glb_gaspi_ctx.localSocket));
   listeningAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 
   if(bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress)) < 0)

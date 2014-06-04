@@ -8,6 +8,7 @@
 static gaspi_config_t tsuite_default_config = 
   {
     1,				//logout
+    12121,
     0,				//netinfo
     0,				//netdev
     2048,				//mtu
