@@ -17,8 +17,13 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <errno.h>
-
+#include <sys/time.h>
+#include "GPI2.h"
 #include "GPI2_Utility.h"
+
+#define MEASUREMENTS 500
+#define USECSTEP 10
+#define USECSTART 100
 
 ulong
 gaspi_load_ulong(volatile ulong *ptr)
@@ -28,58 +33,133 @@ gaspi_load_ulong(volatile ulong *ptr)
   return v;
 }
 
-//TODO: sample it instead of trusting OS? like mctp?
+/* CPU freq through sampling and linear regression */
+float
+_gaspi_sample_cpu_freq()
+{
+  struct timeval tval1,tval2;
+  gaspi_cycles_t start;
+  double sumx = 0.0f;
+  double sumy = 0.0f;
+  double sum_sqr_x = 0.0f;
+  double sum_sqr_y = 0.0f;
+  double sumxy = 0.0f;
+  double tx,ty;
+  int i;
+  
+  long x[MEASUREMENTS];
+  gaspi_cycles_t y[MEASUREMENTS];
+  double beta;
+  double corr_2;
+
+  for(i = 0;i < MEASUREMENTS; ++i)
+    {
+      start = gaspi_get_cycles();
+
+      if(gettimeofday(&tval1,NULL))
+	{
+#ifdef DEBUG	  
+	  printf("gettimeofday failed.\n");
+#endif	  
+	  return 0.0f;
+	}
+
+      do
+	{
+	  if(gettimeofday(&tval2,NULL))
+	    {
+#ifdef DEBUG	  
+	      printf("gettimeofday failed.\n");
+#endif	      
+	      return 0.0f;
+	    }
+	}
+      while((tval2.tv_sec - tval1.tv_sec) * 1000000 +
+	    (tval2.tv_usec - tval1.tv_usec) < USECSTART + i * USECSTEP);
+
+
+      x[i] = (tval2.tv_sec - tval1.tv_sec) * 1000000 + tval2.tv_usec - tval1.tv_usec;
+      y[i] = gaspi_get_cycles() - start;
+    }
+  
+  for(i = 0;i < MEASUREMENTS; ++i)
+    {
+      tx = x[i];
+      ty = y[i];
+      sumx += tx;
+      sumy += ty;
+      sum_sqr_x += tx * tx;
+      sum_sqr_y += ty * ty;
+      sumxy += tx * ty;
+    }
+
+  corr_2 = (MEASUREMENTS * sumxy - sumx * sumy) * (MEASUREMENTS * sumxy - sumx * sumy)
+    / (MEASUREMENTS * sum_sqr_x - sumx * sumx) / (MEASUREMENTS * sum_sqr_y - sumy * sumy);
+
+  if(corr_2 < 0.9)
+      return 0.0f;
+
+  beta = (MEASUREMENTS * sumxy - sumx * sumy) / (MEASUREMENTS * sum_sqr_x - sumx * sumx);
+
+  return (float)beta;
+}
+
 float
 gaspi_get_cpufreq ()
 {
-  FILE *f;
-  char buf[256];
   float mhz = 0.0f;
-
-  f = fopen ("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
-  if (f)
+  mhz =  _gaspi_sample_cpu_freq();
+  
+  if(0.0f == mhz )
     {
-      if (fgets (buf, sizeof (buf), f))
+      FILE *f;
+      char buf[256];
+
+      f = fopen ("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
+      if (f)
 	{
-	  uint m;
-	  int rc;
-
-	  rc = sscanf (buf, "%u", &m);
-	  if (rc == 1)
-	    mhz = (float) m;
-	}
-
-      fclose (f);
-    }
-
-  if (mhz > 0.0f)
-    return mhz / 1000.0f;
-
-  f = fopen ("/proc/cpuinfo", "r");
-
-  if (f)
-    {
-      while (fgets (buf, sizeof (buf), f))
-	{
-	  float m;
-	  int rc;
-
-	  rc = sscanf (buf, "cpu MHz : %f", &m);
-
-	  if (rc != 1)
-	    continue;
-
-	  if (mhz == 0.0f)
+	  if (fgets (buf, sizeof (buf), f))
 	    {
-	      mhz = m;
-	      continue;
+	      uint m;
+	      int rc;
+
+	      rc = sscanf (buf, "%u", &m);
+	      if (rc == 1)
+		mhz = (float) m;
 	    }
+
+	  fclose (f);
 	}
 
-      fclose (f);
+      if (mhz > 0.0f)
+	return mhz / 1000.0f;
+
+      f = fopen ("/proc/cpuinfo", "r");
+
+      if (f)
+	{
+	  while (fgets (buf, sizeof (buf), f))
+	    {
+	      float m;
+	      int rc;
+
+	      rc = sscanf (buf, "cpu MHz : %f", &m);
+
+	      if (rc != 1)
+		continue;
+
+	      if (mhz == 0.0f)
+		{
+		  mhz = m;
+		  continue;
+		}
+	    }
+
+	  fclose (f);
+	}
     }
 
-  return mhz;
+  return mhz;  
 }
 
 int
@@ -149,3 +229,6 @@ gaspi_thread_sleep(int msecs)
 
   return nanosleep(&sleep_time, &rem);
 }
+
+
+
