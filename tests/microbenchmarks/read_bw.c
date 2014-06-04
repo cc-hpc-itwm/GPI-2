@@ -20,10 +20,10 @@ main (int argc, char *argv[])
     }
 
   // BENCH //
-  mctpInitTimer ();
   gaspi_proc_rank (&myrank);
 
-  const double cpu_freq = mctpGetCPUFreq ();
+  gaspi_float cpu_freq;
+  gaspi_cpu_frequency(&cpu_freq);
 
   if (myrank == 0)
     {
@@ -54,10 +54,8 @@ main (int argc, char *argv[])
 	  const double bw = (double) bytes / ts * 1000.0;
 	  const double bw_mb = bw / (1024.0 * 1024.0);
 
-	  if (bytes < 131072)
-	    printf ("%d \t\t%.2f\n", bytes, bw_mb);
-	  else
-	    printf ("%d \t\t%.2f\n", bytes, bw_mb);
+	  printf ("%d \t\t%.2f\n", bytes, bw_mb);
+
 
 	  bytes <<= 1;
 

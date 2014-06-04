@@ -18,7 +18,6 @@
 #include <assert.h>
 
 #include <GASPI.h>                    
-#include <MCTP1.h>
 
 #include "utils.h"
 

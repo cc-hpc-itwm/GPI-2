@@ -10,6 +10,6 @@ CFLAGS = -g -I$(GPI_DIR)/include
 CPPFLAGS = -g -I$(GPI_DIR)/include
 
 LIB_PATH = -L$(GPI_DIR)/lib64 -L$(OFED_PATH)/lib64
-LIBS     = -lGPI2-dbg -libverbs -lMCTP1 -lpthread
+LIBS     = -lGPI2-dbg -libverbs -lpthread
 
 export
