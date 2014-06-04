@@ -132,7 +132,7 @@ kill_procs()
     echo "Killing GASPI procs..."
     for i in $(cat $UNIQ_MFILE)
     do
-	$GASPI_LAUNCHER $i killall -s KILL $PRGNAME > /dev/null 2>&1 &
+	$GASPI_LAUNCHER $i "nohup killall ${PRGNAME} `</dev/null`" &> /dev/null &
     done
     remove_temp_file
     exit 1
@@ -263,7 +263,7 @@ do
 	fi
 	cmd="$cmd ${MASTER_PRG}"
 
-	$GASPI_LAUNCHER $previous "nohup $cmd 2>&1" &
+	$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null`"  &
 	
 	j=0
     fi
@@ -286,18 +286,6 @@ $GASPI_LAUNCHER $previous "nohup $cmd `</dev/null` 2>&1" &
 echo $PRGNAME  > /tmp/.last_gaspi_prg
 if [ -O /tmp/.last_gaspi_prg ]; then
     chmod a+rw /tmp/.last_gaspi_prg &> /dev/null
-fi
-
-#check all started well
-sleep 1
-grep "${KPRG} not found" $RUN_FILE
-if [ $? = 0 ]; then
-    echo "Error: Failed to start $PRG on remote nodes"
-    echo
-    cat $RUN_FILE
-    echo
-    clean_exit
-    exit 1
 fi
 
 #start master
