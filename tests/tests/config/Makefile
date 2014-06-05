@@ -1,4 +1,4 @@
-BIN = get_config.bin set_config.bin print_config.bin
+BIN = get_config.bin set_config.bin print_config.bin sn_port.bin
 
 CFLAGS+=-I../
 
