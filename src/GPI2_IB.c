@@ -693,8 +693,8 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   const int i=rank;
   if(gaspi_create_endpoint(i)<0) return GASPI_ERROR;
 
-  //TODO: respect lock timeout
-  lock_gaspi_tout(&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
   if(glb_gaspi_ctx_ib.lrcd[i].cstat)
     goto okL;//already connected
@@ -767,8 +767,8 @@ pgaspi_disconnect(const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 
   const int i=rank;
 
-  //TODO: respect lock timeout
-  lock_gaspi_tout(&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
   if(glb_gaspi_ctx_ib.lrcd[i].cstat == 0)
     goto errL;//not connected
