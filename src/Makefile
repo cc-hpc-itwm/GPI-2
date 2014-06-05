@@ -1,14 +1,4 @@
-OFED_PATH = /usr/local/ofed1.51
-
-CC = gcc
-FORTRANC = gfortran
-HAS_FORTRAN:=$(shell which $(FORTRANC))
-
-#CFLAGS = -Wall -Wunused-macros -Werror -D_GNU_SOURCE -O2
-CFLAGS = -Wall -Wunused-macros  -D_GNU_SOURCE -O2
-DBG_CFLAGS = -Wall -g -D_GNU_SOURCE -O0
-#DBG_CFLAGS = -Wall -Werror -g -D_GNU_SOURCE -O0
-INCLUDES = -I$(OFED_PATH)/include -I../include -I.
+include make.inc
 
 SRCS = GPI2_IB_IO.c GPI2_IB_PASSIVE.c GPI2_IB_ATOMIC.c GPI2_IB_GRP.c GPI2_IB.c \
  GPI2_Env.c GPI2_Utility.c GPI2_SN.c GPI2_Logger.c GPI2_Stats.c GPI2_Mem.c GPI2_Threads.c GPI2.c 
@@ -21,10 +11,8 @@ OBJ_FORTRAN = GASPI.o
 GPI2 = libGPI2.a
 GPI2_DBG = libGPI2-dbg.a
 
-%.o: %.c $(HDRS)
-	$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
-
 all: $(GPI2) $(GPI2_DBG) $(OBJ_FORTRAN)
+
 
 $(GPI2): $(OBJS)
 	rm -f $(GPI2)
@@ -48,6 +36,8 @@ $(OBJ_FORTRAN): GASPI.f90
 	$(FORTRANC) -O2 -c $< 
 	cp gaspi.mod gaspi_types.mod ../include;
 
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
 
 %.dbg.o: %.c
 	$(CC) $(DBG_CFLAGS) -DDEBUG $(INCLUDES) -c $<  -o $@
