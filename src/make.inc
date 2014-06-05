@@ -1,4 +1,4 @@
-FED_PATH = /usr
+OFED_PATH = /usr
 
 CC = gcc
 FORTRANC = gfortran
