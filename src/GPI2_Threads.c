@@ -20,8 +20,9 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <sched.h>
 #include <unistd.h>
 
-#include "GPI2_Threads.h"
+#include <GASPI_Threads.h>
 #include "GPI2_Utility.h"
+
 #define GASPI_MAX_THREADS (1024)
 
 static int __gaspiThreadsGlobalIDCnt = -1;
