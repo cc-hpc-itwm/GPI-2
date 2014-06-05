@@ -15,7 +15,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
+#include "GPI2.h"
+#include "GPI2_IB.h"
 
+#pragma weak gaspi_passive_send     = pgaspi_passive_send
 gaspi_return_t
 pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 		    const gaspi_offset_t offset_local,
@@ -126,7 +129,7 @@ checkL:
   return GASPI_SUCCESS;
 }
 
-
+#pragma weak gaspi_passive_receive  = pgaspi_passive_receive
 gaspi_return_t
 pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 		       const gaspi_offset_t offset_local,

@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <GASPI.h>
-#include <MCTP1.h>
 
 int start_bench (int);
 

@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <MCTP1.h>
 
 #include <test_utils.h>
 
@@ -32,14 +31,17 @@ void work(int tid)
 	ASSERT (gaspi_write(0, localOff, rankSend, 0,  remOff,  commSize, 1, GASPI_BLOCK));
 	
       }
+  
   ASSERT (gaspi_wait(1, GASPI_BLOCK));
   
-  mctpSyncThreads();
+  gaspi_threads_sync();
 }
 
 void * thread_fun(void *args)
 {
-  int tid = mctpRegisterThread();
+  gaspi_int tid;
+  ASSERT(gaspi_threads_register(&tid));
+
   work(tid);
 
   return NULL;
@@ -47,20 +49,16 @@ void * thread_fun(void *args)
 
 int main(int argc, char *argv[])
 {
-
-
+  int i;
+  int num_threads = 0;
+  gaspi_int tid;
   gaspi_size_t segSize;
 
   TSUITE_INIT(argc, argv);
-
-
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
-  mctpInit();
-  int nThreads = mctpGetNumberOfActivatedCores();
-  int tid = mctpRegisterThread();
-  int i;
-  
+  ASSERT(gaspi_threads_init(&num_threads));
+
   ASSERT (gaspi_proc_num(&numranks));
   ASSERT (gaspi_proc_rank(&myrank));
 
@@ -68,12 +66,10 @@ int main(int argc, char *argv[])
 
   ASSERT( gaspi_segment_size(0, myrank, &segSize));
 
-  gaspi_printf("seg size %lu MB \n", segSize/1024/1024);
+  for(i = 1; i < num_threads; i++)
+    ASSERT(gaspi_threads_run(thread_fun, NULL));
 
-  for(i = 1; i < nThreads; i++)
-    mctpStartThread(thread_fun, NULL);
-
-  work(tid);
+  thread_fun(NULL);
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   

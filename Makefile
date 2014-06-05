@@ -5,10 +5,6 @@ all: gpi tests docs
 
 gpi:
 	make -C src
-	make -C src debug
-	@if test "$(GFORTRAN)" != ""; then \
-	make -C src fortran; \
-	fi	
 
 mic:
 	make -C src mic

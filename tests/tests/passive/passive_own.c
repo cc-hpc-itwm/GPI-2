@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <MCTP1.h>
+#include <GASPI_Threads.h>
 
 #include <test_utils.h>
 
@@ -12,7 +12,6 @@
 
 void * recvThread(void * arg)
 {
-  int tid = mctpRegisterThread();
   gaspi_rank_t sender;
   gaspi_offset_t recvPos = (RECV_OFF / sizeof(int));
   int * memArray = (int *) arg;
@@ -40,8 +39,10 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
-  mctpInitUser(2);
-  int tid = mctpRegisterThread();
+  ASSERT(gaspi_threads_init_user(2));
+
+  int tid;
+  ASSERT(gaspi_threads_get_tid(&tid));
 
   gaspi_rank_t P, myrank;
 
@@ -58,7 +59,7 @@ int main(int argc, char *argv[])
 
   int_GlbMem = ( int *) _vptr;
 
-  mctpStartSingleThread(recvThread, int_GlbMem);
+  ASSERT(gaspi_threads_run(recvThread, int_GlbMem));
 
   int_GlbMem[0] = 11223344;
 

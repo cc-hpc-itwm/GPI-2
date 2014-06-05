@@ -46,7 +46,7 @@ Requirements:
 The current version of GPI-2 has the following requirements.
 
 Software:
-- libibverbs (Verbs library from OFED).
+- libibverbs v1.1.6 (Verbs library from OFED).
 - ssh server running on compute nodes (requiring no password).
 - gawk (GNU Awk)
 

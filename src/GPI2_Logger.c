@@ -1,6 +1,3 @@
-#include <string.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 /*
 Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013
 
@@ -18,37 +15,48 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
-
-#include <sys/socket.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <pthread.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/socket.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <unistd.h>
+
+#include "GPI2.h"
+#include "GPI2_Utility.h"
 
 #define PORT_LOGGER 17825
 
 static pthread_mutex_t gaspi_logger_lock = PTHREAD_MUTEX_INITIALIZER;
+//TODO: 128? or 255?
 static char gaspi_master_log_ptr[128];
 static int gaspi_master_log_init = 0;
 static int gaspi_log_socket = 0;
 
+extern gaspi_config_t glb_gaspi_cfg;
+
 static inline void
 _check_log_init(void)
 {
-
   if (gaspi_master_log_init == 0)
     {
       gaspi_master_log_init = 1;
-      char *ptr = getenv ("GASPI_MASTER");
-      
-      if (ptr)
+
+      char * ptr = getenv ("GASPI_MASTER");     
+      if (ptr != NULL)
 	{
 	  memset (gaspi_master_log_ptr, 0, 128);
 	  snprintf (gaspi_master_log_ptr, 128, "%s", ptr);
 	}
       
       char *ptr2 = getenv ("GASPI_SOCKET");
-      if (ptr2)
+      if (ptr2 != NULL)
 	{
 	  gaspi_log_socket = atoi (ptr2);
 	}
@@ -61,7 +69,6 @@ _set_local_log_conn(int *sockL, struct sockaddr_in * client)
 
   if ((*sockL = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
     {
-      pthread_mutex_unlock (&gaspi_logger_lock);
       return -1;
     }
 
@@ -101,7 +108,7 @@ void
 gaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
 {
   char buf[1024];
-  char hn[128];
+  char hn[128]; //TODO: 128? or 255?
   struct sockaddr_in serverL, client;
   struct hostent *server_dataL;
 
@@ -120,7 +127,7 @@ gaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
       gaspi_log_socket = atoi (ptr2);
     }
   
-  sprintf (buf, "[%s:%d] ", hn, gaspi_log_socket);
+  sprintf (buf, "[%s:%d:%u] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank);
   const int sl = strlen (buf);
 
   va_list ap;
@@ -131,21 +138,22 @@ gaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
   int sockL;
   if(_set_local_log_conn(&sockL, &client) < 0)
     {
-      pthread_mutex_unlock (&gaspi_logger_lock);
-      return;
+      goto endL;
     }
 
   if ((server_dataL = gethostbyname (gaspi_get_hn(log_rank))) == 0)
     {
-      pthread_mutex_unlock (&gaspi_logger_lock);
-      return;
+      goto endL;
     }
 
   _send_to_log(&serverL, server_dataL, sockL, buf);
 
   close (sockL);
-
+  
+ endL:
   pthread_mutex_unlock (&gaspi_logger_lock);
+  return;
+  
 }
 
 void
@@ -169,22 +177,28 @@ gaspi_printf (const char *fmt, ...)
   /* check required initialization */
   _check_log_init();
 
+  time_t ltime;
+  ltime=time(NULL);
+
   if (strcmp (gaspi_master_log_ptr, hn) == 0 && gaspi_log_socket == 0)
     {
+      //      sprintf (buf, "[%s:%d:%u - %s] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank, asctime(localtime(&ltime)));
+      sprintf (buf, "[%s:%d:%u] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank);
+      const int sl = strlen (buf);
+
       va_list ap;
       va_start (ap, fmt);
-      vsnprintf (buf, 1024, fmt, ap);
+      vsnprintf (buf + sl, 1024 - sl, fmt, ap);
       va_end (ap);
 
       fprintf (stdout, buf);
       fflush (stdout);
 
-      pthread_mutex_unlock (&gaspi_logger_lock);
-      return;
+      goto endL;
     }
 
-
-  sprintf (buf, "[%s:%d] ", hn, gaspi_log_socket);
+  //  sprintf (buf, "[%s:%d:%u - %s] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank, asctime(localtime(&ltime)));
+  sprintf (buf, "[%s:%d:%u] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank);
   const int sl = strlen (buf);
 
   va_list ap;
@@ -196,23 +210,22 @@ gaspi_printf (const char *fmt, ...)
   int sockL;
   if(_set_local_log_conn(&sockL, &client) < 0)
     {
-      pthread_mutex_unlock (&gaspi_logger_lock);
-      return;
+      goto endL;
     }
 
   if ((server_dataL = gethostbyname (gaspi_master_log_ptr)) == 0)
     {
-      pthread_mutex_unlock (&gaspi_logger_lock);
-      return;
+      goto endL;
     }
 
   _send_to_log(&serverL, server_dataL, sockL, buf);
 
   close (sockL);
 
+ endL:
   pthread_mutex_unlock (&gaspi_logger_lock);
+  return;
 }
-
 
 void
 gaspi_print_affinity_mask ()
@@ -264,3 +277,4 @@ gaspi_print_affinity_mask ()
 
   gaspi_printf ("%s\n", buf);
 }
+

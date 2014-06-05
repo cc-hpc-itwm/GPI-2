@@ -6,8 +6,8 @@
 
 int main(int argc, char *argv[])
 {
-  gaspi_rank_t gsize, nprocs, n;
-  gaspi_number_t max_groups;
+  gaspi_rank_t nprocs, n;
+  gaspi_number_t max_groups, gsize;
   gaspi_rank_t *partners;
 
   TSUITE_INIT(argc, argv);

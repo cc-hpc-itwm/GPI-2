@@ -31,37 +31,28 @@ int main(int argc, char *argv[])
   assert((gsize == nprocs));
 
   if(myrank > 0 )
-    sleep(10); //simulate delay
-
-  //should fail since other ranks are still sleeping
-  /* if(myrank == 0 ) */
-  /*   EXPECT_TIMEOUT(gaspi_group_commit(g, 1000)); */
-
+    sleep(5); //simulate delay
 
   gaspi_return_t ret;
   
   do
     {
         ret = gaspi_group_commit(g, 1000);
-	gaspi_printf("commit returned %d\n", ret);
+
     }
   while (ret == GASPI_TIMEOUT || ret == GASPI_ERROR);
 
   assert((ret != GASPI_ERROR));
       
-  gaspi_printf("group barrier %d \n", ret);
-  
-  //group barrier -> should fail due to timeout of commit
-  ASSERT(gaspi_barrier(g, 5000));
+  ASSERT(gaspi_barrier(g, 10000));
 
-  gaspi_printf("all barrier\n");
   //all barrier
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   //sync
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
-  
-  gaspi_printf("finish\n");
 
+  gaspi_printf("Finish correctly\n");
+  
   return EXIT_SUCCESS;
 }

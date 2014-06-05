@@ -20,10 +20,13 @@ main (int argc, char *argv[])
     }
 
   // BENCH //
-  mctpInitTimer ();
+
   gaspi_proc_rank (&myrank);
 
-  const double cpu_freq = mctpGetCPUFreq ();
+
+  gaspi_float cpu_freq;
+  gaspi_cpu_frequency(&cpu_freq);
+
   const double cycles_to_msecs = 1.0 / (cpu_freq * 1000.0);
 
   if (myrank == 0)

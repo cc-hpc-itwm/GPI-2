@@ -35,19 +35,19 @@ extern "C"
 #endif
 
 #define GASPI_MAJOR_VERSION (1)
-#define GASPI_MINOR_VERSION (0)
-#define GASPI_REVISION (2)
+#define GASPI_MINOR_VERSION (1)
+#define GASPI_REVISION (0)
 
 #define GASPI_BLOCK       (0xffffffff)
 #define GASPI_TEST        (0x0)
-#define GASPI_MAX_NODES   (1000)
-#define GASPI_SN_PORT     (10840)
+#define GASPI_MAX_NODES   (65536)
 #define GASPI_MAX_GROUPS  (32)
 #define GASPI_MAX_MSEGS   (32)
 #define GASPI_GROUP_ALL   (0)
 #define GASPI_MAX_QP      (16)
 #define GASPI_COLL_QP     (GASPI_MAX_QP)
 #define GASPI_PASSIVE_QP  (GASPI_MAX_QP+1)
+#define GASPI_SN          (GASPI_MAX_QP+2)
 #define GASPI_MAX_TSIZE_C ((1ul<<31ul)-1ul)
 #define GASPI_MAX_TSIZE_P ((1ul<<16ul)-1ul)
 #define GASPI_MAX_QSIZE   (4096)
@@ -77,7 +77,8 @@ extern "C"
   typedef unsigned char gaspi_segment_id_t;
   typedef unsigned long gaspi_offset_t;
   typedef unsigned long gaspi_atomic_value_t;
-  typedef unsigned long gaspi_time_t;
+  typedef float gaspi_time_t;
+  typedef unsigned long gaspi_cycles_t;
   typedef unsigned short gaspi_notification_id_t;
   typedef unsigned int gaspi_notification_t;
   typedef unsigned int gaspi_statistic_counter_t;
@@ -160,15 +161,16 @@ extern "C"
    */
   typedef struct gaspi_config
   {
-    gaspi_uint logger;	     /**< flag to set logging */
-    gaspi_uint net_info;     /**< flag to set network information display*/
-    gaspi_int netdev_id;     /**< the network device to use */
-    gaspi_uint mtu;	     /**< the MTU value to use */
-    gaspi_uint port_check;   /**< flag to whether to perform a network check */
-    gaspi_uint user_net;     /**< */
-    gaspi_network_t net_typ; /**< network type */
-    gaspi_uint queue_depth;  /**< the queue depth (size) to use */
-    gaspi_uint queue_num;     /**< the number of queues to use */
+    gaspi_uint logger;	     /* flag to set logging */
+    gaspi_uint sn_port;      /* port for internal comm */    
+    gaspi_uint net_info;     /* flag to set network information display*/
+    gaspi_int netdev_id;     /* the network device to use */
+    gaspi_uint mtu;	     /* the MTU value to use */
+    gaspi_uint port_check;   /* flag to whether to perform a network check */
+    gaspi_uint user_net;     /* */
+    gaspi_network_t net_typ; /* network type */
+    gaspi_uint queue_depth;  /* the queue depth (size) to use */
+    gaspi_uint queue_num;    /* the number of queues to use */
     gaspi_number_t group_max;
     gaspi_number_t segment_max;
     gaspi_size_t transfer_size_max;
@@ -245,6 +247,15 @@ extern "C"
    */
   gaspi_return_t gaspi_proc_init (const gaspi_timeout_t timeout_ms);
 
+  /** Check if GPI-2 is initialized
+   *
+   * @param initialized Output parameter with flag value.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
+   * error.
+   */
+  gaspi_return_t gaspi_initialized (gaspi_number_t * initialized);
+  
   /** Shutdown procedure.
    * It is a synchronous local time-based blocking operation that
    * releases resources and performs the required clean-up.
@@ -255,6 +266,26 @@ extern "C"
    * error, GASPI_TIMEOUT in case of timeout.
    */
   gaspi_return_t gaspi_proc_term (const gaspi_timeout_t timeout_ms);
+
+    /** Get the process local rank.
+   * 
+   * 
+   * @param local_rank Rank within a node of calling process.
+   * 
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_proc_local_rank (gaspi_rank_t * const local_rank);
+
+ 
+  /** Get the number of processes (ranks) started by the application.
+   * 
+   * 
+   * @param local_num The number of processes (ranks) in the same node
+   *
+   * 
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_proc_local_num (gaspi_rank_t * const local_num);
 
   /** Get the process rank.
    * 
@@ -1005,12 +1036,22 @@ extern "C"
   /** Get the number of cycles (ticks). 
    * 
    * 
-   * @param ticks Output paramter with the ticks.
+   * @param ticks Output parameter with the ticks.
    * 
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
-  gaspi_return_t gaspi_time_ticks (gaspi_time_t * const ticks);
+  gaspi_return_t gaspi_time_ticks (gaspi_cycles_t * const ticks);
 
+    /** Get elapsed time (in milliseconds).
+   * 
+   * 
+   * @param ticks Output parameter with the time in milliseconds.
+   * 
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+
+  gaspi_return_t gaspi_time_get (gaspi_time_t * const wtime);
+    
   /** Get the CPU frequency. 
    * 
    * 
@@ -1038,7 +1079,6 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t gaspi_state_vec_get (gaspi_state_vector_t state_vector);
-
 
   /** GASPI printf to print the gaspi_logger. 
    * 
@@ -1139,7 +1179,18 @@ extern "C"
    * @return GASPI_SUCCESS in case of SUCCESS, GASPI_ERROR in case of error.
    */
   gaspi_return_t gaspi_statistic_counter_reset (gaspi_statistic_counter_t counter);
+
+  /** Get string describing return value.
+   * 
+   * 
+   * @param error_code The return value to be described.
+   * 
+   * @return A string that describes the return value.
+   */
+
+  gaspi_string_t gaspi_error_str(gaspi_return_t error_code);
   
+
 //@}
 
 #ifdef __cplusplus

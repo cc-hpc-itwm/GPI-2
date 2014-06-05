@@ -3,20 +3,68 @@
 GPI2_PATH=/opt/GPI2
 OFED_PATH=""
 OFED=0
+WITH_MPI=0
+MPI_PATH=""
+
 usage()
 {
 cat << EOF
 
-    Usage: `basename $0` [-p PATH_GPI2_INSTALL] [-o OFED_DIR]
+GPI2 Installation:
+
+    Usage: `basename $0` [-p PATH_GPI2_INSTALL] [-o OFED_DIR] <further options>
       where
-             -p Path where to install GPI-2
+             -p Path where to install GPI-2 (default: ${GPI2_PATH})
              -o Path to OFED installation
 
+    Further options:
+             --with-mpi<=path> Use this option if you aim at mixed mode with MPI.
+	                       See README for more information.
+
+	     
 EOF
 }
 
-while getopts ":p:o:" opt; do
+while getopts ":p:o:-:" opt; do
     case $opt in
+	-)
+	    case "${OPTARG}" in
+		with-mpi)
+		    val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+		    if [ "$val" = "" ]; then
+			which mpirun > /dev/null 2>&1
+			if [ $? != 0 ]; then
+			    echo "Couldn't find MPI installation. Please provide path to your MPI installation."
+			    exit 1
+			fi
+			MPI_BIN=`which mpirun`
+			MPI_PATH=`dirname $MPI_BIN`
+			MPI_PATH=`dirname $MPI_PATH`
+		    else
+			MPI_PATH=$val
+		    fi
+		    echo "With MPI at ${MPI_PATH}" >&2;
+		    WITH_MPI=1
+		    ;;
+		with-mpi=*)
+		    val=${OPTARG#*=}
+		    if [ "$val" = "" ]; then
+			echo "Forgot to provide MPI path?"
+			exit 1
+		    fi
+		    MPI_PATH=$val
+		    opt=${OPTARG%=$val}
+		    echo "With MPI at ${MPI_PATH}" >&2;
+		    WITH_MPI=1
+		    ;;
+		*)
+		    if [ "$OPTERR" = 1 ] && [ "${optspec:0:1}" != ":" ]; then
+		        echo "Unknown option --${OPTARG}" >&2
+			usage
+			exit 1
+		    fi
+		    ;;
+	    esac;;
 	o)
 	    echo "Path to OFED to be used: $OPTARG" >&2
 	    OFED_PATH=$OPTARG
@@ -27,7 +75,7 @@ while getopts ":p:o:" opt; do
             GPI2_PATH=$OPTARG
             ;;
         \?)
-            echo "Invalid option: -$OPTARG" >&2
+            echo "Unknown option: -$OPTARG" >&2
 	    usage
 	    exit 1
             ;;
@@ -38,14 +86,17 @@ while getopts ":p:o:" opt; do
     esac
 done
 
+#remove (old) log
+rm -f install.log
+
 #check ofed installation
 if [ $OFED = 0 ]; then
-    echo "Searching OFED installation..."
+    echo "Searching OFED installation..." | tee -a install.log
     INFO=/etc/infiniband/info
     if [ -x $INFO ]; then
 	
 	OFED_PATH=$(${INFO} | grep -w prefix | cut -d '=' -f 2)
-	echo "Found OFED installation in $OFED_PATH"
+	echo "Found OFED installation in $OFED_PATH" | tee -a install.log
     else
 	echo "Error: could not find OFED package."
 	echo "Run this script with the -o option and providing the path to your OFED installation."
@@ -59,37 +110,81 @@ else
     fi
 fi
 
-#check ibverbs support (at least RoCE)
+#check ibverbs support
 grep IBV_LINK_LAYER_ETHERNET $OFED_PATH/include/infiniband/verbs.h > /dev/null
 if [ $? != 0 ]; then
-    echo "Error: Too old version of libibverbs."
+    echo "Error: Too old version of libibverbs (need at least v1.1.6)."
     echo "Please update your OFED stack to a more recent version."
     exit 1
 fi
     
-sed -i  "s,OFED_PATH = /usr/local/ofed1.51,OFED_PATH = $OFED_PATH,g" src/Makefile
-sed -i  "s, OFED_PATH = /usr/local/ofed1.5.4.1,OFED_PATH = $OFED_PATH,g" tests/make.defines
+sed -i  "s,OFED_PATH = /usr/,OFED_PATH = $OFED_PATH,g" src/make.inc
+sed -i  "s,OFED_PATH = /usr/,OFED_PATH = $OFED_PATH,g" tests/make.defines
+
+#MPI mixed mode
+if [ $WITH_MPI = 1 ]; then
+
+    #check
+    if [ -r $MPI_PATH/include64/mpi.h ]; then
+	MPI_INC_PATH=$MPI_PATH/include64
+    else
+	if [ -r $MPI_PATH/include/mpi.h ]; then
+	    MPI_INC_PATH=$MPI_PATH/include
+	else
+	    echo "Cannot find mpi.h. Please provide path to MPI installation."
+	    exit 1
+	fi
+    fi
+
+    if [ -r $MPI_PATH/lib64/libmpi.so ] || [ -r $MPI_PATH/lib64/libmpi.a ; then
+	MPI_LIB_PATH=$MPI_PATH/lib64
+    else
+	if [ -r $MPI_PATH/lib/libmpi.so ] || [ -r $MPI_PATH/lib/libmpi.a ]; then
+	    MPI_LIB_PATH=$MPI_PATH/lib
+	else
+	    echo "Cannot find libmpi. Please provide path to MPI installation."
+	    exit 1
+	fi
+    fi
+    
+    cp src/make.inc src/make.inc.bak
+    echo "Using MPI: ${MPI_PATH}" | tee -a install.log
+    echo "###### added by install script" >> src/make.inc
+    echo "CFLAGS += -DGPI2_WITH_MPI" >> src/make.inc
+    echo "INCLUDES += -I${MPI_INC_PATH}" >> src/make.inc
+
+    #enable mpi tests
+    sed -i "s,#mpi,mpi,g" tests/tests/Makefile
+fi
 
 #build everything
-make gpi
+make clean &> /dev/null
+echo -e -n "\nBuilding GPI..."
+make gpi >> install.log 2>&1
 if [ $? != 0 ]; then
-    echo "Compilation of GPI-2failed"
+    echo "Compilation of GPI-2 failed (see install.log)"
     echo "Aborting..."
     exit -1
 fi
+echo " done."
+echo -e -n "\nBuilding tests..."
+make tests >> install.log 2>&1
+if [ $? != 0 ]; then
+    echo "Compilation of tests failed (see install.log)"
+    echo "Aborting..."
+    exit -1
+fi
+echo " done."
 
-make tests
-if [ $? != 0 ]; then
-    echo "Compilation of tests failed"
-    echo "Aborting..."
-    exit -1
-fi
-make docs 2> /dev/null
+echo -e -n "\nCreating documentation..."
+make docs >> install.log 2>&1
+echo " done."
 
 #copy things to the right place
 echo
 if [ ! -d "$GPI2_PATH" ]; then
-    mkdir -p $GPI2_PATH 2> /dev/null
+    echo "Creating installation directory: ${GPI2_PATH}" |tee -a install.log
+    mkdir -p $GPI2_PATH 2>> install.log 
     if [ "$?" != "0" ] ; then
 	echo
         echo "Failed to create directory (${GPI2_PATH}). Check your permissions or choose a different directory."
@@ -106,7 +201,9 @@ cp -r lib64 $GPI2_PATH
 cp -r tests $GPI2_PATH
 cp -r include $GPI2_PATH
 
+
 cat << EOF
+
 
 Installation finished successfully!
 
@@ -114,6 +211,6 @@ Add the following line to your $HOME/.bashrc:
 PATH=\${PATH}:${GPI2_PATH}/bin
 
 EOF
-
+echo "Success!"  >> install.log
 
 exit 0
