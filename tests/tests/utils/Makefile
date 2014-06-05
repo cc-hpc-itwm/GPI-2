@@ -1,4 +1,4 @@
-BIN =  time_get.bin print_error.bin
+BIN =  time_get.bin print_error.bin iostreams.bin
 
 CFLAGS+=-I../
 
