@@ -227,6 +227,15 @@ if [ -z "$MASTER_PRG" ]; then
     MASTER_PRG=$PRG
 fi
 
+location=$(readlink -f `dirname $0`)
+if [ ! -x ${location}/ssh.spawner ]; then
+    echo
+    echo "The required spawner is missing (or not executable)"
+    echo
+    clean_exit
+    exit 1
+fi
+
 t0=$(date +%s)
 #who's master
 master_node=`head -n 1 $MFILE`
