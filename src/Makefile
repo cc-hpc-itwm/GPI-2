@@ -33,7 +33,7 @@ $(OBJ_FORTRAN): GASPI.f90
 	cp gaspi.mod gaspi_types.mod ../include;
 
 mic: $(OBJS_MIC)
-	rm -f ../lib64/mic/$(GPI2_DBG)
+	rm -f ../lib64/mic/$(GPI2)
 	ar crs ../lib64/mic/$(GPI2) $(OBJS_MIC)
 
 %.o: %.c
@@ -43,7 +43,7 @@ mic: $(OBJS_MIC)
 	$(CC) $(DBG_CFLAGS) -DDEBUG $(INCLUDES) -c $<  -o $@
 
 %.mic.o: %.c
-	icc -mmic $(CFLAGS) $(INCLUDES) -c $<  -o $@
+	icc -mmic $(MIC_CFLAGS) $(INCLUDES) -DMIC -c $<  -o $@
 
 clean:
 	$(RM) *.o *~ ../lib64/$(GPI2) ../lib64/$(GPI2_DBG) ../lib64/mic/$(GPI2)
