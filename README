@@ -3,7 +3,7 @@
 			  http://www.gpi-site.com
 		  
 		  	      Version: 1.1.0
-    	          	    Copyright (C) 2013-2014
+ 	          	  Copyright (C) 2013-2014
 			     Fraunhofer ITWM
 			     
 ******************************************************************************
@@ -23,6 +23,19 @@ applications.
 2. INSTALLATION
 ===============
 
+Requirements:
+-------------
+
+The current version of GPI-2 has the following requirements.
+
+Software:
+- libibverbs v1.1.6 (Verbs library from OFED).
+- ssh server running on compute nodes (requiring no password).
+- gawk (GNU Awk)
+
+Hardware:
+- Infiniband or RoCE devices.
+
 The easiest way to install GPI-2 is by using the install.sh
 script. The default settings install GPI-2 under /opt/GPI2/. This
 location can be easily modified by passing the location with the -p
@@ -38,22 +51,28 @@ path of your OFED installation to the install script using the option
 (-o) for that, in case the install script is not able to find it:
 
      ./install.sh -o <full_path_to_ofed>
-     
 
-Requirements:
--------------
+You can see the install script usage:
+    ./install -h
 
-The current version of GPI-2 has the following requirements.
+MPI Interoperability
+--------------------
 
-Software:
-- libibverbs v1.1.6 (Verbs library from OFED).
-- ssh server running on compute nodes (requiring no password).
-- gawk (GNU Awk)
+If you plan to use GPI-2 with MPI to, for instance, start an
+incremental port of a large application or to use some libraries that
+require MPI, you can enable MPI interoperability with the option:
 
-Hardware:
-- Infiniband or RoCE devices.
+     ./install.sh --with-mpi<=path_to_mpi_installation>
 
+If you don't provide a path to your MPI installation and mpirun is in
+your PATH, the installation script will take that MPI installation.
 
+This will enable you to use GPI-2 with MPI where the only constraint
+is that MPI_Init() must be invoked before gaspi_proc_init(). For this
+MPI+GPI2 mixed mode, it is assumed that you start the application with
+mpirun (or mpiexec, etc.).
+
+	
 3. BUILDING GPI-2
 =================
 
@@ -195,9 +214,7 @@ in your system.
 GPI-2 is on-going work and more features are still to come. Here are
 some that are in our roadmap:
 
-- fully asynchronous collectives
 - include the support for GPU memory (available but not yet integrated)
-- threads integration
 - support to add spare nodes (fault tolerance)
 - better debugging possibilities
 
