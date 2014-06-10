@@ -1,0 +1,363 @@
+#!/bin/sh
+
+# Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2014
+
+# This file is part of GPI-2.
+
+# GPI-2 is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public License
+# version 3 as published by the Free Software Foundation.
+
+# GPI-2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
+
+SET_NUMA=0
+MFILE=""
+MASTER_PRG=""
+PRG=""
+KPRG=""
+PRGNAME=""
+TYPE=GASPI_MASTER
+MAX_IMMED_CONN=10
+MAX_NUMA_NODES=1
+HAS_NUMA=0
+HN=$(hostname)
+TMP_PATTERN=".gpi2.XXXXXXXX"
+TMP_MFILE=$(TMPDIR=. mktemp ${TMP_PATTERN})
+UNIQ_MFILE=$(TMPDIR=. mktemp ${TMP_PATTERN})
+RUN_PATTERN=".gaspi_run.XXXXXXXX"
+RUN_FILE=$(TMPDIR=. mktemp ${RUN_PATTERN})
+ORIG_MFILE=""
+NNODES=0
+DEBUG=0
+GASPI_LAUNCHER="ssh"
+
+remove_temp_file()
+{
+    rm -f $TMP_MFILE
+    rm -f $UNIQ_MFILE
+    rm -f $RUN_FILE
+}
+
+#helper functions
+usage()
+{
+    echo
+    echo "Usage: gaspi_run -m <machinefile> [OPTIONS] <path GASPI program>"
+    echo
+    echo "Available options:"
+    echo "  -b <binary file> Use a different binary for first node (master)."
+    echo "  -N               Enable NUMA for processes on same node."
+    echo "  -n <procs>       Start as many <procs> from machine file."
+    echo "  -d               Run with GDB (debugger) on master node."
+    echo "  -h               This help."
+    echo
+    remove_temp_file
+}
+
+clean_exit()
+{
+#assumes the clean-up script is in the same directory as gaspi_run
+    $(dirname $0)/gaspi_cleanup -m $UNIQ_MFILE
+
+    remove_temp_file
+}
+
+print_error_exit()
+{
+    echo
+    echo "Error: $1"
+    echo
+    remove_temp_file
+    exit 1
+}
+
+validate_machinefile()
+{
+    if [ ! -s $MFILE ]; then
+	print_error_exit "Empty machine file ($1)"
+    fi
+    
+#newline at the end
+    endl=`tail -c 1 $MFILE`
+    if [ "$endl" != "" ]; then 
+	print_error_exit "No newline at end of machine file ($1)"; 
+    fi
+
+    #create tmp_file
+    rm -f $TMP_MFILE
+
+    touch $TMP_MFILE 2>/dev/null && chmod 777 $TMP_MFILE ||
+    {
+	print_error_exit "User permissions failure: $PWD is not writable"
+    }
+
+    ncount=0
+    while read LINE
+    do
+	i=`echo $LINE | gawk '{print $1}'   `
+	if [ -n "$i" ]; then
+     	    ping -c 1 $i >/dev/null 2>&1 ||
+            {
+     		print_error_exit "Host not reachable ($i)"
+     	    }
+
+	    ncount=$((ncount+1))
+	    if [ $NNODES -lt $ncount ]; then
+		break
+	    fi
+	    echo $i >> $TMP_MFILE
+	fi
+    done < $MFILE
+
+    ORIG_MFILE=$MFILE
+    MFILE=$TMP_MFILE
+
+    uniq $MFILE > $UNIQ_MFILE
+       #number of nodes (NNODES) must fit number of hosts
+    n=$(wc -l < $MFILE)
+    if [ $n -lt $NNODES ]; then
+	print_error_exit "Not enough hosts ($n) for required number of nodes (-n $NNODES)"
+    fi
+
+}
+
+kill_procs()
+{
+    echo "Killing GASPI procs..."
+    for i in $(cat $UNIQ_MFILE)
+    do
+	$GASPI_LAUNCHER $i "nohup killall ${PRGNAME} `</dev/null`" &> /dev/null &
+    done
+    remove_temp_file
+    exit 1
+}
+
+#at least we need machinefile and binary
+if [ $# -lt 3 ]; then
+    usage
+    exit 1
+fi
+
+#command line parsing
+while [ -n "$1" ]; do
+    case $1 in
+	-m | --machinefile)
+	    shift
+ 	    if [ -r $1 ]; then
+		MFILE=$1
+            else
+		print_error_exit "Cannot read $1 (-m option) (or file does not exist)"
+	    fi
+	    ;;
+	-N | --NUMA)
+	    SET_NUMA=1
+	    ;;
+	-d | --debug)
+	    DEBUG=1
+	    ;;
+	-h | --help)
+	    usage
+	    ;;
+	-b | --binary)
+	    shift
+	    if [ -x $1 ]; then
+		MASTER_PRG=$1
+	    else
+		print_error_exit "Cannot find $1 (-b option) (or file is not executable)"
+	    fi
+	    ;;
+	-n | --nodes)
+	    shift
+	    if [ $1 -gt 1 ]; then
+		NNODES=$1
+	    else
+		print_error_exit "GASPI requires at least 2 nodes"
+	    fi
+	    ;;
+	*) #Sucks! we're taking a small risk here
+            if [ -x $1 ]; then
+		PRG=$(readlink -f "$*")
+		KPRG=$(readlink -f $1)
+		break
+            else
+                print_error_exit "Cannot execute $1 (or file does not exist)"
+            fi
+    esac
+    shift
+done
+
+if [ -z "$PRG" ]; then
+    print_error_exit "No binary file provided. See help (-h option)"
+fi
+
+PRGNAME=`basename $KPRG`
+
+trap kill_procs TERM INT QUIT
+
+#sanity check and settings
+if [ $SET_NUMA -eq 1 ]; then
+    which numactl > /dev/null
+    if [ $? = 0 ]; then
+	MAX_NUMA_NODES=`numactl --hardware|grep available|gawk '{print $2}'`
+	HAS_NUMA=1
+    else
+	MAX_NUMA_NODES=1
+	HAS_NUMA=0
+    fi
+else
+    MAX_NUMA_NODES=256
+fi
+
+#let's rock
+#use all host in machines file
+if [ $NNODES -eq 0 ]; then
+    NNODES=`sed /^$/d $MFILE  |wc -l`
+fi
+
+validate_machinefile $MFILE
+
+#master binary is the same
+if [ -z "$MASTER_PRG" ]; then
+    MASTER_PRG=$PRG
+fi
+
+location=$(readlink -f `dirname $0`)
+if [ ! -x ${location}/ssh.spawner ]; then
+    echo
+    echo "The required spawner is missing (or not executable)"
+    echo
+    clean_exit
+    exit 1
+fi
+
+t0=$(date +%s)
+#who's master
+master_node=`head -n 1 $MFILE`
+previous="$master_node"
+j=0
+
+for LINE in $(tail -n +2 $MFILE)
+do
+    if [ "$LINE" = "$previous" ]; then
+	j=$((j+1))
+	if [ $j -eq $MAX_NUMA_NODES ]; then
+	    echo
+	    echo "Error: incorrect machine file (-m $ORIG_MFILE) (max procs per node: $MAX_NUMA_NODES)"
+	    echo
+	    clean_exit
+	    exit 1
+	fi
+    else
+	location=$(readlink -f `dirname $0`)
+	if [ "$previous" != "$master_node" ]; then
+	    cmd="${location}/ssh.spawner ${master_node} 0 $(readlink -f $MFILE) $j "
+	else
+	    if [ $j -eq 0 ]; then
+	        previous="$LINE"
+		continue;
+	    else
+	    cmd="${location}/ssh.spawner ${master_node} 1 $(readlink -f $MFILE) $j "
+	    fi
+	fi
+	if [ $SET_NUMA -eq 1 ]; then
+     	    cmd="$cmd 1"
+	else
+            cmd="$cmd 0"
+	fi
+	cmd="$cmd ${MASTER_PRG}"
+
+	$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null`"  &
+	
+	j=0
+    fi
+    
+    previous="$LINE"
+done
+
+location=$(readlink -f `dirname $0`)
+cmd="${location}/ssh.spawner ${master_node} 0 $(readlink -f $MFILE) $j"
+if [ $SET_NUMA -eq 1 ]; then
+    cmd="$cmd 1"
+else
+    cmd="$cmd 0"
+fi
+cmd="$cmd ${MASTER_PRG}"
+
+
+$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null` 2>&1" &
+
+echo $PRGNAME  > /tmp/.last_gaspi_prg
+if [ -O /tmp/.last_gaspi_prg ]; then
+    chmod a+rw /tmp/.last_gaspi_prg &> /dev/null
+fi
+
+#start master
+t1=$(date +%s)
+tdiff=$((t1 - t0))
+echo Startup time: $tdiff sec
+
+if [ "$master_node" != "$HN" ]; then
+    if [ $DEBUG != 0 ]; then
+	echo
+	echo "Running with debugger only allowed if current node ($HN) is the first node in machinefile"
+	echo
+	clean_exit
+	exit 1
+    fi
+    #prepare differently for remote node
+    chmod a+r $MFILE &> /dev/null
+    TMP_FILE=`readlink -f $MFILE`
+    MFILE=$TMP_FILE
+    scp $MFILE ${master_node}:${MFILE} &> /dev/null
+    if [ $? != 0 ]; then
+	echo "Warning: Failed to copy machinefile to remote host. Program might not start correctly."
+    fi
+
+    cmd="/bin/sh -c"
+    cmd="$cmd 'export GASPI_MASTER=$master_node"
+    cmd="$cmd; export GASPI_SOCKET=0"
+    cmd="$cmd; export GASPI_TYPE=GASPI_MASTER"
+    cmd="$cmd; export GASPI_MFILE=$MFILE"
+    if [ $SET_NUMA -eq 1 ]; then
+        cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
+    fi
+    cmd="$cmd; $MASTER_PRG'"
+    $GASPI_LAUNCHER $master_node $cmd
+   
+    if [ $? != 0 ]; then
+	echo "Error: Failed to start $MASTER_PRG on $master_node"
+	clean_exit
+	exit 1
+    fi
+else
+    export GASPI_MASTER=$HN
+
+    if [ $SET_NUMA -eq 1 ]; then
+	export GASPI_SET_NUMA_SOCKET=1
+    fi
+    export GASPI_SOCKET=0
+    export GASPI_TYPE=GASPI_MASTER
+    export GASPI_MFILE=$MFILE
+
+
+    if [ $DEBUG != 0 ]; then
+	gdb --args $MASTER_PRG
+    else
+	$MASTER_PRG
+    fi
+    if [ $? != 0 ]; then
+	clean_exit
+	exit 1
+    fi
+fi
+
+#clean-up and exit
+clean_exit
+
+exit 0

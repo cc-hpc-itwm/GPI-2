@@ -5,6 +5,7 @@ OFED_PATH=""
 OFED=0
 WITH_MPI=0
 MPI_PATH=""
+WITH_LL=0
 
 usage()
 {
@@ -20,6 +21,8 @@ GPI2 Installation:
     Further options:
              --with-mpi<=path> Use this option if you aim at mixed mode with MPI.
 	                       See README for more information.
+             --with-ll         Use this option if you have Load Leveler as batch system.
+	                       This integrates with Load Leveler and uses poe as application launcher.
 
 	     
 EOF
@@ -56,6 +59,10 @@ while getopts ":p:o:-:" opt; do
 		    opt=${OPTARG%=$val}
 		    echo "With MPI at ${MPI_PATH}" >&2;
 		    WITH_MPI=1
+		    ;;
+		with-ll)
+		    echo "With Load Leveler" >&2;
+		    WITH_LL=1
 		    ;;
 		*)
 		    if [ "$OPTERR" = 1 ] && [ "${optspec:0:1}" != ":" ]; then
@@ -153,10 +160,24 @@ if [ $WITH_MPI = 1 ]; then
     echo "Using MPI: ${MPI_PATH}" | tee -a install.log
     echo "###### added by install script" >> src/make.inc
     echo "CFLAGS += -DGPI2_WITH_MPI" >> src/make.inc
+    echo "DBG_CFLAGS += -DGPI2_WITH_MPI" >> src/make.inc
     echo "INCLUDES += -I${MPI_INC_PATH}" >> src/make.inc
+
+    echo "###### added by install script" >> tests/make.defines
+    echo "LIB_PATH += -L${MPI_LIB_PATH}" >> tests/make.defines
+    echo "LIBS += -lmpi" >> tests/make.defines
+    echo "export" >> tests/make.defines
 
     #enable mpi tests
     sed -i "s,#mpi,mpi,g" tests/tests/Makefile
+fi
+
+#load leveler
+if [ $WITH_LL = 1 ]; then
+    echo "Setup for Load Leveler" | tee -a install.log
+    echo "###### added by install script" >> src/make.inc
+    echo "CFLAGS += -DLOADLEVELER" >> src/make.inc
+    echo "DBG_CFLAGS += -DLOADLEVELER" >> src/make.inc
 fi
 
 #build everything
@@ -182,7 +203,11 @@ echo " done."
 
 echo -e -n "\nCreating documentation..."
 make docs >> install.log 2>&1
-echo " done."
+if [ $? != 0 ]; then
+    echo "Failed to create documentation (see install.log)"
+else
+    echo " done."
+fi
 
 #copy things to the right place
 echo
@@ -200,14 +225,22 @@ if [ ! -d "$GPI2_PATH" ]; then
 
 fi
 
-cp -r bin $GPI2_PATH
+mkdir -p $GPI2_PATH/bin
+if [ $WITH_LL = 1 ]; then
+    cp bin/gaspi_run.poe $GPI2_PATH/bin/gaspi_run
+    cp bin/gaspi_logger $GPI2_PATH/bin/
+else
+    cp bin/gaspi_run.ssh $GPI2_PATH/bin/gaspi_run
+    cp bin/ssh.spawner $GPI2_PATH/bin/
+    cp bin/gaspi_cleanup $GPI2_PATH/bin/
+    cp bin/gaspi_logger $GPI2_PATH/bin/
+fi
 cp -r lib64 $GPI2_PATH
 cp -r tests $GPI2_PATH
 cp -r include $GPI2_PATH
 
 
 cat << EOF
-
 
 Installation finished successfully!
 

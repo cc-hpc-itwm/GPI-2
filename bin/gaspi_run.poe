@@ -1,0 +1,139 @@
+#!/bin/sh
+
+# Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013
+
+# This file is part of GPI-2.
+
+# GPI-2 is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public License
+# version 3 as published by the Free Software Foundation.
+
+# GPI-2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
+
+SET_NUMA=0
+MASTER_PRG=""
+PRG=""
+KPRG=""
+PRGNAME=""
+TYPE=GASPI_MASTER
+MAX_NUMA_NODES=1
+HAS_NUMA=0
+HN=$(hostname)
+DEBUG=0
+GASPI_LAUNCHER=poe
+
+#helper functions
+usage()
+{
+    echo
+    echo "Usage: gaspi_run [OPTIONS] <path GASPI program>"
+    echo
+    echo "Available options:"
+    echo "  -N               Enable NUMA for processes on same node."
+    echo "  -h               This help."
+    echo
+}
+
+print_error_exit()
+{
+    echo
+    echo "Error: $1"
+    echo
+    exit 1
+}
+
+validate_machinefile()
+{
+    if [ ! -s $MFILE ]; then
+        print_error_exit "Empty machine file ($1)"
+    fi
+
+    while read LINE
+    do
+        i=`echo $LINE | gawk '{print $1}'   `
+        if [ -n "$i" ]; then
+            ping -c 1 $i >/dev/null 2>&1 ||
+            {
+                print_error_exit "Host not reachable ($i)"
+            }
+        fi
+    done < $MFILE
+}
+
+#at least we need binary
+if [ $# -lt 1 ]; then
+    usage
+    exit 1
+fi
+
+#command line parsing
+while [ -n "$1" ]; do
+    case $1 in
+        -N | --NUMA)
+            SET_NUMA=1
+            ;;
+        -h | --help)
+            usage
+            ;;
+        *) #Sucks! we're taking a small risk here
+            if [ -x $1 ]; then
+                PRG=$(readlink -f "$*")
+                KPRG=$(readlink -f $1)
+                break
+            else
+                print_error_exit "Cannot execute $1 (or file does not exist)"
+            fi
+    esac
+    shift
+done
+
+if [ -z "$PRG" ]; then
+    print_error_exit "No binary file provided. See help (-h option)"
+fi
+
+PRGNAME=`basename $KPRG`
+
+#sanity check and settings
+if [ $SET_NUMA -eq 1 ]; then
+    which numactl > /dev/null
+    if [ $? = 0 ]; then
+        MAX_NUMA_NODES=`numactl --hardware|grep available|gawk '{print $2}'`
+        HAS_NUMA=1
+    else
+        MAX_NUMA_NODES=1
+        HAS_NUMA=0
+    fi
+else
+    MAX_NUMA_NODES=256
+fi
+
+#let's rock
+if [[  -z $LOADL_HOSTFILE ]]; then
+    print_error_exit "No machine file (LOADL_HOSTFILE)"
+else
+    MFILE=$LOADL_HOSTFILE
+    validate_machinefile $MFILE
+fi
+
+export GASPI_MASTER=`head -n 1 $LOADL_HOSTFILE`
+export GASPI_MFILE=$LOADL_HOSTFILE
+export GASPI_SOCKET=0
+if [ $SET_NUMA -eq 1 ]; then
+    export GASPI_SET_NUMA_SOCKET=1
+else
+    export GASPI_SET_NUMA_SOCKET=0
+fi
+
+#verbose
+cat $GASPI_MFILE
+echo $*
+
+$GASPI_LAUNCHER $PRG
+
+exit 0
