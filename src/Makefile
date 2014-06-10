@@ -6,6 +6,8 @@ HDRS = GPI2_IB.h GPI2_Env.h GPI2_Utility.h GPI_Types.h GPI2_SN.h GPI2.h
 
 OBJS = $(SRCS:.c=.o)
 OBJS_DBG = $(SRCS:.c=.dbg.o)
+OBJS_MIC = $(SRCS:.c=.mic.o)
+
 OBJ_FORTRAN = GASPI.o
 
 GPI2 = libGPI2.a
@@ -15,11 +17,11 @@ all: $(GPI2) $(GPI2_DBG) $(OBJ_FORTRAN)
 
 
 $(GPI2): $(OBJS)
-	rm -f $(GPI2)
+	rm -f ../lib64/$(GPI2)
 	ar crs ../lib64/$(GPI2) $(OBJS)
 
 $(GPI2_DBG): $(OBJS_DBG) 
-	rm -f $(GPI2_DBG)
+	rm -f ../lib64/$(GPI2_DBG)
 	ar crs ../lib64/$(GPI2_DBG) $(OBJS_DBG)
 
 $(OBJ_FORTRAN): GASPI.f90
@@ -30,14 +32,21 @@ $(OBJ_FORTRAN): GASPI.f90
 	$(FORTRANC) -O2 -c $< 
 	cp gaspi.mod gaspi_types.mod ../include;
 
+mic: $(OBJS_MIC)
+	rm -f ../lib64/mic/$(GPI2_DBG)
+	ar crs ../lib64/mic/$(GPI2) $(OBJS_MIC)
+
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
 
 %.dbg.o: %.c
 	$(CC) $(DBG_CFLAGS) -DDEBUG $(INCLUDES) -c $<  -o $@
 
+%.mic.o: %.c
+	icc -mmic $(CFLAGS) $(INCLUDES) -c $<  -o $@
+
 clean:
-	$(RM) *.o *~ $(GPI2) $(GPI2_DBG) ../lib64/$(GPI2) ../lib64/$(GPI2_DBG)
+	$(RM) *.o *~ ../lib64/$(GPI2) ../lib64/$(GPI2_DBG) ../lib64/mic/$(GPI2)
 	$(RM) *.mod ../include/gaspi_types.mod ../include/gaspi.mod
 
 depend: $(SRCS)
