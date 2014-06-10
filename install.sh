@@ -71,7 +71,7 @@ while getopts ":p:o:-:" opt; do
 	    OFED=1
 	    ;;
         p)
-            echo "Path to be used: $OPTARG" >&2
+            echo "Installation path to be used: $OPTARG" >&2
             GPI2_PATH=$OPTARG
             ;;
         \?)
@@ -88,6 +88,8 @@ done
 
 #remove (old) log
 rm -f install.log
+
+echo "$0 $@" >> install.log
 
 #check ofed installation
 if [ $OFED = 0 ]; then
@@ -159,6 +161,8 @@ fi
 
 #build everything
 make clean &> /dev/null
+make -C src depend &> /dev/null
+
 echo -e -n "\nBuilding GPI..."
 make gpi >> install.log 2>&1
 if [ $? != 0 ]; then
@@ -207,7 +211,7 @@ cat << EOF
 
 Installation finished successfully!
 
-Add the following line to your $HOME/.bashrc:
+Add the following line to your $HOME/.bashrc (or your shell):
 PATH=\${PATH}:${GPI2_PATH}/bin
 
 EOF
