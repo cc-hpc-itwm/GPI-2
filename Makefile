@@ -10,7 +10,7 @@ mic:
 	make -C src mic
 
 tests: 
-	cd tests; make; cd ..
+	cd tests && make && cd ..
 
 docs:
 	@if test "$(DOXYGEN)" = ""; then \
