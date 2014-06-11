@@ -50,6 +50,13 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
       gaspi_print_error("Invalid size (gaspi_passive_send)");    
       return GASPI_ERROR;
     }
+
+  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
+    {
+      gaspi_print_error("Invalid timeout: %u", timeout_ms);
+      return -1;
+    }
+  
 #endif
 
   struct ibv_send_wr *bad_wr;
@@ -161,6 +168,13 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
       gaspi_print_error("Invalid size (gaspi_passive_receive)");    
       return GASPI_ERROR;
     }
+
+  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
+    {
+      gaspi_print_error("Invalid timeout: %u", timeout_ms);
+      return -1;
+    }
+
 #endif
 
   struct ibv_recv_wr *bad_wr;

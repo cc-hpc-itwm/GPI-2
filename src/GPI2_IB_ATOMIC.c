@@ -51,6 +51,13 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
       gaspi_print_error("Invalid pointer in parameter val_old (gaspi_atomic_fetch_add)");    
       return GASPI_ERROR;
     }
+
+  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
+    {
+      gaspi_print_error("Invalid timeout: %u", timeout_ms);
+      return -1;
+    }
+
 #endif
   
   struct ibv_send_wr *bad_wr;
@@ -168,6 +175,13 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
       gaspi_print_error("Invalid pointer in parameter val_old (gaspi_atomic_compare_swap)");    
       return GASPI_ERROR;
     }
+  
+  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
+    {
+      gaspi_print_error("Invalid timeout: %u", timeout_ms);
+      return -1;
+    }
+
 #endif
   
   struct ibv_send_wr *bad_wr;

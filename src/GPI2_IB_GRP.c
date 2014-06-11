@@ -41,6 +41,13 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       gaspi_print_error("Invalid group %u (gaspi_barrier)", g);
       return GASPI_ERROR;
     }
+
+    if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
+    {
+      gaspi_print_error("Invalid timeout: %u", timeout_ms);
+      return -1;
+    }
+
 #endif  
 
   struct ibv_sge slist;
@@ -582,6 +589,13 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
       gaspi_print_error("Invalid group %u (gaspi_allreduce)", g);
       return GASPI_ERROR;
     }
+
+  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
+    {
+      gaspi_print_error("Invalid timeout: %u", timeout_ms);
+      return -1;
+    }
+
 #endif  
 
 
@@ -939,6 +953,13 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
       gaspi_print_error("Invalid group %u (gaspi_allreduce_user)", g);
       return GASPI_ERROR;
     }
+
+  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
+    {
+      gaspi_print_error("Invalid timeout: %u", timeout_ms);
+      return -1;
+    }
+  
 #endif  
 
 
