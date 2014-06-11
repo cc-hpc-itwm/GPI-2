@@ -93,7 +93,11 @@ extern "C"
   {
     GASPI_ERROR = -1,
     GASPI_SUCCESS = 0,
-    GASPI_TIMEOUT = 1
+    GASPI_TIMEOUT = 1,
+    GASPI_ERR_EMFILE = 2,
+    GASPI_ERR_ENV = 3,
+    GASPI_ERR_SN_PORT = 4,
+    GASPI_ERR_CONFIG = 5
   } gaspi_return_t;
 
   /**

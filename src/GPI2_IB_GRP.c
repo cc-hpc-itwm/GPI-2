@@ -32,13 +32,13 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 #ifdef DEBUG
   if (!glb_gaspi_init)
     {
-      gaspi_printf("Debug: called gaspi_barrier but GPI-2 is not initialized\n");
+      gaspi_print_error("called gaspi_barrier but GPI-2 is not initialized");
       return GASPI_ERROR;
     }
   
   if (g >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[g].id < 0 )
     {
-      gaspi_printf("Debug: Invalid group %u (gaspi_barrier)\n", g);
+      gaspi_print_error("Invalid group %u (gaspi_barrier)", g);
       return GASPI_ERROR;
     }
 #endif  
@@ -57,7 +57,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   if(!(glb_gaspi_group_ib[g].coll_op & GASPI_BARRIER))
     {
       unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-      gaspi_printf("barrier: other coll. are active !\n");
+      gaspi_print_error("Barrier: other coll. are active");
       return GASPI_ERROR;
     }
   
@@ -107,7 +107,8 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	  
 	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	  unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-	  gaspi_printf("Debug: failed to post request to %u for barrier (%d)\n",dst,glb_gaspi_ctx_ib.ne_count_grp);
+	  gaspi_print_error("Failed to post request to %u for barrier (%d)",
+			    dst,glb_gaspi_ctx_ib.ne_count_grp);
 	  return GASPI_ERROR;
 	}
 
@@ -127,7 +128,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
         
 	    glb_gaspi_group_ib[g].lastmask = mask|0x80000000;
 	    unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-	    //gaspi_printf("barrier: timeout in poll !\n");
+
 	    return GASPI_TIMEOUT;
 	  }
 	  //gaspi_delay (); 
@@ -153,7 +154,8 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       
       unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
-      gaspi_printf("Debug: Failed request to %u. Collectives queue might be broken\n",glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
+      gaspi_print_error("Failed request to %lu. Collectives queue might be broken",
+			glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
       return GASPI_ERROR;
     }
 
@@ -553,31 +555,31 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 #ifdef DEBUG
   if (!glb_gaspi_init)
     {
-      gaspi_printf("Debug: called gaspi_allreduce but GPI-2 is not initialized\n");
+      gaspi_print_error("called gaspi_allreduce but GPI-2 is not initialized");
       return GASPI_ERROR;
     }
 
   if(buf_send == NULL || buf_recv == NULL)
     {
-      gaspi_printf("Debug: Invalid buffers (gaspi_allreduce)\n");
+      gaspi_print_error("Invalid buffers (gaspi_allreduce)");
       return GASPI_ERROR;
     }
 
   if(elem_cnt > 255)
     {
-      gaspi_printf("Debug: Invalid number of elements: %u (gaspi_allreduce)\n", elem_cnt);
+      gaspi_print_error("Invalid number of elements: %u (gaspi_allreduce)", elem_cnt);
       return GASPI_ERROR;
     }
 
   if(op > GASPI_OP_SUM || type > GASPI_TYPE_ULONG)
     {
-      gaspi_printf("Debug: Invalid number type or operation (gaspi_allreduce)\n");
+      gaspi_print_error("Invalid number type or operation (gaspi_allreduce)");
       return GASPI_ERROR;
     }
     
   if (g >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[g].id < 0 )
     {
-      gaspi_printf("Debug: Invalid group %u (gaspi_allreduce)\n", g);
+      gaspi_print_error("Invalid group %u (gaspi_allreduce)", g);
       return GASPI_ERROR;
     }
 #endif  
@@ -601,7 +603,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
   if(!(glb_gaspi_group_ib[g].coll_op & GASPI_ALLREDUCE))
     {
       unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-      gaspi_printf("allreduce: other coll. are active !\n");
+      gaspi_print_error("allreduce: other coll. are active !\n");
       return GASPI_ERROR;
     }
 
@@ -681,7 +683,9 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
-	      gaspi_printf("Debug: failed to post request to %u for allreduce (gaspi_allreduce)\n",dst);	  
+	      gaspi_print_error("Failed to post request to %u for allreduce",
+				dst);
+	      
 	      return GASPI_ERROR;
 	    }
 
@@ -703,7 +707,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 	      if(ms > timeout_ms){
 		glb_gaspi_group_ib[g].level = 1;
 		unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-		//gaspi_printf("allreduce: timeout phase1 !\n");
+
 		return GASPI_TIMEOUT;
 	      }
 
@@ -765,7 +769,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
-	      gaspi_printf("Debug: failed to post request to %u for allreduce (gaspi_allreduce)\n",dst);	      
+	      gaspi_print_error("Failed to post request to %u for gaspi_allreduce",dst);	      
 	      return GASPI_ERROR;
 	    }
 
@@ -784,7 +788,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 		glb_gaspi_group_ib[g].lastmask = mask|0x80000000;
 		glb_gaspi_group_ib[g].bid = bid;
 		unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-		//gaspi_printf("allreduce: timeout phase2 !\n");
+
 		return GASPI_TIMEOUT;
 	      }
 
@@ -828,7 +832,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	  unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
-	  gaspi_printf("Debug: failed to post request to %u for allreduce (gaspi_allreduce)\n",dst);	      
+	  gaspi_print_error("Failed to post request to %u for gaspi_allreduce",dst);	      
 	  return GASPI_ERROR;
 	}
 
@@ -849,7 +853,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
       
 	      if(ms > timeout_ms){
 		unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-		//gaspi_printf("allreduce: timeout phase3 !\n");
+
 		return GASPI_TIMEOUT;
 	      }   
 	      //gaspi_delay ();
@@ -878,7 +882,8 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
       
       unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
-      gaspi_printf("Debug: Failed request to %u. Collectives queue might be broken\n",glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
+      gaspi_print_error("Failed request to %lu. Collectives queue might be broken",
+			glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
       return GASPI_ERROR;
     }
 
@@ -913,25 +918,25 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 #ifdef DEBUG
   if (!glb_gaspi_init)
     {
-      gaspi_printf("Debug: called gaspi_allreduce_user but GPI-2 is not initialized\n");
+      gaspi_print_error("Called gaspi_allreduce_user but GPI-2 is not initialized");
       return GASPI_ERROR;
     }
 
   if(buf_send == NULL || buf_recv == NULL)
     {
-      gaspi_printf("Debug: Invalid buffers (gaspi_allreduce_user)\n");
+      gaspi_print_error("Invalid buffers (gaspi_allreduce_user)");
       return GASPI_ERROR;
     }
 
   if(elem_cnt > 255)
     {
-      gaspi_printf("Debug: Invalid number of elements: %u (gaspi_allreduce_user)\n", elem_cnt);
+      gaspi_print_error("Invalid number of elements: %u (gaspi_allreduce_user)", elem_cnt);
       return GASPI_ERROR;
     }
     
   if (g >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[g].id == -1 )
     {
-      gaspi_printf("Debug: Invalid group %u (gaspi_allreduce_user)\n", g);
+      gaspi_print_error("Invalid group %u (gaspi_allreduce_user)", g);
       return GASPI_ERROR;
     }
 #endif  
@@ -954,7 +959,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
   if(!(glb_gaspi_group_ib[g].coll_op & GASPI_ALLREDUCE_USER))
     {
       unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-      gaspi_printf("allreduce_user: other coll. are active !\n");
+      gaspi_print_error("allreduce_user: other coll. are active");
       return GASPI_ERROR;
     }
 
@@ -1036,7 +1041,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
-	      gaspi_printf("Debug: failed to post request to %u (gaspi_allreduce_user)\n",dst);	      
+	      gaspi_print_error("Failed to post request to %u (gaspi_allreduce_user)",dst);	      
 	      return GASPI_ERROR;
 	    }
 
@@ -1058,7 +1063,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 	      if(ms > timeout_ms){
 		glb_gaspi_group_ib[g].level = 1;
 		unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-		//gaspi_printf("allreduce_user: timeout phase1 !\n");
+
 		return GASPI_TIMEOUT;
 	      }
 	      //gaspi_delay ();
@@ -1118,7 +1123,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 	  
-	      gaspi_printf("Debug: failed to post request to %u (gaspi_allreduce_user)\n",dst);	      
+	      gaspi_print_error("failed to post request to %u (gaspi_allreduce_user)",dst);	      
 	      return GASPI_ERROR;
 	    }
 
@@ -1139,7 +1144,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 		  glb_gaspi_group_ib[g].lastmask = mask|0x80000000;
 		  glb_gaspi_group_ib[g].bid = bid;
 		  unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-		  //gaspi_printf("allreduce_user: timeout phase2 !\n");
+
 		  return GASPI_TIMEOUT;
 		}
 	      //gaspi_delay ();
@@ -1182,7 +1187,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 	  
-	      gaspi_printf("Debug: failed to post request to %u (gaspi_allreduce_user)\n",dst);	      
+	      gaspi_print_error("Failed to post request to %u (gaspi_allreduce_user)",dst);	      
 	      return GASPI_ERROR;
 	    }
 
@@ -1203,7 +1208,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
       
 	      if(ms > timeout_ms){
 		unlock_gaspi (&glb_gaspi_group_ib[g].gl);
-		//gaspi_printf("allreduce_user: timeout phase3 !\n");
+
 		return GASPI_TIMEOUT;
 	      }   
 	      //gaspi_delay ();
@@ -1229,7 +1234,8 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
       
       unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
-      gaspi_printf("Debug: Failed request to %u. Collectives queue might be broken\n",glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);    
+      gaspi_print_error("Failed request to %lu. Collectives queue might be broken",
+			glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);    
       return GASPI_ERROR;
     }
 

@@ -32,21 +32,21 @@ static void _print_func_params(char *func_name, const gaspi_segment_id_t segment
 			      const gaspi_queue_id_t queue)
 {
   
-  gaspi_printf("%s: segment_id_local %d\n"
-	       "offset_local %lu\n"
-	       "rank %u\n"
-	       "segment_id_remote %d\n"
-	       "offset_remote %lu\n"
-	       "size %lu\n"
-	       "queue %d\n",
-	       func_name,
-	       segment_id_local,
-	       offset_local,
-	       rank,
-	       segment_id_remote,
-	       offset_remote,
-	       size,
-	       queue);
+  printf("%s: segment_id_local %d\n"
+	 "offset_local %lu\n"
+	 "rank %u\n"
+	 "segment_id_remote %d\n"
+	 "offset_remote %lu\n"
+	 "size %lu\n"
+	 "queue %d\n",
+	 func_name,
+	 segment_id_local,
+	 offset_local,
+	 rank,
+	 segment_id_remote,
+	 offset_remote,
+	 size,
+	 queue);
 }
 
 static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_id_local,
@@ -58,19 +58,19 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id_local] == NULL)
     {
-      gaspi_printf("Debug: Invalid local segment %d (%s)\n", segment_id_local, func_name);    
+      gaspi_print_error("Invalid local segment %d (%s)", segment_id_local, func_name);    
       return -1;
     }
   
   if (glb_gaspi_ctx_ib.rrmd[segment_id_remote] == NULL)
     {
-      gaspi_printf("Debug: Invalid remote segment %d (%s)\n", segment_id_remote, func_name);    
+      gaspi_print_error("Invalid remote segment %d (%s)", segment_id_remote, func_name);    
       return -1;
     }
 
   if( rank >= glb_gaspi_ctx.tnc)
     {
-      gaspi_printf("Debug: Invalid rank: %u (%s)\n", rank, func_name);    
+      gaspi_print_error("Invalid rank: %u (%s)", rank, func_name);    
       return -1;
     }
   
@@ -78,7 +78,8 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
       || offset_remote > glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].size
       )
     {
-      gaspi_printf("Debug: Invalid offsets: local %lu remote %lu (%s)\n", offset_local, offset_remote, func_name);    
+      gaspi_print_error("Invalid offsets: local %lu remote %lu (%s)",
+			offset_local, offset_remote, func_name);    
       return -1;
     }
     
@@ -87,14 +88,14 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
      || size > glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].size
      || size > glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].size)
     {
-      gaspi_printf("Debug: Invalid size: %lu (%s)\n", size,func_name);    
+      gaspi_print_error("Invalid size: %lu (%s)", size,func_name);    
       return -1;
     }
 
   if (queue > glb_gaspi_cfg.queue_num - 1)
     {
       
-      gaspi_printf("Debug: Invalid queue: %d (%s)\n", queue, func_name);    
+      gaspi_print_error("Invalid queue: %d (%s)", queue, func_name);    
       return -1;
     }
 
@@ -167,9 +168,9 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
       _print_func_params("gaspi_write", segment_id_local, offset_local, rank,
 			 segment_id_remote, offset_remote, size,
 			 queue);
-      gaspi_printf("Elems in queue %u (max %u)\n", 
-		   glb_gaspi_ctx_ib.ne_count_c[queue],
-		   glb_gaspi_cfg.queue_depth);
+      gaspi_print_error("Elems in queue %u (max %u)", 
+			glb_gaspi_ctx_ib.ne_count_c[queue],
+			glb_gaspi_cfg.queue_depth);
 		   
 #endif
 
@@ -256,7 +257,7 @@ pgaspi_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 
   if (queue >= glb_gaspi_cfg.queue_num)
     {
-      gaspi_printf("Debug: Invalid queue: %d (gaspi_wait)\n", queue);    
+      gaspi_print_error("Invalid queue: %d (gaspi_wait)", queue);    
       return GASPI_ERROR;
     }
 #endif
@@ -297,10 +298,9 @@ pgaspi_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 
       if ((ne < 0) || (wc.status != IBV_WC_SUCCESS))
 	{
-#ifdef DEBUG
-	  gaspi_printf("Debug: Failed request to %u. Queue %d might be broken\n",
-		       wc.wr_id, queue);
-#endif	  
+	  gaspi_print_error("Failed request to %lu. Queue %d might be broken",
+			    wc.wr_id, queue);
+
 	  glb_gaspi_ctx.qp_state_vec[queue][wc.wr_id] = 1;
 	  unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
 	  return GASPI_ERROR;
@@ -333,7 +333,10 @@ pgaspi_write_list (const gaspi_number_t num,
     return GASPI_ERROR;
 
   if(num == 0)
-    gaspi_printf("Debug: gaspi_write_list with 0 elems\n");
+    {      
+      gaspi_print_error("List with 0 elems");
+      return GASPI_ERROR;
+    }
   
   for(n = 0; n < num; n++)
     {
@@ -420,7 +423,11 @@ pgaspi_read_list (const gaspi_number_t num,
     return GASPI_ERROR;
 
   if(num == 0)
-    gaspi_printf("Debug: gaspi_read_list with 0 elems\n");
+    {
+      gaspi_print_error("gaspi_read_list with 0 elems");
+      return GASPI_ERROR;
+    }
+  
   
   for(n = 0; n < num; n++)
     {
@@ -501,19 +508,19 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
 #ifdef DEBUG
   if (glb_gaspi_ctx_ib.rrmd[segment_id_remote] == NULL)
     {
-      gaspi_printf("Debug: Invalid remote segment: %u (gaspi_notify)\n", segment_id_remote);    
+      gaspi_print_error("Invalid remote segment: %u (gaspi_notify)", segment_id_remote);    
       return GASPI_ERROR;
     }
   
   if( rank >= glb_gaspi_ctx.tnc)
     {
-      gaspi_printf("Debug: Invalid rank: %u (gaspi_notify)\n", rank);    
+      gaspi_print_error("Invalid rank: %u (gaspi_notify)", rank);    
       return GASPI_ERROR;
     }
 
   if (queue >= glb_gaspi_cfg.queue_num)
     {
-      gaspi_printf("Debug: Invalid queue: %d (gaspi_notify)\n", queue);    
+      gaspi_print_error("Invalid queue: %d (gaspi_notify)", queue);    
       return GASPI_ERROR;
     } 
 #endif
@@ -568,19 +575,19 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 #ifdef DEBUG
   if (glb_gaspi_ctx_ib.rrmd[segment_id_local] == NULL)
     {
-      gaspi_printf("Debug: Invalid segment: %u  (gaspi_notify_waitsome)\n", segment_id_local);    
+      gaspi_print_error("Invalid segment: %u  (gaspi_notify_waitsome)", segment_id_local);    
       return GASPI_ERROR;
     }
   
   if( num >= GASPI_MAX_NOTIFICATION)
     {
-      gaspi_printf("Debug: Waiting for invalid notifications number: %u  (gaspi_notify_waitsome)\n", num);    
+      gaspi_print_error("Waiting for invalid notifications number: %u  (gaspi_notify_waitsome)", num);    
       return GASPI_ERROR;
     }
 
   if(first_id == NULL)
     {
-      gaspi_printf("Debug: Invalid pointer on parameter first_id (gaspi_notify_waitsome)\n");    
+      gaspi_print_error("Invalid pointer on parameter first_id (gaspi_notify_waitsome)");    
       return GASPI_ERROR;
     }
   
@@ -668,13 +675,13 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
 #ifdef DEBUG
   if (glb_gaspi_ctx_ib.rrmd[segment_id_local] == NULL)
     {
-      gaspi_printf("Debug: Invalid segment: %u (gaspi_notify_reset)\n", segment_id_local);    
+      gaspi_print_error("Invalid segment: %u (gaspi_notify_reset)", segment_id_local);    
       return GASPI_ERROR;
     }
   
   if(old_notification_val == NULL)
     {
-      gaspi_printf("Warning: NULL pointer on parameter old_notification_val (gaspi_notify_reset)\n");    
+      printf("Warning: NULL pointer on parameter old_notification_val (gaspi_notify_reset)\n");    
     }
 #endif
 
@@ -774,7 +781,7 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
       _print_func_params("gaspi_write_notify", segment_id_local, offset_local, rank,
 			segment_id_remote, offset_remote, size,
 			 queue);
-      gaspi_printf("notification_id %d\nnotification_value %u\n",
+      gaspi_print_error("notification_id %d\nnotification_value %u",
 		   notification_id,
 		   notification_value);
 #endif
@@ -814,7 +821,10 @@ pgaspi_write_list_notify (const gaspi_number_t num,
     }
 
   if(num == 0)
-    gaspi_printf("Debug: gaspi_write_list_notify with 0 elems\n");
+    {
+      gaspi_print_error("gaspi_write_list_notify with 0 elems");
+      return GASPI_ERROR;
+    }
   
   for(n = 0; n < num; n++)
     {
@@ -891,7 +901,7 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 			 segment_id_remote[n], offset_remote[n], size[n],
 			 queue);
     }
-  gaspi_printf("notification_id %d\nnotification_value %u\n",
+  printf("notification_id %d\nnotification_value %u\n",
 	       notification_id,
 	       notification_value);
   

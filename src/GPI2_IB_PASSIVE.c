@@ -29,25 +29,25 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 #ifdef DEBUG  
   if (glb_gaspi_ctx_ib.rrmd[segment_id_local] == NULL)
     {
-      gaspi_printf("Debug: Invalid local segment (gaspi_passive_send)\n");    
+      gaspi_print_error("Invalid local segment (gaspi_passive_send)");    
       return GASPI_ERROR;
     }
   
   if( rank >= glb_gaspi_ctx.tnc)
     {
-      gaspi_printf("Debug: Invalid rank (gaspi_passive_send)\n");    
+      gaspi_print_error("Invalid rank (gaspi_passive_send)");    
       return GASPI_ERROR;
     }
   
   if( offset_local > glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].size)
     {
-      gaspi_printf("Debug: Invalid offsets (gaspi_passive_send)\n");    
+      gaspi_print_error("Invalid offsets (gaspi_passive_send)");    
       return GASPI_ERROR;
     }
     
   if( size < 1 || size > GASPI_MAX_TSIZE_P )
     {
-      gaspi_printf("Debug: Invalid size (gaspi_passive_send)\n");    
+      gaspi_print_error("Invalid size (gaspi_passive_send)");    
       return GASPI_ERROR;
     }
 #endif
@@ -140,25 +140,25 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 #ifdef DEBUG  
   if (glb_gaspi_ctx_ib.rrmd[segment_id_local] == NULL)
     {
-      gaspi_printf("Debug: Invalid local segment (gaspi_passive_receive)\n");    
+      gaspi_print_error("Invalid local segment (gaspi_passive_receive)");    
       return GASPI_ERROR;
     }
   
   if( rem_rank == NULL)
     {
-      gaspi_printf("Debug: Invalid pointer parameter: rem_rank (gaspi_passive_receive)\n");    
+      gaspi_print_error("Invalid pointer parameter: rem_rank (gaspi_passive_receive)");    
       return GASPI_ERROR;
     }
   
   if( offset_local > glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].size)
     {
-      gaspi_printf("Debug: Invalid offsets (gaspi_passive_receive)\n");    
+      gaspi_print_error("Invalid offsets (gaspi_passive_receive)");    
       return GASPI_ERROR;
     }
     
   if( size < 1 || size > GASPI_MAX_TSIZE_P )
     {
-      gaspi_printf("Debug: Invalid size (gaspi_passive_receive)\n");    
+      gaspi_print_error("Invalid size (gaspi_passive_receive)");    
       return GASPI_ERROR;
     }
 #endif

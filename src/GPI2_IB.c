@@ -108,9 +108,7 @@ gaspi_init_ib_core ()
   //change/override num of queues at large scale
   if (glb_gaspi_ctx.tnc > 1000 && glb_gaspi_cfg.queue_num > 1)
     {
-#ifdef DEBUG
       gaspi_printf("Warning: setting number of queues to 1\n");
-#endif      
       glb_gaspi_cfg.queue_num = 1;
     }
   
@@ -132,10 +130,11 @@ gaspi_init_ib_core ()
 
 
   glb_gaspi_ctx_ib.dev_list = ibv_get_device_list (&glb_gaspi_ctx_ib.num_dev);
-  if (!glb_gaspi_ctx_ib.dev_list) {
-    gaspi_print_error ("Failed to get device list (libibverbs)");
-    return -1;
-  }
+  if (!glb_gaspi_ctx_ib.dev_list)
+    {
+      gaspi_print_error ("Failed to get device list (libibverbs)");
+      return -1;
+    }
 
 
   if(glb_gaspi_cfg.netdev_id >= 0){
@@ -707,15 +706,15 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   int ret;
   if(-1 == glb_gaspi_ctx.sockfd[i])
     {
-      gaspi_printf("Invalid socket fd %d for rank %u\n", glb_gaspi_ctx.sockfd[i], i);
+      gaspi_print_error("Invalid socket fd %d for rank %u\n", glb_gaspi_ctx.sockfd[i], i);
       goto errL;
     }
   
   ret=write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header));
   if(ret !=sizeof(gaspi_cd_header))
     {
-      gaspi_print_error("Failed to write");
-      gaspi_printf("Error %d: (%s) socket %d\n",ret, (char*)strerror(errno), glb_gaspi_ctx.sockfd[i]);
+      gaspi_print_error("Failed to write(%d, %p, %lu)",
+			glb_gaspi_ctx.sockfd[i], &cdh,sizeof(gaspi_cd_header));
       eret=GASPI_ERROR;
       goto errL;
     }
@@ -723,8 +722,9 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   ret=write(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
   if(ret != sizeof(gaspi_rc_all))
     {
-      gaspi_print_error("Failed to write");
-      gaspi_printf("Error %d: (%s) socket %d\n",ret, (char*)strerror(errno), glb_gaspi_ctx.sockfd[i]);
+      gaspi_print_error("Failed to write(%d. %p, %lu)",
+			glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
+
       eret = GASPI_ERROR;
       goto errL;
     }
@@ -732,15 +732,13 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   ret=read(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all));
   if(ret != sizeof(gaspi_rc_all))
     {
-      int errsv = errno;
-      //TODO: error msg
-      gaspi_printf("Failed to read from %d: ret %d error %d: (%s) socket %d\n",
-		   i, ret, errsv, (char*)strerror(errsv), glb_gaspi_ctx.sockfd[i]);
+      gaspi_print_error("Failed to read from (%d %p %lu)",
+			glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all));
       eret = GASPI_ERROR;
       goto errL;
     }
             
-  if(gaspi_connect_context(i) != 0)
+  if(gaspi_connect_context(i, timeout_ms) != 0)
     {
       gaspi_print_error("Failed to connect context");
       eret = GASPI_ERROR;
@@ -815,15 +813,16 @@ errL:
 
 
 int 
-gaspi_connect_context(const int i)
+gaspi_connect_context(const int i, gaspi_timeout_t timeout_ms)
 {
   if(!glb_gaspi_ib_init)
     {
       return GASPI_ERROR;
     }
 
-  //TODO: respect lock timeout, func arg must pass timeout from user
-  lock_gaspi_tout(&gaspi_ccontext_lock, GASPI_BLOCK);
+  if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
+    return GASPI_TIMEOUT;
+  
 
   if(glb_gaspi_ctx_ib.lrcd[i].cstat)
     {
@@ -1553,8 +1552,8 @@ pgaspi_group_commit (const gaspi_group_t group,
 	ret=write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
         if(ret != sizeof(gaspi_cd_header))
 	  {
-	    gaspi_print_error("Failed to write");
-	    gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+	    gaspi_print_error("Failed to write (%d %p %lu)",
+			      glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
 	    eret=GASPI_ERROR;
 	    goto errL;
         }
@@ -1562,8 +1561,9 @@ pgaspi_group_commit (const gaspi_group_t group,
 	ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rem_gb,sizeof(rem_gb));
         if(ret != sizeof(rem_gb))
 	  {
-	    gaspi_print_error("Failed to read");
-	    gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+	    gaspi_print_error("Failed to read (%d %p %lu)",
+			      glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rem_gb,sizeof(rem_gb));
+
 	    eret=GASPI_ERROR;
 	    goto errL;
 	  }
@@ -1575,7 +1575,10 @@ pgaspi_group_commit (const gaspi_group_t group,
 	    if(delta_ms > timeout_ms){eret=GASPI_TIMEOUT;goto errL;}
 	    
 	    if(gaspi_thread_sleep(250) < 0)
-	      gaspi_printf("gaspi_thread_sleep Error %d: (%s)\n",ret, (char*)strerror(errno));
+	      {
+		gaspi_printf("gaspi_thread_sleep Error %d: (%s)\n",ret, (char*)strerror(errno));
+	      }
+	    
 	    //usleep(250000);
 	    //gaspi_delay();
         }
@@ -1592,8 +1595,11 @@ pgaspi_group_commit (const gaspi_group_t group,
 	    ret=write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
 	    if(ret !=sizeof(gaspi_cd_header))
 	      {
-		gaspi_print_error("Failed to write");
-		gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+		gaspi_print_error("Failed to write (%d %p %lu)",
+				  glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
+				  &cdh,
+				  sizeof(gaspi_cd_header));
+
 		glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
 		eret=GASPI_ERROR;
 		goto errL;
@@ -1605,8 +1611,11 @@ pgaspi_group_commit (const gaspi_group_t group,
 
 	    if(ret != sizeof(gaspi_rc_grp))
 	      {
-		gaspi_print_error("Failed to read");
-		gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+		gaspi_print_error("Failed to read (%d %p %lu)",
+				  glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
+				  &glb_gaspi_group_ib[group].rrcd[glb_gaspi_group_ib[group].rank_grp[i]],
+				  sizeof(gaspi_rc_grp));
+		
 		glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
 		eret=GASPI_ERROR;
 		goto errL;
@@ -1632,9 +1641,8 @@ pgaspi_group_num (gaspi_number_t * const group_num)
 
   if (glb_gaspi_init)
     {
-#ifdef DEBUG
       gaspi_verify_null_ptr(group_num);
-#endif
+
       *group_num = glb_gaspi_ctx.group_cnt;
       return GASPI_SUCCESS;
     }
@@ -1650,9 +1658,7 @@ pgaspi_group_size (const gaspi_group_t group,
 
   if (glb_gaspi_init && group < glb_gaspi_ctx.group_cnt)
     {
-#ifdef DEBUG
       gaspi_verify_null_ptr(group_size);
-#endif
 
       *group_size = glb_gaspi_group_ib[group].tnc;
       return GASPI_SUCCESS;
@@ -1683,9 +1689,8 @@ pgaspi_group_ranks (const gaspi_group_t group,
 gaspi_return_t
 pgaspi_group_max (gaspi_number_t * const group_max)
 {
-#ifdef DEBUG
   gaspi_verify_null_ptr(group_max);
-#endif
+
 
   *group_max = GASPI_MAX_GROUPS;
   return GASPI_SUCCESS;
@@ -1722,7 +1727,6 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size)
     {
-      //gaspi_printf("Info: Segment %d already allocated!\n", segment_id);
       goto okL;
     }
 
@@ -1875,8 +1879,9 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
   ret=write(glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header));
   if(ret != sizeof(gaspi_cd_header))
     {
-      gaspi_print_error("Failed to write");
-      gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+      gaspi_print_error("Failed to write (%d %p %lu)",
+			glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header));
+
       glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
       goto errL;
     }
@@ -1885,8 +1890,9 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
   ret=read(glb_gaspi_ctx.sockfd[rank],&rret,sizeof(int));
   if(ret !=sizeof(int))
     {
-      gaspi_print_error("Failed to read");
-      gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+      gaspi_print_error("Failed to read (%d %p %lu)",
+			glb_gaspi_ctx.sockfd[rank],&rret, sizeof(int));
+
       glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
       goto errL;
     }
@@ -2010,8 +2016,11 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
       if(ret != sizeof(gaspi_cd_header))
 	{
 
-	  gaspi_print_error("Failed write");
-	  gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+	  gaspi_print_error("Failed write (%d %p %lu)",
+			    glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
+			    &cdh,
+			    sizeof(gaspi_cd_header));
+
 	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
 	  goto errL;
 	}
@@ -2020,8 +2029,9 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
       ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rret,sizeof(int));
       if(ret != sizeof(int))
 	{
-	  gaspi_print_error("Failed to read");
-	  gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+	  gaspi_print_error("Failed to read (%d %p %lu)",
+			    glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rret,sizeof(int));
+
 	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
 	  goto errL;
 	}
@@ -2145,9 +2155,7 @@ pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
       return GASPI_ERROR;
     }
 
-#ifdef DEBUG
   gaspi_verify_null_ptr(ptr);
-#endif
 
   *ptr =
     glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf + NOTIFY_OFFSET;
@@ -2179,9 +2187,7 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-#ifdef DEBUG
   gaspi_verify_null_ptr(size);
-#endif
 
   *size = glb_gaspi_ctx_ib.rrmd[segment_id][rank].size;
   return GASPI_SUCCESS;
@@ -2191,9 +2197,7 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_segment_max (gaspi_number_t * const segment_max)
 {
-#ifdef DEBUG
   gaspi_verify_null_ptr(segment_max);
-#endif
 
   *segment_max = GASPI_MAX_MSEGS;
   return GASPI_SUCCESS;
@@ -2209,9 +2213,8 @@ pgaspi_queue_size (const gaspi_queue_id_t queue,
       gaspi_print_error("Invalid queue id provided");
       return GASPI_ERROR;
     }
-#ifdef DEBUG
+
   gaspi_verify_null_ptr(queue_size);
-#endif
 
   *queue_size = glb_gaspi_ctx_ib.ne_count_c[queue];
   return GASPI_SUCCESS;
@@ -2222,9 +2225,7 @@ gaspi_return_t
 pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
 {
 
-#ifdef DEBUG
   gaspi_verify_null_ptr(buf_size);
-#endif
 
   *buf_size = NEXT_OFFSET;
   return GASPI_SUCCESS;

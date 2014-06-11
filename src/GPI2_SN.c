@@ -31,6 +31,11 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GPI2_SN.h"
 
+/* Status and return value of SN thread: mostly for error detection */
+volatile enum gaspi_sn_status gaspi_sn_status = GASPI_SN_STATE_OK;
+volatile gaspi_return_t gaspi_sn_err = GASPI_SUCCESS;
+
+
 extern gaspi_config_t glb_gaspi_cfg;
 
 int gaspi_set_non_blocking(int sock)
@@ -52,6 +57,7 @@ int gaspi_set_non_blocking(int sock)
   return 0;
 }
 
+/* check open files limit and try to increase */
 static int gaspi_check_ofile_limit()
 {
   struct rlimit ofiles;
@@ -101,7 +107,6 @@ static int gaspi_connect2port_intern(const char *hn,const unsigned short port)
 	    }
 	  else
 	    {
-	      gaspi_printf("Error %d (%s): failed to set file limits\n");
 	      return -2;
 	    }
 	}
@@ -132,14 +137,14 @@ static int gaspi_connect2port_intern(const char *hn,const unsigned short port)
   int opt = 1;
   if(setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,&opt,sizeof(opt)) < 0)
     {
-      gaspi_printf("Failed to set options on socket\n");
+      gaspi_sn_print_error("Failed to set options on socket");
       close(sockfd);
       return -1;
     }
   
   if(setsockopt(sockfd,IPPROTO_TCP,TCP_NODELAY,&opt,sizeof(opt)) < 0)
     {
-      gaspi_printf("Failed to set options on socket\n");
+      gaspi_sn_print_error("Failed to set options on socket");
       close(sockfd);
       return -1;
     }
@@ -203,20 +208,29 @@ void *gaspi_sn_backend(void *arg)
   if(lsock < 0)
     {
       gaspi_sn_print_error("Failed to create socket");
-      //TODO:Handle error?
+      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+      gaspi_sn_err = GASPI_ERROR;
+      
+      return NULL;
     }
 
   int opt = 1;
   if(setsockopt(lsock,SOL_SOCKET,SO_REUSEADDR,&opt,sizeof(opt)) <  0)
     {
       gaspi_sn_print_error("Failed to modify socket");
-      //TODO:Handle error?
+      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+      gaspi_sn_err = GASPI_ERROR;
+ 
+      return NULL;
     }
 
   if(setsockopt(lsock,IPPROTO_TCP,TCP_NODELAY,&opt,sizeof(opt)) < 0)
     {
       gaspi_sn_print_error("Failed to modify socket");
-      //TODO:Handle error?
+      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+      gaspi_sn_err = GASPI_ERROR;
+      
+      return NULL;
     }
 
   signal(SIGPIPE, SIG_IGN);
@@ -228,20 +242,29 @@ void *gaspi_sn_backend(void *arg)
 
   if(bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress)) < 0)
     {
-      gaspi_sn_print_error("Failed to bind");
-      //TODO:Handle error?
+      gaspi_sn_print_error("Failed to bind socket");
+      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+      gaspi_sn_err = GASPI_ERR_SN_PORT;
+
+      return NULL;
     }
   
   if (gaspi_set_non_blocking(lsock) != 0)
     {
       gaspi_sn_print_error("Failed to set socket");
-      //TODO:Handle error?
+      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+      gaspi_sn_err = GASPI_ERROR;
+      
+      return NULL;
     }
 
   if(listen(lsock, SOMAXCONN) < 0) 
     { 
       gaspi_sn_print_error("Failed to listen on socket");
-      //TODO: exit?
+      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+      gaspi_sn_err = GASPI_ERROR;
+      
+      return NULL;
     }
   
   //epoll
@@ -249,7 +272,10 @@ void *gaspi_sn_backend(void *arg)
   if(esock < 0) 
     { 
       gaspi_sn_print_error("Failed to create IO event facility");
-      //TODO:Handle error?
+      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+      gaspi_sn_err = GASPI_ERROR;
+      
+      return NULL;
     }
   
   //add lsock
@@ -257,7 +283,10 @@ void *gaspi_sn_backend(void *arg)
   if(ev.data.ptr == NULL)
     {
       gaspi_sn_print_error("Failed to allocate memory");
-      //TODO: exit?
+      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+      gaspi_sn_err = GASPI_ERROR;
+      
+      return NULL;
     }
 
   ev_mgmt = ev.data.ptr;
@@ -267,14 +296,20 @@ void *gaspi_sn_backend(void *arg)
   if(epoll_ctl(esock,EPOLL_CTL_ADD,lsock,&ev) < 0)
     {
       gaspi_sn_print_error("Failed to modify IO event facility");
-      //TODO: exit?
+      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+      gaspi_sn_err = GASPI_ERROR;
+      
+      return NULL;
     }
 
   ret_ev = calloc(GASPI_EPOLL_MAX_EVENTS,sizeof(ev));
   if(ret_ev == NULL)
     {
       gaspi_sn_print_error("Failed to allocate memory");
-      //TODO: exit?
+      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+      gaspi_sn_err = GASPI_ERROR;
+      
+      return NULL;
     }
 
   
@@ -283,7 +318,7 @@ void *gaspi_sn_backend(void *arg)
     {
       n = epoll_wait(esock,ret_ev, GASPI_EPOLL_MAX_EVENTS, -1);
 
-      //loop over all triggered events
+      /* loop over all triggered events */
       for(i = 0;i < n; i++)
 	{
 	  mgmt = ret_ev[i].data.ptr;
@@ -294,17 +329,15 @@ void *gaspi_sn_backend(void *arg)
 	       (ret_ev[i].events & EPOLLOUT)))
 	    {
 	      
-	      //an error has occured on this fd. close it => removed from event list.
-	      gaspi_printf("Error on event fd: %d\n", mgmt->fd);
-	      
+	      /* an error has occured on this fd. close it => removed from event list. */
 	      shutdown(mgmt->fd,2);
 	      close(mgmt->fd);
 	      free(mgmt);
 	      continue;
 	    }
-	  else if(mgmt->fd == lsock) //new connection(s)
+	  else if(mgmt->fd == lsock)
 	    {
-  	      //process all new connections
+  	      /* process all new connections */
 /* 	      while(1) */
 /* 		{ */
 		  struct sockaddr in_addr;
@@ -316,14 +349,14 @@ void *gaspi_sn_backend(void *arg)
 		      if((errno==EAGAIN) ||
 			 (errno==EWOULDBLOCK))
 			{
-			  //we have processed all incoming connections
+			  /* we have processed all incoming connections */
 			  break;
 			}
 		      else
 			{
 			  int errsv = errno;
 
-			  //at least check open files limit			  
+			  /* at least check/fix open files limit */
 			  if(errsv == EMFILE)
 			    {
 			      if( 0 == gaspi_check_ofile_limit() )
@@ -339,10 +372,10 @@ void *gaspi_sn_backend(void *arg)
 			}
 		    }
     
-		  //new socket
+		  /* new socket */
 		  gaspi_set_non_blocking(nsock);
 
-		  //add nsock
+		  /* add nsock */
 		  ev.data.ptr = malloc(sizeof(gaspi_mgmt_header));
 		  ev_mgmt = ev.data.ptr;
 		  ev_mgmt->fd = nsock;
@@ -354,21 +387,31 @@ void *gaspi_sn_backend(void *arg)
 		  if(epoll_ctl(esock,EPOLL_CTL_ADD,nsock,&ev)<0)
 		    {
 		      gaspi_sn_print_error("Failed to modify IO event facility");
+ 		      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+		      gaspi_sn_err = GASPI_ERROR;
+		      
+		      return NULL;
 		    }
 
-		  //count number of connections: main thread is waiting for this
+		  /* count number of connections: main thread is waiting for this */
 		  if(__sync_fetch_and_add(&glb_gaspi_init, 1) == -1)
-		    gaspi_printf("Failed to increase no. of connections");
+		    {
+		      gaspi_sn_print_error("Failed to increase no. of connections");
+ 		      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+		      gaspi_sn_err = GASPI_ERROR;
+
+		      return NULL;
+		    }
 		  
-		  //		  gaspi_thread_sleep(600000);
 		  
-		  //		}//while(1) accept
+		  // gaspi_thread_sleep(600000);
+		  // }//while(1) accept
 	      
 	      continue;
-	    }//new connection(s)
+	    }/* new connection(s) */
 	  else
 	    {
-	      //read or write ops 
+	      /* read or write ops */
 	      int io_err=0;
 	      
 	      if(ret_ev[i].events & EPOLLIN) //read in
@@ -389,17 +432,17 @@ void *gaspi_sn_backend(void *arg)
 			{
 			  ptr = (char*)glb_gaspi_ctx.hn_poff;
 			  rcount = read(mgmt->fd, ptr + mgmt->bdone, rsize);
+
+			  
 			}
 		      else if(mgmt->op == GASPI_SN_CONNECT)
 			{
 			  ptr = (char*)&glb_gaspi_ctx_ib.rrcd[mgmt->cdh.rank];//gaspi_get_rrmd(mgmt->cdh.rank);
 			  rcount = read(mgmt->fd,ptr + mgmt->bdone,rsize);
-/* 			  if(gaspi_master_topo_data == 0) */
-/* 			    gaspi_printf("trying to connect without topology\n"); */
 			  
 			}
 
-		      //if errno==EAGAIN,that means we have read all data
+		      /* if errno==EAGAIN,that means we have read all data */
 		      int errsv = errno;
 		      if(rcount < 0) 
 			{
@@ -433,7 +476,6 @@ void *gaspi_sn_backend(void *arg)
 				  }
 				else if(mgmt->cdh.op == GASPI_SN_TOPOLOGY) //topology info from master
 				  {
-
 				    mgmt->bdone=0;mgmt->blen=mgmt->cdh.op_len;
 				    glb_gaspi_ctx.rank = mgmt->cdh.rank;
 				    glb_gaspi_ctx.tnc  = mgmt->cdh.tnc;
@@ -442,7 +484,7 @@ void *gaspi_sn_backend(void *arg)
 
 				    glb_gaspi_ctx.poff = glb_gaspi_ctx.hn_poff + glb_gaspi_ctx.tnc*64;
 				    
-				    glb_gaspi_ctx.sockfd = (int*) malloc(glb_gaspi_ctx.tnc*sizeof(int));
+				    glb_gaspi_ctx.sockfd = (int*) malloc(glb_gaspi_ctx.tnc * sizeof(int));
 				    
 				    for(i = 0;i < glb_gaspi_ctx.tnc; i++)
 				      glb_gaspi_ctx.sockfd[i] = -1;
@@ -452,7 +494,7 @@ void *gaspi_sn_backend(void *arg)
 				  }
 				else if(mgmt->cdh.op == GASPI_SN_CONNECT)
 				  {
-				    //connect
+				    /* connect */
 				    mgmt->bdone = 0;
 				    mgmt->blen = mgmt->cdh.op_len;
 				    mgmt->op = mgmt->cdh.op;
@@ -460,7 +502,7 @@ void *gaspi_sn_backend(void *arg)
 				  }
 				else if(mgmt->cdh.op==GASPI_SN_GRP_CHECK)
 				  {
-				    //grp check 
+				    /* grp check */
 				    struct{int tnc,cs,ret;} gb;
 				    gb.ret = -1;
 				    gb.cs = 0;
@@ -479,7 +521,7 @@ void *gaspi_sn_backend(void *arg)
 					  }
 				      }
 				    
-				    //write back (couple of bytes)
+				    /* write back */
 				    int done = 0;
 				    int len = sizeof(gb);
 				    char *ptr = (char*)&gb;
@@ -490,11 +532,10 @@ void *gaspi_sn_backend(void *arg)
 				  
 					if(ret < 0)
 					  {
-					    //errno==EAGAIN,that means we have written all data
+					    /* errno==EAGAIN,that means we have written all data */
 					    if(errno!=EAGAIN)
 					      {
-						gaspi_sn_print_error("Failed to write back");
-						gaspi_printf("Error %d: (%s)\n",ret, (char*)strerror(errno));
+						gaspi_sn_print_error("Failed to write.");
 						break;
 					      }
 					  }
@@ -520,10 +561,12 @@ void *gaspi_sn_backend(void *arg)
   
 					if(ret < 0)
 					  {
-					    //errno==EAGAIN,that means we have written all data
+					    /* errno==EAGAIN,that means we have written all data */
 					    if(errno!=EAGAIN)
 					      {
-						gaspi_printf("SN Error %d: (%s)\n",errno, (char*)strerror(errno));
+						//TODO:exit?
+						gaspi_sn_print_error("Failed to write.");
+
 						break;
 					      }
 					  }
@@ -540,7 +583,6 @@ void *gaspi_sn_backend(void *arg)
 				else if(mgmt->cdh.op == GASPI_SN_SEG_REGISTER)
 				  {
 				    int rret = gaspi_seg_reg_sn(mgmt->cdh);
-				    //TODO: error case?
 				    int done = 0;
 				    int len = sizeof(int);
 				    char *ptr = (char*) &rret;
@@ -554,8 +596,9 @@ void *gaspi_sn_backend(void *arg)
 					    //errno==EAGAIN,that means we have written all data
 					    if(errno!=EAGAIN)
 					      {
-						gaspi_sn_print_error("Failed to write");
-						gaspi_printf("Error  %d: (%s)\n",errno, (char*)strerror(errno));
+						//TODO:exit?
+						gaspi_sn_print_error("Failed to write.");
+						
 						break;
 					      }
 					  }
@@ -570,7 +613,7 @@ void *gaspi_sn_backend(void *arg)
 				    mgmt->cdh.op = GASPI_SN_RESET;
 				  }
                  
-			      }//!header
+			      }/* !header */
 			      else if(mgmt->op == GASPI_SN_TOPOLOGY) //topology data from master
 				{
 				  mgmt->bdone = 0;
@@ -581,15 +624,24 @@ void *gaspi_sn_backend(void *arg)
 				  if(glb_gaspi_ib_init == 0)//just local stuff
 				    {
 				      if(gaspi_init_ib_core() != GASPI_SUCCESS)
-					gaspi_sn_print_error("Failed to initialized IB core");
-				      
+					{
+					  
+					  gaspi_sn_print_error("Failed to initialized IB core");
+					  gaspi_sn_status = GASPI_SN_STATE_ERROR;
+					  gaspi_sn_err = GASPI_ERROR;
+					  
+					  return NULL;
+					}
 				    }
 				  
-				  //atomic update -> worker activated
-				  if(__sync_fetch_and_add(&gaspi_master_topo_data,1) == -1)
+				  /* atomic update -> worker activated */
+				  if(__sync_fetch_and_add(&gaspi_master_topo_data, 1) == -1)
 				    {
 				      gaspi_sn_print_error("Failed to activate work ");
-				      //TODO: error handling?
+				      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+				      gaspi_sn_err = GASPI_ERROR;
+				      
+				      return NULL;
 				    }
 				}
 			      else if(mgmt->op == GASPI_SN_CONNECT)
@@ -597,13 +649,19 @@ void *gaspi_sn_backend(void *arg)
 				  if(gaspi_create_endpoint(mgmt->cdh.rank) !=0 )
 				    {
 				      gaspi_sn_print_error("Failed to create endpoint");
-				      //TODO: handle error?
+				      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+				      gaspi_sn_err = GASPI_ERROR;
+				      
+				      return NULL;
 				    }
 
-				  if(gaspi_connect_context(mgmt->cdh.rank)!=0)
+				  if(gaspi_connect_context(mgmt->cdh.rank, GASPI_BLOCK) != 0)
 				    {
 				      gaspi_sn_print_error("Failed to connect context");
-				      //TODO: handle error?
+				      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+				      gaspi_sn_err = GASPI_ERROR;
+				      
+				      return NULL;
 				    }
 				  
 				  int done = 0;
@@ -616,12 +674,12 @@ void *gaspi_sn_backend(void *arg)
 				      
 				      if(ret < 0) 
 					{
-					  //errno==EAGAIN,that means we have written all data
+					  /* errno==EAGAIN,that means we have written all data */
 					  if(errno != EAGAIN)
 					    {
-					      int errsv = errno;
-					      gaspi_printf("SN Error: failed to write %d: (%s)\n",
-							   errsv, (char*)strerror(errsv));
+					      //TODO: exit?
+					      gaspi_sn_print_error("Failed to write.");
+					      
 					      break;
 					    }
 					}
@@ -639,7 +697,6 @@ void *gaspi_sn_backend(void *arg)
 				{
 				  gaspi_sn_print_error("Unknow operation");
 
-				  //TODO: do we need this, at least to reset?
 				  mgmt->bdone = 0;
 				  mgmt->blen = sizeof(gaspi_cd_header);
 				  mgmt->op = GASPI_SN_HEADER;//next we expect new header
@@ -652,21 +709,15 @@ void *gaspi_sn_backend(void *arg)
 		    }//while(1) read
 		}//read in
 
-	      //if((ret_ev[i].events & EPOLLOUT) && !io_err){//write out
-	      //here we do delayed write op
-	      //}//write out
-
 	      if(io_err)
 		{
 		  shutdown(mgmt->fd,SHUT_RDWR);
 		  close(mgmt->fd);
 		  free(mgmt);
 		}
-
-	    }//else read or write
-
-	}//for(int i...
-    }//while(1)
+	    } /* else read or write */
+	} /* for(int i... */
+    }/* event loop while(1) */
 
   return NULL;
 }

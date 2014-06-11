@@ -41,9 +41,7 @@ __thread gaspi_int  __gaspi_thread_tnc = -1;
 gaspi_return_t
 gaspi_threads_get_tid(gaspi_int *const tid)
 {
-#ifdef DEBUG
   gaspi_verify_null_ptr(tid);
-#endif
 
   if(__gaspiThreadsGlobalIDCnt == -1)
     {
@@ -59,9 +57,7 @@ gaspi_threads_get_tid(gaspi_int *const tid)
 gaspi_return_t
 gaspi_threads_get_total(gaspi_int *const num)
 {
-#ifdef DEBUG
   gaspi_verify_null_ptr(num);
-#endif
 
   if(__gaspiThreadsGlobalIDCnt == -1)
     {
@@ -81,9 +77,7 @@ gaspi_threads_get_num_cores(gaspi_int * const cores)
   int i,n;
   cpu_set_t tmask;
 
-#ifdef DEBUG
   gaspi_verify_null_ptr(cores);
-#endif
   
   if(sched_getaffinity(0, sizeof(cpu_set_t), &tmask) < 0)
     { 
@@ -168,9 +162,7 @@ gaspi_return_t
 gaspi_threads_register(gaspi_int * tid)
 {
 
-#ifdef DEBUG
   gaspi_verify_null_ptr(tid);
-#endif
 
   const int tID = __sync_fetch_and_add(&__gaspiThreadsGlobalIDCnt,1);
   __gaspi_thread_tid = tID;

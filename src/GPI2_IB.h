@@ -128,7 +128,7 @@ gaspi_ib_ctx glb_gaspi_ctx_ib;// = {.rrcd=NULL, .lrcd=NULL};
 gaspi_ib_group glb_gaspi_group_ib[GASPI_MAX_GROUPS];
 
 void gaspi_init_collectives();
-int gaspi_connect_context(const int);
+int gaspi_connect_context(const int, gaspi_timeout_t);
 int gaspi_create_endpoint(const int);
 int gaspi_init_ib_core();
 int gaspi_cleanup_ib_core();

@@ -19,6 +19,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef GPI2_UTILITY_H
 #define GPI2_UTILITY_H 1
 
+#include <errno.h>
 #include <sched.h>
 #include <string.h>
 #include <stdlib.h>
@@ -26,8 +27,14 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <time.h>
 #include <xmmintrin.h>
 
-#define gaspi_print_error(msg, ...) gaspi_printf("Error (%s:%d): " msg "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-
+#ifdef DEBUG
+#define gaspi_print_error(msg, ...)					\
+  int errsv = errno;							\
+  if( errsv != 0 )							\
+    fprintf(stderr,"Error %d (%s) at (%s:%d):" msg "\n",errsv, (char *) strerror(errsv), __FILE__, __LINE__, ##__VA_ARGS__); \
+      else								\
+      fprintf(stderr,"Error at (%s:%d):" msg "\n", __FILE__, __LINE__, ##__VA_ARGS__) 
+	
 #define gaspi_verify_null_ptr(ptr)				\
   if(ptr == NULL)						\
     {								\
@@ -35,6 +42,11 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
       return GASPI_ERROR;					\
     } 
 
+
+#else
+#define gaspi_print_error(msg, ...)
+#define gaspi_verify_null_ptr(ptr)
+#endif
 
 #ifdef MIC
 #define gaspi_delay()   _mm_delay_32(32)

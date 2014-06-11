@@ -34,7 +34,7 @@ void success_or_exit ( const char* file, const int line, const int ec)
 
 void must_fail ( const char* file, const int line, const int ec)
 {
-  if (ec != GASPI_ERROR)
+  if (ec == GASPI_SUCCESS || ec == GASPI_TIMEOUT)
     {
       gaspi_printf ("Non-expected success in %s[%i]\n", file, line);
       
