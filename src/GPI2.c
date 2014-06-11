@@ -644,7 +644,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
       goto errL;
     }
 
-  //  pthread_kill(glb_gaspi_ctx.snt, SIGSTKFLT);
+  pthread_kill(glb_gaspi_ctx.snt, SIGSTKFLT);
 
   if(glb_gaspi_ctx.sockfd != NULL)
     {
