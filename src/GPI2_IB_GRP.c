@@ -44,7 +44,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
     if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
     {
-      gaspi_print_error("Invalid timeout: %u", timeout_ms);
+      gaspi_print_error("Invalid timeout: %lu", timeout_ms);
       return -1;
     }
 
@@ -592,7 +592,7 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 
   if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
     {
-      gaspi_print_error("Invalid timeout: %u", timeout_ms);
+      gaspi_print_error("Invalid timeout: %lu", timeout_ms);
       return -1;
     }
 
@@ -956,7 +956,7 @@ pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
 
   if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
     {
-      gaspi_print_error("Invalid timeout: %u", timeout_ms);
+      gaspi_print_error("Invalid timeout: %lu", timeout_ms);
       return -1;
     }
   

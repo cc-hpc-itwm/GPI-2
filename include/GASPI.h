@@ -38,7 +38,7 @@ extern "C"
 #define GASPI_MINOR_VERSION (1)
 #define GASPI_REVISION (0)
 
-#define GASPI_BLOCK       (0xffffffff)
+#define GASPI_BLOCK       (0xffffffffffffffff)
 #define GASPI_TEST        (0x0)
 #define GASPI_MAX_NODES   (65536)
 #define GASPI_MAX_GROUPS  (32)
@@ -64,7 +64,7 @@ extern "C"
   typedef float gaspi_float;
   typedef double gaspi_double;
 
-  typedef unsigned int gaspi_timeout_t;
+  typedef unsigned long gaspi_timeout_t;
   typedef unsigned short gaspi_rank_t;
   typedef unsigned char gaspi_group_t;
   typedef unsigned int gaspi_number_t;

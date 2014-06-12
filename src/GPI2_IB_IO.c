@@ -39,7 +39,7 @@ static void _print_func_params(char *func_name, const gaspi_segment_id_t segment
 	 "offset_remote %lu\n"
 	 "size %lu\n"
 	 "queue %d\n"
-	 "timeout %u\n",
+	 "timeout %lu\n",
 	 func_name,
 	 segment_id_local,
 	 offset_local,
@@ -103,7 +103,7 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
 
   if(timeout < GASPI_TEST || timeout > GASPI_BLOCK)
     {
-      gaspi_print_error("Invalid timeout: %u", timeout);
+      gaspi_print_error("Invalid timeout: %lu", timeout);
       return -1;
     }
   
@@ -113,7 +113,7 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
 
 #endif
 
-#pragma weak gaspi_write        = pgaspi_write 
+#pragma weak gaspi_write = pgaspi_write 
 
 gaspi_return_t
 pgaspi_write (const gaspi_segment_id_t segment_id_local,
