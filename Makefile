@@ -5,11 +5,10 @@ all: gpi tests docs
 
 gpi:
 	make -C src
-
 mic:
 	make -C src mic
 
-tests: 
+tests: gpi
 	cd tests && make && cd ..
 
 docs:

@@ -7,8 +7,13 @@ CFLAGS+=-I../
 
 build: $(BIN)
 
-%.bin: %.o ../test_utils.o  
-	$(CC) $(CFLAGS) $(LIB_PATH) -o $(TOPROOT)/bin/$@ $^ $(LIBS)
+%.o: %.c
+	$(CC) $(CFLAGS) -c $^
+
+%.bin: %.o ../test_utils.o
+	$(CC) $(CFLAGS) $(LIB_PATH) -o $@ $^ $(LIBS)
 
 clean:
 	rm -rf *~ \#_* *.o *.bin
+
+.PHONY: clean

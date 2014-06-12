@@ -8,7 +8,7 @@ build: $(BIN)
 
 %.bin: %.f90
 	@if test "$(F90CC)" != ""; then \
-	$(CF) $(CFLAGS) $(LIB_PATH) -o $(TOPROOT)/bin/$@ $^ $(LIBS); \
+	$(CF) $(CFLAGS) $(LIB_PATH) -o $@ $^ $(LIBS); \
 	fi	
 
 
