@@ -75,12 +75,26 @@ fi
 #command line parsing
 while [ -n "$1" ]; do
     case $1 in
+	-m | --machinefile)
+	    shift
+	    echo "Warning: option (-m, --machinefile) not used. Using Load Leveler settings."
+	    ;;
         -N | --NUMA)
             SET_NUMA=1
             ;;
+	-d | --debug)
+	    echo "Warning: option (-d, --debug) not available (using Load Leveler)."
+	    ;;
         -h | --help)
             usage
             ;;
+	-b | --binary)
+	    shift
+	    ;;
+	-n | --nodes)
+	    shift
+	    echo "Warning: option (-n, --nodes) not used. Using Load Leveler settings."
+	    ;;
         *) #Sucks! we're taking a small risk here
             if [ -x $1 ]; then
                 PRG=$(readlink -f "$*")
@@ -129,10 +143,6 @@ if [ $SET_NUMA -eq 1 ]; then
 else
     export GASPI_SET_NUMA_SOCKET=0
 fi
-
-#verbose
-cat $GASPI_MFILE
-echo $*
 
 $GASPI_LAUNCHER $PRG
 
