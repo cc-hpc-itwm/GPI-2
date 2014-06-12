@@ -1,7 +1,6 @@
 BIN = with_mpi.bin
 
-CFLAGS+=-I../ -I$(HOME)/soft_install/openmpi/icc14/1.6.5/include -L$(HOME)/soft_install/openmpi/icc14/1.6.5/lib
-CC=$(HOME)/soft_install/openmpi/icc14/1.6.5/bin/mpicc
+CFLAGS+=-I../
 
 build: $(BIN)
 
