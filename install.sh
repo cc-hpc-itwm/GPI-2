@@ -228,13 +228,16 @@ fi
 mkdir -p $GPI2_PATH/bin
 if [ $WITH_LL = 1 ]; then
     cp bin/gaspi_run.poe $GPI2_PATH/bin/gaspi_run
-    cp bin/gaspi_logger $GPI2_PATH/bin/
+    #create dummy cleanup
+    head -n 18 bin/gaspi_cleanup > $GPI2_PATH/bin/gaspi_cleanup
+    chmod +x $GPI2_PATH/bin/gaspi_cleanup
 else
     cp bin/gaspi_run.ssh $GPI2_PATH/bin/gaspi_run
     cp bin/ssh.spawner $GPI2_PATH/bin/
     cp bin/gaspi_cleanup $GPI2_PATH/bin/
-    cp bin/gaspi_logger $GPI2_PATH/bin/
 fi
+cp bin/gaspi_logger $GPI2_PATH/bin/
+
 cp -r lib64 $GPI2_PATH
 cp -r tests $GPI2_PATH
 cp -r include $GPI2_PATH
