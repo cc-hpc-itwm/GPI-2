@@ -4,12 +4,12 @@ GFORTRAN:=$(shell which gfortran)
 all: gpi tests docs 
 
 gpi:
-	make -C src
+	$(MAKE) -C src
 mic:
-	make -C src mic
+	$(MAKE) -C src mic
 
 tests: gpi
-	cd tests && make && cd ..
+	cd tests && $(MAKE) && cd ..
 
 docs:
 	@if test "$(DOXYGEN)" = ""; then \
@@ -21,7 +21,7 @@ docs:
 	doxygen Doxyfile
 
 clean:
-	make -C src clean
-	make -C tests clean
+	$(MAKE) -C src clean
+	$(MAKE) -C tests clean
 
 .PHONY: all tests docs clean 
