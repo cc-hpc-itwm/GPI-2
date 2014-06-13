@@ -144,6 +144,24 @@ else
     export GASPI_SET_NUMA_SOCKET=0
 fi
 
+for LINE in $(tail -n +2 $GASPI_MFILE)
+do
+    if [ "$LINE" = "$previous" ]; then
+	j=$((j+1))
+	if [ $j -eq $MAX_NUMA_NODES ]; then
+	    print_error_exit "max procs per node: $MAX_NUMA_NODES"
+	fi
+    else
+	j=0
+    fi
+    previous="$LINE"
+done
+
 $GASPI_LAUNCHER $PRG
+
+unset GASPI_MASTER
+unset GASPI_MFILE
+unset GASPI_SET_NUMA_SOCKET
+unset GASPI_SOCKET
 
 exit 0
