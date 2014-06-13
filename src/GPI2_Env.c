@@ -246,7 +246,7 @@ gaspi_handle_env(gaspi_context *ctx)
       
       if(strcmp (typePtr, "GASPI_WORKER") == 0)
 	{
-      ctx->procType = WORKER_PROC;
+	  ctx->procType = WORKER_PROC;
 	}
       
       else if (strcmp (typePtr, "GASPI_MASTER") == 0)
@@ -256,13 +256,17 @@ gaspi_handle_env(gaspi_context *ctx)
 #endif
       else
 	{
+#ifndef GPI2_WITH_MPI      	  
 	  gaspi_print_error ("Incorrect node type!\n");
+#endif	  
 	  env_miss = 1;
 	}
     }
   else
     {
+#ifndef GPI2_WITH_MPI      
       gaspi_print_error ("No node type defined (GASPI_TYPE)");
+#endif      
       env_miss = 1;
     }
 
