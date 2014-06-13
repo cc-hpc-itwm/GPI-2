@@ -164,7 +164,7 @@ if [ $WITH_MPI = 1 ]; then
     echo "INCLUDES += -I${MPI_INC_PATH}" >> src/make.inc
 
     echo "###### added by install script" >> tests/make.defines
-    echo "CFLAGS += -L${MPI_LIB_PATH}" >> tests/make.defines
+    echo "CFLAGS += -I${MPI_INC_PATH} -L${MPI_LIB_PATH}" >> tests/make.defines
     echo "LIB_PATH += -L${MPI_LIB_PATH}" >> tests/make.defines    
     echo "LIBS += -lmpi" >> tests/make.defines
     echo "export" >> tests/make.defines
