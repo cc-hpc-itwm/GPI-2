@@ -136,6 +136,12 @@ _gaspi_handle_env_mpi(gaspi_context *ctx)
 
       tmpfile = mktemp(template);
 
+      if(strcmp(tmpfile,"") == 0)
+	{
+	  gaspi_print_error("Failed to create temp file");
+	  return -1;
+	}
+      
       mfile = fopen(tmpfile, "w");
       if(mfile == NULL)
 	{
@@ -204,7 +210,14 @@ gaspi_handle_env(gaspi_context *ctx)
       ctx->localSocket = atoi(socketPtr);
 #endif
     }
-  
+  else
+    {
+#ifndef GPI2_WITH_MPI      
+      gaspi_print_error ("No socket defined (GASPI_SOCKET)");
+#endif      
+      env_miss = 1;
+    }
+
   if(numaPtr)
     {
       if(atoi(numaPtr) == 1)
@@ -273,6 +286,13 @@ gaspi_handle_env(gaspi_context *ctx)
   if (mfilePtr)
     {
       snprintf (ctx->mfile, 1024, "%s", mfilePtr);
+    }
+  else
+    {
+#ifndef GPI2_WITH_MPI      
+      gaspi_print_error ("No amchine file defined (GASPI_MFILE)");
+#endif      
+      env_miss = 1;
     }
 
   if(env_miss)
