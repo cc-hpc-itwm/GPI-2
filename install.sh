@@ -38,6 +38,8 @@ while getopts ":p:o:-:" opt; do
 			which mpirun > /dev/null 2>&1
 			if [ $? != 0 ]; then
 			    echo "Couldn't find MPI installation. Please provide path to your MPI installation."
+			    echo "    ./install <other options> --with-mpi=<Path to MPI installation>"
+			    echo ""
 			    exit 1
 			fi
 			MPI_BIN=`which mpirun`
@@ -141,17 +143,21 @@ if [ $WITH_MPI = 1 ]; then
 	    MPI_INC_PATH=$MPI_PATH/include
 	else
 	    echo "Cannot find mpi.h. Please provide path to MPI installation."
+	    echo "    ./install <other options> --with-mpi=<Path to MPI installation>"
+	    echo ""
 	    exit 1
 	fi
     fi
 
-    if [ -r $MPI_PATH/lib64/libmpi.so ] || [ -r $MPI_PATH/lib64/libmpi.a ; then
+    if [ -r $MPI_PATH/lib64/libmpi.so ] || [ -r $MPI_PATH/lib64/libmpi.a ]; then
 	MPI_LIB_PATH=$MPI_PATH/lib64
     else
 	if [ -r $MPI_PATH/lib/libmpi.so ] || [ -r $MPI_PATH/lib/libmpi.a ]; then
 	    MPI_LIB_PATH=$MPI_PATH/lib
 	else
 	    echo "Cannot find libmpi. Please provide path to MPI installation."
+	    echo "    ./install <other options> --with-mpi=<Path to MPI installation>"
+	    echo ""
 	    exit 1
 	fi
     fi
