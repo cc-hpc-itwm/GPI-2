@@ -6,6 +6,7 @@ OFED=0
 WITH_MPI=0
 MPI_PATH=""
 WITH_LL=0
+WITH_F90=1
 
 usage()
 {
@@ -19,12 +20,13 @@ GPI2 Installation:
              -o Path to OFED installation
 
     Further options:
-             --with-mpi<=path> Use this option if you aim at mixed mode with MPI.
-	                       See README for more information.
-             --with-ll         Use this option if you have Load Leveler as batch system.
-	                       This integrates with Load Leveler and uses poe as application launcher.
+             --with-mpi<=path>              Use this option if you aim at mixed mode with MPI.
+	                                    See README for more information.
+             --with-ll                      Use this option if you have Load Leveler as batch system.
+	                                    This integrates with Load Leveler and uses poe as application launcher.
+             --with-fortran=(true,false)    Enable/Disable Fortran bindings (default: enabled).
 
-	     
+	     	     
 EOF
 }
 
@@ -52,19 +54,29 @@ while getopts ":p:o:-:" opt; do
 		    WITH_MPI=1
 		    ;;
 		with-mpi=*)
-		    val=${OPTARG#*=}
-		    if [ "$val" = "" ]; then
-			echo "Forgot to provide MPI path?"
-			exit 1
-		    fi
-		    MPI_PATH=$val
-		    opt=${OPTARG%=$val}
-		    echo "With MPI at ${MPI_PATH}" >&2;
-		    WITH_MPI=1
-		    ;;
+		val=${OPTARG#*=}
+		if [ "$val" = "" ]; then
+		    echo "Forgot to provide MPI path?"
+		    exit 1
+		fi
+		MPI_PATH=$val
+		opt=${OPTARG%=$val}
+		echo "With MPI at ${MPI_PATH}" >&2;
+		WITH_MPI=1
+		;;
 		with-ll)
 		    echo "With Load Leveler" >&2;
 		    WITH_LL=1
+		    ;;
+		with-fortran)
+		    WITH_F90=1
+		    ;;
+		with-fortran=*)
+		val=${OPTARG#*=}
+		if [ "$val" == "false" ]; then
+		    WITH_F90=0
+		    sed -i "s,fortran,,g" tests/tests/Makefile
+		fi
 		    ;;
 		*)
 		    if [ "$OPTERR" = 1 ] && [ "${optspec:0:1}" != ":" ]; then
@@ -94,7 +106,7 @@ while getopts ":p:o:-:" opt; do
             ;;
     esac
 done
-
+ 
 #remove (old) log
 rm -f install.log
 
@@ -129,8 +141,8 @@ if [ $? != 0 ]; then
     exit 1
 fi
     
-sed -i  "s,OFED_PATH = /usr/,OFED_PATH = $OFED_PATH,g" src/make.inc
-sed -i  "s,OFED_PATH = /usr/,OFED_PATH = $OFED_PATH,g" tests/make.defines
+sed -i  "s,OFED_PATH = /usr,OFED_PATH = $OFED_PATH,g" src/make.inc
+sed -i  "s,OFED_PATH = /usr,OFED_PATH = $OFED_PATH,g" tests/make.defines
 
 #MPI mixed mode
 if [ $WITH_MPI = 1 ]; then
@@ -198,7 +210,18 @@ if [ $? != 0 ]; then
     echo "Aborting..."
     exit -1
 fi
+
+if [ $WITH_F90 = 1 ]; then
+    make fortran >> install.log 2>&1
+    if [ $? != 0 ]; then
+	echo "Creation of GPI-2 Fortran bindings failed (see install.log)"
+	echo "Aborting..."
+	exit -1
+    fi
+fi
 echo " done."
+
+
 echo -e -n "\nBuilding tests..."
 make tests >> install.log 2>&1
 if [ $? != 0 ]; then

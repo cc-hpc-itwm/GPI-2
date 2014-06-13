@@ -13,8 +13,9 @@ OBJ_FORTRAN = GASPI.o
 GPI2 = libGPI2.a
 GPI2_DBG = libGPI2-dbg.a
 
-all: $(GPI2) $(GPI2_DBG) $(OBJ_FORTRAN)
+gpi: $(GPI2) $(GPI2_DBG)
 
+fortran: $(OBJ_FORTRAN)
 
 $(GPI2): $(OBJS)
 	rm -f ../lib64/$(GPI2)

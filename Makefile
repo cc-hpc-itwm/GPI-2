@@ -1,10 +1,14 @@
 DOXYGEN:=$(shell which doxygen)
 GFORTRAN:=$(shell which gfortran)
 
-all: gpi tests docs 
+all: gpi fortran tests
 
 gpi:
-	$(MAKE) -C src
+	$(MAKE) -C src gpi
+
+fortran:
+	$(MAKE) -C src fortran
+
 mic:
 	$(MAKE) -C src mic
 
