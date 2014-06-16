@@ -64,6 +64,11 @@ typedef struct
   int op,op_len,rank,tnc;
   int ret,rkey,seg_id;
   unsigned long addr,size;
+
+#ifdef GPI2_CUDA
+  int host_rkey;
+  unsigned long host_addr;
+#endif
 } gaspi_cd_header;
 
 typedef struct

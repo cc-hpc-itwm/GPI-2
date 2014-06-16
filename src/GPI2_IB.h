@@ -66,6 +66,16 @@ typedef struct
   unsigned int rkey;
   unsigned long addr,size;
   int trans;
+#ifdef GPI2_CUDA
+  int cudaDevId;
+  union
+  {
+   void* host_ptr;
+   unsigned long host_addr;
+  };
+  struct ibv_mr *host_mr;
+  unsigned int host_rkey;
+#endif
 } gaspi_rc_mseg;
 
 typedef struct

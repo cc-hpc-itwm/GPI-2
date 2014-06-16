@@ -54,6 +54,12 @@ typedef struct
   gaspi_lock_t lockPR;
   gaspi_lock_t lockC[GASPI_MAX_QP];
   pthread_t snt;
+
+#ifdef GPI2_CUDA
+  int gpu_count;
+  int use_gpus;
+#endif
+       
 } gaspi_context;
 
 typedef struct
