@@ -182,13 +182,11 @@ if [ $WITH_MPI = 1 ]; then
     echo "INCLUDES += -I${MPI_INC_PATH}" >> src/make.inc
 
     echo "###### added by install script" >> tests/make.defines
-    echo "CFLAGS += -I${MPI_INC_PATH} -L${MPI_LIB_PATH}" >> tests/make.defines
+    echo "CFLAGS += -DGPI2_WITH_MPI -I${MPI_INC_PATH} -L${MPI_LIB_PATH}" >> tests/make.defines
     echo "LIB_PATH += -L${MPI_LIB_PATH}" >> tests/make.defines    
     echo "LIBS += -lmpi" >> tests/make.defines
     echo "export" >> tests/make.defines
 
-    #enable mpi tests
-    sed -i "s,#mpi,mpi,g" tests/tests/Makefile
 fi
 
 #load leveler
