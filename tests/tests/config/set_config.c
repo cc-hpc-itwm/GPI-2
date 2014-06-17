@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
  
   //  GASPI_NETWORK_TYPE
   default_conf.netdev_id = 0;
-  default_conf.net_typ = GASPI_IB;
+  default_conf.network = GASPI_IB;
   default_conf.mtu = 2048;
   ASSERT (gaspi_config_set(default_conf));
 

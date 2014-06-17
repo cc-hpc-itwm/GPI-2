@@ -89,14 +89,14 @@ pgaspi_config_set (const gaspi_config_t nconf)
   glb_gaspi_cfg.logger = nconf.logger;
   glb_gaspi_cfg.port_check = nconf.port_check;
 
-  if (nconf.net_typ == GASPI_IB || nconf.net_typ == GASPI_ETHERNET)
+  if (nconf.network == GASPI_IB || nconf.network == GASPI_ETHERNET)
     {
-      glb_gaspi_cfg.net_typ = nconf.net_typ;
+      glb_gaspi_cfg.network = nconf.network;
       glb_gaspi_cfg.user_net = 1;
     }
   else
     {
-      gaspi_print_error("Invalid value for parameter net_typ");
+      gaspi_print_error("Invalid value for parameter network");
       return GASPI_ERR_CONFIG;
     }
 
@@ -888,7 +888,7 @@ pgaspi_network_type (gaspi_network_t * const network_type)
   
   gaspi_verify_null_ptr(network_type);
 
-  *network_type = glb_gaspi_cfg.net_typ;
+  *network_type = glb_gaspi_cfg.network;
   return GASPI_SUCCESS;
 }
 
