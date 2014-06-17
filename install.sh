@@ -30,6 +30,19 @@ GPI2 Installation:
 EOF
 }
 
+clean_bak_files()
+{
+    if [ -r src/make.inc.bak ]; then
+	cp src/make.inc src/make.inc.install
+	mv src/make.inc.bak src/make.inc
+    fi
+    
+    if [ -r tests/make.defines.bak ]; then
+	cp tests/make.defines tests/make.defines.install
+	mv tests/make.defines.bak tests/make.defines
+    fi
+}
+
 while getopts ":p:o:-:" opt; do
     case $opt in
 	-)
@@ -181,6 +194,7 @@ if [ $WITH_MPI = 1 ]; then
     echo "DBG_CFLAGS += -DGPI2_WITH_MPI" >> src/make.inc
     echo "INCLUDES += -I${MPI_INC_PATH}" >> src/make.inc
 
+    cp tests/make.defines tests/make.defines.bak
     echo "###### added by install script" >> tests/make.defines
     echo "CFLAGS += -DGPI2_WITH_MPI -I${MPI_INC_PATH} -L${MPI_LIB_PATH}" >> tests/make.defines
     echo "LIB_PATH += -L${MPI_LIB_PATH}" >> tests/make.defines    
@@ -206,6 +220,7 @@ make gpi >> install.log 2>&1
 if [ $? != 0 ]; then
     echo "Compilation of GPI-2 failed (see install.log)"
     echo "Aborting..."
+    clean_bak_files
     exit -1
 fi
 
@@ -214,6 +229,7 @@ if [ $WITH_F90 = 1 ]; then
     if [ $? != 0 ]; then
 	echo "Creation of GPI-2 Fortran bindings failed (see install.log)"
 	echo "Aborting..."
+	clean_bak_files
 	exit -1
     fi
 fi
@@ -225,6 +241,7 @@ make tests >> install.log 2>&1
 if [ $? != 0 ]; then
     echo "Compilation of tests failed (see install.log)"
     echo "Aborting..."
+    clean_bak_files
     exit -1
 fi
 echo " done."
@@ -248,6 +265,7 @@ if [ ! -d "$GPI2_PATH" ]; then
 	echo "You can use the (-p) option to choose a different directory."
 	echo "Your installation was not completed!"
 	echo
+	clean_bak_files
         exit 1
     fi
 
@@ -280,5 +298,7 @@ PATH=\${PATH}:${GPI2_PATH}/bin
 
 EOF
 echo "Success!"  >> install.log
+
+clean_bak_files
 
 exit 0
