@@ -50,7 +50,11 @@ main (int argc, char *argv[])
 		  rcnt++;
 		  while (*pollBuf != (char) rcnt)
 		    {
-		      _mm_pause ();
+#ifdef MIC
+		      _mm_delay_32(32);
+#else
+		      _mm_pause();
+#endif
 		    }
 		}
 
