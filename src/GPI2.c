@@ -605,9 +605,15 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       glb_gaspi_group_ib[GASPI_GROUP_ALL].id = -2;//disable
       eret = GASPI_SUCCESS;
     }
-
-  return eret;
   
+#ifdef GPI2_CUDA
+  /* init GPU counts */
+  glb_gaspi_ctx.use_gpus = 0;
+  glb_gaspi_ctx.gpu_count = 0;
+#endif
+  
+  return eret;
+
  errL:
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return eret;

@@ -1,6 +1,5 @@
 SUBDIRS = fortran init config groups collectives comm passive atomic lists segments notifications error_vec \
 	threads utils
-
 ifneq (, $(findstring -DGPI2_CUDA,$(CFLAGS)))
 	SUBDIRS+=gpu
 endif
@@ -8,8 +7,7 @@ endif
 ifneq (, $(findstring -DGPI2_WITH_MPI,$(CFLAGS)))
 	SUBDIRS+=mpi
 endif
-
-.PHONY: subdirs $(SUBDIRS) clean
+PHONY: subdirs $(SUBDIRS) clean
 
 install: subdirs
 	$(foreach dir, $(SUBDIRS), cp $(dir)/*.bin ../bin;)
