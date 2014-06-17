@@ -683,16 +683,16 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
    * error, GASPI_TIMEOUT in case of timeout.
    */
-  gaspi_return_t gaspi_allreduce (gaspi_pointer_t const buffer_send,
-				  gaspi_pointer_t const buffer_receive,
+  gaspi_return_t gaspi_allreduce (const gaspi_pointer_t const buffer_send,
+				  const gaspi_pointer_t const buffer_receive,
 				  const gaspi_number_t num,
 				  const gaspi_operation_t operation,
 				  const gaspi_datatype_t datatyp,
 				  const gaspi_group_t group,
 				  const gaspi_timeout_t timeout_ms);
 
-  gaspi_return_t gaspi_allreduce_user (gaspi_pointer_t const buffer_send,
-				       gaspi_pointer_t const buffer_receive,
+  gaspi_return_t gaspi_allreduce_user (const gaspi_pointer_t const buffer_send,
+				       const gaspi_pointer_t const buffer_receive,
 				       const gaspi_number_t num,
 				       const gaspi_size_t element_size,
 				       gaspi_reduce_operation_t const

@@ -156,8 +156,8 @@ extern "C"
   gaspi_return_t pgaspi_barrier (const gaspi_group_t group,
 				const gaspi_timeout_t timeout_ms);
 
-  gaspi_return_t pgaspi_allreduce (gaspi_pointer_t const buffer_send,
-				  gaspi_pointer_t const buffer_receive,
+  gaspi_return_t pgaspi_allreduce (const gaspi_pointer_t const buffer_send,
+				  const gaspi_pointer_t const buffer_receive,
 				  const gaspi_number_t num,
 				  const gaspi_operation_t operation,
 				  const gaspi_datatype_t datatyp,
