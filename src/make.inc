@@ -21,3 +21,9 @@ MIC_CFLAGS += -O2
 INCLUDES += -I$(OFED_PATH)/include
 INCLUDES += -I../include
 INCLUDES += -I.
+###### added by install script
+SRCS += GPI2_GPU.c
+HDRS += GPI2_GPU.h
+CFLAGS += -DGPI2_CUDA
+DBG_CFLAGS += -DGPI2_CUDA
+INCLUDES += -I/shared/apps/cuda/CUDA-v5.5.22/include
