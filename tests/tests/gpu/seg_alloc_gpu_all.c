@@ -3,9 +3,9 @@
 #include <GASPI_GPU.h>
 #include <test_utils.h>
 #include <cuda.h>
-//alloc GPU segemnt
-//and then registe it with all nodes
-//then delete it 
+//alloc GPU segemnts for all GPUs
+//and then registe them with all nodes
+//then delete them
 int main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
   //need the barrier to make sn is up
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  gaspi_rank_t rank, nprocs, i;
+  gaspi_rank_t rank, nprocs, i,j;
   gaspi_number_t seg_max;
 
   gaspi_gpu_t gpus[8]; 
@@ -31,13 +31,13 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_number_of_GPUs(&nGPUs));
   ASSERT (gaspi_GPU_ids(gpus));
 
-
-  cudaSetDevice(gpus[0]);
-  // return 0;
-  ASSERT (gaspi_segment_alloc(0, 1024, GASPI_MEM_INITIALIZED|GASPI_MEM_GPU));
-
+  for (i =0; i<nGPUs; i++){
+    cudaSetDevice(gpus[i]);
+    ASSERT (gaspi_segment_alloc(i, 1024, GASPI_MEM_INITIALIZED|GASPI_MEM_GPU));
+  }
 
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+
 
   for (i = 0; i < nprocs; i++)
   {
@@ -46,14 +46,16 @@ int main(int argc, char *argv[])
     if(i == rank)
       continue;
 
-    ASSERT( gaspi_segment_register(0, i, GASPI_BLOCK));
-    //      sleep(1);
+    for (j =0; j<nGPUs; j++){
+      ASSERT( gaspi_segment_register(j, i, GASPI_BLOCK));
+      //sleep(1);
+    }
   }
-
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  ASSERT (gaspi_segment_delete(0));
-
+  for (i =0; i<nGPUs; i++){
+    ASSERT (gaspi_segment_delete(i));
+  }
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   ASSERT (gaspi_proc_term(GASPI_BLOCK));

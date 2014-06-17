@@ -1,6 +1,5 @@
 SUBDIRS = fortran init config groups collectives comm passive atomic lists segments notifications error_vec \
 	threads utils
-
 ifneq (, $(findstring -DGPI2_CUDA,$(CFLAGS)))
 	SUBDIRS+=gpu
 endif
@@ -18,7 +17,6 @@ subdirs: $(SUBDIRS)
 
 $(SUBDIRS): test_utils.o
 	$(MAKE) -C $@
-
 
 %.o: %.c
 	$(CC) $(CFLAGS) -I. -c $^

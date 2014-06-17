@@ -25,15 +25,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_GPU_DIRECT_MAX (32*1024)
 #define GASPI_GPU_BUFFERED  (128*1024)
 
-typedef struct{
-  char gpu_direct;
-  int device_id;
-  cudaStream_t streams[GASPI_MAX_QP];
-  char name[256];
-}gaspi_gpu;
-
-gaspi_gpu *gpus;
-
 typedef struct {
   unsigned long offset_local, offset_remote, size;
   gaspi_rank_t rank;
@@ -41,10 +32,23 @@ typedef struct {
   cudaEvent_t event;
   int ib_use;
   int in_use;
+
+
 }
 gaspi_cuda_event;
 
-gaspi_cuda_event events[GASPI_MAX_QP][GASPI_CUDA_EVENTS];
+
+typedef struct{
+  char gpu_direct;
+  int device_id;
+  cudaStream_t streams[GASPI_MAX_QP];
+  char name[256];
+  gaspi_cuda_event events[GASPI_MAX_QP][GASPI_CUDA_EVENTS];
+}gaspi_gpu;
+
+gaspi_gpu *gpus;
+
+
 
 //TODO: need to move this somewhere else
 static gaspi_gpu* _gaspi_find_gpu(int dev_id)
