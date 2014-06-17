@@ -552,8 +552,8 @@ gaspi_init_collectives ()
 
 #pragma weak gaspi_allreduce = pgaspi_allreduce
 gaspi_return_t
-pgaspi_allreduce (gaspi_pointer_t const buf_send,
-		  gaspi_pointer_t const buf_recv,
+pgaspi_allreduce (const gaspi_pointer_t const buf_send,
+		  const gaspi_pointer_t const buf_recv,
 		  const gaspi_number_t elem_cnt, const gaspi_operation_t op,
 		  const gaspi_datatype_t type, const gaspi_group_t g,
 		  const gaspi_timeout_t timeout_ms)
@@ -920,8 +920,8 @@ pgaspi_allreduce (gaspi_pointer_t const buf_send,
 
 #pragma weak gaspi_allreduce_user = pgaspi_allreduce_user
 gaspi_return_t
-pgaspi_allreduce_user (gaspi_pointer_t const buf_send,
-		       gaspi_pointer_t const buf_recv,
+pgaspi_allreduce_user (const gaspi_pointer_t const buf_send,
+		       const gaspi_pointer_t const buf_recv,
 		       const gaspi_number_t elem_cnt,
 		       const gaspi_size_t elem_size,
 		       gaspi_reduce_operation_t const user_fct,
