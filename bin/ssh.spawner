@@ -31,9 +31,14 @@ fi
 
 PROG=$6
 ARGS=""
-for (( i=7;$i<=$#;i=$i+1 ))
+
+count=1
+for i in $@
 do
-    ARGS="$ARGS ${!i}"
+    if [ $count -gt 6 ]; then
+	ARGS="$ARGS ${i}"
+    fi
+    count=$((count+1))
 done
 
 for i in $(seq $2 1 $4)
@@ -47,7 +52,7 @@ do
         cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
     fi
 
-    cmd="$cmd; $PROG $ARGS'"
+    cmd="$cmd; $PROG ${ARGS}'"
     eval $cmd &
 
 done
