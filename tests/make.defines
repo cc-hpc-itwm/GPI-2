@@ -13,8 +13,3 @@ LIB_PATH = -L$(GPI_DIR)/lib64 -L$(OFED_PATH)/lib64
 LIBS     = -lGPI2-dbg -libverbs -lpthread
 
 export
-###### added by install script
-CFLAGS += -DGPI2_CUDA -I/shared/apps/cuda/CUDA-v5.5.22/include
-LIB_PATH += -L/shared/apps/cuda/CUDA-v5.5.22/lib64
-LIBS += -lcudart -lcuinj64
-export
