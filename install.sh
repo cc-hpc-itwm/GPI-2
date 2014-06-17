@@ -90,8 +90,8 @@ while getopts ":p:o:-:" opt; do
                             exit 1
                         fi
 			NVCC_BIN=`which nvcc`
-			CUDA_PATHB=`dirname $NVCC_BIN`
-			CUDA_PATH=`dirname $CUDA_PATHB`
+			CUDA_PATH=`dirname $NVCC_BIN`
+			CUDA_PATH=`dirname $CUDA_PATH`
 		    else
 			CUDA_PATH=$val
                     fi
@@ -219,8 +219,6 @@ if [ $WITH_MPI = 1 ]; then
     echo "LIBS += -lmpi" >> tests/make.defines
     echo "export" >> tests/make.defines
 
-    #enable mpi tests
-    sed -i "s,#mpi,mpi,g" tests/tests/Makefile
 fi
 
 #load leveler
@@ -235,6 +233,15 @@ fi
 if [ $WITH_CUDA = 1 ]; then
 
     #check
+    #check moduel
+    if [ `modprobe -l |grep nv_peer_mem` ]; then
+      echo "nv_peer_mem module is found, continue"
+    else
+      echo "cannot find nv_peer_mem module, return"
+      echo ""
+      exit 1
+   fi
+
     if [ -r $CUDA_PATH/include/cuda.h ]; then
 	CUDA_INC_PATH=$CUDA_PATH/include
     else
@@ -247,7 +254,7 @@ if [ $WITH_CUDA = 1 ]; then
     if [ -r $CUDA_PATH/lib64/libcudart.so ] && [ -r $CUDA_PATH/lib64/libcuinj64.so ] ; then
 	CUDA_LIB_PATH=$CUDA_PATH/lib64
     else
-	if [ -r $CUDA_PATH/lib/libcudart.so ] && [ -r $CUDA_PATH/lib64/libcuinj64.so ] ; then
+	if [ -r $CUDA_PATH/lib/libcudart.so ] && [ -r $CUDA_PATH/li32/libcuinj32.so ] ; then
 	    CUDA_LIB_PATH=$CUDA_PATH/lib
 	else
 	    echo "Cannot find libcudart or libcuinj. Please provide path to CUDA installation."

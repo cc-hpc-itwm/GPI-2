@@ -359,10 +359,10 @@ pgaspi_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 
     }//for
 #ifdef GPI2_CUDA 
-     int j;
-
+     int j,k;
+   for(k=0;k<glb_gaspi_ctx.gpu_count;k++)
      for(j = 0; j < GASPI_CUDA_EVENTS; j++)
-       events[queue][j].ib_use=0;
+       gpus[k].events[queue][j].ib_use=0;
 #endif
 
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
@@ -894,19 +894,19 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 
 #ifdef GPI2_CUDA
   if((glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].cudaDevId >= 0))
-    {
-      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].host_addr+notification_id*4);
-      swrN.wr.rdma.rkey = glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].host_rkey;
-    }
+  {
+    swrN.wr.rdma.remote_addr = (glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].host_addr+notification_id*4);
+    swrN.wr.rdma.rkey = glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].host_rkey;
+  }
   else
 #endif
-    {
-      swrN.wr.rdma.remote_addr =
-	(glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].addr +
-	 notification_id * 4);
-      swrN.wr.rdma.rkey = glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].rkey;
-    }
-  
+  {
+    swrN.wr.rdma.remote_addr =
+      (glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].addr +
+       notification_id * 4);
+    swrN.wr.rdma.rkey = glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].rkey;
+  }
+
   swrN.sg_list = &slistN;
   swrN.num_sge = 1;
   swrN.wr_id = rank;
@@ -915,21 +915,21 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
   swrN.next = NULL;
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr, &bad_wr))
-    {
-      glb_gaspi_ctx.qp_state_vec[queue][rank] = 1;
-      unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
+  {
+    glb_gaspi_ctx.qp_state_vec[queue][rank] = 1;
+    unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
 
 #ifdef DEBUG
-      _print_func_params("gaspi_write_notify", segment_id_local, offset_local, rank,
-			segment_id_remote, offset_remote, size,
-			 queue, timeout_ms);
-      gaspi_print_error("notification_id %d\nnotification_value %u",
-		   notification_id,
-		   notification_value);
+    _print_func_params("gaspi_write_notify", segment_id_local, offset_local, rank,
+        segment_id_remote, offset_remote, size,
+        queue, timeout_ms);
+    gaspi_print_error("notification_id %d\nnotification_value %u",
+        notification_id,
+        notification_value);
 #endif
 
-      return GASPI_ERROR;
-    }
+    return GASPI_ERROR;
+  }
 
   glb_gaspi_ctx_ib.ne_count_c[queue] += 2;
 
