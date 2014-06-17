@@ -33,7 +33,7 @@ typedef struct {
   int ib_use;
   int in_use;
 
-gaspi_cuda_event events[GASPI_MAX_QP][GASPI_CUDA_EVENTS];
+
 }
 gaspi_cuda_event;
 
@@ -43,6 +43,7 @@ typedef struct{
   int device_id;
   cudaStream_t streams[GASPI_MAX_QP];
   char name[256];
+  gaspi_cuda_event events[GASPI_MAX_QP][GASPI_CUDA_EVENTS];
 }gaspi_gpu;
 
 gaspi_gpu *gpus;
