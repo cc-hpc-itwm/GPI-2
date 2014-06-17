@@ -72,6 +72,24 @@ is that MPI_Init() must be invoked before gaspi_proc_init(). For this
 MPI+GPI2 mixed mode, it is assumed that you start the application with
 mpirun (or mpiexec, etc.).
 
+GPU/CUDA support
+-------------------
+If you plan to use GPI-2 with CUDA and to allow direct data transfer between GPUs,
+ you enable GPU support with
+
+     ./install.sh --with-cuda<=path_to_cuda_installation>
+
+If you don't provide a path to your CUDA installation and nvcc is in your PATH,
+the installation script will take that CUDA installation.
+
+GPI-2 with CUDA support actually requires GPUDirect RDMA support,
+ so it will be checked if the required kernel-module is installed
+
+Due to the limitations of GPUDirect RDMA, the maximal GPU memory segment size is limited to 250MB.
+
+To enable GPU support in your application, call gaspi_init_GPUs. The function gaspi_number_of_GPUs
+ will return the number of supported GPUs on the actual NUMA-node, the function gaspi_GPU_ids returns
+the device Ids of the supported GPUs.
 	
 3. BUILDING GPI-2
 =================
