@@ -114,7 +114,7 @@ module GASPI
       integer (gaspi_int)      :: mtu
       integer (gaspi_int)      :: port_check
       integer (gaspi_int)      :: user_net
-      integer (gaspi_int) :: net_typ
+      integer (gaspi_int)      :: network
       integer (gaspi_int)      :: queue_depth
       integer (gaspi_int)      :: qp_count
       integer (gaspi_number_t) :: group_max

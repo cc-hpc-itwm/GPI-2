@@ -11,14 +11,14 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_config_get(&default_conf));
 
-  gaspi_printf("logger %u\nnet_info %u\nnetdev_info %u\nmtu %u\nport_check %u\nuser_net %u\nnet_type %u\n",
+  gaspi_printf("logger %u\nnet_info %u\nnetdev_info %u\nmtu %u\nport_check %u\nuser_net %u\nnetwork %u\n",
 	       default_conf.logger,
 	       default_conf.net_info,
 	       default_conf.netdev_id,
 	       default_conf.mtu,
 	       default_conf.port_check,
 	       default_conf.user_net,
-	       default_conf.net_typ);
+	       default_conf.network);
   
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 

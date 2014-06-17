@@ -286,12 +286,12 @@ gaspi_init_ib_core ()
   
     if(!glb_gaspi_cfg.user_net){//user didnt choose something, so we use network type of first active port
   
-      if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_INFINIBAND) glb_gaspi_cfg.net_typ = GASPI_IB;
-      else if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_ETHERNET) glb_gaspi_cfg.net_typ = GASPI_ETHERNET;
+      if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_INFINIBAND) glb_gaspi_cfg.network = GASPI_IB;
+      else if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_ETHERNET) glb_gaspi_cfg.network = GASPI_ETHERNET;
     }
   
   
-    if(glb_gaspi_cfg.net_typ == GASPI_ETHERNET){
+    if(glb_gaspi_cfg.network == GASPI_ETHERNET){
   
       glb_gaspi_ctx_ib.ib_port = 1;
   
@@ -320,7 +320,7 @@ gaspi_init_ib_core ()
   if(glb_gaspi_cfg.net_info) gaspi_printf ("\tusing port : %d\n", glb_gaspi_ctx_ib.ib_port);
 
 
-  if (glb_gaspi_cfg.net_typ == GASPI_IB)
+  if (glb_gaspi_cfg.network == GASPI_IB)
     {
 
     if(glb_gaspi_cfg.mtu == 0)
@@ -348,7 +348,7 @@ gaspi_init_ib_core ()
   }
 
 
-  if(glb_gaspi_cfg.net_typ == GASPI_ETHERNET)
+  if(glb_gaspi_cfg.network == GASPI_ETHERNET)
     {
       glb_gaspi_cfg.mtu = 1024;
       if(glb_gaspi_cfg.net_info) gaspi_printf ("\teth. mtu   : %d\n", glb_gaspi_cfg.mtu);
@@ -483,7 +483,7 @@ gaspi_init_ib_core ()
       return -1;
     }
 
-  if(glb_gaspi_cfg.net_typ == GASPI_ETHERNET)
+  if(glb_gaspi_cfg.network == GASPI_ETHERNET)
     {
       
       const int ret = ibv_query_gid (glb_gaspi_ctx_ib.context, glb_gaspi_ctx_ib.ib_port,GASPI_GID_INDEX, &glb_gaspi_ctx_ib.gid);
@@ -535,14 +535,14 @@ gaspi_init_ib_core ()
       
       if(glb_gaspi_cfg.port_check)
 	{
-	  if(!glb_gaspi_ctx_ib.lrcd[i].lid && (glb_gaspi_cfg.net_typ == GASPI_IB))
+	  if(!glb_gaspi_ctx_ib.lrcd[i].lid && (glb_gaspi_cfg.network == GASPI_IB))
 	    {
 	      gaspi_print_error("Failed to find topology! Is subnet-manager running ?");
 	      return -1;
 	    }
 	}
 
-      if(glb_gaspi_cfg.net_typ == GASPI_ETHERNET)
+      if(glb_gaspi_cfg.network == GASPI_ETHERNET)
 	{
 	  glb_gaspi_ctx_ib.lrcd[i].gid = glb_gaspi_ctx_ib.gid;
 	}
@@ -863,7 +863,7 @@ gaspi_connect_context(const int i, gaspi_timeout_t timeout_ms)
   qp_attr.max_dest_rd_atomic = glb_gaspi_ctx_ib.max_rd_atomic;
   qp_attr.min_rnr_timer = 12;
 
-  if(glb_gaspi_cfg.net_typ == GASPI_IB)
+  if(glb_gaspi_cfg.network == GASPI_IB)
     {
       qp_attr.ah_attr.is_global = 0;
       qp_attr.ah_attr.dlid = (unsigned short) glb_gaspi_ctx_ib.rrcd[i].lid;
