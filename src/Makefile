@@ -7,6 +7,7 @@ HDRS = GPI2_IB.h GPI2_Env.h GPI2_Utility.h GPI_Types.h GPI2_SN.h GPI2.h
 OBJS = $(SRCS:.c=.o)
 OBJS_DBG = $(SRCS:.c=.dbg.o)
 OBJS_MIC = $(SRCS:.c=.mic.o)
+OBJS_DBG_MIC = $(SRCS:.c=.mic.dbg.o)
 
 OBJ_FORTRAN = GASPI.o
 
@@ -33,9 +34,10 @@ $(OBJ_FORTRAN): GASPI.f90
 	$(FORTRANC) -O2 -c $< 
 	cp gaspi.mod gaspi_types.mod ../include;
 
-mic: $(OBJS_MIC)
-	rm -f ../lib64/mic/$(GPI2)
+mic: $(OBJS_MIC) $(OBJS_DBG_MIC)
+	rm -f ../lib64/mic/$(GPI2) ../lib64/mic/$(GPI2_DBG)
 	ar crs ../lib64/mic/$(GPI2) $(OBJS_MIC)
+	ar crs ../lib64/mic/$(GPI2_DBG) $(OBJS_DBG_MIC)
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
@@ -44,7 +46,10 @@ mic: $(OBJS_MIC)
 	$(CC) $(DBG_CFLAGS) -DDEBUG $(INCLUDES) -c $<  -o $@
 
 %.mic.o: %.c
-	icc -mmic $(MIC_CFLAGS) $(INCLUDES) -DMIC -c $<  -o $@
+	icc -mmic $(MIC_CFLAGS) -DMIC -c $<  -o $@
+
+%.mic.dbg.o: %.c
+	icc -mmic -g -O0 $(INCLUDES) -D_GNU_SOURCE -DDEBUG -DMIC -c $<  -o $@
 
 clean:
 	$(RM) *.o *~ ../lib64/$(GPI2) ../lib64/$(GPI2_DBG) ../lib64/mic/$(GPI2)
