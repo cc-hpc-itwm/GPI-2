@@ -1,5 +1,5 @@
-OFED_PATH = /usr/ofed-mic3.5
-OFED_MIC_PATH = /opt/intel/mic/ofed/card/usr/
+OFED_PATH = /usr
+OFED_MIC_PATH = /opt/intel/mic/ofed/card/usr
 CC = gcc
 FORTRANC = gfortran
 HAS_FORTRAN:=$(shell which $(FORTRANC))
