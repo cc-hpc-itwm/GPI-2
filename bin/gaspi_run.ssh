@@ -20,8 +20,8 @@ SET_NUMA=0
 MFILE=""
 MASTER_PRG=""
 PRG=""
-KPRG=""
 PRGNAME=""
+PRG_ARGS=""
 TYPE=GASPI_MASTER
 MAX_IMMED_CONN=10
 MAX_NUMA_NODES=1
@@ -182,8 +182,10 @@ while [ -n "$1" ]; do
 	    ;;
 	*) #Sucks! we're taking a small risk here
             if [ -x $1 ]; then
-		PRG=$(readlink -f "$*")
-		KPRG=$(readlink -f $1)
+
+		PRG=$(readlink -f $1)
+		shift
+		PRG_ARGS="$*"
 		break
             else
                 print_error_exit "Cannot execute $1 (or file does not exist)"
@@ -192,11 +194,14 @@ while [ -n "$1" ]; do
     shift
 done
 
+
 if [ -z "$PRG" ]; then
     print_error_exit "No binary file provided. See help (-h option)"
 fi
 
-PRGNAME=`basename $KPRG`
+PRG="${PRG} ${PRG_ARGS}"
+
+PRGNAME=`basename $PRG`
 
 trap kill_procs TERM INT QUIT
 
