@@ -166,10 +166,14 @@ if [ $OFED = 0 ]; then
 	OFED_PATH=$(${INFO} | grep -w prefix | cut -d '=' -f 2)
 	echo "Found OFED installation in $OFED_PATH" | tee -a install.log
     else
-	echo "Error: could not find OFED package."
-	echo "Run this script with the -o option and providing the path to your OFED installation."
-	echo
-	exit 1
+	if [ -r /usr/lib64/libibverbs.so ] && [ -r /usr/include/infiniband/verbs.h ]; then
+	    OFED_PATH=/usr/    
+	else
+	    echo "Error: could not find libibverbs."
+	    echo "Run this script with the -o option and provide the path to your OFED installation."
+	    echo
+	    exit 1
+	fi
     fi
 else
     if [ ! -d $OFED_PATH ]; then
