@@ -74,22 +74,27 @@ mpirun (or mpiexec, etc.).
 
 GPU/CUDA support
 -------------------
-If you plan to use GPI-2 with CUDA and to allow direct data transfer between GPUs,
- you enable GPU support with
+
+If you plan to use GPI-2 with CUDA and to allow direct data transfer
+between GPUs, you enable GPU support with
 
      ./install.sh --with-cuda<=path_to_cuda_installation>
 
 If you don't provide a path to your CUDA installation and nvcc is in your PATH,
 the installation script will take that CUDA installation.
 
-GPI-2 with CUDA support actually requires GPUDirect RDMA support,
- so it will be checked if the required kernel-module is installed
 
-Due to the limitations of GPUDirect RDMA, the maximal GPU memory segment size is limited to 250MB.
+GPI-2 with CUDA support actually requires GPUDirect RDMA support, so
+it will be checked if the required kernel-module is installed
 
-To enable GPU support in your application, call gaspi_init_GPUs. The function gaspi_number_of_GPUs
- will return the number of supported GPUs on the actual NUMA-node, the function gaspi_GPU_ids returns
-the device Ids of the supported GPUs.
+Due to the limitations of GPUDirect RDMA, the maximal GPU memory
+segment size is limited to 250MB.
+
+To enable GPU support in your application, call gaspi_init_GPUs. The
+function gaspi_number_of_GPUs will return the number of supported GPUs
+on the actual NUMA-node, the function gaspi_GPU_ids returns the device
+Ids of the supported GPUs.
+
 	
 3. BUILDING GPI-2
 =================
@@ -217,8 +222,71 @@ iptables -t nat -A POSTROUTING -s 172.31.1.1 -o eth0 -j SNAT --to-source 192.168
 After setup, the MIC hostname can simply be added to the machinefile
 and be used as another host.
 
+7. GPU/CUDA SUPPORT
+===================
 
-7. TROUBLESHOOTING
+To enable GPU support in your application, call gaspi_init_GPUs. This
+function will check how many supported GPUs are available.
+ 
+The function gaspi_number_of_GPUs will return the number of supported
+GPUs on the actual NUMA-node, the function gaspi_GPU_ids returns the
+device Ids of the supported GPUs.
+
+Segment Creation
+-----------------
+
+To create a GPU memory segment, use the flag GASPI_MEM_GPU. The
+segment will be allocated on the current active GPU. Note tha the
+actice GPU may change by calling gaspi_init_GPUs and therefore should
+be set new bevore creating a GPU memory segment.
+
+Segment pointer
+----------------
+
+The segment pointer of a GPU memory segment is a GPU device
+pointer. It can be used in CUDA-related functions (eg. cudaMemcpy) and
+in CUDA-kernels. However, a direct access in host memory results in a
+segmentation fault.
+
+Host memory segment
+--------------------
+
+Of course, GPU memory segments can be used together with host memory
+segments. If GPU-support is enabled, a new host memory segments is
+also registered for the GPUs. Therefore, a segment pointer of a local
+host memory segments can be used with asynchronous CUDA copy
+operations for asynchronous local data transfers/
+
+Special functions 
+--------------------
+
+Due to some issues with the PCIe-Express bus, the Bandwidth of direct
+GPU-to-GPU transfers is imitated for larger messages sizes.
+Therefore, gaspi_gpu_write and gaspi_gpu_write_notify are optimized
+for remote write operations with a GPU memory segment as source. These
+functions use one-sided copies in host memory. Therefore,
+gaspi_gpu_write is one-sided, but not fully asynchronous with respect
+to the host, since the host thread is required to control the data
+flow. Small data packages are still transfered direct. However, it can
+still be overlapped with computation on the GPU. gaspi_write and
+gaspi_write_notify still can be used if a full asynchronous, but
+slower data transfer is preferred.
+
+Limitations
+-------------
+
+Since the maximal size pinable GPU memory is limited to less then
+256MB on most GPUs, the maximal size of a GPU memory segment is also
+limited to this. However, this issue can be removed by using a
+firmware patch for current K20 and K40 GPUs and will be removed in
+future versions.
+
+To support direct data transfer, the Infiniband device and the GPU
+must be located on the same NUMA socket.Otherwise, direct data
+transder is not supported. However, the application checks this at the
+beginning.
+
+8. TROUBLESHOOTING
 ==================
 
 If you're having troubles when building GPI-2, make sure you have the
@@ -226,7 +294,7 @@ OFED stack correctly installed and running. You can change the OFED
 path in the Makefile in the source directory (src) to the correct path
 in your system.
 
-8. UP COMING FEATURES
+9. UP COMING FEATURES
 =====================
 
 GPI-2 is on-going work and more features are still to come. Here are
