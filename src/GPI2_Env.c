@@ -218,6 +218,7 @@ gaspi_handle_env(gaspi_context *ctx)
       env_miss = 1;
     }
 
+#ifndef MIC  
   if(numaPtr)
     {
       if(atoi(numaPtr) == 1)
@@ -240,6 +241,7 @@ gaspi_handle_env(gaspi_context *ctx)
 	    }
 	}
     }
+#endif  
   
   if(typePtr)
     {
