@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
   {
     for(rankSend = 0; rankSend < numranks; rankSend++)
     {
-      gaspi_queue_size(1, &queueSize);
+      ASSERT(gaspi_queue_size(1, &queueSize));
 
       if (queueSize > qmax - 24)
         ASSERT (gaspi_wait(1, GASPI_BLOCK));

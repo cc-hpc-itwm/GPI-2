@@ -10,10 +10,8 @@ int main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
 
-
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
-  //need the barrier to make sn is up
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   gaspi_rank_t rank, nprocs, i;
@@ -22,8 +20,6 @@ int main(int argc, char *argv[])
   gaspi_gpu_t gpus[8]; 
   gaspi_gpu_num nGPUs;
 
-
-
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT (gaspi_proc_rank(&rank));
   ASSERT(gaspi_init_GPUs());
@@ -31,23 +27,19 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_number_of_GPUs(&nGPUs));
   ASSERT (gaspi_GPU_ids(gpus));
 
-
   cudaSetDevice(gpus[0]);
-  // return 0;
-  ASSERT (gaspi_segment_alloc(0, 1024, GASPI_MEM_INITIALIZED|GASPI_MEM_GPU));
 
+  ASSERT (gaspi_segment_alloc(0, 1024, GASPI_MEM_INITIALIZED|GASPI_MEM_GPU));
 
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   for (i = 0; i < nprocs; i++)
   {
-
-
     if(i == rank)
       continue;
 
     ASSERT( gaspi_segment_register(0, i, GASPI_BLOCK));
-    //      sleep(1);
+
   }
 
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));

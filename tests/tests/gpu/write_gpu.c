@@ -33,18 +33,15 @@ int main(int argc, char *argv[])
 
   gaspi_printf("Seg size: %lu MB\n",  MAX (_128MB, 2 * ((N/P) * N * 2 * sizeof (double)))/1024/1024);
 
-  if(gaspi_segment_create(0,
-        MAX(_128MB, 2 * ((N/P) * N * 2 * sizeof (double))),
-        GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED|GASPI_MEM_GPU) != GASPI_SUCCESS){
-    gaspi_printf("Failed to create segment\n");
-    return -1;
-  }
+  ASSERT (gaspi_segment_create(0,
+			       MAX(_128MB, 2 * ((N/P) * N * 2 * sizeof (double))),
+			       GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED|GASPI_MEM_GPU));
+  
 
   unsigned char * pGlbMem;
 
   gaspi_pointer_t _vptr;
-  if(gaspi_segment_ptr(0, &_vptr) != GASPI_SUCCESS)
-    printf("gaspi_segment_ptr failed\n");
+  ASSERT (gaspi_segment_ptr(0, &_vptr));
 
   pGlbMem = ( unsigned char *) _vptr;
 
@@ -62,8 +59,8 @@ int main(int argc, char *argv[])
 
   for (i = 0; i < 2 * N; i ++)
   {
-
-    gaspi_queue_size(1, &queueSize);
+    ASSERT (gaspi_queue_size(1, &queueSize));
+    
 
     if (queueSize > qmax - 24)
     {

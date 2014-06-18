@@ -38,12 +38,12 @@ int main(int argc, char *argv[])
 
     for(n = 0; n < notif_num; n++)
     {
-      ASSERT (gaspi_queue_size(0, &queue_size));
-      if(queue_size > queue_max - 1)
-        ASSERT (gaspi_wait(0, GASPI_BLOCK));
-
       for(i = 1; i < nprocs; i++)
       {
+	ASSERT (gaspi_queue_size(0, &queue_size));
+	if(queue_size > queue_max - 1)
+	  ASSERT (gaspi_wait(0, GASPI_BLOCK));
+	
         ASSERT (gaspi_notify( seg_id, i, n, 1, 0, GASPI_BLOCK));
       }
     }
