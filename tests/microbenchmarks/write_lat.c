@@ -18,7 +18,6 @@ main (int argc, char *argv[])
     }
 
   // BENCH //
-  mctpInitTimer ();
   gaspi_proc_rank (&myrank);
 
   if (gaspi_segment_ptr (0, (void **) &ptr0) != GASPI_SUCCESS)
@@ -27,7 +26,8 @@ main (int argc, char *argv[])
       exit (-1);
     }
 
-  const double cpu_freq = mctpGetCPUFreq ();
+  gaspi_float cpu_freq;
+  gaspi_cpu_frequency(&cpu_freq);
 
   if (myrank < 2)
     {
@@ -50,7 +50,11 @@ main (int argc, char *argv[])
 		  rcnt++;
 		  while (*pollBuf != (char) rcnt)
 		    {
-		      _mm_pause ();
+#ifdef MIC
+		      _mm_delay_32(32);
+#else
+		      _mm_pause();
+#endif
 		    }
 		}
 

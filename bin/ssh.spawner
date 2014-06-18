@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2014
+
+# This file is part of GPI-2.
+
+# GPI-2 is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public License
+# version 3 as published by the Free Software Foundation.
+
+# GPI-2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
+
+# ARGS:
+# 1: master node
+# 2: local number to start
+# 3: machine file location
+# 4: total number of procs to start
+# 5: set numa?
+# 6 and beyond: programs <args>
+
+if [ $# -lt 5 ]; then
+    echo "Missing args (need at least 5, have $#)"
+    exit 1
+fi
+
+PROG=$6
+ARGS=""
+
+count=1
+for i in $@
+do
+    if [ $count -gt 6 ]; then
+	ARGS="$ARGS ${i}"
+    fi
+    count=$((count+1))
+done
+
+for i in $(seq $2 1 $4)
+do
+    cmd="/bin/sh -c"
+    cmd="$cmd 'export GASPI_MASTER=$1"
+    cmd="$cmd; export GASPI_SOCKET=$i"
+    cmd="$cmd; export GASPI_TYPE=GASPI_WORKER"
+    cmd="$cmd; export GASPI_MFILE=$3"
+    if [ $5 -eq 1 ]; then
+        cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
+    fi
+
+    cmd="$cmd; $PROG ${ARGS}'"
+    eval $cmd &
+
+done
+wait
+
+exit 0

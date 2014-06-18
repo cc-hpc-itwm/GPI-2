@@ -1,5 +1,5 @@
 /*
-Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013
+Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2014
 
 This file is part of GPI-2.
 
@@ -15,7 +15,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
+#include "GPI2.h"
+#include "GASPI.h"
+#include "GPI2_IB.h"
 
+#pragma weak gaspi_atomic_fetch_add      = pgaspi_atomic_fetch_add
 gaspi_return_t
 pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 			const gaspi_offset_t offset, const gaspi_rank_t rank,
@@ -26,27 +30,34 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 #ifdef DEBUG
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
     {
-      gaspi_printf("Debug: Invalid segment (gaspi_atomic_fetch_add)\n");    
+      gaspi_print_error("Invalid segment (gaspi_atomic_fetch_add)");    
       return GASPI_ERROR;
     }
   
   if( rank >= glb_gaspi_ctx.tnc)
     {
-      gaspi_printf("Debug: Invalid rank (gaspi_atomic_fetch_add)\n");    
+      gaspi_print_error("Invalid rank (gaspi_atomic_fetch_add)");    
       return GASPI_ERROR;
     }
   
   if( offset > glb_gaspi_ctx_ib.rrmd[segment_id][rank].size)
     {
-      gaspi_printf("Debug: Invalid offsets (gaspi_atomic_fetch_add)\n");    
+      gaspi_print_error("Invalid offsets (gaspi_atomic_fetch_add)");    
       return GASPI_ERROR;
     }
 
   if( val_old == NULL)
     {
-      gaspi_printf("Debug: Invalid pointer in parameter val_old (gaspi_atomic_fetch_add)\n");    
+      gaspi_print_error("Invalid pointer in parameter val_old (gaspi_atomic_fetch_add)");    
       return GASPI_ERROR;
     }
+
+  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
+    {
+      gaspi_print_error("Invalid timeout: %lu", timeout_ms);
+      return GASPI_ERROR;
+    }
+
 #endif
   
   struct ibv_send_wr *bad_wr;
@@ -70,6 +81,8 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
   swr.wr.atomic.remote_addr =
     glb_gaspi_ctx_ib.rrmd[segment_id][rank].addr + NOTIFY_OFFSET + offset;
+
+
 
   swr.wr.atomic.rkey = glb_gaspi_ctx_ib.rrmd[segment_id][rank].rkey;
   swr.wr.atomic.compare_add = val_add;
@@ -110,6 +123,10 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 	    qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].
 					wr_id] = 1;
 	  unlock_gaspi (&glb_gaspi_group_ib[0].gl);
+	  gaspi_print_error("Failed request to %lu : %s",
+		       glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 
+		       ibv_wc_status_str(glb_gaspi_ctx_ib.wc_grp_send[i].status));
+
 	  return GASPI_ERROR;
 	}
     }
@@ -123,6 +140,7 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
 }
 
+#pragma weak gaspi_atomic_compare_swap = pgaspi_atomic_compare_swap
 gaspi_return_t
 pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 			   const gaspi_offset_t offset,
@@ -136,27 +154,34 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 #ifdef DEBUG
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
     {
-      gaspi_printf("Debug: Invalid segment (gaspi_atomic_compare_swap)\n");    
+      gaspi_print_error("Invalid segment (gaspi_atomic_compare_swap)");    
       return GASPI_ERROR;
     }
   
   if( rank >= glb_gaspi_ctx.tnc)
     {
-      gaspi_printf("Debug: Invalid rank (gaspi_atomic_compare_swap)\n");    
+      gaspi_print_error("Invalid rank (gaspi_atomic_compare_swap)");    
       return GASPI_ERROR;
     }
   
   if( offset > glb_gaspi_ctx_ib.rrmd[segment_id][rank].size)
     {
-      gaspi_printf("Debug: Invalid offsets (gaspi_atomic_compare_swap)\n");    
+      gaspi_print_error("Invalid offsets (gaspi_atomic_compare_swap)");    
       return GASPI_ERROR;
     }
 
   if( val_old == NULL)
     {
-      gaspi_printf("Debug: Invalid pointer in parameter val_old (gaspi_atomic_compare_swap)\n");    
+      gaspi_print_error("Invalid pointer in parameter val_old (gaspi_atomic_compare_swap)");    
       return GASPI_ERROR;
     }
+  
+  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
+    {
+      gaspi_print_error("Invalid timeout: %lu", timeout_ms);
+      return GASPI_ERROR;
+    }
+
 #endif
   
   struct ibv_send_wr *bad_wr;
@@ -174,6 +199,7 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
     return GASPI_TIMEOUT;
 
   slist.addr = (uintptr_t) (glb_gaspi_group_ib[0].buf + NEXT_OFFSET);
+
   slist.length = 8;
   slist.lkey = glb_gaspi_group_ib[0].mr->lkey;
 
@@ -220,6 +246,9 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 	    qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].
 					wr_id] = 1;
 	  unlock_gaspi (&glb_gaspi_group_ib[0].gl);
+ 	  gaspi_print_error("Failed request to %lu : %s",
+		       glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 
+		       ibv_wc_status_str(glb_gaspi_ctx_ib.wc_grp_send[i].status));
 	  return GASPI_ERROR;
 	}
     }

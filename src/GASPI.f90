@@ -1,5 +1,5 @@
 !
-! Copyright (c) - Fraunhofer ITWM - 2013
+! Copyright (c) - Fraunhofer ITWM - 2013-2014
 !
 ! This file is part of GPI-2.
 !
@@ -45,7 +45,7 @@ module GASPI_types
   integer, parameter   :: gaspi_notification_id_t = c_int
   integer, parameter   :: gaspi_notification_t = c_int
   integer, parameter   :: gaspi_statistic_counter_t = c_int
-
+  integer, parameter   :: gaspi_cycles_t = c_long
   integer(gaspi_group_t), parameter :: GASPI_GROUP_ALL = 0
 
 end module GASPI_types
@@ -114,7 +114,7 @@ module GASPI
       integer (gaspi_int)      :: mtu
       integer (gaspi_int)      :: port_check
       integer (gaspi_int)      :: user_net
-      integer (gaspi_int) :: net_typ
+      integer (gaspi_int)      :: network
       integer (gaspi_int)      :: queue_depth
       integer (gaspi_int)      :: qp_count
       integer (gaspi_number_t) :: group_max
@@ -162,6 +162,15 @@ module GASPI
         integer(gaspi_timeout_t), value :: timeout_ms
         integer(gaspi_return_t) :: res
       end function gaspi_proc_init
+    end interface
+
+    interface !gaspi_initialized
+      function gaspi_initialized(initialized) &
+&         result( res ) bind(C, name="gaspi_initialized")
+        import
+        integer(gaspi_number_t), value :: initialized
+        integer(gaspi_return_t) :: res
+      end function gaspi_initialized
     end interface
 
     interface ! gaspi_proc_term
@@ -497,35 +506,6 @@ module GASPI
       end function gaspi_allreduce
     end interface
 
-
-!-----------------------------------------------------------------------
-!    function my_reduce_operation(operand_one,operand_two,result, &
-!&       state,num,element_size,timeout_ms) &
-!&       result ( res ) bind(C,name="my_reduce_operation")
-!      use, intrinsic :: ISO_C_BINDING
-!      use GASPI_types
-!      import
-!      type(c_ptr), value :: operand_one
-!      type(c_ptr), value :: operand_two
-!      type(c_ptr), value :: result
-!      type(c_ptr), value :: state
-!      integer(gaspi_number_t), value :: num        
-!      integer(gaspi_size_t), value :: element_size
-!      integer(gaspi_timeout_t), value :: timeout_ms
-!      integer(gaspi_return_t) :: res
-!      result = operand_two - operand_one      
-!    end function my_reduce_operation
-!-----------------------------------------------------------------------
-
-!-----------------------------------------------------------------------
-!    USAGE
-!    type(c_funptr) :: fproc
-!    fproc = c_funloc(my_reduce_operation)
-!    gaspi_allreduce_user(buffer_send,buffer_receive,num,element_size, &
-!&         my_reduce_operation,reduce_state,group,timeout_ms)
-!-----------------------------------------------------------------------
-
-
     interface ! gaspi_allreduce_user
       function gaspi_allreduce_user(buffer_send,buffer_receive, &
 &         num,element_size,reduce_operation,reduce_state,group,timeout_ms) &
@@ -780,9 +760,18 @@ module GASPI
       function gaspi_time_ticks(ticks) &
 &         result( res ) bind(C, name="gaspi_time_ticks")
         import
-	integer(gaspi_time_t) :: ticks
+	integer(gaspi_cycles_t) :: ticks
         integer(gaspi_return_t) :: res
       end function gaspi_time_ticks
+    end interface
+
+    interface ! gaspi_time_get
+      function gaspi_time_get(wtime) &
+&         result( res ) bind(C, name="gaspi_time_get")
+        import
+	integer(gaspi_time_t) :: wtime
+        integer(gaspi_return_t) :: res
+      end function gaspi_time_get
     end interface
 
     interface ! gaspi_cpu_frequency
@@ -881,6 +870,4 @@ module GASPI
        end function gaspi_statistic_counter_reset
     end interface
     
-    
   end module GASPI
-  

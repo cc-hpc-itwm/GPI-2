@@ -1,20 +1,19 @@
 DOXYGEN:=$(shell which doxygen)
 GFORTRAN:=$(shell which gfortran)
 
-all: gpi tests docs 
+all: gpi fortran tests
 
 gpi:
-	make -C src
-	make -C src debug
-	@if test "$(GFORTRAN)" != ""; then \
-	make -C src fortran; \
-	fi	
+	$(MAKE) -C src gpi
+
+fortran:
+	$(MAKE) -C src fortran
 
 mic:
-	make -C src mic
+	$(MAKE) -C src mic
 
-tests: 
-	cd tests; make; cd ..
+tests: gpi
+	cd tests && $(MAKE) && cd ..
 
 docs:
 	@if test "$(DOXYGEN)" = ""; then \
@@ -26,7 +25,7 @@ docs:
 	doxygen Doxyfile
 
 clean:
-	make -C src clean
-	make -C tests clean
+	$(MAKE) -C src clean
+	$(MAKE) -C tests clean
 
 .PHONY: all tests docs clean 

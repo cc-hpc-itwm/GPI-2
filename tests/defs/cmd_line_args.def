@@ -1,1 +1,1 @@
-ARGS=-a -b 1 -c
+ARGS=-a -b 1 -c /tmp/ola.txt

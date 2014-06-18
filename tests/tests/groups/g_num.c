@@ -9,8 +9,8 @@ int main(int argc, char *argv[])
 {
 
   gaspi_group_t g, g1;
-  gaspi_number_t ngroups;
-  gaspi_rank_t gsize, nprocs;
+  gaspi_number_t ngroups, gsize;
+  gaspi_rank_t nprocs;
   
   TSUITE_INIT(argc, argv);
     

@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
-#include <MCTP1.h>
 
 typedef unsigned long mcycles_t;
 

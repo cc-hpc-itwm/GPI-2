@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 	  if(rankSend == myrank)
 	    continue;
 	  
-	  gaspi_printf("rank to send: %d - %lu bytes\n", rankSend, commSize);
+	  gaspi_printf("partner rank: %d - %lu bytes\n", rankSend, commSize);
 
 	  //FAILS with or without outstanding requests
 	  gaspi_queue_size(1, &queueSize);

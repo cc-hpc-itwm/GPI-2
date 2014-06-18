@@ -11,10 +11,10 @@ void tsuite_init(int argc, char *argv[])
       for(i = 1; i < argc; i++)
 	{
 	  if(strcmp(argv[i], "GASPI_ETHERNET") == 0)
-	    tsuite_default_config.net_typ = GASPI_ETHERNET;
+	    tsuite_default_config.network = GASPI_ETHERNET;
 	  else
             if(strcmp(argv[i], "GASPI_IB") == 0)
-                tsuite_default_config.net_typ = GASPI_IB;
+                tsuite_default_config.network = GASPI_IB;
 
 	}
       ASSERT(gaspi_config_set(tsuite_default_config));
@@ -34,7 +34,7 @@ void success_or_exit ( const char* file, const int line, const int ec)
 
 void must_fail ( const char* file, const int line, const int ec)
 {
-  if (ec != GASPI_ERROR)
+  if (ec == GASPI_SUCCESS || ec == GASPI_TIMEOUT)
     {
       gaspi_printf ("Non-expected success in %s[%i]\n", file, line);
       

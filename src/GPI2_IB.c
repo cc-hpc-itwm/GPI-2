@@ -1,5 +1,5 @@
 /*
-Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013
+Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2014
 
 This file is part of GPI-2.
 
@@ -16,101 +16,26 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <infiniband/verbs.h>
-#include <infiniband/driver.h>
+#include <errno.h>
+#include <sys/mman.h>
+#include <sys/time.h>
+#include <sys/timeb.h>
+#include <unistd.h>
+#ifdef GPI2_CUDA
+#include <cuda.h>
+#include<cuda_runtime.h>
+#include "GASPI_GPU.h"
+#include "GPI2_GPU.h"
+#endif
+      
 
+#include "GASPI.h"
+#include "GPI2.h"
+#include "GPI2_IB.h"
+#include "GPI2_SN.h"
 
-typedef struct
-{
-  int lid;
-  union ibv_gid gid;
-  int qpnGroup;
-  int qpnP;
-  int qpnC[GASPI_MAX_QP];
-  int psn;
-  unsigned int rkeyGroup;
-  unsigned long vaddrGroup;
-} gaspi_rc_all;
-
-typedef struct
-{
-  unsigned int rkeyGroup;
-  unsigned long vaddrGroup;
-} gaspi_rc_grp;
-
-typedef struct
-{
-  union
-  {
-    unsigned char *buf;
-    void *ptr;
-  };
-  struct ibv_mr *mr;
-  unsigned int rkey;
-  unsigned long addr, size;
-} gaspi_rc_mseg;
-
-typedef struct
-{
-  struct ibv_device **dev_list;
-  struct ibv_device *ib_dev;
-  struct ibv_context *context;
-  struct ibv_comp_channel *channelP;
-  struct ibv_pd *pd;
-  struct ibv_device_attr device_attr;
-  struct ibv_port_attr port_attr[2];
-  struct ibv_srq_init_attr srq_attr;
-  int ib_card_typ;
-  int num_dev;
-  int max_rd_atomic;
-  int ib_port;
-  struct ibv_cq *scqGroups, *rcqGroups;
-  struct ibv_qp **qpGroups;
-  struct ibv_wc wc_grp_send[64];
-  struct ibv_srq *srqP;
-  struct ibv_qp **qpP;
-  struct ibv_cq *scqP;
-  struct ibv_cq *rcqP;
-  struct ibv_cq *scqC[GASPI_MAX_QP], *rcqC[GASPI_MAX_QP];
-  struct ibv_qp **qpC[GASPI_MAX_QP];
-  union ibv_gid gid;
-  gaspi_rc_all *lrcd, *rrcd;
-  gaspi_rc_mseg *rrmd[256];
-  int ne_count_grp;
-  int ne_count_c[GASPI_MAX_QP];
-  unsigned char ne_count_p[8192];
-} gaspi_ib_ctx;
-
-typedef struct
-{
-  union
-  {
-    unsigned char *buf;
-    void *ptr;
-  };
-  struct ibv_mr *mr;
-  int id;
-  unsigned int size;
-  gaspi_lock gl;
-  volatile unsigned char barrier_cnt;
-  volatile unsigned char togle;
-  int rank, tnc;
-  int next_pof2;
-  int pof2_exp;
-  int *rank_grp;
-  gaspi_rc_grp *rrcd;
-} gaspi_ib_group;
-
-
-static gaspi_ib_ctx glb_gaspi_ctx_ib;
-volatile int glb_gaspi_ib_init = 0;
-static gaspi_ib_group glb_gaspi_group_ib[GASPI_MAX_GROUPS];
-
-const unsigned int glb_gaspi_typ_size[6] = { 4, 4, 4, 8, 8, 8 };
-
-void (*fctArrayGASPI[18]) (void *, void *, void *, const unsigned char cnt) =
-{
-NULL};
+/* Globals */
+extern gaspi_config_t glb_gaspi_cfg;
 
 static char *port_state_str[] = {
   "NOP",
@@ -148,13 +73,6 @@ link_layer_str (uint8_t link_layer)
 }
 
 
-#define GASPI_GID_INDEX   (0)
-#define PORT_LINK_UP      (5)
-#define MAX_INLINE_BYTES  (128)
-#define GASPI_QP_TIMEOUT  (20)
-#define GASPI_QP_RETRY    (7)
-
-
 static int
 gaspi_null_gid (union ibv_gid *gid)
 {
@@ -163,7 +81,7 @@ gaspi_null_gid (union ibv_gid *gid)
 	   raw[15]);
 }
 
-
+#pragma weak gaspi_state_vec_get = pgaspi_state_vec_get
 gaspi_return_t
 pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
 {
@@ -176,7 +94,7 @@ pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
 
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
-      for (j = 0; j < (GASPI_MAX_QP + 2); j++)
+      for (j = 0; j < (GASPI_MAX_QP + 3); j++)
 	{
 	  state_vector[i] |= glb_gaspi_ctx.qp_state_vec[j][i];
 	}
@@ -184,7 +102,6 @@ pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
 
   return GASPI_SUCCESS;
 }
-
 
 int
 gaspi_init_ib_core ()
@@ -195,20 +112,36 @@ gaspi_init_ib_core ()
   if (glb_gaspi_ib_init)
     return -1;
 
+  //change/override num of queues at large scale
+  if (glb_gaspi_ctx.tnc > 1000 && glb_gaspi_cfg.queue_num > 1)
+    {
+      gaspi_printf("Warning: setting number of queues to 1\n");
+      glb_gaspi_cfg.queue_num = 1;
+    }
+  
+      
   memset (&glb_gaspi_ctx_ib, 0, sizeof (gaspi_ib_ctx));
   memset (&glb_gaspi_group_ib, 0, GASPI_MAX_GROUPS * sizeof (gaspi_ib_group));
-  for (i = 0; i < GASPI_MAX_GROUPS; i++)
-    glb_gaspi_group_ib[i].id = -1;
 
-  for (i = 0; i < 64; i++)
-    glb_gaspi_ctx_ib.wc_grp_send[i].status = IBV_WC_SUCCESS;
+  for(i = 0; i < 256; i++){glb_gaspi_ctx_ib.rrmd[i] = NULL;}
+
+  for (i = 0; i < GASPI_MAX_GROUPS; i++){ 
+    glb_gaspi_group_ib[i].id = -1;
+    glb_gaspi_group_ib[i].coll_op = GASPI_NONE;
+    glb_gaspi_group_ib[i].lastmask = 0x1;
+    glb_gaspi_group_ib[i].level = 0;
+    glb_gaspi_group_ib[i].dsize = 0;
+  }
+
+  for (i = 0; i < 64; i++) glb_gaspi_ctx_ib.wc_grp_send[i].status = IBV_WC_SUCCESS;
 
 
   glb_gaspi_ctx_ib.dev_list = ibv_get_device_list (&glb_gaspi_ctx_ib.num_dev);
-  if (!glb_gaspi_ctx_ib.dev_list) {
-    gaspi_print_error ("Failed to get device list (libibverbs)");
-    return -1;
-  }
+  if (!glb_gaspi_ctx_ib.dev_list)
+    {
+      gaspi_print_error ("Failed to get device list (libibverbs)");
+      return -1;
+    }
 
 
   if(glb_gaspi_cfg.netdev_id >= 0){
@@ -242,7 +175,6 @@ gaspi_init_ib_core ()
         dev_idx=i;
         break;
       }
-
     }
   }
 
@@ -255,50 +187,48 @@ gaspi_init_ib_core ()
     }
 
   glb_gaspi_ctx_ib.context = ibv_open_device (glb_gaspi_ctx_ib.ib_dev);
-  if (!glb_gaspi_ctx_ib.context)
-    {
-      gaspi_print_error ("Failed to open IB device (libibverbs)");
-      return -1;
-    }
 
-  glb_gaspi_ctx_ib.channelP =
-    ibv_create_comp_channel (glb_gaspi_ctx_ib.context);
-  if (!glb_gaspi_ctx_ib.channelP)
-    {
-      gaspi_print_error ("Failed to create completion channel (libibverbs)");
-      return -1;
-    }
+  if(!glb_gaspi_ctx_ib.context){
+    gaspi_print_error ("Failed to open IB device (libibverbs)");
+    return -1;
+  }
 
-  if (ibv_query_device
-      (glb_gaspi_ctx_ib.context, &glb_gaspi_ctx_ib.device_attr))
-    {
-      gaspi_print_error ("Failed to query device (libibverbs)");
-      return -1;
-    }
+  glb_gaspi_ctx_ib.channelP = ibv_create_comp_channel (glb_gaspi_ctx_ib.context);
+  
+  if(!glb_gaspi_ctx_ib.channelP){
+    gaspi_print_error ("Failed to create completion channel (libibverbs)");
+    return -1;
+  }
+
+  if(ibv_query_device(glb_gaspi_ctx_ib.context, &glb_gaspi_ctx_ib.device_attr)){
+    gaspi_print_error ("Failed to query device (libibverbs)");
+    return -1;
+  }
 
   glb_gaspi_ctx_ib.ib_card_typ = glb_gaspi_ctx_ib.device_attr.vendor_part_id;
-  glb_gaspi_ctx_ib.max_rd_atomic =
-    glb_gaspi_ctx_ib.device_attr.max_qp_rd_atom;
+  glb_gaspi_ctx_ib.max_rd_atomic = glb_gaspi_ctx_ib.device_attr.max_qp_rd_atom;
 
-  for (p = 0; p < MIN (glb_gaspi_ctx_ib.device_attr.phys_port_cnt, 2); p++)
-    {
-      if (ibv_query_port
-	  (glb_gaspi_ctx_ib.context, (unsigned char) (p + 1),
-	   &glb_gaspi_ctx_ib.port_attr[p]))
-	{
-	  gaspi_print_error ("Failed to query port (libibverbs)");
-	  return -1;
-	}
+
+  for(p = 0; p < MIN (glb_gaspi_ctx_ib.device_attr.phys_port_cnt, 2); p++){
+    
+    if(ibv_query_port(glb_gaspi_ctx_ib.context, (unsigned char) (p + 1),&glb_gaspi_ctx_ib.port_attr[p])){
+      gaspi_print_error ("Failed to query port (libibverbs)");
+      return -1;
     }
+  }
 
 
   if (glb_gaspi_cfg.net_info)
     {
       gaspi_printf ("<<<<<<<<<<<<<<<<IB-info>>>>>>>>>>>>>>>>>>>\n");
       gaspi_printf ("\tib_dev     : %d (%s)\n",dev_idx,ibv_get_device_name(glb_gaspi_ctx_ib.dev_list[dev_idx]));
-      gaspi_printf ("\tca typ     : %d\n",
+      gaspi_printf ("\tca type    : %d\n",
 		    glb_gaspi_ctx_ib.device_attr.vendor_part_id);
-      gaspi_printf ("\tmtu        : %d\n", glb_gaspi_cfg.mtu);
+      if(glb_gaspi_cfg.mtu==0)
+        gaspi_printf ("\tmtu        : (active_mtu)\n");
+      else
+        gaspi_printf ("\tmtu        : %d (user)\n", glb_gaspi_cfg.mtu);
+
       gaspi_printf ("\tfw_version : %s\n",
 		    glb_gaspi_ctx_ib.device_attr.fw_ver);
       gaspi_printf ("\thw_version : %x\n",
@@ -317,116 +247,87 @@ gaspi_init_ib_core ()
       int id0[2] = { 0, 0 };
       int id1[2] = { 0, 0 };
 
-      for (p = 0; p < MIN (glb_gaspi_ctx_ib.device_attr.phys_port_cnt, 2);
-	   p++)
-	{
+      for(p = 0; p < MIN (glb_gaspi_ctx_ib.device_attr.phys_port_cnt, 2);p++){
+  
+        gaspi_printf ("\tport Nr    : %d\n", p + 1);
+	id0[p] = glb_gaspi_ctx_ib.port_attr[p].state <6 ? glb_gaspi_ctx_ib.port_attr[p].state : 0;
+        gaspi_printf ("\t  state      : %s\n", port_state_str[id0[p]]);
+	  
+        id1[p] = glb_gaspi_ctx_ib.port_attr[p].phys_state <8 ? glb_gaspi_ctx_ib.port_attr[p].phys_state : 3;
+        gaspi_printf ("\t  phy state  : %s\n", port_phy_state_str[id1[p]]);
+        gaspi_printf ("\t  link layer : %s\n",link_layer_str (glb_gaspi_ctx_ib.port_attr[p].link_layer));
+    }
+  }
 
-	  gaspi_printf ("\tport Nr    : %d\n", p + 1);
-	  id0[p] =
-	    glb_gaspi_ctx_ib.port_attr[p].state <
-	    6 ? glb_gaspi_ctx_ib.port_attr[p].state : 0;
-	  gaspi_printf ("\t  state      : %s\n", port_state_str[id0[p]]);
-	  id1[p] =
-	    glb_gaspi_ctx_ib.port_attr[p].phys_state <
-	    8 ? glb_gaspi_ctx_ib.port_attr[p].phys_state : 3;
-	  gaspi_printf ("\t  phy state  : %s\n", port_phy_state_str[id1[p]]);
-	  gaspi_printf ("\t  link layer : %s\n",
-			link_layer_str (glb_gaspi_ctx_ib.
-					port_attr[p].link_layer));
 
-	}
+  if(glb_gaspi_cfg.port_check){
+
+    if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)&& (glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE)){
+      gaspi_print_error ("No IB active port found");
+      return -1;
+    }
+  
+    if((glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)&& (glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP)){
+      gaspi_print_error ("No IB active link found");
+      return -1;
+    }
+  
+    glb_gaspi_ctx_ib.ib_port = 1;
+  
+    if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)|| (glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)){
+            
+      if((glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE) || (glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP)){
+        gaspi_print_error ("No IB active port found");
+        return -1;
+      }
+  
+      glb_gaspi_ctx_ib.ib_port = 2;
+    }
+  
+    if(!glb_gaspi_cfg.user_net){//user didnt choose something, so we use network type of first active port
+  
+      if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_INFINIBAND) glb_gaspi_cfg.network = GASPI_IB;
+      else if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_ETHERNET) glb_gaspi_cfg.network = GASPI_ETHERNET;
+    }
+  
+  
+    if(glb_gaspi_cfg.network == GASPI_ETHERNET){
+  
+      glb_gaspi_ctx_ib.ib_port = 1;
+  
+      if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)
+      ||(glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)
+      ||(glb_gaspi_ctx_ib.port_attr[0].link_layer != IBV_LINK_LAYER_ETHERNET)){
+  
+  
+        if((glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE)
+        ||(glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP)
+        ||(glb_gaspi_ctx_ib.port_attr[1].link_layer != IBV_LINK_LAYER_ETHERNET)){
+          
+          gaspi_print_error ("No active Ethernet (RoCE) port found");
+          return -1;
+        }
+    
+        glb_gaspi_ctx_ib.ib_port = 2;
+      }
     }
 
-  if (glb_gaspi_cfg.port_check)
+  }//if(glb_gaspi_cfg.port_check)
+  else{
+    glb_gaspi_ctx_ib.ib_port = 1;
+  }
+
+  if(glb_gaspi_cfg.net_info) gaspi_printf ("\tusing port : %d\n", glb_gaspi_ctx_ib.ib_port);
+
+
+  if (glb_gaspi_cfg.network == GASPI_IB)
     {
 
-      if ((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)
-	  && (glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE))
-	{
-	  gaspi_print_error ("No IB active port found");
-	  return -1;
-	}
+    if(glb_gaspi_cfg.mtu == 0)
+      {
 
-      if ((glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)
-	  && (glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP))
-	{
-	  gaspi_print_error ("No IB active link found");
-	  return -1;
-	}
-
-      glb_gaspi_ctx_ib.ib_port = 1;
-
-      if ((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)
-	  || (glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP))
-	{
-	  if ((glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE)
-	      || (glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP))
-	    {
-	      gaspi_print_error ("No IB active port found");
-	      return -1;
-	    }
-
-	  glb_gaspi_ctx_ib.ib_port = 2;
-	}
-
-      if (!glb_gaspi_cfg.user_net)
-	{			//user didnt choose something, so we use network type of first active port
-
-	  if (glb_gaspi_ctx_ib.
-	      port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==
-	      IBV_LINK_LAYER_INFINIBAND)
-	    glb_gaspi_cfg.net_typ = GASPI_IB;
-	  else if (glb_gaspi_ctx_ib.
-		   port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==
-		   IBV_LINK_LAYER_ETHERNET)
-	    glb_gaspi_cfg.net_typ = GASPI_ETHERNET;
-	}
-
-
-      if (glb_gaspi_cfg.net_typ == GASPI_ETHERNET)
-	{
-
-	  glb_gaspi_ctx_ib.ib_port = 1;
-
-	  if ((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)
-	      || (glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)
-	      || (glb_gaspi_ctx_ib.port_attr[0].link_layer !=
-		  IBV_LINK_LAYER_ETHERNET))
-	    {
-
-	      if ((glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE)
-		  || (glb_gaspi_ctx_ib.port_attr[1].phys_state !=
-		      PORT_LINK_UP)
-		  || (glb_gaspi_ctx_ib.port_attr[1].link_layer !=
-		      IBV_LINK_LAYER_ETHERNET))
-		{
-		  gaspi_print_error ("No active Ethernet (RoCE) port found");
-		  return -1;
-		}
-
-	      glb_gaspi_ctx_ib.ib_port = 2;
-	    }
-
-	}
-
-    }				//if(glb_gaspi_cfg.port_check)
-  else
-    {
-      glb_gaspi_ctx_ib.ib_port = 1;
-    }
-
-  if (glb_gaspi_cfg.net_info)
-    gaspi_printf ("\tusing port : %d\n", glb_gaspi_ctx_ib.ib_port);
-
-  if (glb_gaspi_cfg.net_typ == GASPI_IB)
-    {
-
-      const gaspi_uint active_mtu = 
-	glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].active_mtu;
-
-      switch (active_mtu)
-	{
-
+	switch(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].active_mtu){
+	  
 	case IBV_MTU_1024:
 	  glb_gaspi_cfg.mtu = 1024;
 	  break;
@@ -439,17 +340,18 @@ gaspi_init_ib_core ()
 	default:
 	  break;
 	};
+	
+      }
+  
+    if(glb_gaspi_cfg.net_info)
+      gaspi_printf ("\tmtu        : %d\n", glb_gaspi_cfg.mtu);
+  }
 
-      if (glb_gaspi_cfg.net_info)
-	gaspi_printf ("\tmtu        : %d\n", glb_gaspi_cfg.mtu);
-    }
 
-
-  if (glb_gaspi_cfg.net_typ == GASPI_ETHERNET)
+  if(glb_gaspi_cfg.network == GASPI_ETHERNET)
     {
       glb_gaspi_cfg.mtu = 1024;
-      if (glb_gaspi_cfg.net_info)
-	gaspi_printf ("\teth. mtu   : %d\n", glb_gaspi_cfg.mtu);
+      if(glb_gaspi_cfg.net_info) gaspi_printf ("\teth. mtu   : %d\n", glb_gaspi_cfg.mtu);
     }
 
   glb_gaspi_ctx_ib.pd = ibv_alloc_pd (glb_gaspi_ctx_ib.context);
@@ -460,254 +362,138 @@ gaspi_init_ib_core ()
     }
 
 
-  const unsigned int size = NEXT_OFFSET + 128 + NOTIFY_OFFSET;
+  //notify src segment
+  const unsigned int size = NOTIFY_OFFSET;
   const unsigned int page_size = sysconf (_SC_PAGESIZE);
-  if (posix_memalign ((void **) &glb_gaspi_group_ib[0].ptr, page_size, size)
-      != 0)
+
+  if(posix_memalign ((void **) &glb_gaspi_ctx_ib.nsrc.ptr, page_size, size)!= 0)
     {
       gaspi_print_error ("Memory allocation (posix_memalign) failed");
       return -1;
     }
 
-  if (mlock (glb_gaspi_group_ib[0].buf, size) != 0)
+  if(mlock(glb_gaspi_ctx_ib.nsrc.buf, size) != 0)
     {
       gaspi_print_error ("Memory locking (mlock) failed");
       return -1;
     }
-  memset (glb_gaspi_group_ib[0].buf, 0, size);
 
-  glb_gaspi_group_ib[0].mr =
-    ibv_reg_mr (glb_gaspi_ctx_ib.pd, glb_gaspi_group_ib[0].buf, size,
-		IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
-		IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
-  if (!glb_gaspi_group_ib[0].mr)
+  memset(glb_gaspi_ctx_ib.nsrc.buf,0,size);
+
+  glb_gaspi_ctx_ib.nsrc.mr = ibv_reg_mr(glb_gaspi_ctx_ib.pd,glb_gaspi_ctx_ib.nsrc.buf,size,
+                                        IBV_ACCESS_REMOTE_WRITE
+					| IBV_ACCESS_LOCAL_WRITE
+					| IBV_ACCESS_REMOTE_READ
+					| IBV_ACCESS_REMOTE_ATOMIC);
+
+  if(!glb_gaspi_ctx_ib.nsrc.mr)
     {
       gaspi_print_error ("Memory registration failed (libibverbs)");
       return -1;
     }
 
+
   memset (&glb_gaspi_ctx_ib.srq_attr, 0, sizeof (struct ibv_srq_init_attr));
-  glb_gaspi_ctx_ib.srq_attr.attr.max_wr = glb_gaspi_cfg.queue_depth;
+
+  glb_gaspi_ctx_ib.srq_attr.attr.max_wr  = glb_gaspi_cfg.queue_depth;
   glb_gaspi_ctx_ib.srq_attr.attr.max_sge = 1;
 
-  glb_gaspi_ctx_ib.srqP =
-    ibv_create_srq (glb_gaspi_ctx_ib.pd, &glb_gaspi_ctx_ib.srq_attr);
-  if (!glb_gaspi_ctx_ib.srqP)
+  glb_gaspi_ctx_ib.srqP = ibv_create_srq (glb_gaspi_ctx_ib.pd, &glb_gaspi_ctx_ib.srq_attr);
+
+  if(!glb_gaspi_ctx_ib.srqP)
     {
       gaspi_print_error ("Failed to create SRQ (libibverbs)");
       return -1;
     }
 
-  glb_gaspi_ctx_ib.scqGroups =
-    ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,
-		   NULL, 0);
-  if (!glb_gaspi_ctx_ib.scqGroups)
+  glb_gaspi_ctx_ib.scqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,NULL, 0);
+
+  if(!glb_gaspi_ctx_ib.scqGroups){
+    gaspi_print_error ("Failed to create CQ (libibverbs)");
+    return -1;
+  }
+
+
+  glb_gaspi_ctx_ib.rcqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,NULL, 0);
+
+  if(!glb_gaspi_ctx_ib.rcqGroups){
+    gaspi_print_error ("Failed to create CQ (libibverbs)");
+    return -1;
+  }
+
+  glb_gaspi_ctx_ib.scqP = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,NULL, 0);
+  
+  if(!glb_gaspi_ctx_ib.scqP){
+    gaspi_print_error ("Failed to create CQ (libibverbs)");
+    return -1;
+  }
+
+  glb_gaspi_ctx_ib.rcqP = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,glb_gaspi_ctx_ib.channelP, 0);
+  
+  if(!glb_gaspi_ctx_ib.rcqP)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
-
-  glb_gaspi_ctx_ib.rcqGroups =
-    ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,
-		   NULL, 0);
-  if (!glb_gaspi_ctx_ib.rcqGroups)
-    {
-      gaspi_print_error ("Failed to create CQ (libibverbs)");
-      return -1;
-    }
-
-  glb_gaspi_ctx_ib.scqP =
-    ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,
-		   NULL, 0);
-  if (!glb_gaspi_ctx_ib.scqP)
-    {
-      gaspi_print_error ("Failed to create CQ (libibverbs)");
-      return -1;
-    }
-
-  glb_gaspi_ctx_ib.rcqP =
-    ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,
-		   glb_gaspi_ctx_ib.channelP, 0);
-  if (!glb_gaspi_ctx_ib.rcqP)
-    {
-      gaspi_print_error ("Failed to create CQ (libibverbs)");
-      return -1;
-    }
-
-  if (ibv_req_notify_cq (glb_gaspi_ctx_ib.rcqP, 0))
+  
+  if(ibv_req_notify_cq (glb_gaspi_ctx_ib.rcqP, 0))
     {
       gaspi_print_error ("Failed to request CQ notifications (libibverbs)");
       return 1;
     }
+  
 
-  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
-
-      glb_gaspi_ctx_ib.scqC[c] =
-	ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth,
-		       NULL, NULL, 0);
-      if (!glb_gaspi_ctx_ib.scqC[c])
+      
+      glb_gaspi_ctx_ib.scqC[c] = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth,NULL, NULL, 0);
+      
+      if(!glb_gaspi_ctx_ib.scqC[c])
 	{
 	  gaspi_print_error ("Failed to create CQ (libibverbs)");
 	  return -1;
 	}
-
-      glb_gaspi_ctx_ib.rcqC[c] =
-	ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth,
-		       NULL, NULL, 0);
-      if (!glb_gaspi_ctx_ib.rcqC[c])
-	{
-	  gaspi_print_error ("Failed to create CQ (libibverbs)");
-	  return -1;
-	}
+      
+    glb_gaspi_ctx_ib.rcqC[c] = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth,NULL, NULL, 0);
+    
+    if(!glb_gaspi_ctx_ib.rcqC[c])
+      {
+	gaspi_print_error ("Failed to create CQ (libibverbs)");
+	return -1;
+      }
+    
     }
 
-  struct ibv_qp_init_attr qpi_attr;
-  memset (&qpi_attr, 0, sizeof (struct ibv_qp_init_attr));
-  qpi_attr.cap.max_send_wr = glb_gaspi_cfg.queue_depth;
-  qpi_attr.cap.max_recv_wr = glb_gaspi_cfg.queue_depth;
-  qpi_attr.cap.max_send_sge = 1;
-  qpi_attr.cap.max_recv_sge = 1;
-  qpi_attr.cap.max_inline_data = MAX_INLINE_BYTES;
-  qpi_attr.qp_type = IBV_QPT_RC;
-  qpi_attr.send_cq = glb_gaspi_ctx_ib.scqGroups;
-  qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqGroups;
 
-  glb_gaspi_ctx_ib.qpGroups =
-    (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
-#ifdef DEBUG
-  if(glb_gaspi_ctx_ib.qpGroups == NULL)
+  glb_gaspi_ctx_ib.qpGroups = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
+  if(!glb_gaspi_ctx_ib.qpGroups)
     {
-      gaspi_print_error("Memory allocation failed (malloc)");
       return -1;
     }
-#endif
 
-  for (i = 0; i < glb_gaspi_ctx.tnc; i++)
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
-      glb_gaspi_ctx_ib.qpGroups[i] =
-	ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
-      if (!glb_gaspi_ctx_ib.qpGroups[i])
-	{
-	  gaspi_print_error ("Failed to create QP (libibverbs)");
-	  return -1;
-	}
+      glb_gaspi_ctx_ib.qpC[c] = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc *sizeof (struct ibv_qp));
+      if(!glb_gaspi_ctx_ib.qpC[c]) return -1;
     }
-
-
-  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
+  
+  glb_gaspi_ctx_ib.qpP = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
+  if(!glb_gaspi_ctx_ib.qpP)
     {
-
-      glb_gaspi_ctx_ib.qpC[c] =
-	(struct ibv_qp **) malloc (glb_gaspi_ctx.tnc *
-				   sizeof (struct ibv_qp));
-
-      qpi_attr.send_cq = glb_gaspi_ctx_ib.scqC[c];
-      qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqC[c];
-
-      for (i = 0; i < glb_gaspi_ctx.tnc; i++)
-	{
-	  glb_gaspi_ctx_ib.qpC[c][i] =
-	    ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
-	  if (!glb_gaspi_ctx_ib.qpC[c][i])
-	    {
-	      gaspi_print_error ("Failed to create QP (libibverbs)");
-	      return -1;
-	    }
-	}
-
-    }
-
-  glb_gaspi_ctx_ib.qpP =
-    (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
-#ifdef DEBUG
-  if(glb_gaspi_ctx_ib.qpP == NULL)
-    {
-      gaspi_print_error("Memory allocation failed (malloc)");
       return -1;
     }
-#endif
 
-  qpi_attr.send_cq = glb_gaspi_ctx_ib.scqP;
-  qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqP;
-  qpi_attr.srq = glb_gaspi_ctx_ib.srqP;
-
-  for (i = 0; i < glb_gaspi_ctx.tnc; i++)
+  if(glb_gaspi_cfg.network == GASPI_ETHERNET)
     {
-      glb_gaspi_ctx_ib.qpP[i] =
-	ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
-      if (!glb_gaspi_ctx_ib.qpP[i])
+      
+      const int ret = ibv_query_gid (glb_gaspi_ctx_ib.context, glb_gaspi_ctx_ib.ib_port,GASPI_GID_INDEX, &glb_gaspi_ctx_ib.gid);
+      
+      if(ret)
 	{
-	  gaspi_print_error ("Failed to create QP (libibverbs)");
-	  return -1;
-	}
-    }
-
-
-
-  struct ibv_qp_attr qp_attr;
-  memset (&qp_attr, 0, sizeof (struct ibv_qp_attr));
-
-  qp_attr.qp_state = IBV_QPS_INIT;
-  qp_attr.pkey_index = 0;
-  qp_attr.port_num = glb_gaspi_ctx_ib.ib_port;
-  qp_attr.qp_access_flags =
-    IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE |
-    IBV_ACCESS_REMOTE_ATOMIC;
-
-
-  for (i = 0; i < glb_gaspi_ctx.tnc; i++)
-    {
-      if (ibv_modify_qp (glb_gaspi_ctx_ib.qpGroups[i], &qp_attr,
-			 IBV_QP_STATE |
-			 IBV_QP_PKEY_INDEX |
-			 IBV_QP_PORT | IBV_QP_ACCESS_FLAGS))
-	{
-	  gaspi_print_error ("Failed to modify QP (libibverbs)");
-	  return -1;
-	}
-    }
-
-  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
-    {
-      for (i = 0; i < glb_gaspi_ctx.tnc; i++)
-	{
-	  if (ibv_modify_qp (glb_gaspi_ctx_ib.qpC[c][i], &qp_attr,
-			     IBV_QP_STATE |
-			     IBV_QP_PKEY_INDEX |
-			     IBV_QP_PORT | IBV_QP_ACCESS_FLAGS))
-	    {
-	      gaspi_print_error ("Failed to modify QP (libibverbs)");
-	      return -1;
-	    }
-	}
-    }
-
-  for (i = 0; i < glb_gaspi_ctx.tnc; i++)
-    {
-      if (ibv_modify_qp (glb_gaspi_ctx_ib.qpP[i], &qp_attr,
-			 IBV_QP_STATE |
-			 IBV_QP_PKEY_INDEX |
-			 IBV_QP_PORT | IBV_QP_ACCESS_FLAGS))
-	{
-	  gaspi_print_error ("Failed to modify QP (libibverbs)");
-	  return -1;
-	}
-    }
-
-
-  if (glb_gaspi_cfg.net_typ == GASPI_ETHERNET)
-    {
-      const int ret =
-	ibv_query_gid (glb_gaspi_ctx_ib.context, glb_gaspi_ctx_ib.ib_port,
-		       GASPI_GID_INDEX, &glb_gaspi_ctx_ib.gid);
-      if (ret)
-	{
-
 	  gaspi_print_error ("Failed to query gid (RoCE - libiverbs)");
 	  return -1;
 	}
-
+      
       if (!gaspi_null_gid (&glb_gaspi_ctx_ib.gid))
 	{
 	  if (glb_gaspi_cfg.net_info)
@@ -722,518 +508,340 @@ gaspi_init_ib_core ()
 	       glb_gaspi_ctx_ib.gid.raw[12], glb_gaspi_ctx_ib.gid.raw[13],
 	       glb_gaspi_ctx_ib.gid.raw[14], glb_gaspi_ctx_ib.gid.raw[15]);
 	}
-    }
+  }
 
-  glb_gaspi_ctx_ib.lrcd =
-    (gaspi_rc_all *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_all));
-#ifdef DEBUG
-  if(glb_gaspi_ctx_ib.lrcd == NULL)
+  glb_gaspi_ctx_ib.lrcd = (gaspi_rc_all *) calloc (glb_gaspi_ctx.tnc,sizeof (gaspi_rc_all));
+  if(!glb_gaspi_ctx_ib.lrcd)
     {
-      gaspi_print_error("Memory allocation failed (malloc)");
       return -1;
     }
-#endif
 
-  glb_gaspi_ctx_ib.rrcd =
-    (gaspi_rc_all *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_all));
-#ifdef DEBUG
-  if(glb_gaspi_ctx_ib.rrcd == NULL)
+  glb_gaspi_ctx_ib.rrcd = (gaspi_rc_all *) calloc (glb_gaspi_ctx.tnc,sizeof (gaspi_rc_all));
+ 
+  if(!glb_gaspi_ctx_ib.rrcd)
     {
-      gaspi_print_error("Memory allocation failed (malloc)");
       return -1;
     }
-#endif
-
-
-  for (i = 0; i < glb_gaspi_ctx.tnc; i++)
+  
+  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
-
-      glb_gaspi_ctx_ib.lrcd[i].lid =
-	glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].lid;
-      glb_gaspi_ctx_ib.lrcd[i].qpnGroup =
-	glb_gaspi_ctx_ib.qpGroups[i]->qp_num;
-      glb_gaspi_ctx_ib.lrcd[i].qpnP = glb_gaspi_ctx_ib.qpP[i]->qp_num;
-
+      
+      glb_gaspi_ctx_ib.lrcd[i].lid = glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].lid;
+      
       struct timeval tv;
       gettimeofday (&tv, NULL);
       srand48 (tv.tv_usec);
       glb_gaspi_ctx_ib.lrcd[i].psn = lrand48 () & 0xffffff;
-
-      if (glb_gaspi_cfg.port_check)
+      
+      if(glb_gaspi_cfg.port_check)
 	{
-	  if (!glb_gaspi_ctx_ib.lrcd[i].lid
-	      && (glb_gaspi_cfg.net_typ == GASPI_IB))
+	  if(!glb_gaspi_ctx_ib.lrcd[i].lid && (glb_gaspi_cfg.network == GASPI_IB))
 	    {
-	      gaspi_print_error
-		("Failed to find topology! Is subnet-manager running ?");
+	      gaspi_print_error("Failed to find topology! Is subnet-manager running ?");
 	      return -1;
 	    }
 	}
 
-      if (glb_gaspi_cfg.net_typ == GASPI_ETHERNET)
+      if(glb_gaspi_cfg.network == GASPI_ETHERNET)
 	{
 	  glb_gaspi_ctx_ib.lrcd[i].gid = glb_gaspi_ctx_ib.gid;
 	}
-
-      glb_gaspi_ctx_ib.lrcd[i].rkeyGroup = glb_gaspi_group_ib[0].mr->rkey;
-      glb_gaspi_ctx_ib.lrcd[i].vaddrGroup =
-	(uintptr_t) glb_gaspi_group_ib[0].buf;
-
     }
 
-  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
+  gaspi_init_collectives();
+
+  for(i = 0; i < GASPI_MAX_QP + 3; i++)
     {
-      for (i = 0; i < glb_gaspi_ctx.tnc; i++)
+      glb_gaspi_ctx.qp_state_vec[i] = (unsigned char *) malloc (glb_gaspi_ctx.tnc);
+      if(!glb_gaspi_ctx.qp_state_vec[i])
 	{
-	  glb_gaspi_ctx_ib.lrcd[i].qpnC[c] =
-	    glb_gaspi_ctx_ib.qpC[c][i]->qp_num;
-	}
-    }
-
-
-  enum ibv_mtu gpiMtu = IBV_MTU_1024;
-
-  switch (glb_gaspi_cfg.mtu)
-    {
-    case 1024:
-      gpiMtu = IBV_MTU_1024;
-      break;
-    case 2048:
-      gpiMtu = IBV_MTU_2048;
-      break;
-    case 4096:
-      gpiMtu = IBV_MTU_4096;
-      break;
-    };
-
-  //local connectivity
-  qp_attr.path_mtu = gpiMtu;
-  qp_attr.qp_state = IBV_QPS_RTR;
-  qp_attr.dest_qp_num = glb_gaspi_ctx_ib.qpGroups[glb_gaspi_ctx.rank]->qp_num;
-  qp_attr.rq_psn = glb_gaspi_ctx_ib.lrcd[glb_gaspi_ctx.rank].psn;
-  qp_attr.max_dest_rd_atomic = glb_gaspi_ctx_ib.max_rd_atomic;
-  qp_attr.min_rnr_timer = 12;
-
-  if (glb_gaspi_cfg.net_typ == GASPI_IB)
-    {
-      qp_attr.ah_attr.is_global = 0;
-      qp_attr.ah_attr.dlid =
-	(unsigned short) glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port -
-						    1].lid;
-    }
-  else
-    {
-      qp_attr.ah_attr.is_global = 1;
-      qp_attr.ah_attr.grh.dgid = glb_gaspi_ctx_ib.gid;
-      qp_attr.ah_attr.grh.hop_limit = 1;
-    }
-
-  qp_attr.ah_attr.sl = 0;
-  qp_attr.ah_attr.src_path_bits = 0;
-  qp_attr.ah_attr.port_num = glb_gaspi_ctx_ib.ib_port;
-
-  if (ibv_modify_qp (glb_gaspi_ctx_ib.qpGroups[glb_gaspi_ctx.rank], &qp_attr,
-		     IBV_QP_STATE |
-		     IBV_QP_AV |
-		     IBV_QP_PATH_MTU |
-		     IBV_QP_DEST_QPN |
-		     IBV_QP_RQ_PSN |
-		     IBV_QP_MIN_RNR_TIMER | IBV_QP_MAX_DEST_RD_ATOMIC))
-    {
-      gaspi_print_error ("Failed to modify QP (libibverbs)");
-      return -1;
-    }
-
-
-  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
-    {
-      qp_attr.dest_qp_num =
-	glb_gaspi_ctx_ib.qpC[c][glb_gaspi_ctx.rank]->qp_num;
-
-      if (ibv_modify_qp
-	  (glb_gaspi_ctx_ib.qpC[c][glb_gaspi_ctx.rank], &qp_attr,
-	   IBV_QP_STATE | IBV_QP_AV | IBV_QP_PATH_MTU | IBV_QP_DEST_QPN |
-	   IBV_QP_RQ_PSN | IBV_QP_MIN_RNR_TIMER | IBV_QP_MAX_DEST_RD_ATOMIC))
-	{
-	  gaspi_print_error ("Failed to modify QP (libibverbs)");
 	  return -1;
 	}
-    }
-
-  qp_attr.dest_qp_num = glb_gaspi_ctx_ib.qpP[glb_gaspi_ctx.rank]->qp_num;
-
-  if (ibv_modify_qp (glb_gaspi_ctx_ib.qpP[glb_gaspi_ctx.rank], &qp_attr,
-		     IBV_QP_STATE |
-		     IBV_QP_AV |
-		     IBV_QP_PATH_MTU |
-		     IBV_QP_DEST_QPN |
-		     IBV_QP_RQ_PSN |
-		     IBV_QP_MIN_RNR_TIMER | IBV_QP_MAX_DEST_RD_ATOMIC))
-    {
-      gaspi_print_error ("Failed to modify QP (libibverbs)");
-      return -1;
-    }
-
-  qp_attr.timeout = GASPI_QP_TIMEOUT;
-  qp_attr.retry_cnt = GASPI_QP_RETRY;
-  qp_attr.rnr_retry = GASPI_QP_RETRY;
-  qp_attr.qp_state = IBV_QPS_RTS;
-  qp_attr.sq_psn = glb_gaspi_ctx_ib.lrcd[glb_gaspi_ctx.rank].psn;
-  qp_attr.max_rd_atomic = glb_gaspi_ctx_ib.max_rd_atomic;
-
-  if (ibv_modify_qp (glb_gaspi_ctx_ib.qpGroups[glb_gaspi_ctx.rank], &qp_attr,
-		     IBV_QP_STATE |
-		     IBV_QP_SQ_PSN |
-		     IBV_QP_TIMEOUT |
-		     IBV_QP_RETRY_CNT |
-		     IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC))
-    {
-      gaspi_print_error ("Failed to modify QP (libibverbs)");
-      return -1;
-    }
-
-  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
-    {
-      if (ibv_modify_qp
-	  (glb_gaspi_ctx_ib.qpC[c][glb_gaspi_ctx.rank], &qp_attr,
-	   IBV_QP_STATE | IBV_QP_SQ_PSN | IBV_QP_TIMEOUT | IBV_QP_RETRY_CNT |
-	   IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC))
-	{
-	  gaspi_print_error ("Failed to modify QP (libibverbs)");
-	  return -1;
-	}
-    }
-
-  if (ibv_modify_qp (glb_gaspi_ctx_ib.qpP[glb_gaspi_ctx.rank], &qp_attr,
-		     IBV_QP_STATE |
-		     IBV_QP_SQ_PSN |
-		     IBV_QP_TIMEOUT |
-		     IBV_QP_RETRY_CNT |
-		     IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC))
-    {
-      gaspi_print_error ("Failed to modify QP (libibverbs)");
-      return -1;
-    }
-
-  glb_gaspi_ctx_ib.rrcd[glb_gaspi_ctx.rank].rkeyGroup =
-    glb_gaspi_group_ib[0].mr->rkey;
-  glb_gaspi_ctx_ib.rrcd[glb_gaspi_ctx.rank].vaddrGroup =
-    (uintptr_t) glb_gaspi_group_ib[0].buf;
-
-  gaspi_init_collectives ();
-
-  //gaspi_group_all
-  for (i = 0; i < GASPI_MAX_GROUPS; i++)
-    glb_gaspi_group_ib[i].id = -1;
-
-  glb_gaspi_group_ib[0].size = size;
-  glb_gaspi_group_ib[0].id = 0;
-  glb_gaspi_group_ib[0].gl.lock = 0;
-  glb_gaspi_group_ib[0].togle = 0;
-  glb_gaspi_group_ib[0].barrier_cnt = 0;
-  glb_gaspi_group_ib[0].rank = glb_gaspi_ctx.rank;
-  glb_gaspi_group_ib[0].tnc = glb_gaspi_ctx.tnc;
-
-
-  glb_gaspi_group_ib[0].next_pof2 = 1;
-  while (glb_gaspi_group_ib[0].next_pof2 <= glb_gaspi_ctx.tnc)
-    glb_gaspi_group_ib[0].next_pof2 <<= 1;
-  glb_gaspi_group_ib[0].next_pof2 >>= 1;
-
-  glb_gaspi_group_ib[0].pof2_exp =
-    (__builtin_clz (glb_gaspi_group_ib[0].next_pof2) ^ 31U);
-
-  glb_gaspi_group_ib[0].rank_grp =
-    (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
-#ifdef DEBUG
-  if(glb_gaspi_group_ib[0].rank_grp == NULL)
-    {
-      gaspi_print_error("Memory allocation failed (malloc)");
-      return -1;
-    }
-#endif
-
-  for (i = 0; i < glb_gaspi_ctx.tnc; i++)
-    glb_gaspi_group_ib[0].rank_grp[i] = i;
-
-  glb_gaspi_group_ib[0].rrcd =
-    (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
-#ifdef DEBUG
-  if(glb_gaspi_group_ib[0].rrcd == NULL)
-    {
-      gaspi_print_error("Memory allocation failed (malloc)");
-      return -1;
-    }
-#endif
-
-  memset (glb_gaspi_group_ib[0].rrcd, 0,
-	  glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
-
-  glb_gaspi_ctx.group_cnt = 1;
-
-
-  for (i = 0; i < GASPI_MAX_QP + 2; i++)
-    {
-      glb_gaspi_ctx.qp_state_vec[i] =
-	(unsigned char *) malloc (glb_gaspi_ctx.tnc);
       memset (glb_gaspi_ctx.qp_state_vec[i], 0, glb_gaspi_ctx.tnc);
     }
 
   glb_gaspi_ib_init = 1;
+
   return 0;
 }
 
+
 int
-gaspi_cleanup_ib_core ()
+gaspi_create_endpoint(const int i)
 {
-  int i, c;
+  int c;
 
-  if (!glb_gaspi_ib_init)
-    return -1;
+  lock_gaspi_tout(&gaspi_create_lock, GASPI_BLOCK);
 
-  if (glb_gaspi_ctx_ib.lrcd)
-    free (glb_gaspi_ctx_ib.lrcd);
-  glb_gaspi_ctx_ib.lrcd = NULL;
+  if(glb_gaspi_ctx_ib.lrcd[i].istat) goto okL;//already created
 
-  if (glb_gaspi_ctx_ib.rrcd)
-    free (glb_gaspi_ctx_ib.rrcd);
-  glb_gaspi_ctx_ib.rrcd = NULL;
+  //create
+  struct ibv_qp_init_attr qpi_attr;
+  memset (&qpi_attr, 0, sizeof (struct ibv_qp_init_attr));
+  qpi_attr.cap.max_send_wr = glb_gaspi_cfg.queue_depth;
+  qpi_attr.cap.max_recv_wr = glb_gaspi_cfg.queue_depth;
+  qpi_attr.cap.max_send_sge = 1;
+  qpi_attr.cap.max_recv_sge = 1;
+  qpi_attr.cap.max_inline_data = MAX_INLINE_BYTES;
+  qpi_attr.qp_type = IBV_QPT_RC;
+  qpi_attr.send_cq = glb_gaspi_ctx_ib.scqGroups;
+  qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqGroups;
 
-  for (i = 0; i < glb_gaspi_ctx.tnc; i++)
+  glb_gaspi_ctx_ib.qpGroups[i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
+  if(!glb_gaspi_ctx_ib.qpGroups[i])
     {
-      if (ibv_destroy_qp (glb_gaspi_ctx_ib.qpGroups[i]))
+      gaspi_print_error ("Failed to create QP (libibverbs)");
+      goto errL;
+    }
+
+  
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
+    {
+      qpi_attr.send_cq = glb_gaspi_ctx_ib.scqC[c];
+      qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqC[c];
+      
+      glb_gaspi_ctx_ib.qpC[c][i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
+      if(!glb_gaspi_ctx_ib.qpC[c][i])
+	{
+	  gaspi_print_error ("Failed to create QP (libibverbs)");
+	  goto errL;
+	}
+    }
+  
+  qpi_attr.send_cq = glb_gaspi_ctx_ib.scqP;
+  qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqP;
+  qpi_attr.srq = glb_gaspi_ctx_ib.srqP;
+
+  glb_gaspi_ctx_ib.qpP[i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
+  if(!glb_gaspi_ctx_ib.qpP[i])
+    {
+    gaspi_print_error ("Failed to create QP (libibverbs)");
+    goto errL;
+    }
+
+  //init
+  struct ibv_qp_attr qp_attr;
+  memset (&qp_attr, 0, sizeof (struct ibv_qp_attr));
+
+  qp_attr.qp_state = IBV_QPS_INIT;
+  qp_attr.pkey_index = 0;
+  qp_attr.port_num = glb_gaspi_ctx_ib.ib_port;
+  qp_attr.qp_access_flags = IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE |IBV_ACCESS_REMOTE_ATOMIC;
+
+
+  if(ibv_modify_qp(glb_gaspi_ctx_ib.qpGroups[i], &qp_attr,
+		   IBV_QP_STATE  
+		   | IBV_QP_PKEY_INDEX
+		   | IBV_QP_PORT
+		   | IBV_QP_ACCESS_FLAGS))
+    {
+      gaspi_print_error ("Failed to modify QP (libibverbs)");
+      goto errL;
+    }
+  
+  
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
+    {
+      if(ibv_modify_qp(glb_gaspi_ctx_ib.qpC[c][i], &qp_attr,
+		       IBV_QP_STATE
+		       | IBV_QP_PKEY_INDEX
+		       |IBV_QP_PORT
+		       | IBV_QP_ACCESS_FLAGS))
+	{
+	  gaspi_print_error ("Failed to modify QP (libibverbs)");
+	  goto errL;
+	}
+    }
+  
+  
+  if(ibv_modify_qp (glb_gaspi_ctx_ib.qpP[i], &qp_attr,
+		    IBV_QP_STATE 
+		    | IBV_QP_PKEY_INDEX
+		    | IBV_QP_PORT
+		    | IBV_QP_ACCESS_FLAGS))
+    {
+      gaspi_print_error ("Failed to modify QP (libibverbs)");
+      goto errL;
+    }
+
+  
+  glb_gaspi_ctx_ib.lrcd[i].qpnGroup = glb_gaspi_ctx_ib.qpGroups[i]->qp_num;
+
+  glb_gaspi_ctx_ib.lrcd[i].qpnP = glb_gaspi_ctx_ib.qpP[i]->qp_num;
+  
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
+    {
+      glb_gaspi_ctx_ib.lrcd[i].qpnC[c] = glb_gaspi_ctx_ib.qpC[c][i]->qp_num;
+    }
+
+  glb_gaspi_ctx_ib.lrcd[i].istat=1;
+
+okL:
+  unlock_gaspi(&gaspi_create_lock);
+  return GASPI_SUCCESS;
+
+errL:
+  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
+  unlock_gaspi (&gaspi_create_lock);
+  return GASPI_ERROR;
+
+}
+
+#pragma weak gaspi_connect = pgaspi_connect
+gaspi_return_t
+pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
+{
+  gaspi_return_t eret = GASPI_ERROR;
+  //int c;
+
+  if(!glb_gaspi_ib_init) return GASPI_ERROR;
+
+  const int i=rank;
+  if(gaspi_create_endpoint(i)<0) return GASPI_ERROR;
+
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
+
+  if(glb_gaspi_ctx_ib.lrcd[i].cstat)
+    goto okL;//already connected
+
+  gaspi_cd_header cdh;
+  cdh.op_len = sizeof(gaspi_rc_all);
+  cdh.op = GASPI_SN_CONNECT;
+  cdh.rank = glb_gaspi_ctx.rank;
+           
+  int ret;
+  if(-1 == glb_gaspi_ctx.sockfd[i])
+    {
+      gaspi_print_error("Invalid socket fd %d for rank %u\n", glb_gaspi_ctx.sockfd[i], i);
+      goto errL;
+    }
+  
+  ret=write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header));
+  if(ret !=sizeof(gaspi_cd_header))
+    {
+      gaspi_print_error("Failed to write(%d, %p, %lu)",
+			glb_gaspi_ctx.sockfd[i], &cdh,sizeof(gaspi_cd_header));
+      eret=GASPI_ERROR;
+      goto errL;
+    }
+
+  ret=write(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
+  if(ret != sizeof(gaspi_rc_all))
+    {
+      gaspi_print_error("Failed to write(%d. %p, %lu)",
+			glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
+
+      eret = GASPI_ERROR;
+      goto errL;
+    }
+
+  ret=read(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all));
+  if(ret != sizeof(gaspi_rc_all))
+    {
+      gaspi_print_error("Failed to read from (%d %p %lu)",
+			glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all));
+      eret = GASPI_ERROR;
+      goto errL;
+    }
+            
+  if(gaspi_connect_context(i, timeout_ms) != 0)
+    {
+      gaspi_print_error("Failed to connect context");
+      eret = GASPI_ERROR;
+      goto errL;
+    }
+
+ okL:
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+  return GASPI_SUCCESS;
+
+ errL:
+  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+  return eret;
+}
+
+#pragma weak gaspi_disconnect = pgaspi_disconnect
+gaspi_return_t
+pgaspi_disconnect(const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
+{
+  int c;
+
+  if(!glb_gaspi_ib_init) return GASPI_ERROR;
+
+  const int i=rank;
+
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
+
+  if(glb_gaspi_ctx_ib.lrcd[i].cstat == 0)
+    goto errL;//not connected
+
+  if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpGroups[i]))
+    {
+      gaspi_print_error ("Failed to destroy QP (libibverbs)");
+      goto errL;
+    }
+
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
+    {
+      if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpC[c][i]))
 	{
 	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
-	  return -1;
+	  goto errL;
 	}
     }
-
-  if (glb_gaspi_ctx_ib.qpGroups)
-    free (glb_gaspi_ctx_ib.qpGroups);
-  glb_gaspi_ctx_ib.qpGroups = NULL;
-
-
-  for (i = 0; i < glb_gaspi_ctx.tnc; i++)
+    
+  if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpP[i]))
     {
-      if (ibv_destroy_qp (glb_gaspi_ctx_ib.qpP[i]))
-	{
-	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
-	  return -1;
-	}
+      gaspi_print_error ("Failed to destroy QP (libibverbs)");
+      goto errL;
     }
-
-  if (glb_gaspi_ctx_ib.qpP)
-    free (glb_gaspi_ctx_ib.qpP);
-  glb_gaspi_ctx_ib.qpP = NULL;
-
-
-  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
+  
+  glb_gaspi_ctx_ib.lrcd[i].qpnGroup = 0;
+  glb_gaspi_ctx_ib.lrcd[i].qpnP = 0;
+  
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
-
-      for (i = 0; i < glb_gaspi_ctx.tnc; i++)
-	{
-	  if (ibv_destroy_qp (glb_gaspi_ctx_ib.qpC[c][i]))
-	    {
-	      gaspi_print_error ("Failed to destroy QP (libibverbs)");
-	      return -1;
-	    }
-	}
-
-      if (glb_gaspi_ctx_ib.qpC[c])
-	free (glb_gaspi_ctx_ib.qpC[c]);
-      glb_gaspi_ctx_ib.qpC[c] = NULL;
-
+      glb_gaspi_ctx_ib.lrcd[i].qpnC[c] = 0;
     }
+  
+  glb_gaspi_ctx_ib.lrcd[i].istat=0;
+  glb_gaspi_ctx_ib.lrcd[i].cstat=0;
+  
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+  return GASPI_SUCCESS;
 
-  if (ibv_destroy_srq (glb_gaspi_ctx_ib.srqP))
-    {
-      gaspi_print_error ("Failed to destroy SRQ (libibverbs)");
-      return -1;
-    }
-
-
-  if (ibv_destroy_cq (glb_gaspi_ctx_ib.scqGroups))
-    {
-      gaspi_print_error ("Failed to destroy CQ (libibverbs)");
-      return -1;
-    }
-  if (ibv_destroy_cq (glb_gaspi_ctx_ib.rcqGroups))
-    {
-      gaspi_print_error ("Failed to destroy CQ (libibverbs)");
-      return -1;
-    }
-
-  if (ibv_destroy_cq (glb_gaspi_ctx_ib.scqP))
-    {
-      gaspi_print_error ("Failed to destroy CQ (libibverbs)");
-      return -1;
-    }
-  if (ibv_destroy_cq (glb_gaspi_ctx_ib.rcqP))
-    {
-      gaspi_print_error ("Failed to destroy CQ (libibverbs)");
-      return -1;
-    }
-
-  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
-    {
-      if (ibv_destroy_cq (glb_gaspi_ctx_ib.scqC[c]))
-	{
-	  gaspi_print_error ("Failed to destroy CQ (libibverbs)");
-	  return -1;
-	}
-      if (ibv_destroy_cq (glb_gaspi_ctx_ib.rcqC[c]))
-	{
-	  gaspi_print_error ("Failed to destroy CQ (libibverbs)");
-	  return -1;
-	}
-    }
-
-
-  for (i = 0; i < GASPI_MAX_GROUPS; i++)
-    {
-      if (glb_gaspi_group_ib[i].id != -1)
-	{
-	  if (munlock (glb_gaspi_group_ib[i].buf, glb_gaspi_group_ib[i].size)
-	      != 0)
-	    {
-	      gaspi_print_error ("Failed to unlock memory (munlock)");
-	      return -1;
-	    }
-	  if (ibv_dereg_mr (glb_gaspi_group_ib[i].mr))
-	    {
-	      gaspi_print_error ("Failed to de-register memory (libiverbs)");
-	      return -1;
-	    }
-	  free (glb_gaspi_group_ib[i].buf);
-	  glb_gaspi_group_ib[i].buf = NULL;
-
-	  if (glb_gaspi_group_ib[i].rrcd)
-	    free (glb_gaspi_group_ib[i].rrcd);
-	  glb_gaspi_group_ib[i].rrcd = NULL;
-
-	}
-    }
-
-
-  for (i = 0; i < 256; i++)
-    {
-      if (glb_gaspi_ctx_ib.rrmd[i] != NULL)
-	{
-
-	  if (glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].size)
-	    {
-	      if (munlock
-		  (glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf,
-		   glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].size +
-		   NOTIFY_OFFSET) != 0)
-		{
-		  gaspi_print_error ("Failed to unlock memory (munlock)");
-		  return -1;
-		}
-
-	      if (ibv_dereg_mr
-		  (glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].mr))
-		{
-		  gaspi_print_error
-		    ("Failed to de-register memory (libiverbs)");
-		  return -1;
-		}
-
-	      free (glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf);
-	      glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf = NULL;
-	    }
-
-	  free (glb_gaspi_ctx_ib.rrmd[i]);
-	  glb_gaspi_ctx_ib.rrmd[i] = NULL;
-
-	}
-    }
-
-
-  if (ibv_dealloc_pd (glb_gaspi_ctx_ib.pd))
-    {
-      gaspi_print_error
-	("Failed to de-allocate protection domain (libibverbs)");
-      return -1;
-    }
-
-  if (glb_gaspi_ctx_ib.channelP)
-    {
-      if (ibv_destroy_comp_channel (glb_gaspi_ctx_ib.channelP))
-	{
-	  gaspi_print_error
-	    ("Failed to destroy completion channel (libibverbs)");
-	  return -1;
-	}
-    }
-
-  if (ibv_close_device (glb_gaspi_ctx_ib.context))
-    {
-      gaspi_print_error ("Failed to close device (libibverbs)");
-      return -1;
-    }
-
-  if (glb_gaspi_ctx_ib.dev_list)
-    ibv_free_device_list (glb_gaspi_ctx_ib.dev_list);
-
-  for (i = 0; i < GASPI_MAX_QP + 2; i++)
-    {
-      if (glb_gaspi_ctx.qp_state_vec[i])
-	free (glb_gaspi_ctx.qp_state_vec[i]);
-      glb_gaspi_ctx.qp_state_vec[i] = NULL;
-    }
-
-  return 0;
+errL:
+  unlock_gaspi (&glb_gaspi_ctx_lock);
+  return GASPI_ERROR;
 }
 
 
-int
-gaspi_send_ib_info (const int i)
+int 
+gaspi_connect_context(const int i, gaspi_timeout_t timeout_ms)
 {
-  int ret =
-    gaspi_send_ethernet (&glb_gaspi_ctx_ib.lrcd[i], sizeof (gaspi_rc_all),
-			 glb_gaspi_ctx.sockfd[i], GASPI_BLOCK);
-  if (ret != 0)
-    return ret;
+  if(!glb_gaspi_ib_init)
+    {
+      return GASPI_ERROR;
+    }
 
-  ret =
-    gaspi_receive_ethernet (&glb_gaspi_ctx_ib.rrcd[i], sizeof (gaspi_rc_all),
-			    glb_gaspi_ctx.sockfd[i], GASPI_BLOCK);
-  if (ret != 0)
-    return ret;
+  if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
+    return GASPI_TIMEOUT;
+  
 
-  return 0;
-}
-
-
-int
-gaspi_recv_ib_info (const int i)
-{
-  int ret =
-    gaspi_receive_ethernet (&glb_gaspi_ctx_ib.rrcd[i], sizeof (gaspi_rc_all),
-			    glb_gaspi_ctx.sockfd[i], GASPI_BLOCK);
-  if (ret != 0)
-    return ret;
-
-  ret =
-    gaspi_send_ethernet (&glb_gaspi_ctx_ib.lrcd[i], sizeof (gaspi_rc_all),
-			 glb_gaspi_ctx.sockfd[i], GASPI_BLOCK);
-  if (ret != 0)
-    return ret;
-
-  return 0;
-}
-
-int
-gaspi_connect_context (const int i)
-{
+  if(glb_gaspi_ctx_ib.lrcd[i].cstat)
+    {
+      goto okL;//already connected
+    }
+  
   struct ibv_qp_attr qp_attr;
   int c;
 
-  memset (&qp_attr, 0, sizeof (qp_attr));
+  memset(&qp_attr, 0, sizeof (qp_attr));
 
-  switch (glb_gaspi_cfg.mtu)
-    {
+  switch(glb_gaspi_cfg.mtu){
     case 1024:
       qp_attr.path_mtu = IBV_MTU_1024;
       break;
@@ -1243,16 +851,19 @@ gaspi_connect_context (const int i)
     case 4096:
       qp_attr.path_mtu = IBV_MTU_4096;
       break;
-    };
+    default:
+      printf("unexpected MTU:%d\n",glb_gaspi_cfg.mtu);
+      goto errL;
+  };
 
+  //ready2recv
   qp_attr.qp_state = IBV_QPS_RTR;
-
   qp_attr.dest_qp_num = glb_gaspi_ctx_ib.rrcd[i].qpnGroup;
   qp_attr.rq_psn = glb_gaspi_ctx_ib.rrcd[i].psn;
   qp_attr.max_dest_rd_atomic = glb_gaspi_ctx_ib.max_rd_atomic;
   qp_attr.min_rnr_timer = 12;
 
-  if (glb_gaspi_cfg.net_typ == GASPI_IB)
+  if(glb_gaspi_cfg.network == GASPI_IB)
     {
       qp_attr.ah_attr.is_global = 0;
       qp_attr.ah_attr.dlid = (unsigned short) glb_gaspi_ctx_ib.rrcd[i].lid;
@@ -1268,50 +879,55 @@ gaspi_connect_context (const int i)
   qp_attr.ah_attr.src_path_bits = 0;
   qp_attr.ah_attr.port_num = glb_gaspi_ctx_ib.ib_port;
 
-  if (ibv_modify_qp (glb_gaspi_ctx_ib.qpGroups[i], &qp_attr,
-		     IBV_QP_STATE |
-		     IBV_QP_AV |
-		     IBV_QP_PATH_MTU |
-		     IBV_QP_DEST_QPN |
-		     IBV_QP_RQ_PSN |
-		     IBV_QP_MIN_RNR_TIMER | IBV_QP_MAX_DEST_RD_ATOMIC))
+  if(ibv_modify_qp(glb_gaspi_ctx_ib.qpGroups[i], &qp_attr,
+		   IBV_QP_STATE
+		   | IBV_QP_AV
+		   | IBV_QP_PATH_MTU
+		   | IBV_QP_DEST_QPN
+		   | IBV_QP_RQ_PSN
+		   | IBV_QP_MIN_RNR_TIMER
+		   | IBV_QP_MAX_DEST_RD_ATOMIC))
     {
       gaspi_print_error ("Failed to modify QP (libibverbs)");
-      return -1;
+      goto errL;
     }
 
-  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
+  
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       qp_attr.dest_qp_num = glb_gaspi_ctx_ib.rrcd[i].qpnC[c];
-
-      if (ibv_modify_qp (glb_gaspi_ctx_ib.qpC[c][i], &qp_attr,
-			 IBV_QP_STATE |
-			 IBV_QP_AV |
-			 IBV_QP_PATH_MTU |
-			 IBV_QP_DEST_QPN |
-			 IBV_QP_RQ_PSN |
-			 IBV_QP_MIN_RNR_TIMER | IBV_QP_MAX_DEST_RD_ATOMIC))
+      
+      if(ibv_modify_qp(glb_gaspi_ctx_ib.qpC[c][i], &qp_attr,
+		       IBV_QP_STATE
+		       | IBV_QP_AV
+		       | IBV_QP_PATH_MTU
+		       | IBV_QP_DEST_QPN
+		       | IBV_QP_RQ_PSN
+		       | IBV_QP_MIN_RNR_TIMER
+		       | IBV_QP_MAX_DEST_RD_ATOMIC))
 	{
 	  gaspi_print_error ("Failed to modify QP (libibverbs)");
-	  return -1;
+	  goto errL;
 	}
     }
-
-
+  
+  
   qp_attr.dest_qp_num = glb_gaspi_ctx_ib.rrcd[i].qpnP;
 
-  if (ibv_modify_qp (glb_gaspi_ctx_ib.qpP[i], &qp_attr,
-		     IBV_QP_STATE |
-		     IBV_QP_AV |
-		     IBV_QP_PATH_MTU |
-		     IBV_QP_DEST_QPN |
-		     IBV_QP_RQ_PSN |
-		     IBV_QP_MIN_RNR_TIMER | IBV_QP_MAX_DEST_RD_ATOMIC))
+  if(ibv_modify_qp(glb_gaspi_ctx_ib.qpP[i], &qp_attr,
+		   IBV_QP_STATE
+		   | IBV_QP_AV
+		   | IBV_QP_PATH_MTU
+		   | IBV_QP_DEST_QPN
+		   | IBV_QP_RQ_PSN
+		   | IBV_QP_MIN_RNR_TIMER
+		   | IBV_QP_MAX_DEST_RD_ATOMIC))
     {
       gaspi_print_error ("Failed to modify QP (libibverbs)");
-      return -1;
+      goto errL;
     }
-
+  
+  //ready2send
   qp_attr.timeout = GASPI_QP_TIMEOUT;
   qp_attr.retry_cnt = GASPI_QP_RETRY;
   qp_attr.rnr_retry = GASPI_QP_RETRY;
@@ -1319,70 +935,355 @@ gaspi_connect_context (const int i)
   qp_attr.sq_psn = glb_gaspi_ctx_ib.lrcd[i].psn;
   qp_attr.max_rd_atomic = glb_gaspi_ctx_ib.max_rd_atomic;
 
-  if (ibv_modify_qp (glb_gaspi_ctx_ib.qpGroups[i], &qp_attr,
-		     IBV_QP_STATE |
-		     IBV_QP_SQ_PSN |
-		     IBV_QP_TIMEOUT |
-		     IBV_QP_RETRY_CNT |
-		     IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC))
+  if(ibv_modify_qp(glb_gaspi_ctx_ib.qpGroups[i], &qp_attr,
+		   IBV_QP_STATE
+		   | IBV_QP_SQ_PSN
+		   | IBV_QP_TIMEOUT
+		   | IBV_QP_RETRY_CNT
+		   | IBV_QP_RNR_RETRY
+		   | IBV_QP_MAX_QP_RD_ATOMIC))
     {
       gaspi_print_error ("Failed to modify QP (libibverbs)");
+      goto errL;
+    }
+  
+
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
+    {
+      
+      if(ibv_modify_qp(glb_gaspi_ctx_ib.qpC[c][i], &qp_attr,
+		       IBV_QP_STATE
+		       | IBV_QP_SQ_PSN
+		       | IBV_QP_TIMEOUT
+		       | IBV_QP_RETRY_CNT
+		       | IBV_QP_RNR_RETRY
+		       | IBV_QP_MAX_QP_RD_ATOMIC))
+	{
+	  gaspi_print_error ("Failed to modify QP (libibverbs)"); 
+      goto errL;
+	}
+    }
+  
+  
+  if(ibv_modify_qp(glb_gaspi_ctx_ib.qpP[i], &qp_attr,
+		   IBV_QP_STATE
+		   | IBV_QP_SQ_PSN
+		   | IBV_QP_TIMEOUT
+		   | IBV_QP_RETRY_CNT
+		   | IBV_QP_RNR_RETRY
+		   | IBV_QP_MAX_QP_RD_ATOMIC))
+    {
+      gaspi_print_error ("Failed to modify QP (libibverbs)");
+      goto errL;
+    }
+  
+  
+  glb_gaspi_ctx_ib.lrcd[i].cstat=1;
+  
+ okL:
+  unlock_gaspi(&gaspi_ccontext_lock);
+  return GASPI_SUCCESS;
+  
+ errL:
+  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
+  unlock_gaspi (&gaspi_ccontext_lock);
+  return GASPI_ERROR;
+  
+}
+
+
+
+int
+gaspi_cleanup_ib_core ()
+{
+  int i, c;
+
+  if(!glb_gaspi_ib_init)
+    {
       return -1;
     }
 
-
-  for (c = 0; c < glb_gaspi_cfg.queue_num; c++)
+  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
-      if (ibv_modify_qp (glb_gaspi_ctx_ib.qpC[c][i], &qp_attr,
-			 IBV_QP_STATE |
-			 IBV_QP_SQ_PSN |
-			 IBV_QP_TIMEOUT |
-			 IBV_QP_RETRY_CNT |
-			 IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC))
+      if(glb_gaspi_ctx_ib.lrcd[i].istat==0)
+	continue;
+      
+      if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpGroups[i]))
 	{
-	  gaspi_print_error ("Failed to modify QP (libibverbs)");
+	  gaspi_print_error ("Failed to destroy QP (libibverbs)");  
 	  return -1;
 	}
     }
 
-  if (ibv_modify_qp (glb_gaspi_ctx_ib.qpP[i], &qp_attr,
-		     IBV_QP_STATE |
-		     IBV_QP_SQ_PSN |
-		     IBV_QP_TIMEOUT |
-		     IBV_QP_RETRY_CNT |
-		     IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC))
+  if(glb_gaspi_ctx_ib.qpGroups)
     {
-      gaspi_print_error ("Failed to modify QP (libibverbs)");
+      free (glb_gaspi_ctx_ib.qpGroups);
+    }
+
+  glb_gaspi_ctx_ib.qpGroups = NULL;
+
+  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+    {
+      if(glb_gaspi_ctx_ib.lrcd[i].istat==0)
+	{
+	  continue;
+	}
+
+      if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpP[i]))
+	{
+	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
+	  return -1;
+	}
+    }
+
+  if(glb_gaspi_ctx_ib.qpP)
+    {
+      free (glb_gaspi_ctx_ib.qpP);
+    }
+  
+  glb_gaspi_ctx_ib.qpP = NULL;
+
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
+    {
+      
+      for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+	{
+	  if(glb_gaspi_ctx_ib.lrcd[i].istat==0)
+	    {
+	      continue;
+	    }
+	  
+	  if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpC[c][i]))
+	    {
+	      gaspi_print_error ("Failed to destroy QP (libibverbs)");
+	      return -1;
+	    }
+	}
+      
+    if(glb_gaspi_ctx_ib.qpC[c])
+      {
+	free (glb_gaspi_ctx_ib.qpC[c]);
+      }
+    
+    glb_gaspi_ctx_ib.qpC[c] = NULL;
+  }
+
+  if(ibv_destroy_srq (glb_gaspi_ctx_ib.srqP))
+    {
+      gaspi_print_error ("Failed to destroy SRQ (libibverbs)");
       return -1;
     }
+
+  if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqGroups))
+    {
+      gaspi_print_error ("Failed to destroy CQ (libibverbs)");
+      return -1;
+    }
+  
+  if(ibv_destroy_cq (glb_gaspi_ctx_ib.rcqGroups))
+    {
+      gaspi_print_error ("Failed to destroy CQ (libibverbs)");
+      return -1;
+    }
+  
+  if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqP))
+    {
+      gaspi_print_error ("Failed to destroy CQ (libibverbs)");
+      return -1;
+    }
+  
+  if(ibv_destroy_cq (glb_gaspi_ctx_ib.rcqP))
+    {
+      gaspi_print_error ("Failed to destroy CQ (libibverbs)");
+      return -1;
+  }
+  
+  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
+    {
+      if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqC[c]))
+	{
+	  gaspi_print_error ("Failed to destroy CQ (libibverbs)");
+	  return -1;
+	}
+
+      if(ibv_destroy_cq (glb_gaspi_ctx_ib.rcqC[c]))
+	{
+	  gaspi_print_error ("Failed to destroy CQ (libibverbs)");
+	  return -1;
+	}
+    }
+  
+  for(i = 0; i < GASPI_MAX_GROUPS; i++)
+    {
+      if(glb_gaspi_group_ib[i].id >= 0)
+	{
+
+	  if(munlock (glb_gaspi_group_ib[i].buf, glb_gaspi_group_ib[i].size)!= 0)
+	    {
+	      gaspi_print_error ("Failed to unlock memory (munlock)");
+	      return -1;
+	    }
+
+      if(ibv_dereg_mr (glb_gaspi_group_ib[i].mr))
+	{  
+	  gaspi_print_error ("Failed to de-register memory (libiverbs)");
+	  return -1;
+	}
+
+      if(glb_gaspi_group_ib[i].buf)
+	{
+	  free (glb_gaspi_group_ib[i].buf);
+	}
+      
+      glb_gaspi_group_ib[i].buf = NULL;
+
+      if(glb_gaspi_group_ib[i].rrcd)
+	{
+	  free (glb_gaspi_group_ib[i].rrcd);
+	}
+      glb_gaspi_group_ib[i].rrcd = NULL;
+    }
+  }
+
+  for(i = 0; i < 256; i++)
+    {
+      if(glb_gaspi_ctx_ib.rrmd[i] != NULL)
+      {
+	if(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].size)
+	  {
+#ifdef GPI2_CUDA
+            if(glb_gaspi_ctx.use_gpus == 0 || glb_gaspi_ctx.gpu_count == 0)
+#endif	      
+	    if(munlock(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf,glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].size +NOTIFY_OFFSET) != 0)
+	      {
+		
+		gaspi_print_error ("Failed to unlock memory (munlock)");
+		return -1;
+	      }
+	    
+	    if(ibv_dereg_mr(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].mr))
+	      {
+		gaspi_print_error("Failed to de-register memory (libiverbs)");
+		return -1;
+	      }
+#if GPI2_CUDA
+	    if(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].cudaDevId >= 0)
+	      {
+		if(ibv_dereg_mr(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].host_mr))
+		  {
+		    gaspi_print_error("Failed to de-register memory (libiverbs)\n");
+		    return -1;
+		  }
+		cudaSetDevice( (glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].cudaDevId));
+		if(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf)
+		  cudaFree(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf);
+
+		if(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].host_ptr)
+		  cudaFreeHost(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].host_ptr);
+	    }
+	    else if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
+	      cudaFreeHost(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf);
+	    else
+#endif	    
+	    if(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf)
+	      {
+		free (glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf);
+	      }
+	    
+	    glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf = NULL;
+      }
+
+      if(glb_gaspi_ctx_ib.rrmd[i])
+	{
+	  free (glb_gaspi_ctx_ib.rrmd[i]);
+	}
+      glb_gaspi_ctx_ib.rrmd[i] = NULL;
+    }
+  }
+
+  //dereg nsrc
+  if(munlock(glb_gaspi_ctx_ib.nsrc.buf,NOTIFY_OFFSET) != 0)
+    {
+      gaspi_print_error ("Failed to unlock memory (munlock)");
+      return -1;
+    }
+  
+  if(ibv_dereg_mr(glb_gaspi_ctx_ib.nsrc.mr))
+    {
+      gaspi_print_error("Failed to de-register memory (libiverbs)");
+      return -1;
+    }
+
+  if(glb_gaspi_ctx_ib.nsrc.buf)
+    {
+      free(glb_gaspi_ctx_ib.nsrc.buf);
+    }
+  
+  glb_gaspi_ctx_ib.nsrc.buf=NULL;
+
+  if(ibv_dealloc_pd (glb_gaspi_ctx_ib.pd))
+    {
+      gaspi_print_error("Failed to de-allocate protection domain (libibverbs)");
+      return -1;
+    }
+
+  if(glb_gaspi_ctx_ib.channelP)
+    {
+      
+      if(ibv_destroy_comp_channel (glb_gaspi_ctx_ib.channelP)){
+	gaspi_print_error("Failed to destroy completion channel (libibverbs)");
+	return -1;
+      }
+    }
+  
+  if(ibv_close_device (glb_gaspi_ctx_ib.context))
+    {
+      gaspi_print_error ("Failed to close device (libibverbs)");
+      return -1;
+    }
+  
+  if(glb_gaspi_ctx_ib.dev_list)
+    {
+      ibv_free_device_list (glb_gaspi_ctx_ib.dev_list);
+    }
+  
+
+  for(i = 0; i < GASPI_MAX_QP + 3; i++)
+    {
+      if(glb_gaspi_ctx.qp_state_vec[i])
+	{
+	  free (glb_gaspi_ctx.qp_state_vec[i]);
+	}
+      glb_gaspi_ctx.qp_state_vec[i] = NULL;
+    }
+  
+  if(glb_gaspi_ctx_ib.lrcd)
+    {
+      free (glb_gaspi_ctx_ib.lrcd);
+    }
+  
+  glb_gaspi_ctx_ib.lrcd = NULL;
+
+  if(glb_gaspi_ctx_ib.rrcd)
+    {
+      free (glb_gaspi_ctx_ib.rrcd);
+    }
+  
+  glb_gaspi_ctx_ib.rrcd = NULL;
 
   return 0;
 }
 
-
-void
-gaspi_init_master_grp ()
-{
-  int i;
-  for (i = 0; i < glb_gaspi_ctx.tnc; i++)
-    {
-      glb_gaspi_group_ib[0].rrcd[i].rkeyGroup =
-	glb_gaspi_ctx_ib.rrcd[i].rkeyGroup;
-      glb_gaspi_group_ib[0].rrcd[i].vaddrGroup =
-	glb_gaspi_ctx_ib.rrcd[i].vaddrGroup;
-    }
-}
-
-
+#pragma weak gaspi_group_create = pgaspi_group_create
 gaspi_return_t
 pgaspi_group_create (gaspi_group_t * const group)
 {
+
   int i, id = GASPI_MAX_GROUPS;
   unsigned int size, page_size;
 
   if (!glb_gaspi_init)
     {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
       return GASPI_ERROR;
     }
 
@@ -1401,18 +1302,23 @@ pgaspi_group_create (gaspi_group_t * const group)
     }
   if (id == GASPI_MAX_GROUPS)
     {
-      gaspi_print_error("Exhausted max number of groups (GASPI_MAX_GROUPS)");
       goto errL;
     }
+  
 
-  size = NEXT_OFFSET;
+  //TODO: for now as before
+  if(id == GASPI_GROUP_ALL)
+    size = NEXT_OFFSET + 128 + NOTIFY_OFFSET; 
+  else
+    size = NEXT_OFFSET;
+
   page_size = sysconf (_SC_PAGESIZE);
 
   if (posix_memalign ((void **) &glb_gaspi_group_ib[id].ptr, page_size, size)
       != 0)
     {
       gaspi_print_error ("Memory allocation (posix_memalign) failed");
-      goto errL;;
+      goto errL;
     }
 
   if (mlock (glb_gaspi_group_ib[id].buf, size) != 0)
@@ -1420,6 +1326,7 @@ pgaspi_group_create (gaspi_group_t * const group)
       gaspi_print_error ("Memory locking (mlock) failed");
       goto errL;
     }
+
   memset (glb_gaspi_group_ib[id].buf, 0, size);
 
   glb_gaspi_group_ib[id].mr =
@@ -1444,28 +1351,14 @@ pgaspi_group_create (gaspi_group_t * const group)
   glb_gaspi_group_ib[id].next_pof2 = 0;
   glb_gaspi_group_ib[id].pof2_exp = 0;
 
-  glb_gaspi_group_ib[id].rank_grp =
-    (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
-#ifdef DEBUG
-  if(glb_gaspi_group_ib[id].rank_grp == NULL)
-    {
-      gaspi_print_error("Memory allocation failed (malloc)");
-      goto errL;
-    }
-#endif
+  glb_gaspi_group_ib[id].rank_grp = (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
+  if(!glb_gaspi_group_ib[id].rank_grp) goto errL;
 
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     glb_gaspi_group_ib[id].rank_grp[i] = -1;
 
-  glb_gaspi_group_ib[id].rrcd =
-    (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
-#ifdef DEBUG
-  if(glb_gaspi_group_ib[id].rrcd == NULL)
-    {
-      gaspi_print_error("Memory allocation failed (malloc)");
-      goto errL;
-    }
-#endif
+  glb_gaspi_group_ib[id].rrcd = (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
+  if(!glb_gaspi_group_ib[id].rrcd) goto errL;
 
   memset (glb_gaspi_group_ib[id].rrcd, 0,
 	  glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
@@ -1486,6 +1379,7 @@ errL:
   return GASPI_ERROR;
 }
 
+#pragma weak gaspi_group_delete = pgaspi_group_delete
 gaspi_return_t
 pgaspi_group_delete (const gaspi_group_t group)
 {
@@ -1498,8 +1392,8 @@ pgaspi_group_delete (const gaspi_group_t group)
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
-  if (group == 0 || group >= GASPI_MAX_GROUPS
-      || glb_gaspi_group_ib[group].id == -1)
+  if (group==0 || group >= GASPI_MAX_GROUPS
+      || glb_gaspi_group_ib[group].id < 0)
     {
       gaspi_print_error ("Invalid group to delete");
       goto errL;
@@ -1539,13 +1433,13 @@ errL:
   return GASPI_ERROR;
 }
 
-int
+static int
 gaspi_comp_ranks (const void *a, const void *b)
 {
   return (*(int *) a - *(int *) b);
 }
 
-
+#pragma weak gaspi_group_add = pgaspi_group_add
 gaspi_return_t
 pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
 {
@@ -1559,12 +1453,9 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
-  if (group == 0 || group >= GASPI_MAX_GROUPS
-      || glb_gaspi_group_ib[group].id == -1)
-    {
-      gaspi_print_error("Invalid group to add to");
-      goto errL;
-    }
+  if (group >= GASPI_MAX_GROUPS
+      || glb_gaspi_group_ib[group].id < 0)
+    goto errL;
 
   if (rank >= glb_gaspi_ctx.tnc)
     {
@@ -1593,109 +1484,23 @@ errL:
   return GASPI_ERROR;
 }
 
-int
-gaspi_grp_barrier_sn (gaspi_group_t group, gaspi_timeout_t timeout_ms)
-{
 
-  int size, rank, src, dst, mask;
-  int cmdS = 0, cmdR = 0;
-
-  size = glb_gaspi_group_ib[group].tnc;
-  if (size < 2)
-    return 0;
-
-  rank = glb_gaspi_group_ib[group].rank;
-
-  mask = 0x1;
-  while (mask < size)
-    {
-      dst = (rank + mask) % size;
-      src = (rank - mask + size) % size;
-
-      cmdS = rank;
-
-      int ret = gaspi_sendrecv_ethernet (&cmdS, &cmdR, 4,
-					 glb_gaspi_ctx.sockfd
-					 [glb_gaspi_group_ib[group].rank_grp
-					  [dst]],
-					 glb_gaspi_ctx.sockfd
-					 [glb_gaspi_group_ib[group].rank_grp
-					  [src]],
-					 GASPI_BLOCK);
-      if (cmdR != src)
-	{
-	  gaspi_print_error ("Group barrier failed");
-	  return -1;
-	}
-
-      if (ret != 0)
-	return 1;
-      mask <<= 1;
-    }
-
-  return 0;
-}
-
-int
-gaspi_send_grp_info (const gaspi_group_t group, const int i)
-{
-
-  int ret =
-    gaspi_send_ethernet (&glb_gaspi_group_ib[group].rrcd[glb_gaspi_ctx.rank],
-			 sizeof (gaspi_rc_grp), glb_gaspi_ctx.sockfd[i],
-			 GASPI_BLOCK);
-  if (ret != 0)
-    return ret;
-
-  ret =
-    gaspi_receive_ethernet (&glb_gaspi_group_ib[group].rrcd[i],
-			    sizeof (gaspi_rc_grp), glb_gaspi_ctx.sockfd[i],
-			    GASPI_BLOCK);
-  if (ret != 0)
-    return ret;
-
-  return 0;
-}
-
-
-int
-gaspi_recv_grp_info (const gaspi_group_t group, const int i)
-{
-
-  int ret = gaspi_receive_ethernet (&glb_gaspi_group_ib[group].rrcd[i],
-				    sizeof (gaspi_rc_grp),
-				    glb_gaspi_ctx.sockfd[i],
-				    GASPI_BLOCK);
-  if (ret != 0)
-    return ret;
-
-  ret =
-    gaspi_send_ethernet (&glb_gaspi_group_ib[group].rrcd[glb_gaspi_ctx.rank],
-			 sizeof (gaspi_rc_grp), glb_gaspi_ctx.sockfd[i],
-			 GASPI_BLOCK);
-  if (ret != 0)
-    return ret;
-
-  return 0;
-}
-
+#pragma weak gaspi_group_commit = pgaspi_group_commit
 gaspi_return_t
 pgaspi_group_commit (const gaspi_group_t group,
-		    const gaspi_timeout_t timeout_ms)
+		     const gaspi_timeout_t timeout_ms)
 {
-  int i, j;
+
+
+  int i,r;
   gaspi_return_t eret = GASPI_ERROR;
 
   if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
+    return GASPI_ERROR;
 
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
-    return GASPI_TIMEOUT;
+  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
-  if (group == 0 || group >= GASPI_MAX_GROUPS
+  if (group >= GASPI_MAX_GROUPS
       || glb_gaspi_group_ib[group].id == -1)
     {
       gaspi_print_error("Invalid group to commit to");
@@ -1740,106 +1545,113 @@ pgaspi_group_commit (const gaspi_group_t group,
   struct
   {
     int tnc, cs, ret;
-  } gb, rem_gb;
+  }gb,rem_gb;
+
+
   gb.cs = 0;
   gb.tnc = glb_gaspi_group_ib[group].tnc;
-  for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
+
+  for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++){
     gb.cs ^= glb_gaspi_group_ib[group].rank_grp[i];
-
-  if (glb_gaspi_group_ib[group].rank == 0)
-    {
-      for (i = 1; i < gb.tnc; i++)
-	{
-
-	  if (gaspi_send_ethernet
-	      (&gb, sizeof (gb),
-	       glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
-	       GASPI_BLOCK))
-	    {
-	      eret = GASPI_TIMEOUT;
-	      goto errL;
-	    }
-	  if (gaspi_receive_ethernet
-	      (&rem_gb, sizeof (rem_gb),
-	       glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
-	       GASPI_BLOCK))
-	    {
-	      eret = GASPI_TIMEOUT;
-	      goto errL;
-	    }
-	  if (rem_gb.ret == -1)
-	    {
-	      eret = GASPI_ERROR;
-	      goto errL;
-	    };
-	}
-    }
-  else
-    {
-
-      if (gaspi_receive_ethernet
-	  (&rem_gb, sizeof (rem_gb),
-	   glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[0]],
-	   GASPI_BLOCK))
-	{
-	  eret = GASPI_TIMEOUT;
-	  goto errL;
-	}
-      if (rem_gb.tnc != gb.tnc || rem_gb.cs != gb.cs)
-	gb.ret = -1;
-      else
-	gb.ret = 0;
-
-      if (gaspi_send_ethernet
-	  (&gb, sizeof (gb),
-	   glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[0]],
-	   GASPI_BLOCK))
-	{
-	  eret = GASPI_TIMEOUT;
-	  goto errL;
-	}
-      if (gb.ret == -1)
-	{
-	  eret = GASPI_ERROR;
-	  goto errL;
-	};
-    }
+  }
 
 
-  for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
-    {
-      if (glb_gaspi_group_ib[group].rank == i)
-	{
-	  for (j = i + 1; j < glb_gaspi_group_ib[group].tnc; j++)
-	    {
+  //one-sided
+  gaspi_cd_header cdh;
+  cdh.op_len=sizeof (gb);
+  cdh.op=GASPI_SN_GRP_CHECK;
+  cdh.rank = group;
+  cdh.tnc = gb.tnc;
+  cdh.ret = gb.cs;
 
-	      if (gaspi_send_grp_info
-		  (group, glb_gaspi_group_ib[group].rank_grp[j]))
-		{
-		  eret = GASPI_TIMEOUT;
-		  goto errL;
-		}
+    struct timeb t0,t1;
+    ftime(&t0);
 
-	    }
-	}
+    for(r=1;r<=gb.tnc;r++){
+      int i = (glb_gaspi_group_ib[group].rank+r)%gb.tnc;
 
-      if (glb_gaspi_group_ib[group].rank > i)
-	{
+      if(glb_gaspi_group_ib[group].rank_grp[i]==glb_gaspi_ctx.rank) continue;
 
-	  if (gaspi_recv_grp_info
-	      (group, glb_gaspi_group_ib[group].rank_grp[i]))
-	    {
-	      eret = GASPI_TIMEOUT;
-	      goto errL;
-	    }
-	}
-    }				//for
+      do{
+        memset(&rem_gb,0,sizeof(rem_gb));
 
-  if(gaspi_grp_barrier_sn (group, GASPI_BLOCK) != 0)
-    {
-      gaspi_print_error("Failed to sync committed group");
-      goto errL;
-    }
+        int ret;
+	ret=write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
+        if(ret != sizeof(gaspi_cd_header))
+	  {
+	    gaspi_print_error("Failed to write (%d %p %lu)",
+			      glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
+	    eret=GASPI_ERROR;
+	    goto errL;
+        }
+	
+	ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rem_gb,sizeof(rem_gb));
+        if(ret != sizeof(rem_gb))
+	  {
+	    gaspi_print_error("Failed to read (%d %p %lu)",
+			      glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rem_gb,sizeof(rem_gb));
+
+	    eret=GASPI_ERROR;
+	    goto errL;
+	  }
+
+        if((rem_gb.ret < 0) || (gb.cs != rem_gb.cs))
+	  { 
+	    ftime(&t1);
+	    const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
+	    if(delta_ms > timeout_ms){eret=GASPI_TIMEOUT;goto errL;}
+	    
+	    if(gaspi_thread_sleep(250) < 0)
+	      {
+		gaspi_printf("gaspi_thread_sleep Error %d: (%s)\n",ret, (char*)strerror(errno));
+	      }
+	    
+	    //usleep(250000);
+	    //gaspi_delay();
+        }
+        else
+	  { 
+	    //connect groups
+	    gaspi_cd_header cdh;
+	    cdh.op_len=sizeof(gaspi_rc_grp);
+	    cdh.op=GASPI_SN_GRP_CONNECT;
+	    cdh.rank = glb_gaspi_ctx.rank;
+	    cdh.ret=group;
+	    
+	    int ret;
+	    ret=write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
+	    if(ret !=sizeof(gaspi_cd_header))
+	      {
+		gaspi_print_error("Failed to write (%d %p %lu)",
+				  glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
+				  &cdh,
+				  sizeof(gaspi_cd_header));
+
+		glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
+		eret=GASPI_ERROR;
+		goto errL;
+	      }
+	    
+	    ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
+		     &glb_gaspi_group_ib[group].rrcd[glb_gaspi_group_ib[group].rank_grp[i]],
+		     sizeof(gaspi_rc_grp));
+
+	    if(ret != sizeof(gaspi_rc_grp))
+	      {
+		gaspi_print_error("Failed to read (%d %p %lu)",
+				  glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
+				  &glb_gaspi_group_ib[group].rrcd[glb_gaspi_group_ib[group].rank_grp[i]],
+				  sizeof(gaspi_rc_grp));
+		
+		glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
+		eret=GASPI_ERROR;
+		goto errL;
+	      }
+	    
+	    break;
+	  }
+      }while(1);
+    }//for
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
@@ -1849,15 +1661,15 @@ errL:
   return eret;
 }
 
+#pragma weak gaspi_group_num = pgaspi_group_num
 gaspi_return_t
 pgaspi_group_num (gaspi_number_t * const group_num)
 {
 
   if (glb_gaspi_init)
     {
-#ifdef DEBUG
       gaspi_verify_null_ptr(group_num);
-#endif
+
       *group_num = glb_gaspi_ctx.group_cnt;
       return GASPI_SUCCESS;
     }
@@ -1865,6 +1677,7 @@ pgaspi_group_num (gaspi_number_t * const group_num)
   return GASPI_ERROR;
 }
 
+#pragma weak gaspi_group_size = pgaspi_group_size
 gaspi_return_t
 pgaspi_group_size (const gaspi_group_t group,
 		  gaspi_number_t * const group_size)
@@ -1872,9 +1685,7 @@ pgaspi_group_size (const gaspi_group_t group,
 
   if (glb_gaspi_init && group < glb_gaspi_ctx.group_cnt)
     {
-#ifdef DEBUG
       gaspi_verify_null_ptr(group_size);
-#endif
 
       *group_size = glb_gaspi_group_ib[group].tnc;
       return GASPI_SUCCESS;
@@ -1884,6 +1695,8 @@ pgaspi_group_size (const gaspi_group_t group,
   return GASPI_ERROR;
 }
 
+
+#pragma weak gaspi_group_ranks = pgaspi_group_ranks
 gaspi_return_t
 pgaspi_group_ranks (const gaspi_group_t group,
 		   gaspi_rank_t * const group_ranks)
@@ -1899,17 +1712,18 @@ pgaspi_group_ranks (const gaspi_group_t group,
   return GASPI_ERROR;
 }
 
+#pragma weak gaspi_group_max = pgaspi_group_max
 gaspi_return_t
 pgaspi_group_max (gaspi_number_t * const group_max)
 {
-#ifdef DEBUG
   gaspi_verify_null_ptr(group_max);
-#endif
+
 
   *group_max = GASPI_MAX_GROUPS;
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_segment_alloc = pgaspi_segment_alloc
 gaspi_return_t
 pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 		     const gaspi_size_t size,
@@ -1923,46 +1737,97 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  lock_gaspi_tout (&gaspi_mseg_lock, GASPI_BLOCK);
 
-  if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS)
-    {
-      gaspi_print_error("Too many allocated segments");
-      goto errL;
-    }
-  if( size == 0)
-    {
-      gaspi_print_error("Cannot allocate segment of size 0");
-      goto errL;
-    }
+  if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS || size == 0)
+    goto errL;
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
     {
-      glb_gaspi_ctx_ib.rrmd[segment_id] =
-	(gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
-#ifdef DEBUG
-      if(glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-	{
-	  gaspi_print_error("Memory allocation failed (malloc)");
-	  goto errL;
-	}
-#endif
+      glb_gaspi_ctx_ib.rrmd[segment_id] = (gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+      if(!glb_gaspi_ctx_ib.rrmd[segment_id]) goto errL;
 
+      memset (glb_gaspi_ctx_ib.rrmd[segment_id], 0,glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
 
-      memset (glb_gaspi_ctx_ib.rrmd[segment_id], 0,
-	      glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
     }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size)
     {
-      gaspi_print_error("Segment already exists");
-      goto errL;
+      goto okL;
     }
 
   page_size = sysconf (_SC_PAGESIZE);
-  glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size = size;
 
-  if (posix_memalign
+#ifdef GPI2_CUDA
+  if(alloc_policy&GASPI_MEM_GPU)
+    {
+      if(size > GASPI_GPU_MAX_SEG)
+	{
+	  gaspi_print_error("Segment size too large for GPU Segment (max %u)\n", GASPI_GPU_MAX_SEG);
+	  goto errL;
+	}
+      
+      cudaGetDevice(&glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId);
+      gaspi_gpu* agpu =  _gaspi_find_gpu(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId);
+      if(!agpu)
+	{
+	  gaspi_print_error("No GPU found. Maybe foregt to call gaspi_init_GPUs?\n");
+	  return GASPI_ERROR;
+	}
+      if(cudaMalloc((void**)&glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].ptr,size) != 0)
+	{
+	  gaspi_print_error("GPU memory allocation (cudaMalloc) failed!\n");
+	  goto errL;
+	}
+      if(cudaMallocHost((void**)&glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr,size+NOTIFY_OFFSET)!=0)
+	{
+	  gaspi_print_error("Memory allocattion (cudaMallocHost)  failed!\n");
+	  goto errL;
+	}
+      memset(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr, 0, size+NOTIFY_OFFSET);
+      glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr = ibv_reg_mr(glb_gaspi_ctx_ib.pd,glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr,
+										 NOTIFY_OFFSET+size,IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ|IBV_ACCESS_REMOTE_ATOMIC);
+      if(!glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr)
+	{
+	  gaspi_print_error("Memory registration failed (libibverbs)\n");
+	  goto errL;
+	}
+      
+      if(alloc_policy == GASPI_MEM_INITIALIZED)
+	cudaMemset(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].ptr,0,size);
+
+      glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].mr = ibv_reg_mr (glb_gaspi_ctx_ib.pd,
+									     glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf,
+									     size,
+									     IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
+									     IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
+      if (!glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].mr)
+	{
+	  gaspi_print_error ("Memory registration failed (libibverbs)");
+	  goto errL;
+	}
+      
+      glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_rkey = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr->rkey;
+      
+      glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_addr = (uintptr_t)glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr;
+    }
+
+  else
+    {
+      glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId = -1 ;
+      glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_rkey = 0;
+      glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_addr = 0;
+      if(glb_gaspi_ctx.use_gpus!=0 &&glb_gaspi_ctx.gpu_count==0)
+	{
+	  if( cudaMallocHost((void**)&glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].ptr, size+NOTIFY_OFFSET))
+	    {
+	      gaspi_print_error("Memory allocation (cudaMallocHost) failed !\n");
+	      goto errL;
+	    }
+	}
+      else
+#endif
+	if (posix_memalign
       ((void **) &glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].ptr,
        page_size, size + NOTIFY_OFFSET) != 0)
     {
@@ -1970,7 +1835,6 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       goto errL;
     }
 
-  //TODO: avoid 2 memsets in case of GASPI_MEM_INITIALIZED
   memset (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].ptr, 0,
 	  NOTIFY_OFFSET);
 
@@ -1978,54 +1842,58 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     memset (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].ptr, 0,
 	    size + NOTIFY_OFFSET);
 
-  if (mlock
-      (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf,
-       size + NOTIFY_OFFSET) != 0)
-    {
-      gaspi_print_error ("Memory locking (mlock) failed");
-      goto errL;
-    }
-
+#ifdef GPI2_CUDA
+  if(glb_gaspi_ctx.use_gpus == 0 || glb_gaspi_ctx.gpu_count == 0)
+#endif
+    if (mlock(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf,
+	      size + NOTIFY_OFFSET) != 0)
+      {
+	gaspi_print_error ("Memory locking (mlock) failed");
+	goto errL;
+      }
+  
   glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].mr =
     ibv_reg_mr (glb_gaspi_ctx_ib.pd,
 		glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf,
 		size + NOTIFY_OFFSET,
 		IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
 		IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
-
+  
   if (!glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].mr)
     {
       gaspi_print_error ("Memory registration failed (libibverbs)");
       goto errL;
     }
+#ifdef GPI2_CUDA
+    }
+#endif
 
   glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].rkey =
     glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].mr->rkey;
   glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].addr =
     (uintptr_t) glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf;
 
+  glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size = size;
   glb_gaspi_ctx.mseg_cnt++;
 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+okL:
+  unlock_gaspi (&gaspi_mseg_lock);
   return GASPI_SUCCESS;
 
 errL:
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&gaspi_mseg_lock);
   return GASPI_ERROR;
 
 }
 
+#pragma weak gaspi_segment_delete = pgaspi_segment_delete
 gaspi_return_t
 pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 {
 
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function call before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
+  if(!glb_gaspi_ib_init){return GASPI_ERROR;}
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  lock_gaspi_tout(&gaspi_mseg_lock,GASPI_BLOCK);
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
     {
@@ -2038,6 +1906,9 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
       gaspi_print_error("Invalid segment to delete");
       goto errL;
     }
+#ifdef GPI2_CUDA 
+if(glb_gaspi_ctx.use_gpus!=0 && glb_gaspi_ctx.gpu_count>0)
+#endif
 
   if (munlock
       (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf,
@@ -2048,232 +1919,301 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
       goto errL;
     }
 
+  //here the problem ! different threads are allocating/registering. should not be a problem ?
   if (ibv_dereg_mr (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].mr))
     {
       gaspi_print_error ("Memory de-registration failed (libibverbs)");
       goto errL;
     }
 
+#ifdef GPI2_CUDA
+  if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId >= 0)
+    {
+      if (ibv_dereg_mr (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr))
+	{
+	  gaspi_print_error ("Memory de-registration failed (libibverbs)");
+	  goto errL;
+	}
+      cudaFreeHost(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr);
+      glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr=NULL;
+      cudaFree(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf);
+    }
+  else if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
+    cudaFreeHost(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf);
+  else
+#endif
+
   free (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf);
   glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf = NULL;
 
-  glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size = 0;
+  memset(glb_gaspi_ctx_ib.rrmd[segment_id], 0, glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+  free(glb_gaspi_ctx_ib.rrmd[segment_id]);
+  glb_gaspi_ctx_ib.rrmd[segment_id]=NULL;
 
   glb_gaspi_ctx.mseg_cnt--;
 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&gaspi_mseg_lock);
   return GASPI_SUCCESS;
 
 errL:
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&gaspi_mseg_lock);
   return GASPI_ERROR;
 }
 
 
+#pragma weak gaspi_segment_register = pgaspi_segment_register
 gaspi_return_t
-pgaspi_segment_register (const gaspi_segment_id_t segment_id,
-			const gaspi_rank_t rank,
-			const gaspi_timeout_t timeout_ms)
+pgaspi_segment_register(const gaspi_segment_id_t segment_id,
+			               const gaspi_rank_t rank,
+			               const gaspi_timeout_t timeout_ms)
 {
-  gaspi_sn_packet snp;
-  gaspi_return_t gret;
 
-  if (!glb_gaspi_init)
+  if(!glb_gaspi_ib_init)
+    return GASPI_ERROR;
+
+  if(rank >= glb_gaspi_ctx.tnc || rank == glb_gaspi_ctx.rank)
+    return GASPI_ERROR;
+
+  if(glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
+    return GASPI_ERROR;
+  
+  if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
+    return GASPI_ERROR;
+
+  lock_gaspi_tout(&glb_gaspi_ctx_lock, GASPI_BLOCK);
+
+  //seg register
+  gaspi_cd_header cdh;
+  cdh.op_len = 0;// in place
+  cdh.op = GASPI_SN_SEG_REGISTER;
+  cdh.rank = glb_gaspi_ctx.rank;
+  cdh.seg_id = segment_id;
+  cdh.rkey = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].rkey;
+  cdh.addr = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].addr;
+  cdh.size = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size;
+#ifdef GPI2_CUDA
+  cdh.host_rkey = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_rkey;
+  cdh.host_addr = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_addr;
+#endif
+
+  int ret;
+  ret=write(glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header));
+  if(ret != sizeof(gaspi_cd_header))
+    {
+      gaspi_print_error("Failed to write (%d %p %lu)",
+			glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header));
+
+      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
+      goto errL;
+    }
+
+  int rret;
+  ret=read(glb_gaspi_ctx.sockfd[rank],&rret,sizeof(int));
+  if(ret !=sizeof(int))
+    {
+      gaspi_print_error("Failed to read (%d %p %lu)",
+			glb_gaspi_ctx.sockfd[rank],&rret, sizeof(int));
+
+      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
+      goto errL;
+    }
+  
+  if(rret < 0) 
+    goto errL;
+  
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+  return GASPI_SUCCESS;
+
+errL:
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+  return GASPI_ERROR;
+
+}
+
+//sn-registration
+int
+gaspi_seg_reg_sn(const gaspi_cd_header snp)
+{
+
+  if(!glb_gaspi_ib_init) 
+    return GASPI_ERROR;
+
+  lock_gaspi_tout(&gaspi_mseg_lock,GASPI_BLOCK);
+
+  if(glb_gaspi_ctx_ib.rrmd[snp.seg_id] == NULL)
+    {
+      glb_gaspi_ctx_ib.rrmd[snp.seg_id] = (gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+
+      if(!glb_gaspi_ctx_ib.rrmd[snp.seg_id]) 
+	goto errL;
+      
+    memset(glb_gaspi_ctx_ib.rrmd[snp.seg_id], 0, glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+  }
+
+  //TODO: don't allow re-registration
+  //for now we allow re-registration
+  //if(glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rem_rank].size) -> re-registration error case
+
+  glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].rkey = snp.rkey;
+  glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].addr = snp.addr;
+  glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].size = snp.size;
+#ifdef GPI2_CUDA
+  glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].host_rkey=snp.host_rkey;
+  glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].host_addr=snp.host_addr;
+  if(snp.host_addr != 0)
+    glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].cudaDevId = 1;
+  else
+    glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].cudaDevId = -1;
+#endif
+
+  unlock_gaspi(&gaspi_mseg_lock);
+  return 0;
+
+errL:
+  unlock_gaspi(&gaspi_mseg_lock);
+  return -1;
+
+}
+
+#pragma weak gaspi_segment_create = pgaspi_segment_create
+gaspi_return_t
+pgaspi_segment_create(const gaspi_segment_id_t segment_id,
+		      const gaspi_size_t size, const gaspi_group_t group,
+		      const gaspi_timeout_t timeout_ms,
+		      const gaspi_alloc_t alloc_policy){
+
+  int r;
+  gaspi_return_t eret = GASPI_ERROR;
+
+  if(!glb_gaspi_ib_init)
     {
       gaspi_print_error("Invalid function before gaspi_proc_init");
       return GASPI_ERROR;
     }
 
-  if (rank >= glb_gaspi_ctx.tnc || rank == glb_gaspi_ctx.rank)
+  if(gaspi_segment_alloc (segment_id, size, alloc_policy) != 0)
     {
-      gaspi_print_error("Invalid rank to register segment");
-      return GASPI_ERROR;
-    }
-  if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    {
-      gaspi_print_error("Invalid segment to register (non-allocated)");
+      gaspi_print_error("Segment allocation failed");
       return GASPI_ERROR;
     }
 
-  if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
+  if(group >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[group].id < 0)
     {
-      gaspi_print_error("Invalid segment to register (size = 0)");
+      gaspi_print_error("Invalid group ( > GASPI_MAX_GROUPS || < 0)");
       return GASPI_ERROR;
     }
 
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
-    return GASPI_TIMEOUT;
 
-  //TODO: replace command numbers for readable versions
-  snp.cmd = 4;
-  snp.seg_id = segment_id;
-  snp.rkey = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].rkey;
-  snp.addr = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].addr;
-  snp.size = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size;
+  lock_gaspi_tout(&glb_gaspi_ctx_lock,GASPI_BLOCK);
 
-  gret = gaspi_call_sn_threadDG (rank, snp, timeout_ms);
-  if (gret != 0)
+
+  if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size==0)
     {
-      gaspi_print_error("Failed segment registration");
-      goto errL;
+      gaspi_print_error("Segment size is 0");
+      return GASPI_ERROR;
     }
 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
-  return GASPI_SUCCESS;
+  //register segment to all other group members  
+  gaspi_cd_header cdh;
+  cdh.op_len=0;// in place
+  cdh.op=GASPI_SN_SEG_REGISTER;
+  cdh.rank = glb_gaspi_ctx.rank;
+  cdh.seg_id = segment_id;
+  cdh.rkey=glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].rkey;
+  cdh.addr=glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].addr;
+  cdh.size=glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size;
 
-errL:
-  unlock_gaspi (&glb_gaspi_ctx_lock);
-  return gret;
-
-}
-
-//async. registration
-int
-gaspi_seg_reg_sn (const gaspi_sn_packet snp)
-{
-
-  if (glb_gaspi_ctx_ib.rrmd[snp.seg_id] == NULL)
-    {
-      glb_gaspi_ctx_ib.rrmd[snp.seg_id] =
-	(gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
-#ifdef DEBUG
-      if(glb_gaspi_ctx_ib.rrmd[snp.seg_id] == NULL)
-	{
-	  gaspi_print_error("Memory allocation failed (malloc)");
-	  return -1;
-	}
+#ifdef GPI2_CUDA
+  cdh.host_rkey=glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_rkey;
+  cdh.host_addr=glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_addr;
 #endif
-      
-      memset (glb_gaspi_ctx_ib.rrmd[snp.seg_id], 0,
-	      glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
-    }
-
-  //we allow re-registration
-  //if(glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rem_rank].size) -> re-registration error case
-
-  glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rem_rank].rkey = snp.rkey;
-  glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rem_rank].addr = snp.addr;
-  glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rem_rank].size = snp.size;
-
-  return 0;
-}
-
-
-int
-gaspi_send_seg_info (const gaspi_segment_id_t seg_id, const int i)
-{
-  struct
-  {
-    unsigned long addr, size;
-    unsigned int rkey;
-  } seg_data;
-
-  seg_data.rkey = glb_gaspi_ctx_ib.rrmd[seg_id][glb_gaspi_ctx.rank].rkey;
-  seg_data.addr = glb_gaspi_ctx_ib.rrmd[seg_id][glb_gaspi_ctx.rank].addr;
-  seg_data.size = glb_gaspi_ctx_ib.rrmd[seg_id][glb_gaspi_ctx.rank].size;
-
-  int ret = gaspi_send_ethernet (&seg_data, sizeof (seg_data),
-				 glb_gaspi_ctx.sockfd[i], GASPI_BLOCK);
-  if (ret != 0)
-    return ret;
-
-  ret =
-    gaspi_receive_ethernet (&seg_data, sizeof (seg_data),
-			    glb_gaspi_ctx.sockfd[i], GASPI_BLOCK);
-  if (ret != 0)
-    return ret;
-
-  glb_gaspi_ctx_ib.rrmd[seg_id][i].rkey = seg_data.rkey;
-  glb_gaspi_ctx_ib.rrmd[seg_id][i].addr = seg_data.addr;
-  glb_gaspi_ctx_ib.rrmd[seg_id][i].size = seg_data.size;
-
-  return 0;
-}
-
-
-int
-gaspi_recv_seg_info (gaspi_segment_id_t seg_id, const int i)
-{
-  struct
-  {
-    unsigned long addr, size;
-    unsigned int rkey;
-  } seg_data;
-
-  int ret = gaspi_receive_ethernet (&seg_data, sizeof (seg_data),
-				    glb_gaspi_ctx.sockfd[i], GASPI_BLOCK);
-  if (ret != 0)
-    return ret;
-
-  glb_gaspi_ctx_ib.rrmd[seg_id][i].rkey = seg_data.rkey;
-  glb_gaspi_ctx_ib.rrmd[seg_id][i].addr = seg_data.addr;
-  glb_gaspi_ctx_ib.rrmd[seg_id][i].size = seg_data.size;
-
-  seg_data.rkey = glb_gaspi_ctx_ib.rrmd[seg_id][glb_gaspi_ctx.rank].rkey;
-  seg_data.addr = glb_gaspi_ctx_ib.rrmd[seg_id][glb_gaspi_ctx.rank].addr;
-  seg_data.size = glb_gaspi_ctx_ib.rrmd[seg_id][glb_gaspi_ctx.rank].size;
-
-  ret =
-    gaspi_send_ethernet (&seg_data, sizeof (seg_data),
-			 glb_gaspi_ctx.sockfd[i], GASPI_BLOCK);
-  if (ret != 0)
-    return ret;
-
-  return 0;
-}
-
-
-//sync. registration
-gaspi_return_t
-pgaspi_segment_create (const gaspi_segment_id_t segment_id,
-		      const gaspi_size_t size, const gaspi_group_t group,
-		      const gaspi_timeout_t timeout_ms,
-		      const gaspi_alloc_t alloc_policy)
-{
-  int i, j;
-  gaspi_return_t eret = GASPI_ERROR;
-
-  //TODO: do not exit, send empty seg info
-  if (gaspi_segment_alloc (segment_id, size, alloc_policy) != 0)
-    return GASPI_ERROR;
-  
-  if (group >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[group].id == -1)
-    return GASPI_ERROR;
-
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
-    return GASPI_TIMEOUT;
-
-  //exchange data inside group
-  for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
+  //dont write several times !!!
+  for(r=1;r<=glb_gaspi_group_ib[group].tnc;r++)
     {
-      if (glb_gaspi_group_ib[group].rank == i)
-	{
-	  for (j = i + 1; j < glb_gaspi_group_ib[group].tnc; j++)
-	    {
+      int i = (glb_gaspi_group_ib[group].rank+r)%glb_gaspi_group_ib[group].tnc;
 
-	      if (gaspi_send_seg_info
-		  (segment_id, glb_gaspi_group_ib[group].rank_grp[j]))
-		{
-		  eret = GASPI_TIMEOUT;
-		  goto errL;
-		}
-	    }
+      if(glb_gaspi_group_ib[group].rank_grp[i]==glb_gaspi_ctx.rank)
+	{
+	  glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_group_ib[group].rank_grp[i]].trans=1; 
+	  continue;
 	}
 
-      if (glb_gaspi_group_ib[group].rank > i)
+      if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_group_ib[group].rank_grp[i]].trans) 
+	continue;
+
+      int ret;
+      ret=write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
+		&cdh,
+		sizeof(gaspi_cd_header));
+
+      if(ret != sizeof(gaspi_cd_header))
 	{
 
-	  if (gaspi_recv_seg_info
-	      (segment_id, glb_gaspi_group_ib[group].rank_grp[i]))
-	    {
-	      eret = GASPI_TIMEOUT;
-	      goto errL;
-	    }
+	  gaspi_print_error("Failed write (%d %p %lu)",
+			    glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
+			    &cdh,
+			    sizeof(gaspi_cd_header));
+
+	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
+	  goto errL;
 	}
-    }				//for
+    
+      int rret;
+      ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rret,sizeof(int));
+      if(ret != sizeof(int))
+	{
+	  gaspi_print_error("Failed to read (%d %p %lu)",
+			    glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rret,sizeof(int));
 
-  gaspi_grp_barrier_sn (group, GASPI_BLOCK);
+	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
+	  goto errL;
+	}
+      
+      if(rret < 0) 
+	goto errL;
 
+      glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_group_ib[group].rank_grp[i]].trans=1;
+
+    }//for
+
+  //wait for remote registration
+  struct timeb t0,t1;
+  ftime(&t0);
+
+  while(1)
+    {
+      int cnt=0;
+      
+      for(r = 0; r < glb_gaspi_group_ib[group].tnc; r++)
+	{
+	  int i = glb_gaspi_group_ib[group].rank_grp[r];
+	  
+	  ulong s = gaspi_load_ulong(&glb_gaspi_ctx_ib.rrmd[segment_id][i].size);
+	  if(s > 0) 
+	    cnt++;
+	}
+      
+      if(cnt==glb_gaspi_group_ib[group].tnc)
+	break;
+
+      ftime(&t1);
+      
+      const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
+
+      if(delta_ms > timeout_ms)
+	{
+	  
+	  eret=GASPI_TIMEOUT;
+	  goto errL;
+	}
+      struct timespec sleep_time,rem;
+      sleep_time.tv_sec = 0;
+      sleep_time.tv_nsec = 250000000;
+      nanosleep(&sleep_time, &rem);
+      
+      //      usleep(250000);
+    }
+  
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
 
@@ -2283,15 +2223,13 @@ errL:
 }
 
 
+#pragma weak gaspi_segment_num = pgaspi_segment_num
 gaspi_return_t
 pgaspi_segment_num (gaspi_number_t * const segment_num)
-{
+ {
+
   if (glb_gaspi_init)
     {
-#ifdef DEBUG
-      gaspi_verify_null_ptr(segment_num);
-#endif
-
       *segment_num = glb_gaspi_ctx.mseg_cnt;
       return GASPI_SUCCESS;
     }
@@ -2300,6 +2238,7 @@ pgaspi_segment_num (gaspi_number_t * const segment_num)
   return GASPI_ERROR;
 }
 
+#pragma weak gaspi_segment_list = pgaspi_segment_list
 gaspi_return_t
 pgaspi_segment_list (const gaspi_number_t num,
 		    gaspi_segment_id_t * const segment_id_list)
@@ -2327,6 +2266,7 @@ pgaspi_segment_list (const gaspi_number_t num,
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_segment_ptr = pgaspi_segment_ptr
 gaspi_return_t
 pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 {
@@ -2348,16 +2288,20 @@ pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
       return GASPI_ERROR;
     }
 
-#ifdef DEBUG
   gaspi_verify_null_ptr(ptr);
+#ifdef GPI2_CUDA
+  if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId>=0)
+     *ptr = 
+         glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf;
+  else
 #endif
-
   *ptr =
     glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf + NOTIFY_OFFSET;
   return GASPI_SUCCESS;
 
 }
 
+#pragma weak gaspi_segment_size = pgaspi_segment_size
 gaspi_return_t
 pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 		    const gaspi_rank_t rank, gaspi_size_t * const size)
@@ -2381,25 +2325,23 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-#ifdef DEBUG
   gaspi_verify_null_ptr(size);
-#endif
 
   *size = glb_gaspi_ctx_ib.rrmd[segment_id][rank].size;
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_segment_max = pgaspi_segment_max
 gaspi_return_t
 pgaspi_segment_max (gaspi_number_t * const segment_max)
 {
-#ifdef DEBUG
   gaspi_verify_null_ptr(segment_max);
-#endif
 
   *segment_max = GASPI_MAX_MSEGS;
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_queue_size = pgaspi_queue_size
 gaspi_return_t
 pgaspi_queue_size (const gaspi_queue_id_t queue,
 		  gaspi_number_t * const queue_size)
@@ -2409,27 +2351,20 @@ pgaspi_queue_size (const gaspi_queue_id_t queue,
       gaspi_print_error("Invalid queue id provided");
       return GASPI_ERROR;
     }
-#ifdef DEBUG
+
   gaspi_verify_null_ptr(queue_size);
-#endif
 
   *queue_size = glb_gaspi_ctx_ib.ne_count_c[queue];
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_allreduce_buf_size = pgaspi_allreduce_buf_size
 gaspi_return_t
 pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
 {
 
-#ifdef DEBUG
   gaspi_verify_null_ptr(buf_size);
-#endif
 
   *buf_size = NEXT_OFFSET;
   return GASPI_SUCCESS;
 }
-
-#include "GPI2_IB_GRP.c"
-#include "GPI2_IB_ATOMIC.c"
-#include "GPI2_IB_PASSIVE.c"
-#include "GPI2_IB_IO.c"
