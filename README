@@ -72,6 +72,11 @@ is that MPI_Init() must be invoked before gaspi_proc_init(). For this
 MPI+GPI2 mixed mode, it is assumed that you start the application with
 mpirun (or mpiexec, etc.).
 
+Note that this option will build GPI-2 with MPI, requiring you to link
+the MPI library to your GPI-2 application (even if you are not using
+MPI). If you are interested in using GPI-2 only, do not build GPI-2
+with this option.
+
 GPU/CUDA support
 -------------------
 
@@ -80,8 +85,8 @@ between GPUs, you enable GPU support with
 
      ./install.sh --with-cuda<=path_to_cuda_installation>
 
-If you don't provide a path to your CUDA installation and nvcc is in your PATH,
-the installation script will take that CUDA installation.
+If you don't provide a path to your CUDA installation and nvcc is in
+your PATH, the installation script will take that CUDA installation.
 
 
 GPI-2 with CUDA support actually requires GPUDirect RDMA support, so
@@ -90,10 +95,10 @@ it will be checked if the required kernel-module is installed
 Due to the limitations of GPUDirect RDMA, the maximal GPU memory
 segment size is limited to 250MB.
 
-To enable GPU support in your application, call gaspi_init_GPUs. The
-function gaspi_number_of_GPUs will return the number of supported GPUs
-on the actual NUMA-node, the function gaspi_GPU_ids returns the device
-Ids of the supported GPUs.
+To enable GPU support in your application, call gaspi_init_GPUs (in
+include/GASPI_GPU.h). The function gaspi_number_of_GPUs will return
+the number of supported GPUs on the actual NUMA-node while the function
+gaspi_GPU_ids returns the device Ids of the supported GPUs.
 
 	
 3. BUILDING GPI-2
@@ -103,6 +108,7 @@ You can build GPI2 on your own. There are the following make targets:
 
 all	  - Build everything
 gpi	  - Build the GPI-2 library (including debug version)
+fortran	  - Build Fortran 90 bindings
 mic	  - Build the GPI-2 library for the MIC
 tests	  - Build provided tests
 docs	  - Generate documentation (requires doxygen)
@@ -179,12 +185,21 @@ The gaspi_run utility has the following further options [OPTIONS]:
 5. THE GASPI_LOGGER
 ===================
 
-The gaspi_logger utility is used to view the output from all nodes
-except the master node (rank 0). The gaspi_logger is started, on
-another session, on the master node. The output of the application,
-when called with gaspi_printf, will be redirected to the
+The gaspi_logger utility is used to view and separate the output from
+all nodes except the master node (rank 0) when the function
+gaspi_printf is called. The gaspi_logger is started, on another
+session, on the master node. The output of the application, when
+called with gaspi_printf, will be redirected to the
 gaspi_logger. Other I/O routines (e.g. printf) will not.
 
+A further separation of output (useful for debugging) can be achieved
+by using the routine gaspi_printf_to which sends the output to the
+gaspi_logger started on a particular node. For example,
+
+  gaspi_printf_to(1, "Hello 1\n");
+
+will display the string "Hello 1" in the gaspi_logger started on node
+1.
 
 
 6. GPI-2 WITH CO-PROCESSOR (INTEL XEON PHI)
@@ -198,7 +213,7 @@ compiler with the -mmic option. The Makefile includes a build target
 mic for that end but this build target is not used by the installation
 script. After successful compilation, GPI-2 for the MIC can be found
 under lib64/mic. If you are having problems with the compilation, make
-sure the OFED_PATH in src/Makefile is setup correctly.
+sure the OFED_PATH and OFED_MIC_PATH in src/make.inc is setup correctly.
 
 Assuming that the MIC(s) is set up properly, GPI-2 requires:
 
@@ -236,16 +251,16 @@ Segment Creation
 -----------------
 
 To create a GPU memory segment, use the flag GASPI_MEM_GPU. The
-segment will be allocated on the current active GPU. Note tha the
-actice GPU may change by calling gaspi_init_GPUs and therefore should
-be set new bevore creating a GPU memory segment.
+segment will be allocated on the current active GPU. Note that the
+active GPU may change by calling gaspi_init_GPUs and therefore should
+be set new before creating a GPU memory segment.
 
 Segment pointer
 ----------------
 
 The segment pointer of a GPU memory segment is a GPU device
 pointer. It can be used in CUDA-related functions (eg. cudaMemcpy) and
-in CUDA-kernels. However, a direct access in host memory results in a
+in CUDA-kernels. However, a direct access to host memory results in a
 segmentation fault.
 
 Host memory segment
@@ -255,44 +270,44 @@ Of course, GPU memory segments can be used together with host memory
 segments. If GPU-support is enabled, a new host memory segments is
 also registered for the GPUs. Therefore, a segment pointer of a local
 host memory segments can be used with asynchronous CUDA copy
-operations for asynchronous local data transfers/
+operations for asynchronous local data transfers.
 
 Special functions 
 --------------------
 
-Due to some issues with the PCIe-Express bus, the Bandwidth of direct
-GPU-to-GPU transfers is imitated for larger messages sizes.
-Therefore, gaspi_gpu_write and gaspi_gpu_write_notify are optimized
-for remote write operations with a GPU memory segment as source. These
-functions use one-sided copies in host memory. Therefore,
-gaspi_gpu_write is one-sided, but not fully asynchronous with respect
-to the host, since the host thread is required to control the data
-flow. Small data packages are still transfered direct. However, it can
-still be overlapped with computation on the GPU. gaspi_write and
+Due to some issues with the PCIe-Express bus, the bandwidth of direct
+GPU-to-GPU transfers is limited for larger messages sizes.  Therefore,
+gaspi_gpu_write and gaspi_gpu_write_notify are optimized for remote
+write operations with a GPU memory segment as source. These functions
+use one-sided copies in host memory. Therefore, gaspi_gpu_write is
+one-sided, but not fully asynchronous with respect to the host, since
+the host thread is required to control the data flow. Small data
+packages are still transfered directly. However, it can still be
+overlapped with computation on the GPU. gaspi_write and
 gaspi_write_notify still can be used if a full asynchronous, but
 slower data transfer is preferred.
 
 Limitations
 -------------
 
-Since the maximal size pinable GPU memory is limited to less then
+Since the maximal size pinnable GPU memory is limited to less than
 256MB on most GPUs, the maximal size of a GPU memory segment is also
-limited to this. However, this issue can be removed by using a
-firmware patch for current K20 and K40 GPUs and will be removed in
+limited to this size. However, this issue can be removed by using a
+firmware patch for the current K20 and K40 GPUs and will be removed in
 future versions.
 
-To support direct data transfer, the Infiniband device and the GPU
-must be located on the same NUMA socket.Otherwise, direct data
-transder is not supported. However, the application checks this at the
-beginning.
+To support direct data transfers, the Infiniband device and the GPU
+must be located on the same NUMA socket. Otherwise, direct data
+transfers are not supported. GPI-2 checks this at the
+initialization.
 
 8. TROUBLESHOOTING
 ==================
 
 If you're having troubles when building GPI-2, make sure you have the
 OFED stack correctly installed and running. You can change the OFED
-path in the Makefile in the source directory (src) to the correct path
-in your system.
+path in the definitions file make.inc in the source directory (src) to
+the fix path in your system.
 
 9. UP COMING FEATURES
 =====================
@@ -300,7 +315,6 @@ in your system.
 GPI-2 is on-going work and more features are still to come. Here are
 some that are in our roadmap:
 
-- include the support for GPU memory (available but not yet integrated)
 - support to add spare nodes (fault tolerance)
 - better debugging possibilities
 
