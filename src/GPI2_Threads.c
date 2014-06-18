@@ -179,7 +179,7 @@ gaspi_threads_run(void* (*function)(void*), void *arg)
   if(__gaspiThreadsGlobalIDCnt == -1)
     {
       gaspi_printf("gaspiThreads: not initialized !\n");
-      return -1;
+      return GASPI_ERROR;
     }
 
   pthread_t tmp;

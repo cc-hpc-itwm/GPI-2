@@ -5,7 +5,6 @@ FORTRANC = gfortran
 HAS_FORTRAN:=$(shell which $(FORTRANC))
 
 CFLAGS += -Wall
-CFLAGS += -Wunused-macros
 CFLAGS += -D_GNU_SOURCE
 CFLAGS += -O2
 

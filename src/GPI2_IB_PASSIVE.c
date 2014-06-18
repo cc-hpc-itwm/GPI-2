@@ -54,7 +54,7 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
   if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
     {
       gaspi_print_error("Invalid timeout: %lu", timeout_ms);
-      return -1;
+      return GASPI_ERROR;
     }
   
 #endif
@@ -172,7 +172,7 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
   if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
     {
       gaspi_print_error("Invalid timeout: %lu", timeout_ms);
-      return -1;
+      return GASPI_ERROR;
     }
 
 #endif

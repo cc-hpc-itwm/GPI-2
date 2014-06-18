@@ -160,9 +160,7 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
  else
 #endif
    {
-     sf =
-       (size >
-	MAX_INLINE_BYTES) ? IBV_SEND_SIGNALED : IBV_SEND_SIGNALED |
+     sf = (size > MAX_INLINE_BYTES) ? IBV_SEND_SIGNALED : IBV_SEND_SIGNALED |
        IBV_SEND_INLINE;
      
      slist.addr =

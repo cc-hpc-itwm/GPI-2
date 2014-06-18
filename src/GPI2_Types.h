@@ -68,4 +68,4 @@ typedef struct
   int tnc;
 } gaspi_node_init;
 
-#endif //_GPI2_TYPES_H_
+#endif /* _GPI2_TYPES_H_ */

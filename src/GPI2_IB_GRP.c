@@ -45,7 +45,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
     if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
     {
       gaspi_print_error("Invalid timeout: %lu", timeout_ms);
-      return -1;
+      return GASPI_ERROR;
     }
 
 #endif  
@@ -553,7 +553,7 @@ gaspi_init_collectives ()
 #pragma weak gaspi_allreduce = pgaspi_allreduce
 gaspi_return_t
 pgaspi_allreduce (const gaspi_pointer_t buf_send,
-		  const gaspi_pointer_t buf_recv,
+		  gaspi_pointer_t const buf_recv,
 		  const gaspi_number_t elem_cnt, const gaspi_operation_t op,
 		  const gaspi_datatype_t type, const gaspi_group_t g,
 		  const gaspi_timeout_t timeout_ms)
@@ -593,7 +593,7 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
   if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
     {
       gaspi_print_error("Invalid timeout: %lu", timeout_ms);
-      return -1;
+      return GASPI_ERROR;
     }
 
 #endif  
@@ -921,7 +921,7 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
 #pragma weak gaspi_allreduce_user = pgaspi_allreduce_user
 gaspi_return_t
 pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
-		       const gaspi_pointer_t buf_recv,
+		       gaspi_pointer_t const buf_recv,
 		       const gaspi_number_t elem_cnt,
 		       const gaspi_size_t elem_size,
 		       gaspi_reduce_operation_t const user_fct,
@@ -957,7 +957,7 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
   if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
     {
       gaspi_print_error("Invalid timeout: %lu", timeout_ms);
-      return -1;
+      return GASPI_ERROR;
     }
   
 #endif  

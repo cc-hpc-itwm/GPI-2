@@ -155,8 +155,8 @@ extern "C"
   {
     GASPI_MEM_UNINITIALIZED = 0, /**< Memory will not be initialized */
     GASPI_MEM_INITIALIZED = 1,	 /**< Memory will be initialized (zero-ed) */
-    GASPI_MEM_GPU = 2, 
-};
+    GASPI_MEM_GPU = 2
+  };
 
 #define GASPI_ALLOC_DEFAULT GASPI_MEM_UNINITIALIZED 
   
@@ -685,7 +685,7 @@ extern "C"
    * error, GASPI_TIMEOUT in case of timeout.
    */
   gaspi_return_t gaspi_allreduce (const gaspi_pointer_t buffer_send,
-				  const gaspi_pointer_t buffer_receive,
+				  gaspi_pointer_t const buffer_receive,
 				  const gaspi_number_t num,
 				  const gaspi_operation_t operation,
 				  const gaspi_datatype_t datatyp,
@@ -693,7 +693,7 @@ extern "C"
 				  const gaspi_timeout_t timeout_ms);
 
   gaspi_return_t gaspi_allreduce_user (const gaspi_pointer_t buffer_send,
-				       const gaspi_pointer_t buffer_receive,
+				       gaspi_pointer_t const buffer_receive,
 				       const gaspi_number_t num,
 				       const gaspi_size_t element_size,
 				       gaspi_reduce_operation_t const
