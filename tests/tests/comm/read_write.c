@@ -59,6 +59,10 @@ int main(int argc, char *argv[])
 	  if(rankSend == myrank)
 	    continue;
 
+	  ASSERT (gaspi_queue_size(1, &queueSize));
+	  if (queueSize > qmax - 24)
+	    ASSERT (gaspi_wait(1, GASPI_BLOCK));
+	  
 	  ASSERT (gaspi_write(0, localOff_r, rankSend, 0,  remOff_r,  commSize, 1, GASPI_BLOCK));
 	}
     }

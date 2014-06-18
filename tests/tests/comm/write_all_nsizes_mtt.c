@@ -25,7 +25,7 @@ void work(int tid)
 	gaspi_printf("thread %d rank to send: %d - %lu bytes\n", tid, rankSend, commSize);
 	
 	gaspi_queue_size(1, &queueSize);
-	if (queueSize > qmax - 24)
+	if (queueSize > qmax - 100)
   	  ASSERT (gaspi_wait(1, GASPI_BLOCK));
 	
 	ASSERT (gaspi_write(0, localOff, rankSend, 0,  remOff,  commSize, 1, GASPI_BLOCK));
