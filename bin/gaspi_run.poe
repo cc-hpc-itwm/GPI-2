@@ -19,8 +19,8 @@
 SET_NUMA=0
 MASTER_PRG=""
 PRG=""
-KPRG=""
 PRGNAME=""
+PRG_ARGS=""
 TYPE=GASPI_MASTER
 MAX_NUMA_NODES=1
 HAS_NUMA=0
@@ -97,8 +97,9 @@ while [ -n "$1" ]; do
 	    ;;
         *) #Sucks! we're taking a small risk here
             if [ -x $1 ]; then
-                PRG=$(readlink -f "$*")
-                KPRG=$(readlink -f $1)
+		PRG=$(readlink -f $1)
+		shift
+		PRG_ARGS="$*"
                 break
             else
                 print_error_exit "Cannot execute $1 (or file does not exist)"
@@ -111,7 +112,9 @@ if [ -z "$PRG" ]; then
     print_error_exit "No binary file provided. See help (-h option)"
 fi
 
-PRGNAME=`basename $KPRG`
+PRGNAME=`basename $PRG`
+
+PRG="${PRG} ${PRG_ARGS}"
 
 #sanity check and settings
 if [ $SET_NUMA -eq 1 ]; then
@@ -140,7 +143,7 @@ export GASPI_MFILE=$LOADL_HOSTFILE
 export GASPI_SOCKET=0
 if [ $SET_NUMA -eq 1 ]; then
     export GASPI_SET_NUMA_SOCKET=1
-else
+xelse
     export GASPI_SET_NUMA_SOCKET=0
 fi
 
