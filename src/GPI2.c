@@ -623,13 +623,9 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 gaspi_return_t
 pgaspi_initialized (gaspi_number_t *initialized)
 {
-
   gaspi_verify_null_ptr(initialized);
-
-  if( glb_gaspi_init < glb_gaspi_ctx.tnc)
-    *initialized = 0;
-  else
-    *initialized = 1;
+  
+  *initialized = ( glb_gaspi_init != 0 && glb_gaspi_init == glb_gaspi_ctx.tnc );
   
   return GASPI_SUCCESS;
 }
