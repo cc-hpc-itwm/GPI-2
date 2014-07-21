@@ -165,8 +165,7 @@ gaspi_get_cpufreq ()
 int
 gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 {
-
-  int i, rc;
+  int i, j,rc;
   char buf[1024];
   unsigned int m[256];
   char path[256];
@@ -178,7 +177,6 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
   snprintf (path, 256, "/sys/devices/system/node/node%d/cpumap", sock);
 
   f = fopen (path, "r");
-
   if (!f)
     {
       return -1;
@@ -187,15 +185,38 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
   //read cpumap
   int id = 0;
 
-  if (fgets (buf, sizeof (buf), f))
+  if(fgets(buf,sizeof(buf),f))
     {
       char *bptr = buf;
+
       while (1)
 	{
 	  int ret = sscanf (bptr, "%x", &m[id]);
 	  if (ret <= 0)
-	    break;
-	  bptr += 9;
+	    {
+	      break;
+	    }
+
+	  int cpos = 0,found = 0;
+	  size_t length = strlen(bptr);
+
+	  for(j = 0;j < length - 1; j++)
+	    {
+	      if(bptr[j]==',')
+		{
+		  found=1;
+		  break;
+		}
+	      cpos++;
+	    }
+
+	  if(!found)
+	    {
+	      if((cpos+1) > strlen(bptr))
+		return -1;
+	    }
+
+	  bptr += (cpos+1);
 	  id++;
 	}
     }
@@ -203,8 +224,8 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
   rc = id;
 
   memset (cpuset, 0, sizeof (cpu_set_t));
-  char *ptr = (char *) cpuset;
 
+  char *ptr = (char *) cpuset;
   int pos = 0;
 
   for (i = rc - 1; i >= 0; i--)
@@ -214,6 +235,7 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
     }
 
   fclose (f);
+
   return 0;
 }
 
