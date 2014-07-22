@@ -286,7 +286,11 @@ do
 done
 
 location=$(readlink -f `dirname $0`)
-cmd="${location}/ssh.spawner ${master_node} 0 $(readlink -f $MFILE) $j"
+if [ "$previous" != "$master_node" ]; then
+    cmd="${location}/ssh.spawner ${master_node} 0 $(readlink -f $MFILE) $j"
+else
+    cmd="${location}/ssh.spawner ${master_node} 1 $(readlink -f $MFILE) $j"
+fi
 if [ $SET_NUMA -eq 1 ]; then
     cmd="$cmd 1"
 else
