@@ -1,7 +1,7 @@
 include ../make.defines
 
 BIN = write_bw.bin write_lat.bin read_bw.bin ping_pong.bin barrier.bin nb_barrier.bin \
-	allreduce.bin
+	allreduce.bin nb_allreduce.bin
 
 build: $(BIN)
 
