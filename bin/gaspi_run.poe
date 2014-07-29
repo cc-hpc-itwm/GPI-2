@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013
+# Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2014
 
 # This file is part of GPI-2.
 
@@ -17,15 +17,12 @@
 # along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 SET_NUMA=0
-MASTER_PRG=""
 PRG=""
-PRGNAME=""
 PRG_ARGS=""
 TYPE=GASPI_MASTER
 MAX_NUMA_NODES=1
 HAS_NUMA=0
 HN=$(hostname)
-DEBUG=0
 GASPI_LAUNCHER=poe
 
 #helper functions
@@ -112,10 +109,6 @@ if [ -z "$PRG" ]; then
     print_error_exit "No binary file provided. See help (-h option)"
 fi
 
-PRGNAME=`basename $PRG`
-
-PRG="${PRG} ${PRG_ARGS}"
-
 #sanity check and settings
 if [ $SET_NUMA -eq 1 ]; then
     which numactl > /dev/null
@@ -160,7 +153,7 @@ do
     previous="$LINE"
 done
 
-$GASPI_LAUNCHER $PRG
+$GASPI_LAUNCHER $PRG $PRG_ARGS
 
 unset GASPI_MASTER
 unset GASPI_MFILE

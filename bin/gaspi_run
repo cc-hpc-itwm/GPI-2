@@ -20,7 +20,6 @@ SET_NUMA=0
 MFILE=""
 MASTER_PRG=""
 PRG=""
-PRGNAME=""
 PRG_ARGS=""
 TYPE=GASPI_MASTER
 MAX_IMMED_CONN=10
@@ -28,10 +27,8 @@ MAX_NUMA_NODES=1
 HAS_NUMA=0
 HN=$(hostname)
 TMP_PATTERN=".gpi2.XXXXXXXX"
-TMP_MFILE=$(TMPDIR=. mktemp ${TMP_PATTERN})
-UNIQ_MFILE=$(TMPDIR=. mktemp ${TMP_PATTERN})
-RUN_PATTERN=".gaspi_run.XXXXXXXX"
-RUN_FILE=$(TMPDIR=. mktemp ${RUN_PATTERN})
+TMP_MFILE=$(mktemp --tmpdir=/tmp ${TMP_PATTERN})
+UNIQ_MFILE=$(mktemp --tmpdir=/tmp ${TMP_PATTERN})
 ORIG_MFILE=""
 NNODES=0
 DEBUG=0
@@ -41,7 +38,6 @@ remove_temp_file()
 {
     rm -f $TMP_MFILE
     rm -f $UNIQ_MFILE
-    rm -f $RUN_FILE
 }
 
 #helper functions
@@ -199,10 +195,6 @@ if [ -z "$PRG" ]; then
     print_error_exit "No binary file provided. See help (-h option)"
 fi
 
-PRG="${PRG} ${PRG_ARGS}"
-
-PRGNAME=`basename $PRG`
-
 trap kill_procs TERM INT QUIT
 
 #sanity check and settings
@@ -275,7 +267,7 @@ do
 	else
             cmd="$cmd 0"
 	fi
-	cmd="$cmd ${MASTER_PRG}"
+	cmd="$cmd ${PRG} ${PRG_ARGS}"
 
 	$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null`"  &
 	
@@ -296,12 +288,11 @@ if [ $SET_NUMA -eq 1 ]; then
 else
     cmd="$cmd 0"
 fi
-cmd="$cmd ${MASTER_PRG}"
-
+cmd="$cmd ${PRG} ${PRG_ARGS}"
 
 $GASPI_LAUNCHER $previous "nohup $cmd `</dev/null` 2>&1" &
 
-echo $PRGNAME  > /tmp/.last_gaspi_prg
+echo $PRG > /tmp/.last_gaspi_prg
 if [ -O /tmp/.last_gaspi_prg ]; then
     chmod a+rw /tmp/.last_gaspi_prg &> /dev/null
 fi
@@ -336,7 +327,7 @@ if [ "$master_node" != "$HN" ]; then
     if [ $SET_NUMA -eq 1 ]; then
         cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
     fi
-    cmd="$cmd; $MASTER_PRG'"
+    cmd="$cmd; $MASTER_PRG $PRG_ARGS'"
     $GASPI_LAUNCHER $master_node $cmd
    
     if [ $? != 0 ]; then
@@ -356,9 +347,9 @@ else
 
 
     if [ $DEBUG != 0 ]; then
-	gdb --args $MASTER_PRG
+	gdb --args $MASTER_PRG $PRG_ARGS
     else
-	$MASTER_PRG
+	$MASTER_PRG $PRG_ARGS
     fi
     if [ $? != 0 ]; then
 	clean_exit
