@@ -24,11 +24,14 @@ int main(int argc, char *argv[])
   gaspi_rank_t grank, gnum;
   gaspi_float cpu_freq;
   gaspi_cycles_t stamp[1024], stamp2[1024], delta[1024];
+  gaspi_cycles_t t0, t1, dt;
+  gaspi_return_t ret;
 
   gaspi_config_get(&gconf);
   gconf.mtu = 4096;
   gconf.queue_num = 1;
   gaspi_config_set(gconf);
+
 
   gaspi_proc_init(GASPI_BLOCK);
 
@@ -63,14 +66,21 @@ int main(int argc, char *argv[])
     {
       for(i = 0; i < 1000; i++)
 	{
-	  gaspi_allreduce(one, sum, elems,
-			  GASPI_OP_SUM, GASPI_TYPE_DOUBLE, GASPI_GROUP_ALL, GASPI_BLOCK);
-	  gaspi_time_ticks(&(stamp[i]));
+	  t0 = t1 = dt =0;
+	  do{
+	    gaspi_time_ticks(&t0);
+	    ret = gaspi_allreduce(one, sum, elems,
+				  GASPI_OP_SUM, GASPI_TYPE_DOUBLE, GASPI_GROUP_ALL, GASPI_BLOCK);
+	    gaspi_time_ticks(&t1);
+	    dt += (t1-t0);
+
+	    //useful work area
+	    
+	  }while(ret != GASPI_SUCCESS);
+	  
+	  delta[i] = dt;
 	}
-      
-      for (t = 0; t < (999); t++)
-	delta[t] = stamp[t + 1] - stamp[t];
-      
+
       qsort (delta, (999), sizeof *delta, mcycles_compare);
   
       const double div = 1.0 / cpu_freq;
