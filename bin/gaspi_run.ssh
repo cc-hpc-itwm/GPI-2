@@ -128,9 +128,10 @@ kill_procs()
     echo "Killing GASPI procs..."
     for i in $(cat $UNIQ_MFILE)
     do
-	$GASPI_LAUNCHER $i "nohup killall ${PRGNAME} `</dev/null`" &> /dev/null &
+	$GASPI_LAUNCHER $i "nohup killall -9 ${PRG} `</dev/null`" &> /dev/null &
     done
     remove_temp_file
+    wait
     exit 1
 }
 
