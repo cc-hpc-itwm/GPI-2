@@ -153,7 +153,7 @@ pgaspi_machine_type (char const machine_type[16])
 {
   gaspi_verify_null_ptr(machine_type);
 
-  memset ((void *) machine_type, 16, 0);
+  memset ((void *) machine_type, 0, 16);
   snprintf ((char *) machine_type, 16, "%s", glb_gaspi_ctx.mtyp);
 
   return GASPI_SUCCESS;
