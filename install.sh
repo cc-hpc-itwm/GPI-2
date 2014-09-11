@@ -56,7 +56,7 @@ while getopts ":p:o:-:" opt; do
 			which mpirun > /dev/null 2>&1
 			if [ $? != 0 ]; then
 			    echo "Couldn't find MPI installation. Please provide path to your MPI installation."
-			    echo "    ./install <other options> --with-mpi=<Path to MPI installation>"
+			    echo "    ./install.sh <other options> --with-mpi=<Path to MPI installation>"
 			    echo ""
 			    exit 1
 			fi
@@ -100,6 +100,8 @@ while getopts ":p:o:-:" opt; do
                         which nvcc > /dev/null 2>&1
                         if [ $? != 0 ]; then
                             echo "Couldn't find CUDA installation. Please provide path to your CUDA installation."
+			    echo "    ./install.sh <other options> --with-cude=<Path to CUDA installation>"
+			    echo ""
                             exit 1
                         fi
 			NVCC_BIN=`which nvcc`
@@ -204,7 +206,7 @@ if [ $WITH_MPI = 1 ]; then
 	    MPI_INC_PATH=$MPI_PATH/include
 	else
 	    echo "Cannot find mpi.h. Please provide path to MPI installation."
-	    echo "    ./install <other options> --with-mpi=<Path to MPI installation>"
+	    echo "    ./install.sh <other options> --with-mpi=<Path to MPI installation>"
 	    echo ""
 	    exit 1
 	fi
@@ -212,14 +214,26 @@ if [ $WITH_MPI = 1 ]; then
 
     if [ -r $MPI_PATH/lib64/libmpi.so ] || [ -r $MPI_PATH/lib64/libmpi.a ]; then
 	MPI_LIB_PATH=$MPI_PATH/lib64
+	MPI_LIB=mpi
     else
 	if [ -r $MPI_PATH/lib/libmpi.so ] || [ -r $MPI_PATH/lib/libmpi.a ]; then
 	    MPI_LIB_PATH=$MPI_PATH/lib
+	    	MPI_LIB=mpi
 	else
-	    echo "Cannot find libmpi. Please provide path to MPI installation."
-	    echo "    ./install <other options> --with-mpi=<Path to MPI installation>"
-	    echo ""
-	    exit 1
+	    if [ -r $MPI_PATH/lib64/libmpich.so ] || [ -r $MPI_PATH/lib64/libmpich.a ]; then
+		MPI_LIB_PATH=$MPI_PATH/lib64
+		MPI_LIB=mpich
+	    else
+		if [ -r $MPI_PATH/lib/libmpich.so ] || [ -r $MPI_PATH/lib/libmpich.a ]; then
+		    MPI_LIB_PATH=$MPI_PATH/lib
+		    	MPI_LIB=mpich
+		else
+		    echo "Cannot find libmpi (or libmpich). Please provide path to MPI installation."
+		    echo "    ./install.sh <other options> --with-mpi=<Path to MPI installation>"
+		    echo ""
+		    exit 1
+		fi
+	    fi
 	fi
     fi
     
@@ -232,11 +246,11 @@ if [ $WITH_MPI = 1 ]; then
 
     cp tests/make.defines tests/make.defines.bak
     echo "###### added by install script" >> tests/make.defines
-    echo "CFLAGS += -DGPI2_WITH_MPI -I${MPI_INC_PATH} -L${MPI_LIB_PATH}" >> tests/make.defines
-    echo "LIB_PATH += -L${MPI_LIB_PATH}" >> tests/make.defines    
-    echo "LIBS += -lmpi" >> tests/make.defines
+    echo "CFLAGS += -DGPI2_WITH_MPI -I${MPI_INC_PATH} ${GPI2_EXTRA_CFLAGS}" >> tests/make.defines
+    echo "LIB_PATH += -L${MPI_LIB_PATH} ${GPI2_EXTRA_LIBS_PATH}" >> tests/make.defines
+    echo "LIBS += -l${MPI_LIB} ${GPI2_EXTRA_LIBS}" >> tests/make.defines
     echo "export" >> tests/make.defines
-
+    
 fi
 
 #load leveler

@@ -309,6 +309,17 @@ OFED stack correctly installed and running. You can change the OFED
 path in the definitions file make.inc in the source directory (src) to
 the fix path in your system.
 
+When installing GPI-2 with MPI mixed-mode support (using the option
+--with-mpi<=path_to_mpi_installation>) and the installation is failing
+when trying to build the tests due to missing libraries, you can
+provide extra paths through available variables and be able to find
+the missing paths. These are: GPI2_EXTRA_CFLAGS, GPI2_EXTRA_LIBS_PATH,
+GPI2_EXTRA_LIBS.
+
+For example:
+   GPI2_EXTRA_LIBS=-lmpl ./install.sh --with-mpi -p /opt/GPI2
+
+
 9. UP COMING FEATURES
 =====================
 
