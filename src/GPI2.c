@@ -557,7 +557,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
-#idef GPI2_DEV_DEBUG
+#ifdef GPI2_DEV_DEBUG
   struct timeb tup1,tinit1;
   ftime(&tup1);
 
@@ -629,7 +629,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   glb_gaspi_ctx.gpu_count = 0;
 #endif
 
-#idef GPI2_DEV_DEBUG
+#ifdef GPI2_DEV_DEBUG
   ftime(&tinit1);
   const unsigned int delta_s1 = (tinit1.time-tinit0.time)+((tinit1.millitm-tinit0.millitm)/1000);
   printf("Rank %i is done with init (took %u secs %lu Mbytes peak %lu Mbytes )\n",
