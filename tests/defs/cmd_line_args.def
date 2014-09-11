@@ -1,1 +1,1 @@
-ARGS=-a -b 1 -c /tmp/ola.txt
+ARGS=-a -b 1 -c /tmp/ola.txt config=/tmp/file.dat procs=2
