@@ -2110,7 +2110,7 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-  if(gaspi_segment_alloc (segment_id, size, alloc_policy) != 0)
+  if(pgaspi_segment_alloc (segment_id, size, alloc_policy) != 0)
     {
       gaspi_print_error("Segment allocation failed");
       return GASPI_ERROR;
