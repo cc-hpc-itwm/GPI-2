@@ -242,7 +242,9 @@ void *gaspi_sn_backend(void *arg)
 
   if(bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress)) < 0)
     {
-      gaspi_sn_print_error("Failed to bind socket");
+      gaspi_sn_print_error("Failed to bind socket (port %d)",
+			   glb_gaspi_cfg.sn_port + glb_gaspi_ctx.localSocket);
+      
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
       gaspi_sn_err = GASPI_ERR_SN_PORT;
 
@@ -517,7 +519,10 @@ void *gaspi_sn_backend(void *arg)
 					    gb.ret=0;gb.tnc=tnc;
 					    
 					    for(i = 0;i < tnc; i++)
-					      gb.cs ^= glb_gaspi_group_ib[group].rank_grp[i];
+					      {
+						if(NULL != glb_gaspi_group_ib[group].rank_grp)
+						  gb.cs ^= glb_gaspi_group_ib[group].rank_grp[i];
+					      }
 					  }
 				      }
 				    
@@ -565,7 +570,7 @@ void *gaspi_sn_backend(void *arg)
 					    if(errno!=EAGAIN)
 					      {
 						//TODO:exit?
-						gaspi_sn_print_error("Failed to write.");
+						gaspi_sn_print_error("Failed to write to rank %d.", mgmt->cdh.rank);
 
 						break;
 					      }
