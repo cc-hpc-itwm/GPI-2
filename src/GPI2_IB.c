@@ -374,7 +374,7 @@ gaspi_init_ib_core ()
 
   if(mlock(glb_gaspi_ctx_ib.nsrc.buf, size) != 0)
     {
-      gaspi_print_error ("Memory locking (mlock) failed");
+      gaspi_print_error ("Memory locking (mlock) failed (of size %d)", size);
       return -1;
     }
 
@@ -1323,7 +1323,7 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   if (mlock (glb_gaspi_group_ib[id].buf, size) != 0)
     {
-      gaspi_print_error ("Memory locking (mlock) failed");
+      gaspi_print_error ("Memory locking (mlock) failed (of size %d)", size);
       goto errL;
     }
 
@@ -1347,6 +1347,11 @@ pgaspi_group_create (gaspi_group_t * const group)
   glb_gaspi_group_ib[id].barrier_cnt = 0;
   glb_gaspi_group_ib[id].rank = 0;
   glb_gaspi_group_ib[id].tnc = 0;
+
+  glb_gaspi_group_ib[id].coll_op = GASPI_NONE;
+  glb_gaspi_group_ib[id].lastmask = 0x1;
+  glb_gaspi_group_ib[id].level = 0;
+  glb_gaspi_group_ib[id].dsize = 0;
 
   glb_gaspi_group_ib[id].next_pof2 = 0;
   glb_gaspi_group_ib[id].pof2_exp = 0;
@@ -1612,13 +1617,13 @@ pgaspi_group_commit (const gaspi_group_t group,
 		}
 
 	      //check if groups match
-	      if(gb.cs != rem_gb.cs)
-		{
-		  gaspi_print_error("Mismatch with rank %d: ranks in group dont match\n",
-				    glb_gaspi_group_ib[group].rank_grp[i]);
-		  eret = GASPI_ERROR;
-		  goto errL;
-		}
+	      /* if(gb.cs != rem_gb.cs) */
+	      /* { */
+	      /* gaspi_print_error("Mismatch with rank %d: ranks in group dont match\n", */
+	      /* glb_gaspi_group_ib[group].rank_grp[i]); */
+	      /* eret = GASPI_ERROR; */
+	      /* goto errL; */
+	      /* } */
 	      
 	      //usleep(250000);
 	      //gaspi_delay();
