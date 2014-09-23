@@ -655,7 +655,6 @@ pgaspi_initialized (gaspi_number_t *initialized)
 }
 
 //cleanup
-//TODO: need to remove tmp file if running mpi mixed mode
 #pragma weak gaspi_proc_term = pgaspi_proc_term
 gaspi_return_t
 pgaspi_proc_term (const gaspi_timeout_t timeout)
@@ -683,6 +682,16 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
     free(glb_gaspi_ctx.sockfd);
   }
 
+#ifdef GPI2_WITH_MPI
+  if(glb_gaspi_ctx.rank == 0)
+    {
+      if(remove(glb_gaspi_ctx.mfile) < 0)
+	{
+	  gaspi_print_error("Failed to remove tmp file (%s)", glb_gaspi_ctx.mfile);
+	}
+    }
+#endif
+  
   if(gaspi_cleanup_ib_core() != GASPI_SUCCESS)
     goto errL;
   
