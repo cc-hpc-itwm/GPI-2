@@ -141,7 +141,7 @@ _gaspi_handle_env_mpi(gaspi_context *ctx)
 	  gaspi_print_error("Failed to create temp file");
 	  return -1;
 	}
-      
+
       mfile = fopen(tmpfile, "w");
       if(mfile == NULL)
 	{
@@ -157,6 +157,8 @@ _gaspi_handle_env_mpi(gaspi_context *ctx)
       fclose(mfile);
       snprintf (ctx->mfile, 1024, "%s", tmpfile);
     }
+
+  free(hosts);
   
   return 0;
 }
