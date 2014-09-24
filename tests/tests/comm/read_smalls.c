@@ -43,8 +43,12 @@ int main(int argc, char *argv[])
 
   remOff = segSize / 2;
 
-  for(commSize= sizeof(int); commSize <= 128; commSize+=sizeof(int))
+  for(commSize = sizeof(int); commSize <= 128; commSize+=sizeof(int))
     {
+      //sync
+      memset(segPtr, 0, commSize);
+      ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+      
       for(rankSend = 0; rankSend < numranks; rankSend++)
 	{
 	  gaspi_queue_size(1, &queueSize);
@@ -53,7 +57,6 @@ int main(int argc, char *argv[])
 	    ASSERT (gaspi_wait(1, GASPI_BLOCK));
 	  
 	  ASSERT (gaspi_read(0, localOff, rankSend, 0,  remOff,  commSize, 1, GASPI_BLOCK));
-	  remOff += commSize;
 	  localOff+= commSize;
 	}
 
@@ -64,11 +67,10 @@ int main(int argc, char *argv[])
 	{
 	  for(c = 1; c <= elems; c++)
 	    {
-	      ASSERT (segInt[pos] != rankSend);
+	      assert (segInt[pos] == rankSend);
 	      pos++;
 	    }
 	}
-      remOff = segSize / 2;
       localOff = 0;
     }
   

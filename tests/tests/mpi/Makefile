@@ -1,4 +1,4 @@
-BIN = with_mpi.bin
+BIN = with_mpi.bin mpi_allreduce.bin mpi_barrier.bin
 
 CFLAGS+=-I../
 

@@ -32,9 +32,9 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define gaspi_sn_print_error(msg, ...)					\
   int errsv = errno;							\
   if(errsv != 0)							\
-    fprintf(stderr,"Error %d (%s) at (%s:%d):" msg "\n", errsv, (char *) strerror(errsv), __FILE__, __LINE__, ##__VA_ARGS__); \
+    fprintf(stderr,"Rank %d: Error %d (%s) at (%s:%d):" msg "\n", glb_gaspi_ctx.rank,errsv, (char *) strerror(errsv), __FILE__, __LINE__, ##__VA_ARGS__); \
   else									\
-      fprintf(stderr,"Error at (%s:%d):" msg "\n", __FILE__, __LINE__, ##__VA_ARGS__) 
+    fprintf(stderr,"Rank %d: Error at (%s:%d):" msg "\n",glb_gaspi_ctx.rank, __FILE__, __LINE__, ##__VA_ARGS__) 
 
 #else
 #define gaspi_sn_print_error(msg, ...)

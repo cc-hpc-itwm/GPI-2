@@ -48,18 +48,29 @@ _check_log_init(void)
     {
       gaspi_master_log_init = 1;
 
-      char * ptr = getenv ("GASPI_MASTER");     
+#ifdef GPI2_WITH_MPI
+      if(glb_gaspi_ctx.hn_poff == NULL)
+	printf("gaspi_printf in MPI mixed mode is not possible before gaspi_proc_init\n");
+      
+      memset (gaspi_master_log_ptr, 0, 128);
+      snprintf (gaspi_master_log_ptr, 64, "%s", glb_gaspi_ctx.hn_poff);
+      gaspi_log_socket = glb_gaspi_ctx.localSocket;
+      
+#else
+      char * ptr = getenv ("GASPI_MASTER");
       if (ptr != NULL)
 	{
 	  memset (gaspi_master_log_ptr, 0, 128);
 	  snprintf (gaspi_master_log_ptr, 128, "%s", ptr);
 	}
-      
+
       char *ptr2 = getenv ("GASPI_SOCKET");
       if (ptr2 != NULL)
 	{
 	  gaspi_log_socket = atoi (ptr2);
 	}
+#endif
+      
     }
 }
 
@@ -121,12 +132,17 @@ gaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
   memset (hn, 0, 128);
   gethostname (hn, 128);
 
+#ifdef GPI2_WITH_MPI
+  gaspi_log_socket = glb_gaspi_ctx.localSocket;
+#else
   char *ptr2 = getenv ("GASPI_SOCKET");
   if (ptr2)
     {
       gaspi_log_socket = atoi (ptr2);
     }
+#endif
   
+ 
   sprintf (buf, "[%s:%d:%u] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank);
   const int sl = strlen (buf);
 

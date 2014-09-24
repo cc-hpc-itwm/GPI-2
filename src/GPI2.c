@@ -251,7 +251,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	}
   
       glb_gaspi_ctx.cycles_to_msecs = 1.0f / (glb_gaspi_ctx.mhz * 1000.0f);
-
+    
       //handle environment  
       if(gaspi_handle_env(&glb_gaspi_ctx))
 	{
@@ -387,11 +387,11 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  for(i = 0; i < glb_gaspi_ctx.tnc; i++) 
 	    glb_gaspi_ctx.sockfd[i]=-1;
   
-	  if(gaspi_init_ib_core() != GASPI_SUCCESS)
-	    {
-	      eret = GASPI_ERROR;
-	      goto errL;
-	    }
+/* 	  if(gaspi_init_ib_core() != GASPI_SUCCESS) */
+/* 	    { */
+/* 	      eret = GASPI_ERROR; */
+/* 	      goto errL; */
+/* 	    } */
 	  
 	}//glb_gaspi_ib_init
       
@@ -459,6 +459,12 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 		}
 	    }
 	}
+      if(gaspi_init_ib_core() != GASPI_SUCCESS)
+	{
+	  eret = GASPI_ERROR;
+	  goto errL;
+	}
+      
     }//MASTER_PROC
 
   else if(glb_gaspi_ctx.procType == WORKER_PROC)
@@ -551,6 +557,17 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
+#ifdef GPI2_DEV_DEBUG
+  struct timeb tup1,tinit1;
+  ftime(&tup1);
+
+  //TODO: delta calculations as a macro or inlined
+  const unsigned int delta_s = (tup1.time-tup0.time)+((tup1.millitm-tup0.millitm)/1000);
+  
+  printf("Rank %i is ready to build (took %u secs %llu Mbytes)\n",
+  	 glb_gaspi_ctx.rank, delta_s, gaspi_get_mem_in_use() / 1024 / 1024);
+#endif
+  
   if(glb_gaspi_cfg.build_infrastructure)
     {
       //connect all ranks
@@ -611,6 +628,13 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   glb_gaspi_ctx.use_gpus = 0;
   glb_gaspi_ctx.gpu_count = 0;
 #endif
+
+#ifdef GPI2_DEV_DEBUG
+  ftime(&tinit1);
+  const unsigned int delta_s1 = (tinit1.time-tinit0.time)+((tinit1.millitm-tinit0.millitm)/1000);
+  printf("Rank %i is done with init (took %u secs %lu Mbytes peak %lu Mbytes )\n",
+	       glb_gaspi_ctx.rank, delta_s1, gaspi_get_mem_in_use()/1024/1024, gaspi_get_mem_peak()/1024/1024 );
+#endif
   
   return eret;
 
@@ -631,7 +655,6 @@ pgaspi_initialized (gaspi_number_t *initialized)
 }
 
 //cleanup
-//TODO: need to remove tmp file if running mpi mixed mode
 #pragma weak gaspi_proc_term = pgaspi_proc_term
 gaspi_return_t
 pgaspi_proc_term (const gaspi_timeout_t timeout)
@@ -659,6 +682,16 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
     free(glb_gaspi_ctx.sockfd);
   }
 
+#ifdef GPI2_WITH_MPI
+  if(glb_gaspi_ctx.rank == 0)
+    {
+      if(remove(glb_gaspi_ctx.mfile) < 0)
+	{
+	  gaspi_print_error("Failed to remove tmp file (%s)", glb_gaspi_ctx.mfile);
+	}
+    }
+#endif
+  
   if(gaspi_cleanup_ib_core() != GASPI_SUCCESS)
     goto errL;
   
@@ -924,8 +957,8 @@ pgaspi_time_get (gaspi_time_t * const wtime)
     }
 
   const gaspi_cycles_t s1 = gaspi_get_cycles ();
-  *wtime = (float) s1 * cycles_to_msecs;
-  
+  *wtime = (gaspi_time_t) (s1 * cycles_to_msecs);
+
   return GASPI_SUCCESS;
 }
 
