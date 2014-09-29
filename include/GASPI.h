@@ -34,9 +34,11 @@ extern "C"
 {
 #endif
 
-#define GASPI_MAJOR_VERSION (1)
-#define GASPI_MINOR_VERSION (1)
-#define GASPI_REVISION (0)
+#define GASPI_VERSION 0x010100
+
+#define GASPI_MAJOR_VERSION ((GASPI_VERSION & 0xff0000) >> 16)
+#define GASPI_MINOR_VERSION ((GASPI_VERSION & 0x00ff00) >> 8)
+#define GASPI_REVISION      ((GASPI_VERSION & 0x0000ff))
 
 #define GASPI_BLOCK       (0xffffffffffffffff)
 #define GASPI_TEST        (0x0)
