@@ -33,6 +33,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
 
+#define GASPI_VERSION     (GASPI_MAJOR_VERSION + GASPI_MINOR_VERSION/10.0f + GASPI_REVISION/100.0f)
+
 gaspi_config_t glb_gaspi_cfg = {
   1,				//logout
   12121,                        //sn port 
@@ -60,7 +62,7 @@ gaspi_config_t glb_gaspi_cfg = {
 gaspi_return_t
 pgaspi_version (float *const version)
 {
-  *version = (GASPI_MAJOR_VERSION + GASPI_MINOR_VERSION/10.0f + GASPI_REVISION/100.0f);
+  *version = GASPI_VERSION;
   return GASPI_SUCCESS;
 }
 
