@@ -26,9 +26,9 @@ MAX_IMMED_CONN=10
 MAX_NUMA_NODES=1
 HAS_NUMA=0
 HN=$(hostname)
-TMP_PATTERN=".gpi2.XXXXXXXX"
-TMP_MFILE=$(mktemp --tmpdir=/tmp ${TMP_PATTERN})
-UNIQ_MFILE=$(mktemp --tmpdir=/tmp ${TMP_PATTERN})
+TMP_PATTERN="/tmp/.gpi2.XXXXXXXX"
+TMP_MFILE=$(mktemp ${TMP_PATTERN})
+UNIQ_MFILE=$(mktemp ${TMP_PATTERN})
 ORIG_MFILE=""
 NNODES=0
 DEBUG=0
