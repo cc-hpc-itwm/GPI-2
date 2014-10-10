@@ -28,7 +28,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2.h"
 #include "GPI2_Env.h"
 #include "GPI2_IB.h"
-#include "GPI2_Mem.h"
 #include "GPI2_SN.h"
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
@@ -218,10 +217,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   gaspi_return_t eret = GASPI_ERROR;
   int i;
 
-  struct timeb tup0, tinit0;
-  ftime(&tup0);
-  ftime(&tinit0);
-  
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
@@ -274,7 +269,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   if(glb_gaspi_ctx.procType == MASTER_PROC)
     {
 
-      if(glb_gaspi_ib_init==0)
+      if(glb_gaspi_ib_init == 0)
 	{
 	  //check mfile
 	  if(glb_gaspi_ctx.mfile == NULL)
@@ -324,7 +319,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	    free (glb_gaspi_ctx.hn_poff);
 	  
 	  glb_gaspi_ctx.hn_poff = (char *) calloc (glb_gaspi_ctx.tnc, 65);
-  
 	  if(glb_gaspi_ctx.hn_poff == NULL)
 	    {
 	      gaspi_print_error("Debug: Failed to allocate memory");
@@ -372,92 +366,66 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  glb_gaspi_ctx.rank = 0;
 	  glb_gaspi_ctx.tnc = glb_gaspi_ctx.tnc;
 	  
-	  if(glb_gaspi_ctx.sockfd) free(glb_gaspi_ctx.sockfd);
+	  if(glb_gaspi_ctx.sockfd)
+	    free(glb_gaspi_ctx.sockfd);
   
-	  glb_gaspi_ctx.sockfd = (int*) malloc (glb_gaspi_ctx.tnc * sizeof (int));
-	  
+	  glb_gaspi_ctx.sockfd = (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
 	  if(glb_gaspi_ctx.sockfd == NULL)
 	    {
-	      gaspi_print_error("Debug: Failed to allocate memory");
+	      gaspi_print_error("Failed to allocate memory");
 	      eret = GASPI_ERROR;
 	      goto errL;
 	    }
 	  
 	  for(i = 0; i < glb_gaspi_ctx.tnc; i++) 
-	    glb_gaspi_ctx.sockfd[i]=-1;
-  
-/* 	  if(gaspi_init_ib_core() != GASPI_SUCCESS) */
-/* 	    { */
-/* 	      eret = GASPI_ERROR; */
-/* 	      goto errL; */
-/* 	    } */
-	  
+	    glb_gaspi_ctx.sockfd[i] = -1;
 	}//glb_gaspi_ib_init
       
-      struct timeb t0,t1;
-      ftime(&t0);
-      
-      for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+      for(i = 1; i < glb_gaspi_ctx.tnc; i++)
 	{
+	  //TODO: superficial check?
 	  if(glb_gaspi_ctx.sockfd[i] != -1)
 	    continue;
-	  
-	  while(glb_gaspi_ctx.sockfd[i] == -1)
+
+	  eret = gaspi_connect_to_rank(i, timeout_ms);
+	  if(eret != GASPI_SUCCESS)
 	    {
-	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),glb_gaspi_cfg.sn_port+glb_gaspi_ctx.poff[i], timeout_ms);
-
-	      if(glb_gaspi_ctx.sockfd[i] == -2)
-		{
-		  eret = GASPI_ERROR;
-		  goto errL;
-		}
-	      
-	      if(glb_gaspi_ctx.sockfd[i] == -1)
-		{
-		  ftime(&t1);
-		  const unsigned int delta_ms = (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
-		  
-		  if(delta_ms > timeout_ms)
-		    {
-		      eret = GASPI_TIMEOUT;
-		      goto errL;
-		    }
-		}
-	      else
-		{
-		  //TODO: 65 is magic
-		  if(i > 0)
-		    {//we already have everything
-		      gaspi_cd_header cdh;
-		      cdh.op_len=glb_gaspi_ctx.tnc*65;
-		      cdh.op=GASPI_SN_TOPOLOGY;
-		      cdh.rank=i;
-		      cdh.tnc=glb_gaspi_ctx.tnc;
-		      int ret;
-		      if( (ret = write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header)))!=sizeof(gaspi_cd_header))
-			{
-			  //			  int errsv = errno;
-			  //			  gaspi_print_error("Failed to write. Error %d: (%s)\n", errsv, (char*)strerror(errsv));
-			  gaspi_print_error("Failed to write.");
-			  
-			  eret = GASPI_ERROR;
-			  goto errL;
-			}
-		      
-		      if( (ret=write(glb_gaspi_ctx.sockfd[i],glb_gaspi_ctx.hn_poff,glb_gaspi_ctx.tnc*65))!=glb_gaspi_ctx.tnc*65)
-			{
-			  //int errsv = errno;
-			  //			  gaspi_print_error("Failed to write\nError %d: (%s)\n", errsv, (char*)strerror(errsv));
-			  gaspi_print_error("Failed to write");
-			  
-
-			  eret = GASPI_ERROR;
-			  goto errL;
-			}
-		    }
-		}
+	      gaspi_print_error("Failed to connect to %d", i);
+	      goto errL;
 	    }
+
+	  gaspi_cd_header cdh;
+	  cdh.op_len = glb_gaspi_ctx.tnc * 65; //TODO: 65 is magic
+	  cdh.op = GASPI_SN_TOPOLOGY;
+	  cdh.rank = i;
+	  cdh.tnc = glb_gaspi_ctx.tnc;
+
+	  int ret;
+	  if( (ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header))) != sizeof(gaspi_cd_header))
+	    {
+	      gaspi_print_error("Failed to send topology command to %d.", i);
+	      eret = GASPI_ERROR;
+	      goto errL;
+	    }
+		      
+	  if( (ret = write(glb_gaspi_ctx.sockfd[i],glb_gaspi_ctx.hn_poff,glb_gaspi_ctx.tnc*65)) != glb_gaspi_ctx.tnc*65)
+	    {
+	      gaspi_print_error("Failed to send topology info to %d", i);
+	      eret = GASPI_ERROR;
+	      goto errL;
+	    }
+
+	  //close the socket to avoid too many files open
+	  if(gaspi_close( glb_gaspi_ctx.sockfd[i] ) != 0)
+	    {
+	      gaspi_print_error("Failed to close connection to %d", i);
+	      eret = GASPI_ERROR;
+	      goto errL;
+	    }
+
+	  glb_gaspi_ctx.sockfd[i] = -1;
 	}
+
       if(gaspi_init_ib_core() != GASPI_SUCCESS)
 	{
 	  eret = GASPI_ERROR;
@@ -465,7 +433,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	}
       
     }//MASTER_PROC
-
   else if(glb_gaspi_ctx.procType == WORKER_PROC)
     {
       //wait for topo data
@@ -473,9 +440,10 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       ftime(&t0);
       while(gaspi_master_topo_data == 0)
 	{
+	  //keep checking if sn is doing well
 	  if(gaspi_sn_status != GASPI_SN_STATE_OK)
 	    {
-	      gaspi_print_error("Error in SN initialization");
+	      gaspi_print_error("Detected error in SN initialization");
 	      eret = gaspi_sn_err;
 
 	      goto errL;
@@ -484,7 +452,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  gaspi_delay();
 	  
 	  ftime(&t1);
-	  const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
+	  const unsigned int delta_ms = (t1.time-t0.time) * 1000 + (t1.millitm - t0.millitm);
 	  if(delta_ms > timeout_ms)
 	    {
 	      eret = GASPI_TIMEOUT;
@@ -505,30 +473,23 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	{
 	  if(glb_gaspi_ctx.sockfd[i] != -1)
 	    continue;
-  
-	  while(glb_gaspi_ctx.sockfd[i] == -1)
+
+	  eret = gaspi_connect_to_rank(i, timeout_ms);
+	  if(eret != GASPI_SUCCESS)
 	    {
-	      glb_gaspi_ctx.sockfd[i] = gaspi_connect2port(gaspi_get_hn(i),glb_gaspi_cfg.sn_port+glb_gaspi_ctx.poff[i], timeout_ms);
-
-	      //-2 is problem with system limits -> nothing you can do
-	      if(glb_gaspi_ctx.sockfd[i] == -2)
-		{
-		  eret = GASPI_ERR_EMFILE;
-		  goto errL;
-		}
-
-	      if(glb_gaspi_ctx.sockfd[i] == -1)
-		{
-		  ftime(&t1);
-		  const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
-		
-		  if(delta_ms > timeout_ms)
-		    {
-		      eret=GASPI_TIMEOUT;
-		      goto errL;
-		    }
-		}
+	      gaspi_print_error("Failed to connect to %d", i);
+	      goto errL;
 	    }
+
+	  //close the socket to avoid too many files open
+	  if(gaspi_close(glb_gaspi_ctx.sockfd[i]) != 0)
+	    {
+	      eret = GASPI_ERROR;
+	      gaspi_print_error("Failed to close connection to %d", i);
+	      goto errL;
+	    }
+
+	  glb_gaspi_ctx.sockfd[i] = -1;
 	}
     }
   else
@@ -538,17 +499,15 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       goto errL;
     }
   
-  /*   glb_gaspi_init = 1; */
-  /*   need to wait to make sure everyone is connected */
-  /*   avoid problem of connecting to a node which is not yet ready (sn side) */
-  /*   TODO: should only be done when building infrastructure? */
+  /* need to wait to make sure everyone is connected */
+  /* avoid problem of connecting to a node which is not yet ready (sn side) */
+  /* TODO: should only be done when building infrastructure? */
   while(glb_gaspi_init < glb_gaspi_ctx.tnc )
     {
       gaspi_delay();
       if(gaspi_sn_status != GASPI_SN_STATE_OK)
 	{
-	  gaspi_print_error("Error in SN initialization");
-
+	  gaspi_print_error("Detected error in SN initialization");
 	  eret = gaspi_sn_err;
 	  goto errL;
 	}
@@ -556,17 +515,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
-#ifdef GPI2_DEV_DEBUG
-  struct timeb tup1,tinit1;
-  ftime(&tup1);
-
-  //TODO: delta calculations as a macro or inlined
-  const unsigned int delta_s = (tup1.time-tup0.time)+((tup1.millitm-tup0.millitm)/1000);
-  
-  printf("Rank %i is ready to build (took %u secs %llu Mbytes)\n",
-  	 glb_gaspi_ctx.rank, delta_s, gaspi_get_mem_in_use() / 1024 / 1024);
-#endif
-  
   if(glb_gaspi_cfg.build_infrastructure)
     {
       //connect all ranks
@@ -574,7 +522,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	{
 	  if(gaspi_connect(i, timeout_ms) != GASPI_SUCCESS)
 	    {
-	      gaspi_print_error("Failed to connnect to %d\n", i);
+	      gaspi_print_error("Failed to gaspi_connect to %d\n", i);
 	      return GASPI_ERROR;
 	    }
 	}
@@ -628,17 +576,12 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   glb_gaspi_ctx.gpu_count = 0;
 #endif
 
-#ifdef GPI2_DEV_DEBUG
-  ftime(&tinit1);
-  const unsigned int delta_s1 = (tinit1.time-tinit0.time)+((tinit1.millitm-tinit0.millitm)/1000);
-  printf("Rank %i is done with init (took %u secs %lu Mbytes peak %lu Mbytes )\n",
-	       glb_gaspi_ctx.rank, delta_s1, gaspi_get_mem_in_use()/1024/1024, gaspi_get_mem_peak()/1024/1024 );
-#endif
-  
   return eret;
 
  errL:
+  //TODO: should close/reset socket?
   unlock_gaspi (&glb_gaspi_ctx_lock);
+
   return eret;
 }
 
@@ -648,7 +591,7 @@ pgaspi_initialized (gaspi_number_t *initialized)
 {
   gaspi_verify_null_ptr(initialized);
   
-  *initialized = ( glb_gaspi_init != 0 && glb_gaspi_init == glb_gaspi_ctx.tnc );
+  *initialized = ( glb_gaspi_init != 0 && glb_gaspi_init >= glb_gaspi_ctx.tnc );
   
   return GASPI_SUCCESS;
 }
@@ -678,8 +621,8 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
 	  close(glb_gaspi_ctx.sockfd[i]);
 	}
 
-    free(glb_gaspi_ctx.sockfd);
-  }
+      free(glb_gaspi_ctx.sockfd);
+    }
 
 #ifdef GPI2_WITH_MPI
   if(glb_gaspi_ctx.rank == 0)
@@ -697,7 +640,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
 
-errL:
+ errL:
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_ERROR;
 }
@@ -721,29 +664,36 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   if(lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
+  gaspi_return_t eret = gaspi_connect_to_rank(rank, timeout_ms);
+  if(eret != GASPI_SUCCESS)
+    {
+      gaspi_print_error("Failed to connect to %d", rank);
+      goto endL;
+    }
 
   gaspi_cd_header cdh;
   cdh.op_len = 0;
   cdh.op = GASPI_SN_PROC_KILL;
   cdh.rank = glb_gaspi_ctx.rank;
-           
-  int ret;
-  ret = write(glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
+
+  int ret = write(glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
   if(ret != sizeof(gaspi_cd_header))
     {
-      //      int errsv = errno;
-      //      gaspi_print_error("Failed to send kill command to SN thread. Error %d: %s\n", errsv, (char*) strerror(errsv));
-      gaspi_print_error("Failed to send kill command to SN thread.");
-      
-      goto errL;
+      gaspi_print_error("Failed to send kill command to %d.", rank);
+      eret = GASPI_ERROR;
     }
 
-  unlock_gaspi(&glb_gaspi_ctx_lock);
-  return GASPI_SUCCESS;
+  if(gaspi_close(glb_gaspi_ctx.sockfd[rank]) != 0)
+    {
+      gaspi_print_error("Failed to close connection to %d", rank);
+      eret = GASPI_ERROR;
+    }
 
- errL:
+  glb_gaspi_ctx.sockfd[rank] = -1;
+
+ endL:
   unlock_gaspi(&glb_gaspi_ctx_lock);
-  return GASPI_ERROR;
+  return eret;
 }
 
 #pragma weak gaspi_proc_rank = pgaspi_proc_rank

@@ -29,6 +29,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <string.h>
 #include <unistd.h>
 
+#include "GPI2.h"
 #include "GPI2_SN.h"
 
 /* Status and return value of SN thread: mostly for error detection */
@@ -177,9 +178,58 @@ int gaspi_connect2port(const char *hn,const unsigned short port,const unsigned l
 	}
       //gaspi_delay();
     }
-  
+
   signal(SIGPIPE, SIG_IGN);
   return sockfd;
+}
+
+int
+gaspi_close(int sockfd)
+{
+  if(shutdown(sockfd, 2) != 0)
+    {
+      gaspi_sn_print_error("shutdown failed\n");
+      return 1;
+    }
+
+  if(close(sockfd) != 0)
+    {
+      gaspi_sn_print_error("close failed\n");
+      return 1;
+    }
+
+  return 0;
+}
+
+gaspi_return_t
+gaspi_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms)
+{
+  struct timeb t0, t1;
+  ftime(&t0);
+
+  //TODO: introduce backoff delay?
+  while(glb_gaspi_ctx.sockfd[rank] == -1)
+    {
+      glb_gaspi_ctx.sockfd[rank] = gaspi_connect2port(gaspi_get_hn(rank),glb_gaspi_cfg.sn_port+glb_gaspi_ctx.poff[rank], timeout_ms);
+
+      if(glb_gaspi_ctx.sockfd[rank] == -2)
+	{
+	  return GASPI_ERR_EMFILE;
+	}
+
+      if(glb_gaspi_ctx.sockfd[rank] == -1)
+	{
+	  ftime(&t1);
+	  const unsigned int delta_ms = (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
+
+	  if(delta_ms > timeout_ms)
+	    {
+	      return GASPI_TIMEOUT;
+	    }
+	}
+    }
+
+  return GASPI_SUCCESS;
 }
 
 void gaspi_sn_cleanup(int sig)

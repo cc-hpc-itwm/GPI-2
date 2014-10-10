@@ -22,8 +22,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 
 #include "GASPI.h"
-#include "GPI2_Types.h"
 #include "GPI2_IB.h"
+#include "GPI2_Types.h"
 
 #define GASPI_EPOLL_CREATE  (256)
 #define GASPI_EPOLL_MAX_EVENTS  (2048)
@@ -95,18 +95,25 @@ extern gaspi_context glb_gaspi_ctx;
 extern gaspi_ib_ctx glb_gaspi_ctx_ib;
 extern gaspi_ib_group glb_gaspi_group_ib[GASPI_MAX_GROUPS];
 
-
-
-int gaspi_set_non_blocking(int sock);
+int
+gaspi_set_non_blocking(int sock);
 
 int
 gaspi_connect2port(const char *hn,const unsigned short port,const unsigned long timeout_ms);
+int
+gaspi_close(int sockfd);
 
-void gaspi_sn_cleanup(int sig);
+gaspi_return_t
+gaspi_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms);
 
-int gaspi_seg_reg_sn(const gaspi_cd_header snp);
+void
+gaspi_sn_cleanup(int sig);
 
-void *gaspi_sn_backend(void *arg);
+int
+gaspi_seg_reg_sn(const gaspi_cd_header snp);
+
+void *
+gaspi_sn_backend(void *arg);
 
 gaspi_return_t
 gaspi_sn_ping(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms);

@@ -692,41 +692,43 @@ gaspi_return_t
 pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 {
   gaspi_return_t eret = GASPI_ERROR;
-  //int c;
 
-  if(!glb_gaspi_ib_init) return GASPI_ERROR;
+  if(!glb_gaspi_ib_init)
+    return GASPI_ERROR;
 
-  const int i=rank;
-  if(gaspi_create_endpoint(i)<0) return GASPI_ERROR;
+  const int i = rank;
+  if(gaspi_create_endpoint(i) < 0)
+    return GASPI_ERROR;
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
   if(glb_gaspi_ctx_ib.lrcd[i].cstat)
-    goto okL;//already connected
+    {
+      goto okL; //already connected
+    }
+
+  eret = gaspi_connect_to_rank(i, timeout_ms);
+  if(eret != GASPI_SUCCESS)
+    {
+      goto errL;
+    }
 
   gaspi_cd_header cdh;
   cdh.op_len = sizeof(gaspi_rc_all);
   cdh.op = GASPI_SN_CONNECT;
   cdh.rank = glb_gaspi_ctx.rank;
-           
-  int ret;
-  if(-1 == glb_gaspi_ctx.sockfd[i])
-    {
-      gaspi_print_error("Invalid socket fd %d for rank %u\n", glb_gaspi_ctx.sockfd[i], i);
-      goto errL;
-    }
-  
-  ret=write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header));
-  if(ret !=sizeof(gaspi_cd_header))
+
+  int ret = write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header));
+  if(ret != sizeof(gaspi_cd_header))
     {
       gaspi_print_error("Failed to write(%d, %p, %lu)",
 			glb_gaspi_ctx.sockfd[i], &cdh,sizeof(gaspi_cd_header));
-      eret=GASPI_ERROR;
+      eret = GASPI_ERROR;
       goto errL;
     }
 
-  ret=write(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
+  ret = write(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
   if(ret != sizeof(gaspi_rc_all))
     {
       gaspi_print_error("Failed to write(%d. %p, %lu)",
@@ -751,6 +753,14 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
       eret = GASPI_ERROR;
       goto errL;
     }
+
+  if(gaspi_close(glb_gaspi_ctx.sockfd[i]) != 0)
+    {
+      gaspi_print_error("Failed to close socket to %d", i);
+      eret = GASPI_ERROR;
+      goto errL;
+    }
+  glb_gaspi_ctx.sockfd[i] = -1;
 
  okL:
   unlock_gaspi(&glb_gaspi_ctx_lock);
@@ -1577,6 +1587,12 @@ pgaspi_group_commit (const gaspi_group_t group,
 
       if(glb_gaspi_group_ib[group].rank_grp[i]==glb_gaspi_ctx.rank) continue;
 
+      eret = gaspi_connect_to_rank(glb_gaspi_group_ib[group].rank_grp[i], timeout_ms);
+      if(eret != GASPI_SUCCESS)
+	{
+	  goto errL;
+	}
+
       do
 	{
 	  memset(&rem_gb,0,sizeof(rem_gb));
@@ -1624,7 +1640,6 @@ pgaspi_group_commit (const gaspi_group_t group,
 	      /* eret = GASPI_ERROR; */
 	      /* goto errL; */
 	      /* } */
-	      
 	      //usleep(250000);
 	      //gaspi_delay();
 	    }
@@ -1670,6 +1685,16 @@ pgaspi_group_commit (const gaspi_group_t group,
 	      break;
 	    }
 	}while(1);
+
+      if(gaspi_close(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]]) != 0)
+	{
+	  gaspi_print_error("Failed to close socket to %d", glb_gaspi_group_ib[group].rank_grp[i]);
+	  eret = GASPI_ERROR;
+	  goto errL;
+	}
+      glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]] = -1;
+      
+
     }//for
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
@@ -1983,10 +2008,10 @@ errL:
 #pragma weak gaspi_segment_register = pgaspi_segment_register
 gaspi_return_t
 pgaspi_segment_register(const gaspi_segment_id_t segment_id,
-			               const gaspi_rank_t rank,
-			               const gaspi_timeout_t timeout_ms)
+			const gaspi_rank_t rank,
+			const gaspi_timeout_t timeout_ms)
 {
-
+  
   if(!glb_gaspi_ib_init)
     return GASPI_ERROR;
 
@@ -1999,7 +2024,14 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
   if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
     return GASPI_ERROR;
 
+  //TODO: respect timeout
   lock_gaspi_tout(&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  
+  gaspi_return_t eret = gaspi_connect_to_rank(rank, timeout_ms);
+  if(eret != GASPI_SUCCESS)
+    {
+      goto errL;
+    }
 
   //seg register
   gaspi_cd_header cdh;
@@ -2015,38 +2047,48 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
   cdh.host_addr = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_addr;
 #endif
 
-  int ret;
-  ret=write(glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header));
+
+  int ret = write(glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header));
   if(ret != sizeof(gaspi_cd_header))
     {
       gaspi_print_error("Failed to write (%d %p %lu)",
 			glb_gaspi_ctx.sockfd[rank],&cdh,sizeof(gaspi_cd_header));
 
       glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
+      eret = GASPI_ERROR;
       goto errL;
     }
 
   int rret;
-  ret=read(glb_gaspi_ctx.sockfd[rank],&rret,sizeof(int));
-  if(ret !=sizeof(int))
+  ret = read(glb_gaspi_ctx.sockfd[rank],&rret,sizeof(int));
+  if(ret != sizeof(int))
     {
       gaspi_print_error("Failed to read (%d %p %lu)",
 			glb_gaspi_ctx.sockfd[rank],&rret, sizeof(int));
 
       glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
+      eret = GASPI_ERROR;
       goto errL;
     }
   
-  if(rret < 0) 
-    goto errL;
+  if(rret < 0)
+    {
+      eret = GASPI_ERROR;
+      goto errL;
+    }
   
-  unlock_gaspi(&glb_gaspi_ctx_lock);
-  return GASPI_SUCCESS;
+  if(gaspi_close(glb_gaspi_ctx.sockfd[rank]) != 0)
+    {
+      gaspi_print_error("Failed to close socket to %d", rank);
+      eret = GASPI_ERROR;
+      goto errL;
+    }
 
-errL:
-  unlock_gaspi(&glb_gaspi_ctx_lock);
-  return GASPI_ERROR;
+  glb_gaspi_ctx.sockfd[rank] = -1;
 
+ errL:
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+  return eret;
 }
 
 //sn-registration
@@ -2160,6 +2202,12 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
       if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_group_ib[group].rank_grp[i]].trans) 
 	continue;
 
+      eret = gaspi_connect_to_rank(glb_gaspi_group_ib[group].rank_grp[i], timeout_ms);
+      if(eret != GASPI_SUCCESS)
+	{
+	  goto errL;
+	}
+
       int ret;
       ret=write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
 		&cdh,
@@ -2177,6 +2225,7 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 	  goto errL;
 	}
     
+
       int rret;
       ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rret,sizeof(int));
       if(ret != sizeof(int))
@@ -2192,6 +2241,15 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 	goto errL;
 
       glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_group_ib[group].rank_grp[i]].trans=1;
+
+      if(gaspi_close(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]]) != 0)
+	{
+	  gaspi_print_error("Failed to close socket to %d", glb_gaspi_group_ib[group].rank_grp[i]);
+	  eret = GASPI_ERROR;
+	  goto errL;
+	}
+
+      glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]] = -1;
 
     }//for
 

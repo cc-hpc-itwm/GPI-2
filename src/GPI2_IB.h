@@ -22,6 +22,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <infiniband/verbs.h>
 #include <infiniband/driver.h>
 
+#include "GPI2_Types.h"
+
 #define GASPI_GID_INDEX   (0)
 #define PORT_LINK_UP      (5)
 #define MAX_INLINE_BYTES  (128)
