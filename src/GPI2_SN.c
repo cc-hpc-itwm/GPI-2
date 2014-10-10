@@ -31,6 +31,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GPI2.h"
 #include "GPI2_SN.h"
+#include "GPI2_Utility.h"
 
 /* Status and return value of SN thread: mostly for error detection */
 volatile enum gaspi_sn_status gaspi_sn_status = GASPI_SN_STATE_OK;

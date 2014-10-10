@@ -1,6 +1,6 @@
 include make.inc
 
-SRCS += GPI2_IB_IO.c GPI2_IB_PASSIVE.c GPI2_IB_ATOMIC.c GPI2_IB_GRP.c GPI2_IB.c \
+SRCS += GPI2_IB_IO.c GPI2_IB_PASSIVE.c GPI2_IB_ATOMIC.c GPI2_IB_GRP.c GPI2_IB_SEG.c GPI2_IB_CONFIG.c GPI2_IB.c \
  GPI2_Env.c GPI2_Utility.c GPI2_SN.c GPI2_Logger.c GPI2_Stats.c GPI2_Mem.c GPI2_Threads.c GPI2.c 
 HDRS += GPI2_IB.h GPI2_Env.h GPI2_Utility.h GPI_Types.h GPI2_SN.h GPI2.h
 

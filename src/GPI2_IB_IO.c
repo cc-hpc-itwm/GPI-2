@@ -25,10 +25,88 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 extern gaspi_context glb_gaspi_ctx;
-
-#ifdef DEBUG
 extern gaspi_config_t glb_gaspi_cfg;
 
+/* Queue utilities and IO limits */
+#pragma weak gaspi_queue_size = pgaspi_queue_size
+gaspi_return_t
+pgaspi_queue_size (const gaspi_queue_id_t queue,
+		  gaspi_number_t * const queue_size)
+{
+  if (queue >= glb_gaspi_cfg.queue_num)
+    {
+      gaspi_print_error("Invalid queue id provided");
+      return GASPI_ERROR;
+    }
+
+  gaspi_verify_null_ptr(queue_size);
+
+  *queue_size = glb_gaspi_ctx_ib.ne_count_c[queue];
+  return GASPI_SUCCESS;
+}
+
+#pragma weak gaspi_queue_num = pgaspi_queue_num 
+gaspi_return_t
+pgaspi_queue_num (gaspi_number_t * const queue_num)
+{
+  gaspi_verify_null_ptr(queue_num);
+
+  *queue_num = glb_gaspi_cfg.queue_num;
+  return GASPI_SUCCESS;
+}
+
+#pragma weak gaspi_queue_size_max = pgaspi_queue_size_max 
+gaspi_return_t
+pgaspi_queue_size_max (gaspi_number_t * const queue_size_max)
+{
+  gaspi_verify_null_ptr(queue_size_max);
+
+  *queue_size_max = glb_gaspi_cfg.queue_depth;
+  return GASPI_SUCCESS;
+}
+
+#pragma weak gaspi_transfer_size_min = pgaspi_transfer_size_min 
+gaspi_return_t
+pgaspi_transfer_size_min (gaspi_size_t * const transfer_size_min)
+{
+  gaspi_verify_null_ptr(transfer_size_min);
+
+  *transfer_size_min = 1;
+  return GASPI_SUCCESS;
+}
+
+#pragma weak gaspi_transfer_size_max = pgaspi_transfer_size_max 
+gaspi_return_t
+pgaspi_transfer_size_max (gaspi_size_t * const transfer_size_max)
+{
+  gaspi_verify_null_ptr(transfer_size_max);
+
+  *transfer_size_max = GASPI_MAX_TSIZE_C;
+  return GASPI_SUCCESS;
+}
+
+#pragma weak gaspi_notification_num = pgaspi_notification_num
+gaspi_return_t
+pgaspi_notification_num (gaspi_number_t * const notification_num)
+{
+  gaspi_verify_null_ptr(notification_num);
+
+  //TODO:?
+  *notification_num = ((1 << 16) - 1);
+  return GASPI_SUCCESS;
+}
+
+#pragma weak gaspi_rw_list_elem_max = pgaspi_rw_list_elem_max
+gaspi_return_t
+pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
+{
+  gaspi_verify_null_ptr(elem_max);
+
+  *elem_max = ((1 << 8) - 1);
+  return GASPI_SUCCESS;
+}
+
+#ifdef DEBUG
 static void _print_func_params(char *func_name, const gaspi_segment_id_t segment_id_local,
 			       const gaspi_offset_t offset_local, const gaspi_rank_t rank,
 			       const gaspi_segment_id_t segment_id_remote,
@@ -113,9 +191,9 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
   
   return 0;
 }
+#endif //DEBUG
 
-
-#endif
+/* Communication functions */
 
 #pragma weak gaspi_write = pgaspi_write 
 
@@ -851,19 +929,16 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 #ifdef GPI2_CUDA
   if(glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].cudaDevId >= 0)
     slist.addr =
-      (uintptr_t) (glb_gaspi_ctx_ib.
-		   rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
+      (uintptr_t) (glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
 		   offset_local);
   else
 #endif
     slist.addr =
-      (uintptr_t) (glb_gaspi_ctx_ib.
-		   rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
+      (uintptr_t) (glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
 		   NOTIFY_OFFSET + offset_local);
 
   slist.length = size;
-  slist.lkey =
-    glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr->lkey;
+  slist.lkey = glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr->lkey;
 
 #ifdef GPI2_CUDA
   if(glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].cudaDevId >= 0)
@@ -887,7 +962,7 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 
   *((unsigned int *) slistN.addr) = notification_value;
 
-  slistN.length = 4;
+  slistN.length = 4; //TODO:?
   slistN.lkey = glb_gaspi_group_ib[0].mr->lkey;
 
 #ifdef GPI2_CUDA

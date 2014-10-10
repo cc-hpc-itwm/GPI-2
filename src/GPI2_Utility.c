@@ -253,4 +253,8 @@ gaspi_thread_sleep(int msecs)
 }
 
 
-
+char *
+gaspi_get_hn (const unsigned int id)
+{
+  return glb_gaspi_ctx.hn_poff + id * 64;
+}

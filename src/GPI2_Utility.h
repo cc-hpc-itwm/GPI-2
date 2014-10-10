@@ -63,5 +63,6 @@ ulong gaspi_load_ulong(volatile ulong *ptr);
 float gaspi_get_cpufreq ();
 int gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset);
 inline int gaspi_thread_sleep(int msecs);
+char * gaspi_get_hn (const unsigned int id);
 
 #endif

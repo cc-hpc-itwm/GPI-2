@@ -34,28 +34,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define GASPI_VERSION     (GASPI_MAJOR_VERSION + GASPI_MINOR_VERSION/10.0f + GASPI_REVISION/100.0f)
 
-gaspi_config_t glb_gaspi_cfg = {
-  1,				//logout
-  12121,                        //sn port 
-  0,				//netinfo
-  -1,				//netdev
-  0,				//mtu
-  1,				//port check
-  0,				//user selected network
-  GASPI_IB,			//network typ
-  1024,				//queue depth
-  8,				//queue count
-  GASPI_MAX_GROUPS,		//group_max;
-  GASPI_MAX_MSEGS,		//segment_max;
-  GASPI_MAX_TSIZE_C,		//transfer_size_max;
-  GASPI_MAX_NOTIFICATION,	//notification_num;
-  1024,				//passive_queue_size_max;
-  GASPI_MAX_TSIZE_P,		//passive_transfer_size_max;
-  NEXT_OFFSET,			//allreduce_buf_size;
-  255,				//allreduce_elem_max;
-  1				//build_infrastructure;  
-};
-
+extern gaspi_config_t glb_gaspi_cfg;
 
 #pragma weak gaspi_version  = pgaspi_version
 gaspi_return_t
@@ -65,86 +44,6 @@ pgaspi_version (float *const version)
   return GASPI_SUCCESS;
 }
 
-#pragma weak gaspi_config_get  = pgaspi_config_get
-gaspi_return_t
-pgaspi_config_get (gaspi_config_t * const config)
-{
-  gaspi_verify_null_ptr(config);
-
-  memcpy (config, &glb_gaspi_cfg, sizeof (gaspi_config_t));
-  return GASPI_SUCCESS;
-}
-
-#pragma weak gaspi_config_set = pgaspi_config_set
-gaspi_return_t
-pgaspi_config_set (const gaspi_config_t nconf)
-{
-
-  if (glb_gaspi_init)
-    return GASPI_ERROR;
-
-  glb_gaspi_cfg.net_info = nconf.net_info;
-  glb_gaspi_cfg.build_infrastructure = nconf.build_infrastructure;
-  glb_gaspi_cfg.logger = nconf.logger;
-  glb_gaspi_cfg.port_check = nconf.port_check;
-
-  if (nconf.network == GASPI_IB || nconf.network == GASPI_ETHERNET)
-    {
-      glb_gaspi_cfg.network = nconf.network;
-      glb_gaspi_cfg.user_net = 1;
-    }
-  else
-    {
-      gaspi_print_error("Invalid value for parameter network");
-      return GASPI_ERR_CONFIG;
-    }
-
-  if (nconf.netdev_id > 1)
-    {
-      gaspi_print_error("Invalid value for parameter netdev_id");
-      return GASPI_ERR_CONFIG;
-    }
-  else
-    glb_gaspi_cfg.netdev_id = nconf.netdev_id;
-
-  if (nconf.queue_num > GASPI_MAX_QP || nconf.queue_num < 1)
-    {
-      gaspi_print_error("Invalid value for parameter queue_num (min=1 and max=GASPI_MAX_QP");
-      return GASPI_ERR_CONFIG;
-    }
-  else
-    glb_gaspi_cfg.queue_num = nconf.queue_num;
-
-  if (nconf.queue_depth > GASPI_MAX_QSIZE || nconf.queue_depth < 1)
-    {
-      gaspi_print_error("Invalid value for parameter queue_depth (min=1 and max=GASPI_MAX_QSIZE");
-      return GASPI_ERR_CONFIG;
-    }
-  else
-    glb_gaspi_cfg.queue_depth = nconf.queue_depth;
-
-  if (nconf.mtu == 0 || nconf.mtu == 1024 || nconf.mtu == 2048 || nconf.mtu == 4096)
-    glb_gaspi_cfg.mtu = nconf.mtu;
-  else
-    {
-      gaspi_print_error("Invalid value for parameter mtu (supported: 1024, 2048,4096)");
-      return GASPI_ERR_CONFIG;
-    }
-
-  if(nconf.sn_port < 1024 || nconf.sn_port > 65536)
-    {
-      gaspi_print_error("Invalid value for parameter sn_port ( from 1024 to 65536)");
-      return GASPI_ERR_CONFIG;
-    }
-  else  
-    glb_gaspi_cfg.sn_port = nconf.sn_port;
-  
-  glb_gaspi_cfg.net_info = nconf.net_info;
-  glb_gaspi_cfg.logger = nconf.logger;
-  glb_gaspi_cfg.port_check = nconf.port_check;
-  
-  return GASPI_SUCCESS;
-}
 
 #pragma weak gaspi_machine_type = pgaspi_machine_type
 gaspi_return_t
@@ -777,93 +676,6 @@ pgaspi_proc_local_num(gaspi_rank_t * const local_num)
     }
 }
 
-//TODO: utility? (GPI2_Utility.[ch]
-char *
-gaspi_get_hn (const unsigned int id)
-{
-  return glb_gaspi_ctx.hn_poff + id * 64;
-}
-
-
-#pragma weak gaspi_queue_num = pgaspi_queue_num 
-gaspi_return_t
-pgaspi_queue_num (gaspi_number_t * const queue_num)
-{
-  gaspi_verify_null_ptr(queue_num);
-
-  *queue_num = glb_gaspi_cfg.queue_num;
-  return GASPI_SUCCESS;
-}
-
-#pragma weak gaspi_queue_size_max = pgaspi_queue_size_max 
-gaspi_return_t
-pgaspi_queue_size_max (gaspi_number_t * const queue_size_max)
-{
-  gaspi_verify_null_ptr(queue_size_max);
-
-  *queue_size_max = glb_gaspi_cfg.queue_depth;
-  return GASPI_SUCCESS;
-}
-
-#pragma weak gaspi_transfer_size_min = pgaspi_transfer_size_min 
-gaspi_return_t
-pgaspi_transfer_size_min (gaspi_size_t * const transfer_size_min)
-{
-  gaspi_verify_null_ptr(transfer_size_min);
-
-  *transfer_size_min = 1;
-  return GASPI_SUCCESS;
-}
-
-#pragma weak gaspi_transfer_size_max = pgaspi_transfer_size_max 
-gaspi_return_t
-pgaspi_transfer_size_max (gaspi_size_t * const transfer_size_max)
-{
-  gaspi_verify_null_ptr(transfer_size_max);
-
-  *transfer_size_max = GASPI_MAX_TSIZE_C;
-  return GASPI_SUCCESS;
-}
-
-#pragma weak gaspi_notification_num = pgaspi_notification_num
-gaspi_return_t
-pgaspi_notification_num (gaspi_number_t * const notification_num)
-{
-  gaspi_verify_null_ptr(notification_num);
-
-  *notification_num = ((1 << 16) - 1);
-  return GASPI_SUCCESS;
-}
-
-#pragma weak gaspi_passive_transfer_size_max = pgaspi_passive_transfer_size_max
-gaspi_return_t
-pgaspi_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max)
-{
-  gaspi_verify_null_ptr(passive_transfer_size_max);
-
-  *passive_transfer_size_max = GASPI_MAX_TSIZE_P;
-  return GASPI_SUCCESS;
-}
-
-#pragma weak gaspi_allreduce_elem_max = pgaspi_allreduce_elem_max
-gaspi_return_t
-pgaspi_allreduce_elem_max (gaspi_number_t * const elem_max)
-{
-  gaspi_verify_null_ptr(elem_max);
-
-  *elem_max = ((1 << 8) - 1);
-  return GASPI_SUCCESS;
-}
-
-#pragma weak gaspi_rw_list_elem_max = pgaspi_rw_list_elem_max
-gaspi_return_t
-pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
-{
-  gaspi_verify_null_ptr(elem_max);
-
-  *elem_max = ((1 << 8) - 1);
-  return GASPI_SUCCESS;
-}
 
 #pragma weak gaspi_network_type = pgaspi_network_type
 gaspi_return_t
