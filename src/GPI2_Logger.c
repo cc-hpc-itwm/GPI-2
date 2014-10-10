@@ -115,8 +115,9 @@ _send_to_log(struct sockaddr_in *serverL,
   return 0;
 }
 
+#pragma weak gaspi_printf_to = pgaspi_printf_to
 void
-gaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
+pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
 {
   char buf[1024];
   char hn[128]; //TODO: 128? or 255?
@@ -172,8 +173,9 @@ gaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
   
 }
 
+#pragma weak gaspi_printf = pgaspi_printf
 void
-gaspi_printf (const char *fmt, ...)
+pgaspi_printf (const char *fmt, ...)
 {
 
   char buf[1024];
