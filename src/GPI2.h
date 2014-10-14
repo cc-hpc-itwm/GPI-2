@@ -65,75 +65,37 @@ unsigned char gaspi_atomic_xchg (volatile unsigned char *addr,
   return res;
 }
 
-static inline
-int lock_gaspi_tout (gaspi_lock_t * l, const gaspi_timeout_t timeout_ms)
-{
-
-  if (timeout_ms == GASPI_BLOCK)
-    {
-      while (gaspi_atomic_xchg (&l->lock, 1))
-	while (l->lock)
-	  gaspi_delay ();
-      return 0;
-    }
-  else if (timeout_ms == GASPI_TEST)
-    {
-      const unsigned char val = gaspi_atomic_xchg (&l->lock, 1);
-      return val;
-    }
-
-  //timeout
-  const gaspi_cycles_t s0 = gaspi_get_cycles ();
-
-  while (gaspi_atomic_xchg (&l->lock, 1))
-    {
-      while (l->lock)
-	{
-	  const gaspi_cycles_t s1 = gaspi_get_cycles ();
-	  const gaspi_cycles_t tdelta = s1 - s0;
-
-	  const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
-	  if (ms > (float) timeout_ms)
-	    {
-	      return 1;
-	    }
-
-	  gaspi_delay ();
-	}
-    }
-
-  return 0;
-}
-
-static inline
-void unlock_gaspi (gaspi_lock_t * l)
-{
-  gaspi_atomic_xchg (&l->lock, 0);
-}
+#define GASPI_ATOMIC_TRY_LOCK(l) gaspi_atomic_xchg(l, 1)
+#define GASPI_ATOMIC_UNLOCK(l)   gaspi_atomic_xchg(l, 0) 
 
 #else //!MIC
 
+#define GASPI_ATOMIC_TRY_LOCK(l) __sync_lock_test_and_set (l, 1)
+#define GASPI_ATOMIC_UNLOCK(l)  __sync_lock_release (l) 
+
+#endif
+
 static inline
 int lock_gaspi_tout (gaspi_lock_t * l, const gaspi_timeout_t timeout_ms)
 {
 
   if (timeout_ms == GASPI_BLOCK)
     {
-      while (__sync_lock_test_and_set (&l->lock, 1))
+      while (GASPI_ATOMIC_TRY_LOCK(&l->lock))
 	while (l->lock)
 	  gaspi_delay ();
       return 0;
     }
   else if (timeout_ms == GASPI_TEST)
     {
-      const unsigned char val = __sync_lock_test_and_set (&l->lock, 1);
+      const unsigned char val = GASPI_ATOMIC_TRY_LOCK (&l->lock);
       return val;
     }
 
   //timeout
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
 
-  while (__sync_lock_test_and_set (&l->lock, 1))
+  while (GASPI_ATOMIC_TRY_LOCK (&l->lock))
     {
       while (l->lock)
 	{
@@ -156,10 +118,8 @@ int lock_gaspi_tout (gaspi_lock_t * l, const gaspi_timeout_t timeout_ms)
 static inline
 void unlock_gaspi (gaspi_lock_t * l)
 {
-  __sync_lock_release (&l->lock);
+  GASPI_ATOMIC_UNLOCK (&l->lock);
 }
-
-#endif // MIC
 
 char * gaspi_get_hn (const unsigned int id);
 
