@@ -22,7 +22,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 
 #include "GASPI.h"
-#include "GPI2_IB.h"
 #include "GPI2_Types.h"
 
 #define GASPI_EPOLL_CREATE  (256)
@@ -92,8 +91,6 @@ extern volatile gaspi_return_t gaspi_sn_err;
 
 
 extern gaspi_context glb_gaspi_ctx;
-extern gaspi_ib_ctx glb_gaspi_ctx_ib;
-extern gaspi_ib_group glb_gaspi_group_ib[GASPI_MAX_GROUPS];
 
 int
 gaspi_set_non_blocking(int sock);

@@ -27,12 +27,12 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GASPI.h"
 #include "GPI2.h"
 #include "GPI2_Env.h"
-#include "GPI2_IB.h"
+#include "GPI2_Dev.h"
 #include "GPI2_SN.h"
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
 
-#define GASPI_VERSION     (GASPI_MAJOR_VERSION + GASPI_MINOR_VERSION/10.0f + GASPI_REVISION/100.0f)
+#define GASPI_VERSION (GASPI_MAJOR_VERSION + GASPI_MINOR_VERSION/10.0f + GASPI_REVISION/100.0f)
 
 extern gaspi_config_t glb_gaspi_cfg;
 
@@ -43,7 +43,6 @@ pgaspi_version (float *const version)
   *version = GASPI_VERSION;
   return GASPI_SUCCESS;
 }
-
 
 #pragma weak gaspi_machine_type = pgaspi_machine_type
 gaspi_return_t
@@ -107,6 +106,129 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
   gaspi_print_error("Debug: NUMA was not enabled (-N option of gaspi_run)");
   
   return GASPI_ERROR;
+}
+
+
+#pragma weak gaspi_connect = pgaspi_connect
+gaspi_return_t
+pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
+{
+  gaspi_return_t eret = GASPI_ERROR;
+
+  if(!glb_gaspi_ib_init)
+    return GASPI_ERROR;
+
+  const int i = rank;
+  if(gaspi_create_endpoint(i) < 0)
+    return GASPI_ERROR;
+
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
+
+  if(gaspi_context_connected(i))
+    {
+      goto okL; //already connected
+    }
+
+  eret = gaspi_connect_to_rank(i, timeout_ms);
+  if(eret != GASPI_SUCCESS)
+    {
+      goto errL;
+    }
+
+  gaspi_cd_header cdh;
+  const int rc_size = gaspi_get_device_sizeof_rc();
+  //  cdh.op_len = sizeof(gaspi_rc_all);
+  cdh.op_len = rc_size;
+  
+  
+  cdh.op = GASPI_SN_CONNECT;
+  cdh.rank = glb_gaspi_ctx.rank;
+
+  int ret = write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header));
+  if(ret != sizeof(gaspi_cd_header))
+    {
+      gaspi_print_error("Failed to write(%d, %p, %lu)",
+			glb_gaspi_ctx.sockfd[i], &cdh,sizeof(gaspi_cd_header));
+      eret = GASPI_ERROR;
+      goto errL;
+    }
+
+  //  ret = write(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
+  ret = write(glb_gaspi_ctx.sockfd[i],gaspi_get_device_lrcd(i),rc_size);
+  //  if(ret != sizeof(gaspi_rc_all))
+  if(ret != rc_size)
+    {
+      gaspi_print_error("Failed to write(%d. %p, %lu)",
+			//			glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
+			glb_gaspi_ctx.sockfd[i],gaspi_get_device_lrcd(i),rc_size);
+
+      eret = GASPI_ERROR;
+      goto errL;
+    }
+
+  //  ret=read(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all));
+  ret=read(glb_gaspi_ctx.sockfd[i],gaspi_get_device_rrcd(i),rc_size);
+  //  if(ret != sizeof(gaspi_rc_all))
+  if(ret != rc_size)
+    {
+      gaspi_print_error("Failed to read from (%d %p %lu)",
+			//			glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all));
+			glb_gaspi_ctx.sockfd[i],gaspi_get_device_rrcd(i),rc_size);
+      eret = GASPI_ERROR;
+      goto errL;
+    }
+            
+  if(gaspi_connect_context(i, timeout_ms) != 0)
+    {
+      gaspi_print_error("Failed to connect context");
+      eret = GASPI_ERROR;
+      goto errL;
+    }
+
+  if(gaspi_close(glb_gaspi_ctx.sockfd[i]) != 0)
+    {
+      gaspi_print_error("Failed to close socket to %d", i);
+      eret = GASPI_ERROR;
+      goto errL;
+    }
+  glb_gaspi_ctx.sockfd[i] = -1;
+
+ okL:
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+  return GASPI_SUCCESS;
+
+ errL:
+  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+  return eret;
+}
+
+#pragma weak gaspi_disconnect = pgaspi_disconnect
+gaspi_return_t
+pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
+{
+
+  gaspi_return_t eret = GASPI_ERROR;
+  
+  if(!glb_gaspi_ib_init)
+    return GASPI_ERROR;
+  
+  const int i = rank;
+  
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
+
+  eret = gaspi_disconnect_context(i, timeout_ms);
+  if(eret != GASPI_SUCCESS)
+    goto errL;
+  
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+  return GASPI_SUCCESS;
+
+errL:
+  unlock_gaspi (&glb_gaspi_ctx_lock);
+  return eret;
 }
 
 #pragma weak gaspi_proc_init = pgaspi_proc_init
@@ -325,11 +447,13 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  glb_gaspi_ctx.sockfd[i] = -1;
 	}
 
-      if(gaspi_init_ib_core() != GASPI_SUCCESS)
+      if(gaspi_init_device_core() != GASPI_SUCCESS)
 	{
 	  eret = GASPI_ERROR;
 	  goto errL;
 	}
+      gaspi_init_collectives();
+
       
     }//MASTER_PROC
   else if(glb_gaspi_ctx.procType == WORKER_PROC)
@@ -533,7 +657,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
     }
 #endif
   
-  if(gaspi_cleanup_ib_core() != GASPI_SUCCESS)
+  if(gaspi_cleanup_device_core() != GASPI_SUCCESS)
     goto errL;
   
   unlock_gaspi (&glb_gaspi_ctx_lock);
@@ -676,7 +800,6 @@ pgaspi_proc_local_num(gaspi_rank_t * const local_num)
     }
 }
 
-
 #pragma weak gaspi_network_type = pgaspi_network_type
 gaspi_return_t
 pgaspi_network_type (gaspi_network_t * const network_type)
@@ -770,3 +893,26 @@ pgaspi_error_str(gaspi_return_t error_code)
 
   return (gaspi_string_t) gaspi_return_str[error_code];
 }
+
+#pragma weak gaspi_state_vec_get = pgaspi_state_vec_get
+gaspi_return_t
+pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
+{
+  int i, j;
+
+  if (!glb_gaspi_ib_init || state_vector == NULL)
+    return GASPI_ERROR;
+
+  memset (state_vector, 0, glb_gaspi_ctx.tnc);
+
+  for (i = 0; i < glb_gaspi_ctx.tnc; i++)
+    {
+      for (j = 0; j < (GASPI_MAX_QP + 3); j++)
+	{
+	  state_vector[i] |= glb_gaspi_ctx.qp_state_vec[j][i];
+	}
+    }
+
+  return GASPI_SUCCESS;
+}
+

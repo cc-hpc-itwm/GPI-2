@@ -68,4 +68,43 @@ typedef struct
   int tnc;
 } gaspi_node_init;
 
+typedef enum{
+  GASPI_BARRIER = 1,
+  GASPI_ALLREDUCE = 2,
+  GASPI_ALLREDUCE_USER = 4,
+  GASPI_NONE = 7
+}gaspi_async_coll_t;
+
+typedef struct
+{
+  unsigned int rkeyGroup;
+  unsigned long vaddrGroup;
+} gaspi_rc_grp;
+
+
+typedef struct{
+  union
+  {
+    unsigned char *buf;
+    void *ptr;
+  };
+  //  struct ibv_mr *mr;
+  void *mr;
+  int id;
+  unsigned int size;
+  gaspi_lock_t gl;
+  volatile unsigned char barrier_cnt;
+  volatile unsigned char togle;
+  gaspi_async_coll_t coll_op;
+  int lastmask;
+  int level,tmprank,dsize,bid;
+  int rank, tnc;
+  int next_pof2;
+  int pof2_exp;
+  int *rank_grp;
+  gaspi_rc_grp *rrcd;
+} gaspi_ib_group;
+
+gaspi_ib_group glb_gaspi_group_ib[GASPI_MAX_GROUPS];
+
 #endif /* _GPI2_TYPES_H_ */

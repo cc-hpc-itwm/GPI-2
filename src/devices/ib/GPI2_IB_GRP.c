@@ -20,12 +20,13 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include "GPI2.h"
 #include "GASPI.h"
+#include "GPI2_Coll.h"
 #include "GPI2_IB.h"
 #include "GPI2_SN.h"
 
 
 const unsigned int glb_gaspi_typ_size[6] = { 4, 4, 4, 8, 8, 8 };
-void (*fctArrayGASPI[18]) (void *, void *, void *, const unsigned char cnt) ={NULL};
+
 
 /* Group utilities */
 #pragma weak gaspi_group_create = pgaspi_group_create
@@ -123,7 +124,7 @@ pgaspi_group_create (gaspi_group_t * const group)
 	  glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
 
   glb_gaspi_group_ib[id].rrcd[glb_gaspi_ctx.rank].rkeyGroup =
-    glb_gaspi_group_ib[id].mr->rkey;
+    ((struct ibv_mr *)glb_gaspi_group_ib[id].mr)->rkey;
   glb_gaspi_group_ib[id].rrcd[glb_gaspi_ctx.rank].vaddrGroup =
     (uintptr_t) glb_gaspi_group_ib[id].buf;
 
@@ -598,7 +599,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
   slist.addr = (uintptr_t) barrier_ptr;
   slist.length = 1;
-  slist.lkey = glb_gaspi_group_ib[g].mr->lkey;
+  slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[g].mr)->lkey;
 
   swr.sg_list = &slist;
   swr.num_sge = 1;
@@ -684,379 +685,6 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
   return GASPI_SUCCESS;
-}
-
-
-
-
-
-
-//pre-defined coll. operations
-void
-opMinIntGASPI (void *res, void *localVal, void *dstVal,
-	       const unsigned char cnt)
-{
-  unsigned char i;
-
-  int *rv = (int *) res;
-  int *lv = (int *) localVal;
-  int *dv = (int *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = MIN (*lv, *dv);
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opMaxIntGASPI (void *res, void *localVal, void *dstVal,
-	       const unsigned char cnt)
-{
-  unsigned char i;
-
-  int *rv = (int *) res;
-  int *lv = (int *) localVal;
-  int *dv = (int *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = MAX (*lv, *dv);
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opSumIntGASPI (void *res, void *localVal, void *dstVal,
-	       const unsigned char cnt)
-{
-  unsigned char i;
-
-  int *rv = (int *) res;
-  int *lv = (int *) localVal;
-  int *dv = (int *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = *lv + *dv;
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opMinUIntGASPI (void *res, void *localVal, void *dstVal,
-		const unsigned char cnt)
-{
-  unsigned char i;
-
-  unsigned int *rv = (unsigned int *) res;
-  unsigned int *lv = (unsigned int *) localVal;
-  unsigned int *dv = (unsigned int *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = MIN (*lv, *dv);
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opMaxUIntGASPI (void *res, void *localVal, void *dstVal,
-		const unsigned char cnt)
-{
-  unsigned char i;
-
-  unsigned int *rv = (unsigned int *) res;
-  unsigned int *lv = (unsigned int *) localVal;
-  unsigned int *dv = (unsigned int *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = MAX (*lv, *dv);
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opSumUIntGASPI (void *res, void *localVal, void *dstVal,
-		const unsigned char cnt)
-{
-  unsigned char i;
-
-  unsigned int *rv = (unsigned int *) res;
-  unsigned int *lv = (unsigned int *) localVal;
-  unsigned int *dv = (unsigned int *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = *lv + *dv;
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opMinFloatGASPI (void *res, void *localVal, void *dstVal,
-		 const unsigned char cnt)
-{
-  unsigned char i;
-
-  float *rv = (float *) res;
-  float *lv = (float *) localVal;
-  float *dv = (float *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = MIN (*lv, *dv);
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opMaxFloatGASPI (void *res, void *localVal, void *dstVal,
-		 const unsigned char cnt)
-{
-  unsigned char i;
-
-  float *rv = (float *) res;
-  float *lv = (float *) localVal;
-  float *dv = (float *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = MAX (*lv, *dv);
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opSumFloatGASPI (void *res, void *localVal, void *dstVal,
-		 const unsigned char cnt)
-{
-  unsigned char i;
-
-  float *rv = (float *) res;
-  float *lv = (float *) localVal;
-  float *dv = (float *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = *lv + *dv;
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opMinDoubleGASPI (void *res, void *localVal, void *dstVal,
-		  const unsigned char cnt)
-{
-  unsigned char i;
-
-  double *rv = (double *) res;
-  double *lv = (double *) localVal;
-  double *dv = (double *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = MIN (*lv, *dv);
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opMaxDoubleGASPI (void *res, void *localVal, void *dstVal,
-		  const unsigned char cnt)
-{
-  unsigned char i;
-
-  double *rv = (double *) res;
-  double *lv = (double *) localVal;
-  double *dv = (double *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = MAX (*lv, *dv);
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opSumDoubleGASPI (void *res, void *localVal, void *dstVal,
-		  const unsigned char cnt)
-{
-  unsigned char i;
-
-  double *rv = (double *) res;
-  double *lv = (double *) localVal;
-  double *dv = (double *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = *lv + *dv;
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opMinLongGASPI (void *res, void *localVal, void *dstVal,
-		const unsigned char cnt)
-{
-  unsigned char i;
-
-  long *rv = (long *) res;
-  long *lv = (long *) localVal;
-  long *dv = (long *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = MIN (*lv, *dv);
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opMaxLongGASPI (void *res, void *localVal, void *dstVal,
-		const unsigned char cnt)
-{
-  unsigned char i;
-
-  long *rv = (long *) res;
-  long *lv = (long *) localVal;
-  long *dv = (long *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = MAX (*lv, *dv);
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opSumLongGASPI (void *res, void *localVal, void *dstVal,
-		const unsigned char cnt)
-{
-  unsigned char i;
-
-  long *rv = (long *) res;
-  long *lv = (long *) localVal;
-  long *dv = (long *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = *lv + *dv;
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opMinULongGASPI (void *res, void *localVal, void *dstVal,
-		 const unsigned char cnt)
-{
-  unsigned char i;
-
-  unsigned long *rv = (unsigned long *) res;
-  unsigned long *lv = (unsigned long *) localVal;
-  unsigned long *dv = (unsigned long *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = MIN (*lv, *dv);
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opMaxULongGASPI (void *res, void *localVal, void *dstVal,
-		 const unsigned char cnt)
-{
-  unsigned char i;
-
-  unsigned long *rv = (unsigned long *) res;
-  unsigned long *lv = (unsigned long *) localVal;
-  unsigned long *dv = (unsigned long *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = MAX (*lv, *dv);
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-opSumULongGASPI (void *res, void *localVal, void *dstVal,
-		 const unsigned char cnt)
-{
-  unsigned char i;
-
-  unsigned long *rv = (unsigned long *) res;
-  unsigned long *lv = (unsigned long *) localVal;
-  unsigned long *dv = (unsigned long *) dstVal;
-
-  for (i = 0; i < cnt; i++)
-    {
-      *rv = *lv + *dv;
-      lv++;
-      dv++;
-      rv++;
-    }
-}
-
-void
-gaspi_init_collectives ()
-{
-
-  fctArrayGASPI[0] = &opMinIntGASPI;
-  fctArrayGASPI[1] = &opMinUIntGASPI;
-  fctArrayGASPI[2] = &opMinFloatGASPI;
-  fctArrayGASPI[3] = &opMinDoubleGASPI;
-  fctArrayGASPI[4] = &opMinLongGASPI;
-  fctArrayGASPI[5] = &opMinULongGASPI;
-  fctArrayGASPI[6] = &opMaxIntGASPI;
-  fctArrayGASPI[7] = &opMaxUIntGASPI;
-  fctArrayGASPI[8] = &opMaxFloatGASPI;
-  fctArrayGASPI[9] = &opMaxDoubleGASPI;
-  fctArrayGASPI[10] = &opMaxLongGASPI;
-  fctArrayGASPI[11] = &opMaxULongGASPI;
-  fctArrayGASPI[12] = &opSumIntGASPI;
-  fctArrayGASPI[13] = &opSumIntGASPI;
-  fctArrayGASPI[14] = &opSumFloatGASPI;
-  fctArrayGASPI[15] = &opSumDoubleGASPI;
-  fctArrayGASPI[16] = &opSumLongGASPI;
-  fctArrayGASPI[17] = &opSumULongGASPI;
-
 }
 
 #pragma weak gaspi_allreduce = pgaspi_allreduce
@@ -1156,7 +784,7 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
   const int rest = size - glb_gaspi_group_ib[g].next_pof2;
 
   slist.length = dsize;
-  slist.lkey = glb_gaspi_group_ib[g].mr->lkey;
+  slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[g].mr)->lkey;
 
   swr.sg_list = &slist;
   swr.num_sge = 1;
@@ -1166,7 +794,7 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
 
   slistN.addr = (uintptr_t) barrier_ptr;
   slistN.length = 1;
-  slistN.lkey = glb_gaspi_group_ib[g].mr->lkey;
+  slistN.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[g].mr)->lkey;
 
   swrN.sg_list = &slistN;
   swrN.num_sge = 1;
@@ -1519,7 +1147,7 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
   const int rest = size - glb_gaspi_group_ib[g].next_pof2;
 
   slist.length = dsize;
-  slist.lkey = glb_gaspi_group_ib[g].mr->lkey;
+  slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[g].mr)->lkey;
 
   swr.sg_list = &slist;
   swr.num_sge = 1;
@@ -1529,7 +1157,7 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
 
   slistN.addr = (uintptr_t) barrier_ptr;
   slistN.length = 1;
-  slistN.lkey = glb_gaspi_group_ib[g].mr->lkey;
+  slistN.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[g].mr)->lkey;
 
   swrN.sg_list = &slistN;
   swrN.num_sge = 1;

@@ -195,8 +195,7 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
 
 /* Communication functions */
 
-#pragma weak gaspi_write = pgaspi_write 
-
+#pragma weak gaspi_write = pgaspi_write
 gaspi_return_t
 pgaspi_write (const gaspi_segment_id_t segment_id_local,
 	     const gaspi_offset_t offset_local, const gaspi_rank_t rank,
@@ -701,7 +700,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = 4;
-  slistN.lkey = glb_gaspi_group_ib[0].mr->lkey;
+  slistN.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[0].mr)->lkey;
 
 #ifdef GPI2_CUDA
   if( glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].cudaDevId >= 0)
@@ -963,7 +962,7 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = 4; //TODO:?
-  slistN.lkey = glb_gaspi_group_ib[0].mr->lkey;
+  slistN.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[0].mr)->lkey;
 
 #ifdef GPI2_CUDA
   if((glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].cudaDevId >= 0))
@@ -1110,7 +1109,7 @@ pgaspi_write_list_notify (const gaspi_number_t num,
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = 4;
-  slistN.lkey = glb_gaspi_group_ib[0].mr->lkey;
+  slistN.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[0].mr)->lkey;
 
 #ifdef GPI2_CUDA
   if(glb_gaspi_ctx_ib.rrmd[segment_id_notification][rank].cudaDevId >= 0)

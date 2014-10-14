@@ -1,8 +1,22 @@
 include make.inc
 
-SRCS += GPI2_IB_IO.c GPI2_IB_PASSIVE.c GPI2_IB_ATOMIC.c GPI2_IB_GRP.c GPI2_IB_SEG.c GPI2_IB_CONFIG.c GPI2_IB.c \
- GPI2_Env.c GPI2_Utility.c GPI2_SN.c GPI2_Logger.c GPI2_Stats.c GPI2_Mem.c GPI2_Threads.c GPI2.c 
-HDRS += GPI2_IB.h GPI2_Env.h GPI2_Utility.h GPI_Types.h GPI2_SN.h GPI2.h
+ifndef GPI2_DEVICE
+GPI2_DEVICE = IB
+$(info Default configuration (Infiniband))
+endif
+
+ifeq ($(findstring IB,$(GPI2_DEVICE)),IB)
+$(info Configuration for Infiniband)
+include devices/ib/Makefile.inc
+else ifeq ($(findstring TCP,$(GPI2_DEVICE)),TCP)
+$(info Configuration for Ethernet)
+include devices/tcp/Makefile.inc
+else
+$(error Unknow interconnect $(GPI2_DEVICE))
+endif
+
+SRCS += GPI2_Env.c GPI2_Utility.c GPI2_SN.c GPI2_Logger.c GPI2_Stats.c GPI2_Mem.c GPI2_Threads.c GPI2_Coll.c GPI2.c
+HDRS += GPI2_Env.h GPI2_Utility.h GPI_Types.h GPI2_SN.h GPI2_Coll.h GPI2.h
 
 OBJS = $(SRCS:.c=.o)
 OBJS_DBG = $(SRCS:.c=.dbg.o)
@@ -52,7 +66,7 @@ mic: $(OBJS_MIC) $(OBJS_DBG_MIC)
 	icc -mmic -g -O0 $(INCLUDES) -D_GNU_SOURCE -DDEBUG -DMIC -c $<  -o $@
 
 clean:
-	$(RM) *.o *~ ../lib64/$(GPI2) ../lib64/$(GPI2_DBG) ../lib64/mic/$(GPI2)
+	$(RM) $(OBJ_FORTRAN) $(OBJS) $(OBJS_DBG) *~ ../lib64/$(GPI2) ../lib64/$(GPI2_DBG) ../lib64/mic/$(GPI2)
 	$(RM) *.mod ../include/gaspi_types.mod ../include/gaspi.mod
 
 depend: $(SRCS)

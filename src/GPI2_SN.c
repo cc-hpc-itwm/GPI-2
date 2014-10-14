@@ -30,6 +30,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 
 #include "GPI2.h"
+#include "GPI2_Dev.h"
 #include "GPI2_SN.h"
 #include "GPI2_Utility.h"
 
@@ -240,8 +241,8 @@ void gaspi_sn_cleanup(int sig)
     pthread_exit(NULL);
 }
 
-extern gaspi_ib_ctx glb_gaspi_ctx_ib;
-extern gaspi_ib_group glb_gaspi_group_ib[GASPI_MAX_GROUPS];
+/* extern gaspi_ib_ctx glb_gaspi_ctx_ib; */
+/* extern gaspi_ib_group glb_gaspi_group_ib[GASPI_MAX_GROUPS]; */
 
 int gaspi_seg_reg_sn(const gaspi_cd_header snp);
 
@@ -490,7 +491,8 @@ void *gaspi_sn_backend(void *arg)
 			}
 		      else if(mgmt->op == GASPI_SN_CONNECT)
 			{
-			  ptr = (char*)&glb_gaspi_ctx_ib.rrcd[mgmt->cdh.rank];//gaspi_get_rrmd(mgmt->cdh.rank);
+			  ptr = gaspi_get_device_rrcd(mgmt->cdh.rank);
+
 			  rcount = read(mgmt->fd,ptr + mgmt->bdone,rsize);
 			  
 			}
@@ -679,7 +681,7 @@ void *gaspi_sn_backend(void *arg)
 				  
 				  if(glb_gaspi_ib_init == 0)//just local stuff
 				    {
-				      if(gaspi_init_ib_core() != GASPI_SUCCESS)
+				      if(gaspi_init_device_core() != GASPI_SUCCESS)
 					{
 					  
 					  gaspi_sn_print_error("Failed to initialized IB core");
@@ -688,6 +690,8 @@ void *gaspi_sn_backend(void *arg)
 					  
 					  return NULL;
 					}
+				      gaspi_init_collectives();
+
 				    }
 				  
 				  /* atomic update -> worker activated */
@@ -721,9 +725,9 @@ void *gaspi_sn_backend(void *arg)
 				    }
 				  
 				  int done = 0;
-				  int len = sizeof(gaspi_rc_all);
-				  char *ptr = (char*) &glb_gaspi_ctx_ib.lrcd[mgmt->cdh.rank];
-				  
+				  int len = gaspi_get_device_sizeof_rc();
+				  char *ptr = gaspi_get_device_lrcd(mgmt->cdh.rank);
+
 				  while(done < len)
 				    {
 				      int ret = write(mgmt->fd, ptr+done,len-done);

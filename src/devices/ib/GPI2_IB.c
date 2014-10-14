@@ -21,6 +21,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <sys/time.h>
 #include <sys/timeb.h>
 #include <unistd.h>
+
 #ifdef GPI2_CUDA
 #include <cuda.h>
 #include<cuda_runtime.h>
@@ -28,11 +29,9 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_GPU.h"
 #endif
       
-
-#include "GASPI.h"
 #include "GPI2.h"
+#include "GPI2_Dev.h"
 #include "GPI2_IB.h"
-#include "GPI2_SN.h"
 
 /* Globals */
 extern gaspi_config_t glb_gaspi_cfg;
@@ -81,30 +80,8 @@ gaspi_null_gid (union ibv_gid *gid)
 	   raw[15]);
 }
 
-#pragma weak gaspi_state_vec_get = pgaspi_state_vec_get
-gaspi_return_t
-pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
-{
-  int i, j;
-
-  if (!glb_gaspi_ib_init || state_vector == NULL)
-    return GASPI_ERROR;
-
-  memset (state_vector, 0, glb_gaspi_ctx.tnc);
-
-  for (i = 0; i < glb_gaspi_ctx.tnc; i++)
-    {
-      for (j = 0; j < (GASPI_MAX_QP + 3); j++)
-	{
-	  state_vector[i] |= glb_gaspi_ctx.qp_state_vec[j][i];
-	}
-    }
-
-  return GASPI_SUCCESS;
-}
-
 int
-gaspi_init_ib_core ()
+gaspi_init_device_core ()
 {
   char boardIDbuf[256];
   int i, c, p, dev_idx=0;
@@ -548,7 +525,6 @@ gaspi_init_ib_core ()
 	}
     }
 
-  gaspi_init_collectives();
 
   for(i = 0; i < GASPI_MAX_QP + 3; i++)
     {
@@ -687,104 +663,18 @@ errL:
 
 }
 
-#pragma weak gaspi_connect = pgaspi_connect
-gaspi_return_t
-pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
+
+int
+gaspi_disconnect_context(const int i, gaspi_timeout_t timeout_ms)
 {
-  gaspi_return_t eret = GASPI_ERROR;
+  int c;
 
   if(!glb_gaspi_ib_init)
     return GASPI_ERROR;
 
-  const int i = rank;
-  if(gaspi_create_endpoint(i) < 0)
-    return GASPI_ERROR;
-
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+  if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
     return GASPI_TIMEOUT;
-
-  if(glb_gaspi_ctx_ib.lrcd[i].cstat)
-    {
-      goto okL; //already connected
-    }
-
-  eret = gaspi_connect_to_rank(i, timeout_ms);
-  if(eret != GASPI_SUCCESS)
-    {
-      goto errL;
-    }
-
-  gaspi_cd_header cdh;
-  cdh.op_len = sizeof(gaspi_rc_all);
-  cdh.op = GASPI_SN_CONNECT;
-  cdh.rank = glb_gaspi_ctx.rank;
-
-  int ret = write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header));
-  if(ret != sizeof(gaspi_cd_header))
-    {
-      gaspi_print_error("Failed to write(%d, %p, %lu)",
-			glb_gaspi_ctx.sockfd[i], &cdh,sizeof(gaspi_cd_header));
-      eret = GASPI_ERROR;
-      goto errL;
-    }
-
-  ret = write(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
-  if(ret != sizeof(gaspi_rc_all))
-    {
-      gaspi_print_error("Failed to write(%d. %p, %lu)",
-			glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
-
-      eret = GASPI_ERROR;
-      goto errL;
-    }
-
-  ret=read(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all));
-  if(ret != sizeof(gaspi_rc_all))
-    {
-      gaspi_print_error("Failed to read from (%d %p %lu)",
-			glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all));
-      eret = GASPI_ERROR;
-      goto errL;
-    }
-            
-  if(gaspi_connect_context(i, timeout_ms) != 0)
-    {
-      gaspi_print_error("Failed to connect context");
-      eret = GASPI_ERROR;
-      goto errL;
-    }
-
-  if(gaspi_close(glb_gaspi_ctx.sockfd[i]) != 0)
-    {
-      gaspi_print_error("Failed to close socket to %d", i);
-      eret = GASPI_ERROR;
-      goto errL;
-    }
-  glb_gaspi_ctx.sockfd[i] = -1;
-
- okL:
-  unlock_gaspi(&glb_gaspi_ctx_lock);
-  return GASPI_SUCCESS;
-
- errL:
-  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
-  unlock_gaspi(&glb_gaspi_ctx_lock);
-  return eret;
-}
-
-#pragma weak gaspi_disconnect = pgaspi_disconnect
-gaspi_return_t
-pgaspi_disconnect(const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
-{
-  int c;
-
-  if(!glb_gaspi_ib_init) return GASPI_ERROR;
-
-  const int i=rank;
-
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
-    return GASPI_TIMEOUT;
-
+  
   if(glb_gaspi_ctx_ib.lrcd[i].cstat == 0)
     goto errL;//not connected
 
@@ -1001,10 +891,8 @@ gaspi_connect_context(const int i, gaspi_timeout_t timeout_ms)
   
 }
 
-
-
 int
-gaspi_cleanup_ib_core ()
+gaspi_cleanup_device_core ()
 {
   int i, c;
 
@@ -1285,3 +1173,28 @@ gaspi_cleanup_ib_core ()
 }
 
 
+inline char *
+gaspi_get_device_rrcd(int rank)
+{
+  return (char *)&glb_gaspi_ctx_ib.rrcd[rank];
+}
+
+inline char *
+gaspi_get_device_lrcd(int rank)
+{
+  return (char *)&glb_gaspi_ctx_ib.lrcd[rank];
+}
+
+inline int
+gaspi_get_device_sizeof_rc()
+{
+
+  return sizeof(gaspi_rc_all);
+}
+
+
+inline int
+gaspi_context_connected(const int i)
+{
+  return glb_gaspi_ctx_ib.lrcd[i].cstat;
+}

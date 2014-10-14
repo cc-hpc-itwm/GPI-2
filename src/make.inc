@@ -3,6 +3,7 @@ OFED_MIC_PATH = /opt/intel/mic/ofed/card/usr
 CC = gcc
 FORTRANC = gfortran
 HAS_FORTRAN:=$(shell which $(FORTRANC))
+GPI2_SRCDIR=$(CURDIR)
 
 CFLAGS += -Wall
 CFLAGS += -D_GNU_SOURCE
@@ -21,5 +22,6 @@ MIC_CFLAGS += -I../include
 MIC_CFLAGS += -I.
 
 INCLUDES += -I$(OFED_PATH)/include
-INCLUDES += -I../include
-INCLUDES += -I.
+INCLUDES += -I$(GPI2_SRCDIR)/../include
+INCLUDES += -I$(GPI2_SRCDIR)
+INCLUDES += -I$(GPI2_SRCDIR)/devices/include
