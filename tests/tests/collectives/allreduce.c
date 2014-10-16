@@ -145,6 +145,10 @@ gaspi_return_t testOP(gaspi_operation_t op, gaspi_datatype_t type, gaspi_number_
     case GASPI_TYPE_ULONG: ret = CHECK_CALL(uint64_t, recv_bf, elems, op);
       break;
     }
+
+  free(send_bf);
+  free(recv_bf);
+  
   if(ret)
     return GASPI_SUCCESS;
   else
