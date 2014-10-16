@@ -15,8 +15,28 @@ else
 $(error Unknow interconnect $(GPI2_DEVICE))
 endif
 
-SRCS += GPI2_Env.c GPI2_Utility.c GPI2_SN.c GPI2_Logger.c GPI2_Stats.c GPI2_Mem.c GPI2_Threads.c GPI2_Coll.c GPI2.c
-HDRS += GPI2_Env.h GPI2_Utility.h GPI_Types.h GPI2_SN.h GPI2_Coll.h GPI2.h
+SRCS += GPI2_Env.c
+SRCS += GPI2_Utility.c
+SRCS += GPI2_SN.c
+SRCS += GPI2_Logger.c
+SRCS += GPI2_Stats.c
+SRCS += GPI2_Mem.c
+SRCS += GPI2_Threads.c
+SRCS += GPI2_Coll.c
+SRCS += GPI2_IO.c
+SRCS += GPI2_ATOMIC.c
+SRCS += GPI2_PASSIVE.c
+SRCS += GPI2_SEG.c
+SRCS += GPI2_GRP.c
+SRCS += GPI2_CONFIG.c
+SRCS += GPI2.c
+
+HDRS += GPI2_Env.h
+HDRS += GPI2_Utility.h
+HDRS += GPI_Types.h
+HDRS += GPI2_SN.h
+HDRS += GPI2_Coll.h
+HDRS += GPI2.h
 
 OBJS = $(SRCS:.c=.o)
 OBJS_DBG = $(SRCS:.c=.dbg.o)

@@ -119,13 +119,13 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
     return GASPI_ERROR;
 
   const int i = rank;
-  if(gaspi_create_endpoint(i) < 0)
+  if(pgaspi_dev_create_endpoint(i) < 0)
     return GASPI_ERROR;
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
-  if(gaspi_context_connected(i))
+  if(pgaspi_dev_context_connected(i))
     {
       goto okL; //already connected
     }
@@ -137,8 +137,7 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
     }
 
   gaspi_cd_header cdh;
-  const int rc_size = gaspi_get_device_sizeof_rc();
-  //  cdh.op_len = sizeof(gaspi_rc_all);
+  const int rc_size = pgaspi_dev_get_sizeof_rc();
   cdh.op_len = rc_size;
   
   
@@ -148,38 +147,31 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   int ret = write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header));
   if(ret != sizeof(gaspi_cd_header))
     {
-      gaspi_print_error("Failed to write(%d, %p, %lu)",
-			glb_gaspi_ctx.sockfd[i], &cdh,sizeof(gaspi_cd_header));
-      eret = GASPI_ERROR;
-      goto errL;
-    }
-
-  //  ret = write(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
-  ret = write(glb_gaspi_ctx.sockfd[i],gaspi_get_device_lrcd(i),rc_size);
-  //  if(ret != sizeof(gaspi_rc_all))
-  if(ret != rc_size)
-    {
-      gaspi_print_error("Failed to write(%d. %p, %lu)",
-			//			glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.lrcd[i],sizeof(gaspi_rc_all));
-			glb_gaspi_ctx.sockfd[i],gaspi_get_device_lrcd(i),rc_size);
+      gaspi_print_error("Failed to write to %d", i);
 
       eret = GASPI_ERROR;
       goto errL;
     }
 
-  //  ret=read(glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all));
-  ret=read(glb_gaspi_ctx.sockfd[i],gaspi_get_device_rrcd(i),rc_size);
-  //  if(ret != sizeof(gaspi_rc_all))
+  ret = write(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_lrcd(i),rc_size);
   if(ret != rc_size)
     {
-      gaspi_print_error("Failed to read from (%d %p %lu)",
-			//			glb_gaspi_ctx.sockfd[i],&glb_gaspi_ctx_ib.rrcd[i],sizeof(gaspi_rc_all));
-			glb_gaspi_ctx.sockfd[i],gaspi_get_device_rrcd(i),rc_size);
+      gaspi_print_error("Failed to write to %d", i);
+
+      eret = GASPI_ERROR;
+      goto errL;
+    }
+
+  ret=read(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_rrcd(i),rc_size);
+  if(ret != rc_size)
+    {
+      gaspi_print_error("Failed to read from %d", i);
+
       eret = GASPI_ERROR;
       goto errL;
     }
             
-  if(gaspi_connect_context(i, timeout_ms) != 0)
+  if(pgaspi_dev_connect_context(i, timeout_ms) != 0)
     {
       gaspi_print_error("Failed to connect context");
       eret = GASPI_ERROR;
@@ -219,7 +211,7 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
-  eret = gaspi_disconnect_context(i, timeout_ms);
+  eret = pgaspi_dev_disconnect_context(i, timeout_ms);
   if(eret != GASPI_SUCCESS)
     goto errL;
   
@@ -447,7 +439,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  glb_gaspi_ctx.sockfd[i] = -1;
 	}
 
-      if(gaspi_init_device_core() != GASPI_SUCCESS)
+      if(pgaspi_dev_init_core() != GASPI_SUCCESS)
 	{
 	  eret = GASPI_ERROR;
 	  goto errL;
@@ -657,7 +649,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
     }
 #endif
   
-  if(gaspi_cleanup_device_core() != GASPI_SUCCESS)
+  if(pgaspi_dev_cleanup_core() != GASPI_SUCCESS)
     goto errL;
   
   unlock_gaspi (&glb_gaspi_ctx_lock);

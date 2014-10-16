@@ -491,7 +491,7 @@ void *gaspi_sn_backend(void *arg)
 			}
 		      else if(mgmt->op == GASPI_SN_CONNECT)
 			{
-			  ptr = gaspi_get_device_rrcd(mgmt->cdh.rank);
+			  ptr = pgaspi_dev_get_rrcd(mgmt->cdh.rank);
 
 			  rcount = read(mgmt->fd,ptr + mgmt->bdone,rsize);
 			  
@@ -681,7 +681,7 @@ void *gaspi_sn_backend(void *arg)
 				  
 				  if(glb_gaspi_ib_init == 0)//just local stuff
 				    {
-				      if(gaspi_init_device_core() != GASPI_SUCCESS)
+				      if(pgaspi_dev_init_core() != GASPI_SUCCESS)
 					{
 					  
 					  gaspi_sn_print_error("Failed to initialized IB core");
@@ -706,7 +706,7 @@ void *gaspi_sn_backend(void *arg)
 				}
 			      else if(mgmt->op == GASPI_SN_CONNECT)
 				{
-				  if(gaspi_create_endpoint(mgmt->cdh.rank) !=0 )
+				  if(pgaspi_dev_create_endpoint(mgmt->cdh.rank) !=0 )
 				    {
 				      gaspi_sn_print_error("Failed to create endpoint");
 				      gaspi_sn_status = GASPI_SN_STATE_ERROR;
@@ -715,7 +715,7 @@ void *gaspi_sn_backend(void *arg)
 				      return NULL;
 				    }
 
-				  if(gaspi_connect_context(mgmt->cdh.rank, GASPI_BLOCK) != 0)
+				  if(pgaspi_dev_connect_context(mgmt->cdh.rank, GASPI_BLOCK) != 0)
 				    {
 				      gaspi_sn_print_error("Failed to connect context");
 				      gaspi_sn_status = GASPI_SN_STATE_ERROR;
@@ -725,8 +725,8 @@ void *gaspi_sn_backend(void *arg)
 				    }
 				  
 				  int done = 0;
-				  int len = gaspi_get_device_sizeof_rc();
-				  char *ptr = gaspi_get_device_lrcd(mgmt->cdh.rank);
+				  int len = pgaspi_dev_get_sizeof_rc();
+				  char *ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
 
 				  while(done < len)
 				    {

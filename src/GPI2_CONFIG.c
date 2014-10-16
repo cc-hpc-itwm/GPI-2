@@ -42,18 +42,22 @@ gaspi_config_t glb_gaspi_cfg = {
   1				//build_infrastructure;  
 };
 
-
+#pragma weak gaspi_config_get = pgaspi_config_get
 gaspi_return_t
-pgaspi_dev_config_get (gaspi_config_t * const config)
+pgaspi_config_get (gaspi_config_t * const config)
 {
   memcpy (config, &glb_gaspi_cfg, sizeof (gaspi_config_t));
 
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_config_set = pgaspi_config_set
 gaspi_return_t
 pgaspi_config_set (const gaspi_config_t nconf)
 {
+  if (glb_gaspi_init)
+    return GASPI_ERROR;
+  
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.build_infrastructure = nconf.build_infrastructure;
   glb_gaspi_cfg.logger = nconf.logger;

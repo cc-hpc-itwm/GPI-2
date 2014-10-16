@@ -19,66 +19,26 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_IB.h"
 
 
-#pragma weak gaspi_passive_transfer_size_max = pgaspi_passive_transfer_size_max
 gaspi_return_t
-pgaspi_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max)
+pgaspi_dev_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max)
 {
-  gaspi_verify_null_ptr(passive_transfer_size_max);
-
   *passive_transfer_size_max = GASPI_MAX_TSIZE_P;
+
   return GASPI_SUCCESS;
 }
 
-
-#pragma weak gaspi_passive_send     = pgaspi_passive_send
 gaspi_return_t
-pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
 		    const gaspi_offset_t offset_local,
 		    const gaspi_rank_t rank, const gaspi_size_t size,
 		    const gaspi_timeout_t timeout_ms)
 {
-
-#ifdef DEBUG  
-  if (glb_gaspi_ctx_ib.rrmd[segment_id_local] == NULL)
-    {
-      gaspi_print_error("Invalid local segment (gaspi_passive_send)");    
-      return GASPI_ERROR;
-    }
-  
-  if( rank >= glb_gaspi_ctx.tnc)
-    {
-      gaspi_print_error("Invalid rank (gaspi_passive_send)");    
-      return GASPI_ERROR;
-    }
-  
-  if( offset_local > glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].size)
-    {
-      gaspi_print_error("Invalid offsets (gaspi_passive_send)");    
-      return GASPI_ERROR;
-    }
-    
-  if( size < 1 || size > GASPI_MAX_TSIZE_P )
-    {
-      gaspi_print_error("Invalid size (gaspi_passive_send)");    
-      return GASPI_ERROR;
-    }
-
-  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
-    {
-      gaspi_print_error("Invalid timeout: %lu", timeout_ms);
-      return GASPI_ERROR;
-    }
-  
-#endif
 
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slist;
   struct ibv_send_wr swr;
   struct ibv_wc wc_send;
   gaspi_cycles_t s0;
-
-  if(lock_gaspi_tout (&glb_gaspi_ctx.lockPS, timeout_ms))
-    return GASPI_TIMEOUT;
 
   const int byte_id = rank >> 3;
   const int bit_pos = rank - (byte_id * 8);
@@ -104,7 +64,7 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
   if (ibv_post_send (glb_gaspi_ctx_ib.qpP[rank], &swr, &bad_wr))
     {
       glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][rank] = 1;
-      unlock_gaspi (&glb_gaspi_ctx.lockPS);
+
       return GASPI_ERROR;
     }
 
@@ -127,7 +87,6 @@ checkL:
 	  const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
 	  if (ms > timeout_ms)
 	    {
-	      unlock_gaspi (&glb_gaspi_ctx.lockPS);
 	      return GASPI_TIMEOUT;
 	    }
 	}
@@ -138,56 +97,21 @@ checkL:
   if ((ne < 0) || (wc_send.status != IBV_WC_SUCCESS))
     {
       glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc_send.wr_id] = 1;
-      unlock_gaspi (&glb_gaspi_ctx.lockPS);
+
       return GASPI_ERROR;
     }
 
   glb_gaspi_ctx_ib.ne_count_p[byte_id] &= (~bit_cmp);
 
-  unlock_gaspi (&glb_gaspi_ctx.lockPS);
   return GASPI_SUCCESS;
 }
 
-#pragma weak gaspi_passive_receive  = pgaspi_passive_receive
 gaspi_return_t
-pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
 		       const gaspi_offset_t offset_local,
 		       gaspi_rank_t * const rem_rank, const gaspi_size_t size,
 		       const gaspi_timeout_t timeout_ms)
 {
-
-#ifdef DEBUG  
-  if (glb_gaspi_ctx_ib.rrmd[segment_id_local] == NULL)
-    {
-      gaspi_print_error("Invalid local segment (gaspi_passive_receive)");    
-      return GASPI_ERROR;
-    }
-  
-  if( rem_rank == NULL)
-    {
-      gaspi_print_error("Invalid pointer parameter: rem_rank (gaspi_passive_receive)");    
-      return GASPI_ERROR;
-    }
-  
-  if( offset_local > glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].size)
-    {
-      gaspi_print_error("Invalid offsets (gaspi_passive_receive)");    
-      return GASPI_ERROR;
-    }
-    
-  if( size < 1 || size > GASPI_MAX_TSIZE_P )
-    {
-      gaspi_print_error("Invalid size (gaspi_passive_receive)");    
-      return GASPI_ERROR;
-    }
-
-  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
-    {
-      gaspi_print_error("Invalid timeout: %lu", timeout_ms);
-      return GASPI_ERROR;
-    }
-
-#endif
 
   struct ibv_recv_wr *bad_wr;
   struct ibv_wc wc_recv;
@@ -217,7 +141,7 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 
   if (ibv_post_srq_recv (glb_gaspi_ctx_ib.srqP, &rwr, &bad_wr))
     {
-      unlock_gaspi (&glb_gaspi_ctx.lockPR);
+
       return GASPI_ERROR;
     }
 
@@ -233,18 +157,15 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
   const int selret = select (FD_SETSIZE, &rfds, NULL, NULL, &tout);
   if (selret < 0)
     {
-      unlock_gaspi (&glb_gaspi_ctx.lockPR);
       return GASPI_ERROR;
     }
   else if (selret == 0)
     {
-      unlock_gaspi (&glb_gaspi_ctx.lockPR);
       return GASPI_TIMEOUT;
     }
 
   if (ibv_get_cq_event (glb_gaspi_ctx_ib.channelP, &ev_cq, &ev_ctx))
     {
-      unlock_gaspi (&glb_gaspi_ctx.lockPR);
       return GASPI_ERROR;
     }
 
@@ -252,13 +173,11 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 
   if (ev_cq != glb_gaspi_ctx_ib.rcqP)
     {
-      unlock_gaspi (&glb_gaspi_ctx.lockPR);
       return GASPI_ERROR;
     }
 
   if (ibv_req_notify_cq (glb_gaspi_ctx_ib.rcqP, 0))
     {
-      unlock_gaspi (&glb_gaspi_ctx.lockPR);
       return GASPI_ERROR;
     }
 
@@ -272,7 +191,7 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
   if ((ne < 0) || (wc_recv.status != IBV_WC_SUCCESS))
     {
       glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc_recv.wr_id] = 1;
-      unlock_gaspi (&glb_gaspi_ctx.lockPR);
+
       return GASPI_ERROR;
     }
 
@@ -286,8 +205,5 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 	}
     }
 
-
-  unlock_gaspi (&glb_gaspi_ctx.lockPR);
   return GASPI_SUCCESS;
-
 }

@@ -73,7 +73,7 @@ link_layer_str (uint8_t link_layer)
 
 
 static int
-gaspi_null_gid (union ibv_gid *gid)
+pgaspi_null_gid (union ibv_gid *gid)
 {
   return !(gid->raw[8] | gid->raw[9] | gid->raw[10] | gid->
 	   raw[11] | gid->raw[12] | gid->raw[13] | gid->raw[14] | gid->
@@ -81,7 +81,7 @@ gaspi_null_gid (union ibv_gid *gid)
 }
 
 int
-gaspi_init_device_core ()
+pgaspi_dev_init_core ()
 {
   char boardIDbuf[256];
   int i, c, p, dev_idx=0;
@@ -471,7 +471,7 @@ gaspi_init_device_core ()
 	  return -1;
 	}
       
-      if (!gaspi_null_gid (&glb_gaspi_ctx_ib.gid))
+      if (!pgaspi_null_gid (&glb_gaspi_ctx_ib.gid))
 	{
 	  if (glb_gaspi_cfg.net_info)
 	    gaspi_printf
@@ -543,7 +543,7 @@ gaspi_init_device_core ()
 
 
 int
-gaspi_create_endpoint(const int i)
+pgaspi_dev_create_endpoint(const int i)
 {
   int c;
 
@@ -665,7 +665,7 @@ errL:
 
 
 int
-gaspi_disconnect_context(const int i, gaspi_timeout_t timeout_ms)
+pgaspi_dev_disconnect_context(const int i, gaspi_timeout_t timeout_ms)
 {
   int c;
 
@@ -720,7 +720,7 @@ errL:
 
 
 int 
-gaspi_connect_context(const int i, gaspi_timeout_t timeout_ms)
+pgaspi_dev_connect_context(const int i, gaspi_timeout_t timeout_ms)
 {
   if(!glb_gaspi_ib_init)
     {
@@ -892,7 +892,7 @@ gaspi_connect_context(const int i, gaspi_timeout_t timeout_ms)
 }
 
 int
-gaspi_cleanup_device_core ()
+pgaspi_dev_cleanup_core ()
 {
   int i, c;
 
@@ -1174,27 +1174,39 @@ gaspi_cleanup_device_core ()
 
 
 inline char *
-gaspi_get_device_rrcd(int rank)
+pgaspi_dev_get_rrcd(int rank)
 {
   return (char *)&glb_gaspi_ctx_ib.rrcd[rank];
 }
 
 inline char *
-gaspi_get_device_lrcd(int rank)
+pgaspi_dev_get_lrcd(int rank)
 {
   return (char *)&glb_gaspi_ctx_ib.lrcd[rank];
 }
 
 inline int
-gaspi_get_device_sizeof_rc()
+pgaspi_dev_get_sizeof_rc()
 {
 
   return sizeof(gaspi_rc_all);
 }
 
-
 inline int
-gaspi_context_connected(const int i)
+pgaspi_dev_context_connected(const int i)
 {
   return glb_gaspi_ctx_ib.lrcd[i].cstat;
 }
+
+inline void *
+pgaspi_dev_get_rrmd(const gaspi_segment_id_t segment_id)
+{
+  return glb_gaspi_ctx_ib.rrmd[segment_id];
+}
+
+inline unsigned long
+pgaspi_dev_get_mseg_size(const gaspi_segment_id_t segment_id, const gaspi_rank_t rank)
+{
+  return glb_gaspi_ctx_ib.rrmd[segment_id][rank].size;
+}
+

@@ -33,33 +33,24 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_IB.h"
 #include "GPI2_SN.h"
 
-#pragma weak gaspi_segment_alloc = pgaspi_segment_alloc
 gaspi_return_t
-pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
+pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 		      const gaspi_size_t size,
 		      const gaspi_alloc_t alloc_policy)
 {
   unsigned int page_size;
-
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
-
-  //TODO: respect timeout
-  lock_gaspi_tout (&gaspi_mseg_lock, GASPI_BLOCK);
-
+  
   if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS || size == 0)
     goto errL;
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
     {
       glb_gaspi_ctx_ib.rrmd[segment_id] = (gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
-      if(!glb_gaspi_ctx_ib.rrmd[segment_id]) goto errL;
+
+      if(!glb_gaspi_ctx_ib.rrmd[segment_id])
+	goto errL;
 
       memset (glb_gaspi_ctx_ib.rrmd[segment_id], 0,glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
-
     }
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size)
@@ -82,14 +73,16 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       gaspi_gpu* agpu =  _gaspi_find_gpu(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId);
       if(!agpu)
 	{
-	  gaspi_print_error("No GPU found. Maybe foregt to call gaspi_init_GPUs?\n");
-	  return GASPI_ERROR;
+	  gaspi_print_error("No GPU found. Maybe forgot to call gaspi_init_GPUs?\n");
+	  goto errL;
 	}
+      
       if(cudaMalloc((void**)&glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].ptr,size) != 0)
 	{
 	  gaspi_print_error("GPU memory allocation (cudaMalloc) failed!\n");
 	  goto errL;
 	}
+      
       if(cudaMallocHost((void**)&glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr,size+NOTIFY_OFFSET)!=0)
 	{
 	  gaspi_print_error("Memory allocattion (cudaMallocHost)  failed!\n");
@@ -194,39 +187,21 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
   glb_gaspi_ctx.mseg_cnt++;
 
  okL:
-  unlock_gaspi (&gaspi_mseg_lock);
   return GASPI_SUCCESS;
 
  errL:
-  unlock_gaspi (&gaspi_mseg_lock);
   return GASPI_ERROR;
 
 }
 
-#pragma weak gaspi_segment_delete = pgaspi_segment_delete
 gaspi_return_t
-pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
+pgaspi_dev_segment_delete (const gaspi_segment_id_t segment_id)
 {
-
-  if(!glb_gaspi_ib_init){return GASPI_ERROR;}
-
-  lock_gaspi_tout(&gaspi_mseg_lock,GASPI_BLOCK);
-
-  if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    {
-      gaspi_print_error("Invalid segment to delete");
-      goto errL;
-    }
-
-  if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
-    {
-      gaspi_print_error("Invalid segment to delete");
-      goto errL;
-    }
+  
 #ifdef GPI2_CUDA 
-if(glb_gaspi_ctx.use_gpus!=0 && glb_gaspi_ctx.gpu_count>0)
+if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
 #endif
-
+  
   if (munlock
       (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf,
        glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size +
@@ -236,9 +211,9 @@ if(glb_gaspi_ctx.use_gpus!=0 && glb_gaspi_ctx.gpu_count>0)
       goto errL;
     }
 
-  //here the problem ! different threads are allocating/registering. should not be a problem ?
-  if (ibv_dereg_mr (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].mr))
-    {
+//potential problem: different threads are allocating/registering. should not be a problem ?
+ if (ibv_dereg_mr (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].mr))
+   {
       gaspi_print_error ("Memory de-registration failed (libibverbs)");
       goto errL;
     }
@@ -251,16 +226,21 @@ if(glb_gaspi_ctx.use_gpus!=0 && glb_gaspi_ctx.gpu_count>0)
 	  gaspi_print_error ("Memory de-registration failed (libibverbs)");
 	  goto errL;
 	}
+      
       cudaFreeHost(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr);
-      glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr=NULL;
+      glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr = NULL;
       cudaFree(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf);
     }
   else if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
-    cudaFreeHost(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf);
+    {
+      cudaFreeHost(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf);
+    }
+  
   else
 #endif
 
   free (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf);
+
   glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf = NULL;
 
   memset(glb_gaspi_ctx_ib.rrmd[segment_id], 0, glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
@@ -269,11 +249,9 @@ if(glb_gaspi_ctx.use_gpus!=0 && glb_gaspi_ctx.gpu_count>0)
 
   glb_gaspi_ctx.mseg_cnt--;
 
-  unlock_gaspi (&gaspi_mseg_lock);
   return GASPI_SUCCESS;
 
 errL:
-  unlock_gaspi (&gaspi_mseg_lock);
   return GASPI_ERROR;
 }
 
@@ -281,22 +259,10 @@ errL:
 /* unlocked internal segment registration */
 /* common code for gaspi_segment_(register, create) */
 static gaspi_return_t
-_gaspi_segment_registration(const gaspi_segment_id_t segment_id,
+_gaspi_dev_segment_registration(const gaspi_segment_id_t segment_id,
 			    const gaspi_rank_t rank,
 			    const gaspi_timeout_t timeout_ms)
 {
-  if(!glb_gaspi_ib_init)
-    return GASPI_ERROR;
-
-  if(rank >= glb_gaspi_ctx.tnc || rank == glb_gaspi_ctx.rank)
-    return GASPI_ERROR;
-
-  if(glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    return GASPI_ERROR;
-  
-  if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
-    return GASPI_ERROR;
-
   gaspi_return_t eret = gaspi_connect_to_rank(rank, timeout_ms);
   if(eret != GASPI_SUCCESS)
     {
@@ -312,6 +278,7 @@ _gaspi_segment_registration(const gaspi_segment_id_t segment_id,
   cdh.rkey = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].rkey;
   cdh.addr = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].addr;
   cdh.size = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size;
+
 #ifdef GPI2_CUDA
   cdh.host_rkey = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_rkey;
   cdh.host_addr = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].host_addr;
@@ -332,8 +299,7 @@ _gaspi_segment_registration(const gaspi_segment_id_t segment_id,
   ret = read(glb_gaspi_ctx.sockfd[rank],&rret,sizeof(int));
   if(ret != sizeof(int))
     {
-      gaspi_print_error("Failed to read (%d %p %lu)",
-			glb_gaspi_ctx.sockfd[rank],&rret, sizeof(int));
+      gaspi_print_error("Failed to read from rank %d", rank);
 
       glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
       return GASPI_ERROR;
@@ -341,6 +307,7 @@ _gaspi_segment_registration(const gaspi_segment_id_t segment_id,
   
   if(rret < 0)
     {
+      gaspi_print_error("Read (unexpectedly) 0 bytes from %d\n", rank);
       return GASPI_ERROR;
     }
   
@@ -355,28 +322,23 @@ _gaspi_segment_registration(const gaspi_segment_id_t segment_id,
   return GASPI_SUCCESS;
 }
 
-#pragma weak gaspi_segment_register = pgaspi_segment_register
 gaspi_return_t
-pgaspi_segment_register(const gaspi_segment_id_t segment_id,
-			const gaspi_rank_t rank,
-			const gaspi_timeout_t timeout_ms)
+pgaspi_dev_segment_register(const gaspi_segment_id_t segment_id,
+			    const gaspi_rank_t rank,
+			    const gaspi_timeout_t timeout_ms)
 {
   
-  //TODO: respect timeout
-  lock_gaspi_tout(&glb_gaspi_ctx_lock, GASPI_BLOCK);
-  
-  gaspi_return_t eret = _gaspi_segment_registration(segment_id, rank, timeout_ms);
+  gaspi_return_t eret = _gaspi_dev_segment_registration(segment_id, rank, timeout_ms);
   if(eret != GASPI_SUCCESS)
     {
-      unlock_gaspi(&glb_gaspi_ctx_lock);
       return GASPI_ERROR;
     }
   
-  unlock_gaspi(&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
 }
 
 //sn-registration
+//TODO: timeout?
 int
 gaspi_seg_reg_sn(const gaspi_cd_header snp)
 {
@@ -384,7 +346,7 @@ gaspi_seg_reg_sn(const gaspi_cd_header snp)
   if(!glb_gaspi_ib_init) 
     return GASPI_ERROR;
 
-  //TODO: respect timeout
+  //TODO: include timeout?
   lock_gaspi_tout(&gaspi_mseg_lock,GASPI_BLOCK);
 
   if(glb_gaspi_ctx_ib.rrmd[snp.seg_id] == NULL)
@@ -406,8 +368,9 @@ gaspi_seg_reg_sn(const gaspi_cd_header snp)
   glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].size = snp.size;
 
 #ifdef GPI2_CUDA
-  glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].host_rkey=snp.host_rkey;
-  glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].host_addr=snp.host_addr;
+  glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].host_rkey = snp.host_rkey;
+  glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].host_addr = snp.host_addr;
+
   if(snp.host_addr != 0)
     glb_gaspi_ctx_ib.rrmd[snp.seg_id][snp.rank].cudaDevId = 1;
   else
@@ -423,35 +386,13 @@ errL:
 
 }
 
-#pragma weak gaspi_segment_create = pgaspi_segment_create
 gaspi_return_t
-pgaspi_segment_create(const gaspi_segment_id_t segment_id,
-		      const gaspi_size_t size, const gaspi_group_t group,
-		      const gaspi_timeout_t timeout_ms,
-		      const gaspi_alloc_t alloc_policy){
-
+pgaspi_dev_segment_register_group(const gaspi_segment_id_t segment_id,
+				  const gaspi_group_t group,
+				  const gaspi_timeout_t timeout_ms)
+{
   int r;
   gaspi_return_t eret = GASPI_ERROR;
-
-  if(!glb_gaspi_ib_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
-
-  if(pgaspi_segment_alloc (segment_id, size, alloc_policy) != 0)
-    {
-      gaspi_print_error("Segment allocation failed");
-      return GASPI_ERROR;
-    }
-
-  if(group >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[group].id < 0)
-    {
-      gaspi_print_error("Invalid group ( > GASPI_MAX_GROUPS || < 0)");
-      return GASPI_ERROR;
-    }
-
-  lock_gaspi_tout(&glb_gaspi_ctx_lock,GASPI_BLOCK);
 
   /* register segment to all other group members */
   /* dont write several times !!! */
@@ -467,26 +408,25 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 
       if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_group_ib[group].rank_grp[i]].trans) 
 	continue;
-
       
-      eret = _gaspi_segment_registration(segment_id, glb_gaspi_group_ib[group].rank_grp[i], timeout_ms);
+      eret = _gaspi_dev_segment_registration(segment_id, glb_gaspi_group_ib[group].rank_grp[i], timeout_ms);
       if(eret != GASPI_SUCCESS)
 	{
 	  gaspi_print_error("Failed segment registration with %d\n",
 			    glb_gaspi_group_ib[group].rank_grp[i]);
 	  
-	  goto errL;
+	  return GASPI_ERROR;
+	  
 	}
-
     }//for
 
   //wait for remote registration
-  struct timeb t0,t1;
+  struct timeb t0, t1;
   ftime(&t0);
-
+  
   while(1)
     {
-      int cnt=0;
+      int cnt = 0;
       
       for(r = 0; r < glb_gaspi_group_ib[group].tnc; r++)
 	{
@@ -497,150 +437,43 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 	    cnt++;
 	}
       
-      if(cnt==glb_gaspi_group_ib[group].tnc)
+      if(cnt == glb_gaspi_group_ib[group].tnc)
 	break;
 
       ftime(&t1);
       
-      const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
+      const unsigned int delta_ms = (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
 
       if(delta_ms > timeout_ms)
 	{
-	  
-	  eret=GASPI_TIMEOUT;
-	  goto errL;
+	  return GASPI_TIMEOUT;
 	}
+      
       struct timespec sleep_time,rem;
       sleep_time.tv_sec = 0;
       sleep_time.tv_nsec = 250000000;
       nanosleep(&sleep_time, &rem);
       
-      //      usleep(250000);
-    }
-  
-  unlock_gaspi (&glb_gaspi_ctx_lock);
-  return GASPI_SUCCESS;
-
-errL:
-  unlock_gaspi (&glb_gaspi_ctx_lock);
-  return eret;
-}
-
-
-#pragma weak gaspi_segment_num = pgaspi_segment_num
-gaspi_return_t
-pgaspi_segment_num (gaspi_number_t * const segment_num)
- {
-
-  if (glb_gaspi_init)
-    {
-      *segment_num = glb_gaspi_ctx.mseg_cnt;
-      return GASPI_SUCCESS;
-    }
-
-  gaspi_print_error("Invalid function before gaspi_proc_init");
-  return GASPI_ERROR;
-}
-
-#pragma weak gaspi_segment_list = pgaspi_segment_list
-gaspi_return_t
-pgaspi_segment_list (const gaspi_number_t num,
-		    gaspi_segment_id_t * const segment_id_list)
-{
-  int i, idx = 0;
-
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
-
-  //TODO: 256 -> readable
-  for (i = 0; i < 256; i++)
-    {
-      if (glb_gaspi_ctx_ib.rrmd[i] != NULL)
-	segment_id_list[idx++] = i;
-    }
-
-  if (idx != glb_gaspi_ctx.mseg_cnt)
-    {
-      return GASPI_ERROR;
+      //usleep(250000);
     }
 
   return GASPI_SUCCESS;
 }
 
-#pragma weak gaspi_segment_ptr = pgaspi_segment_ptr
+
 gaspi_return_t
-pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
+pgaspi_dev_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 {
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
 
-  if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    {
-      gaspi_print_error("Invalid segment id");
-      return GASPI_ERROR;
-    }
-
-  if (glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
-    {
-      gaspi_print_error("Invalid segment (size = 0)");
-      return GASPI_ERROR;
-    }
-
-  gaspi_verify_null_ptr(ptr);
 #ifdef GPI2_CUDA
-  if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId>=0)
-     *ptr = 
-         glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf;
+
+  if(glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId >= 0)
+    *ptr = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf;
   else
+    
 #endif
-  *ptr =
-    glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf + NOTIFY_OFFSET;
-  return GASPI_SUCCESS;
-
-}
-
-#pragma weak gaspi_segment_size = pgaspi_segment_size
-gaspi_return_t
-pgaspi_segment_size (const gaspi_segment_id_t segment_id,
-		    const gaspi_rank_t rank, gaspi_size_t * const size)
-{
-
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
-
-  if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
-    {
-      gaspi_print_error("Invalid segment id");
-      return GASPI_ERROR;
-    }
-
-  if (glb_gaspi_ctx_ib.rrmd[segment_id][rank].size == 0)
-    {
-      gaspi_print_error("Invalid segment (size = 0)");
-      return GASPI_ERROR;
-    }
-
-  gaspi_verify_null_ptr(size);
-
-  *size = glb_gaspi_ctx_ib.rrmd[segment_id][rank].size;
-  return GASPI_SUCCESS;
-}
-
-#pragma weak gaspi_segment_max = pgaspi_segment_max
-gaspi_return_t
-pgaspi_segment_max (gaspi_number_t * const segment_max)
-{
-  gaspi_verify_null_ptr(segment_max);
-
-  *segment_max = GASPI_MAX_MSEGS;
+    
+    *ptr = glb_gaspi_ctx_ib.rrmd[segment_id][glb_gaspi_ctx.rank].buf + NOTIFY_OFFSET;
+  
   return GASPI_SUCCESS;
 }
