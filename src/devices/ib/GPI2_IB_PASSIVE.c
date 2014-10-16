@@ -123,10 +123,6 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
   fd_set rfds;
   struct timeval tout;
 
-
-  if(lock_gaspi_tout (&glb_gaspi_ctx.lockPR, timeout_ms))
-    return GASPI_TIMEOUT;
-
   rlist.addr =
     (uintptr_t) (glb_gaspi_ctx_ib.
 		 rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +

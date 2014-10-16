@@ -187,7 +187,6 @@ pgaspi_dev_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 	      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
 	      if (ms > timeout_ms)
 		{
-		  unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
 		  return GASPI_TIMEOUT;
 		}
 	    }
@@ -202,7 +201,7 @@ pgaspi_dev_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 			    wc.wr_id, queue);
 
 	  glb_gaspi_ctx.qp_state_vec[queue][wc.wr_id] = 1;
-	  unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
+
 	  return GASPI_ERROR;
 	}
 
