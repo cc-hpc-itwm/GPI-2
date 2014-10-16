@@ -21,6 +21,35 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdlib.h>
 
+#include "GASPI.h"
+
+typedef enum
+  {
+    GASPI_OP,
+    GASPI_USER
+  }redux_type_t;
+
+struct redux_args
+{
+  redux_type_t f_type;
+  union
+  {
+    struct
+    {
+      gaspi_size_t elem_size;
+      gaspi_operation_t op;
+      gaspi_datatype_t type;
+    };
+
+    struct
+    {
+      gaspi_size_t elem_size;
+      gaspi_reduce_operation_t user_fct;
+      gaspi_state_t rstate;
+    } ;
+  } f_args;
+};
+
 void (*fctArrayGASPI[18]) (void *, void *, void *, const unsigned char cnt);
 
 void

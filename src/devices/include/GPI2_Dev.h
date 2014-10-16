@@ -20,6 +20,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define _GPI2_DEV_H_
 
 #include "GASPI.h"
+#include "GPI2_Coll.h"
 #include "GPI2_SN.h"
 
 /* Device interface */
@@ -216,9 +217,7 @@ gaspi_return_t
 pgaspi_dev_allreduce (const gaspi_pointer_t,
 		      gaspi_pointer_t const,
 		      const gaspi_number_t,
-		      const unsigned int,
-		      const gaspi_operation_t,
-		      const gaspi_datatype_t,
+		      struct redux_args *args,
 		      const gaspi_group_t,
 		      const gaspi_timeout_t);
 

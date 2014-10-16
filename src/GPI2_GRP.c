@@ -22,6 +22,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GASPI.h"
 #include "GPI2.h"
+#include "GPI2_Coll.h"
 #include "GPI2_Dev.h"
 
 const unsigned int glb_gaspi_typ_size[6] = { 4, 4, 4, 8, 8, 8 };
@@ -627,6 +628,8 @@ _gaspi_check_allreduce_args(const gaspi_pointer_t buf_send,
 }
 #endif
 
+
+
 #pragma weak gaspi_allreduce = pgaspi_allreduce
 gaspi_return_t
 pgaspi_allreduce (const gaspi_pointer_t buf_send,
@@ -668,8 +671,14 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  eret = pgaspi_dev_allreduce(buf_send, buf_recv, elem_cnt, glb_gaspi_typ_size[type],
-			      op, type, g, timeout_ms);
+  struct redux_args r_args;
+  r_args.f_type = GASPI_OP;
+  r_args.f_args.op = op;
+  r_args.f_args.type = type;
+  r_args.f_args.elem_size = glb_gaspi_typ_size[type];
+
+  eret = pgaspi_dev_allreduce(buf_send, buf_recv, elem_cnt,
+			      &r_args, g, timeout_ms);
 
   unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
@@ -693,7 +702,7 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
       gaspi_print_error("Called gaspi_allreduce_user but GPI-2 is not initialized");
       return GASPI_ERROR;
     }
-
+  
   /* Check with fake OP and TYPE  */
   if(_gaspi_check_allreduce_args(buf_send, buf_recv, elem_cnt,
 				 GASPI_TYPE_INT, GASPI_OP_SUM, g, timeout_ms) < 0)
@@ -718,9 +727,16 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
 
 
   gaspi_return_t eret = GASPI_ERROR;
-  eret = pgaspi_dev_allreduce_user(buf_send, buf_recv, elem_cnt, elem_size,
-				   user_fct, rstate, g, timeout_ms);
-  	  
+
+  struct redux_args r_args;
+  r_args.f_type = GASPI_USER;
+  r_args.f_args.elem_size = elem_size;
+  r_args.f_args.user_fct = user_fct;
+  r_args.f_args.rstate = rstate;
+
+  eret = pgaspi_dev_allreduce(buf_send, buf_recv, elem_cnt,
+			      &r_args, g, timeout_ms);
+
   unlock_gaspi (&glb_gaspi_group_ib[g].gl);
 
   return eret;
