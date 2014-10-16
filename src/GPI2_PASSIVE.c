@@ -113,6 +113,9 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 #endif
 
   gaspi_return_t eret = GASPI_ERROR;
+  
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockPR, timeout_ms))
+    return GASPI_TIMEOUT;
 
   eret = pgaspi_dev_passive_receive(segment_id_local, offset_local, rem_rank,
 				    size, timeout_ms);
