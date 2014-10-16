@@ -37,6 +37,10 @@ int main(int argc, char *argv[])
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT(gaspi_proc_rank(&myrank));
 
+  /* makes only sense with more than 3 nodes */
+  if(nprocs < 3)
+    return EXIT_SUCCESS;
+  
   ASSERT(gaspi_segment_create(0, 
 			      _4MB,
 			      GASPI_GROUP_ALL, 

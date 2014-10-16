@@ -50,6 +50,9 @@ int main(int argc, char *argv[])
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT(gaspi_proc_rank(&myrank));
 
+  if(nprocs < 3)
+    return EXIT_SUCCESS;
+  
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   culprit = 1;
