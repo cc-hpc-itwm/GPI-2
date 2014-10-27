@@ -211,7 +211,6 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
   return GASPI_ERROR;
 }
 
-
 #pragma weak gaspi_proc_init = pgaspi_proc_init
 gaspi_return_t
 pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
@@ -603,7 +602,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       //commit GASPI_GROUP_ALL
       const gaspi_group_t g0 = 0;
 
-      eret = gaspi_group_commit(g0, timeout_ms);
+      eret = pgaspi_group_commit(g0, timeout_ms);
 
       if(eret == GASPI_SUCCESS)
 	{
