@@ -2,7 +2,7 @@
 				  GPI-2
 			  http://www.gpi-site.com
 		  
-		  	      Version: 1.1.0
+		  	      Version: 1.1.1
  	          	  Copyright (C) 2013-2014
 			     Fraunhofer ITWM
 			     
@@ -326,6 +326,7 @@ For example:
 GPI-2 is on-going work and more features are still to come. Here are
 some that are in our roadmap:
 
+- support for Ethernet (TCP/IP)
 - support to add spare nodes (fault tolerance)
 - better debugging possibilities
 
