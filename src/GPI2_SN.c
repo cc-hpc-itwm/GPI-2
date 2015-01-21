@@ -456,8 +456,6 @@ void *gaspi_sn_backend(void *arg)
 
 		      return NULL;
 		    }
-		  
-		  
 		  // gaspi_thread_sleep(600000);
 		  // }//while(1) accept
 	      
@@ -681,6 +679,7 @@ void *gaspi_sn_backend(void *arg)
 				  
 				  if(glb_gaspi_ib_init == 0)//just local stuff
 				    {
+				      //TODO: Why do it here and not on proc_init?
 				      if(pgaspi_dev_init_core() != GASPI_SUCCESS)
 					{
 					  

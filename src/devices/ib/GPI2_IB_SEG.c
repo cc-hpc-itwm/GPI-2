@@ -41,7 +41,7 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
   unsigned int page_size;
   
   if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS || size == 0)
-    goto errL;
+    goto errL; //TODO: return immediately, no need for label
 
   if (glb_gaspi_ctx_ib.rrmd[segment_id] == NULL)
     {
@@ -59,7 +59,8 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
     }
 
   page_size = sysconf (_SC_PAGESIZE);
-
+  //TODO: error check on page_size
+  
 #ifdef GPI2_CUDA
   if(alloc_policy&GASPI_MEM_GPU)
     {
@@ -208,7 +209,7 @@ if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
        NOTIFY_OFFSET) != 0)
     {
       gaspi_print_error ("Memory unlocking (munlock) failed");
-      goto errL;
+      goto errL; //TODO: return immediately
     }
 
 //potential problem: different threads are allocating/registering. should not be a problem ?

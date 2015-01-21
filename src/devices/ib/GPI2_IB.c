@@ -84,7 +84,7 @@ int
 pgaspi_dev_init_core ()
 {
   char boardIDbuf[256];
-  int i, c, p, dev_idx=0;
+  int i, c, p, dev_idx = 0;
 
   if (glb_gaspi_ib_init)
     return -1;
@@ -95,23 +95,29 @@ pgaspi_dev_init_core ()
       gaspi_printf("Warning: setting number of queues to 1\n");
       glb_gaspi_cfg.queue_num = 1;
     }
-  
-      
+
   memset (&glb_gaspi_ctx_ib, 0, sizeof (gaspi_ib_ctx));
   memset (&glb_gaspi_group_ib, 0, GASPI_MAX_GROUPS * sizeof (gaspi_ib_group));
 
-  for(i = 0; i < 256; i++){glb_gaspi_ctx_ib.rrmd[i] = NULL;}
+  for(i = 0; i < 256; i++)
+    {
+      glb_gaspi_ctx_ib.rrmd[i] = NULL;
+    }
 
-  for (i = 0; i < GASPI_MAX_GROUPS; i++){ 
-    glb_gaspi_group_ib[i].id = -1;
-    glb_gaspi_group_ib[i].coll_op = GASPI_NONE;
-    glb_gaspi_group_ib[i].lastmask = 0x1;
-    glb_gaspi_group_ib[i].level = 0;
-    glb_gaspi_group_ib[i].dsize = 0;
-  }
+  for (i = 0; i < GASPI_MAX_GROUPS; i++)
+    { 
+      glb_gaspi_group_ib[i].id = -1;
+      glb_gaspi_group_ib[i].coll_op = GASPI_NONE;
+      glb_gaspi_group_ib[i].lastmask = 0x1;
+      glb_gaspi_group_ib[i].level = 0;
+      glb_gaspi_group_ib[i].dsize = 0;
+    }
 
-  for (i = 0; i < 64; i++) glb_gaspi_ctx_ib.wc_grp_send[i].status = IBV_WC_SUCCESS;
-
+  for (i = 0; i < 64; i++)
+    {
+      glb_gaspi_ctx_ib.wc_grp_send[i].status = IBV_WC_SUCCESS;
+    }
+  
 
   glb_gaspi_ctx_ib.dev_list = ibv_get_device_list (&glb_gaspi_ctx_ib.num_dev);
   if (!glb_gaspi_ctx_ib.dev_list)
@@ -120,42 +126,44 @@ pgaspi_dev_init_core ()
       return -1;
     }
 
+  if(glb_gaspi_cfg.netdev_id >= 0)
+    {
+      if(glb_gaspi_cfg.netdev_id >= glb_gaspi_ctx_ib.num_dev)
+	{
+	  gaspi_print_error ("Failed to get device (libibverbs)");
+	  return -1;
+	}
 
-  if(glb_gaspi_cfg.netdev_id >= 0){
+      glb_gaspi_ctx_ib.ib_dev = glb_gaspi_ctx_ib.dev_list[glb_gaspi_cfg.netdev_id];
+      if (!glb_gaspi_ctx_ib.ib_dev)
+	{
+	  gaspi_print_error ("Failed to get device (libibverbs)");
+	  return -1;
+	}
 
-    if(glb_gaspi_cfg.netdev_id >= glb_gaspi_ctx_ib.num_dev) {
-      gaspi_print_error ("Failed to get device (libibverbs)");
-      return -1;
+      dev_idx = glb_gaspi_cfg.netdev_id;
     }
-
-    glb_gaspi_ctx_ib.ib_dev = glb_gaspi_ctx_ib.dev_list[glb_gaspi_cfg.netdev_id];
-    if (!glb_gaspi_ctx_ib.ib_dev) {
-      gaspi_print_error ("Failed to get device (libibverbs)");
-      return -1;
+  else
+    {
+      for (i = 0;i < glb_gaspi_ctx_ib.num_dev; i++)
+	{
+	  glb_gaspi_ctx_ib.ib_dev = glb_gaspi_ctx_ib.dev_list[i];
+	  
+	  if (!glb_gaspi_ctx_ib.ib_dev)
+	    {
+	      gaspi_print_error ("Failed to get device (libibverbs)");
+	      continue;
+	    }
+	  
+	  if (glb_gaspi_ctx_ib.ib_dev->transport_type != IBV_TRANSPORT_IB)
+	    continue;
+	  else
+	    {
+	      dev_idx = i;
+	      break;
+	    }
+	}
     }
-
-    dev_idx = glb_gaspi_cfg.netdev_id;
-  }
-  else {
-
-    for (i=0;i<glb_gaspi_ctx_ib.num_dev;i++) {
-    
-      glb_gaspi_ctx_ib.ib_dev = glb_gaspi_ctx_ib.dev_list[i];
-     
-      if (!glb_gaspi_ctx_ib.ib_dev) {
-        gaspi_print_error ("Failed to get device (libibverbs)");
-        continue;
-      }
-
-      if (glb_gaspi_ctx_ib.ib_dev->transport_type != IBV_TRANSPORT_IB) continue;
-      else {
-        dev_idx=i;
-        break;
-      }
-    }
-  }
-
-
 
   if (glb_gaspi_ctx_ib.ib_dev->transport_type != IBV_TRANSPORT_IB)
     {
@@ -164,36 +172,37 @@ pgaspi_dev_init_core ()
     }
 
   glb_gaspi_ctx_ib.context = ibv_open_device (glb_gaspi_ctx_ib.ib_dev);
-
-  if(!glb_gaspi_ctx_ib.context){
-    gaspi_print_error ("Failed to open IB device (libibverbs)");
-    return -1;
-  }
+  if(!glb_gaspi_ctx_ib.context)
+    {
+      gaspi_print_error ("Failed to open IB device (libibverbs)");
+      return -1;
+    }
 
   glb_gaspi_ctx_ib.channelP = ibv_create_comp_channel (glb_gaspi_ctx_ib.context);
-  
-  if(!glb_gaspi_ctx_ib.channelP){
-    gaspi_print_error ("Failed to create completion channel (libibverbs)");
-    return -1;
-  }
+  if(!glb_gaspi_ctx_ib.channelP)
+    {
+      gaspi_print_error ("Failed to create completion channel (libibverbs)");
+      return -1;
+    }
 
-  if(ibv_query_device(glb_gaspi_ctx_ib.context, &glb_gaspi_ctx_ib.device_attr)){
-    gaspi_print_error ("Failed to query device (libibverbs)");
-    return -1;
-  }
+  if(ibv_query_device(glb_gaspi_ctx_ib.context, &glb_gaspi_ctx_ib.device_attr))
+    {
+      gaspi_print_error ("Failed to query device (libibverbs)");
+      return -1;
+    }
 
   glb_gaspi_ctx_ib.ib_card_typ = glb_gaspi_ctx_ib.device_attr.vendor_part_id;
   glb_gaspi_ctx_ib.max_rd_atomic = glb_gaspi_ctx_ib.device_attr.max_qp_rd_atom;
 
 
-  for(p = 0; p < MIN (glb_gaspi_ctx_ib.device_attr.phys_port_cnt, 2); p++){
-    
-    if(ibv_query_port(glb_gaspi_ctx_ib.context, (unsigned char) (p + 1),&glb_gaspi_ctx_ib.port_attr[p])){
-      gaspi_print_error ("Failed to query port (libibverbs)");
-      return -1;
+  for(p = 0; p < MIN (glb_gaspi_ctx_ib.device_attr.phys_port_cnt, 2); p++)
+    {
+    if(ibv_query_port(glb_gaspi_ctx_ib.context, (unsigned char) (p + 1),&glb_gaspi_ctx_ib.port_attr[p]))
+      {
+	gaspi_print_error ("Failed to query port (libibverbs)");
+	return -1;
+      }
     }
-  }
-
 
   if (glb_gaspi_cfg.net_info)
     {
@@ -224,78 +233,84 @@ pgaspi_dev_init_core ()
       int id0[2] = { 0, 0 };
       int id1[2] = { 0, 0 };
 
-      for(p = 0; p < MIN (glb_gaspi_ctx_ib.device_attr.phys_port_cnt, 2);p++){
-  
-        gaspi_printf ("\tport Nr    : %d\n", p + 1);
-	id0[p] = glb_gaspi_ctx_ib.port_attr[p].state <6 ? glb_gaspi_ctx_ib.port_attr[p].state : 0;
-        gaspi_printf ("\t  state      : %s\n", port_state_str[id0[p]]);
+      for(p = 0; p < MIN (glb_gaspi_ctx_ib.device_attr.phys_port_cnt, 2);p++)
+	{
+          gaspi_printf ("\tport Nr    : %d\n", p + 1);
+	  id0[p] = glb_gaspi_ctx_ib.port_attr[p].state <6 ? glb_gaspi_ctx_ib.port_attr[p].state : 0;
+	  gaspi_printf ("\t  state      : %s\n", port_state_str[id0[p]]);
 	  
-        id1[p] = glb_gaspi_ctx_ib.port_attr[p].phys_state <8 ? glb_gaspi_ctx_ib.port_attr[p].phys_state : 3;
-        gaspi_printf ("\t  phy state  : %s\n", port_phy_state_str[id1[p]]);
-        gaspi_printf ("\t  link layer : %s\n",link_layer_str (glb_gaspi_ctx_ib.port_attr[p].link_layer));
+	  id1[p] = glb_gaspi_ctx_ib.port_attr[p].phys_state <8 ? glb_gaspi_ctx_ib.port_attr[p].phys_state : 3;
+	  gaspi_printf ("\t  phy state  : %s\n", port_phy_state_str[id1[p]]);
+	  gaspi_printf ("\t  link layer : %s\n",link_layer_str (glb_gaspi_ctx_ib.port_attr[p].link_layer));
+	}
     }
-  }
 
 
-  if(glb_gaspi_cfg.port_check){
-
-    if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)&& (glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE)){
-      gaspi_print_error ("No IB active port found");
-      return -1;
-    }
-  
-    if((glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)&& (glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP)){
-      gaspi_print_error ("No IB active link found");
-      return -1;
-    }
-  
-    glb_gaspi_ctx_ib.ib_port = 1;
-  
-    if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)|| (glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)){
-            
-      if((glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE) || (glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP)){
-        gaspi_print_error ("No IB active port found");
-        return -1;
-      }
-  
-      glb_gaspi_ctx_ib.ib_port = 2;
-    }
-  
-    if(!glb_gaspi_cfg.user_net){//user didnt choose something, so we use network type of first active port
-  
-      if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_INFINIBAND) glb_gaspi_cfg.network = GASPI_IB;
-      else if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_ETHERNET) glb_gaspi_cfg.network = GASPI_ETHERNET;
-    }
-  
-  
-    if(glb_gaspi_cfg.network == GASPI_ETHERNET){
-  
+  if(glb_gaspi_cfg.port_check)
+    {
+      if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)&& (glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE))
+	{
+	  gaspi_print_error ("No IB active port found");
+	  return -1;
+	}
+      
+      if((glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)&& (glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP))
+	{
+	  gaspi_print_error ("No IB active link found");
+	  return -1;
+	}
+      
       glb_gaspi_ctx_ib.ib_port = 1;
-  
-      if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)
-      ||(glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)
-      ||(glb_gaspi_ctx_ib.port_attr[0].link_layer != IBV_LINK_LAYER_ETHERNET)){
-  
-  
-        if((glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE)
-        ||(glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP)
-        ||(glb_gaspi_ctx_ib.port_attr[1].link_layer != IBV_LINK_LAYER_ETHERNET)){
-          
-          gaspi_print_error ("No active Ethernet (RoCE) port found");
-          return -1;
-        }
-    
-        glb_gaspi_ctx_ib.ib_port = 2;
+      
+      if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE) || (glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP))
+	{
+	  
+	  if((glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE) || (glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP))
+	    {
+	      gaspi_print_error ("No IB active port found");
+	      return -1;
+	    }
+	  
+	  glb_gaspi_ctx_ib.ib_port = 2;
+	}
+      
+      if(!glb_gaspi_cfg.user_net){//user didnt choose something, so we use network type of first active port
+	
+	if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_INFINIBAND) glb_gaspi_cfg.network = GASPI_IB;
+	else if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_ETHERNET) glb_gaspi_cfg.network = GASPI_ETHERNET;
       }
+      
+      
+      if(glb_gaspi_cfg.network == GASPI_ETHERNET)
+	{
+	  
+	  glb_gaspi_ctx_ib.ib_port = 1;
+	  
+	  if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)
+	     ||(glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)
+	     ||(glb_gaspi_ctx_ib.port_attr[0].link_layer != IBV_LINK_LAYER_ETHERNET)){
+	    
+	    
+	    if((glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE)
+	       ||(glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP)
+	       ||(glb_gaspi_ctx_ib.port_attr[1].link_layer != IBV_LINK_LAYER_ETHERNET)){
+	      
+	      gaspi_print_error ("No active Ethernet (RoCE) port found");
+          return -1;
+	    }
+	    
+	    glb_gaspi_ctx_ib.ib_port = 2;
+	  }
+	}
+      
+    }//if(glb_gaspi_cfg.port_check)
+  else
+    {
+      glb_gaspi_ctx_ib.ib_port = 1;
     }
-
-  }//if(glb_gaspi_cfg.port_check)
-  else{
-    glb_gaspi_ctx_ib.ib_port = 1;
-  }
-
+  
   if(glb_gaspi_cfg.net_info) gaspi_printf ("\tusing port : %d\n", glb_gaspi_ctx_ib.ib_port);
-
+  
 
   if (glb_gaspi_cfg.network == GASPI_IB)
     {
@@ -355,7 +370,7 @@ pgaspi_dev_init_core ()
       return -1;
     }
 
-  memset(glb_gaspi_ctx_ib.nsrc.buf,0,size);
+  memset(glb_gaspi_ctx_ib.nsrc.buf, 0, size);
 
   glb_gaspi_ctx_ib.nsrc.mr = ibv_reg_mr(glb_gaspi_ctx_ib.pd,glb_gaspi_ctx_ib.nsrc.buf,size,
                                         IBV_ACCESS_REMOTE_WRITE
@@ -369,14 +384,12 @@ pgaspi_dev_init_core ()
       return -1;
     }
 
-
   memset (&glb_gaspi_ctx_ib.srq_attr, 0, sizeof (struct ibv_srq_init_attr));
 
   glb_gaspi_ctx_ib.srq_attr.attr.max_wr  = glb_gaspi_cfg.queue_depth;
   glb_gaspi_ctx_ib.srq_attr.attr.max_sge = 1;
 
   glb_gaspi_ctx_ib.srqP = ibv_create_srq (glb_gaspi_ctx_ib.pd, &glb_gaspi_ctx_ib.srq_attr);
-
   if(!glb_gaspi_ctx_ib.srqP)
     {
       gaspi_print_error ("Failed to create SRQ (libibverbs)");
@@ -384,28 +397,27 @@ pgaspi_dev_init_core ()
     }
 
   glb_gaspi_ctx_ib.scqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,NULL, 0);
-
-  if(!glb_gaspi_ctx_ib.scqGroups){
-    gaspi_print_error ("Failed to create CQ (libibverbs)");
-    return -1;
-  }
-
+  if(!glb_gaspi_ctx_ib.scqGroups)
+    {
+      gaspi_print_error ("Failed to create CQ (libibverbs)");
+      return -1;
+    }
 
   glb_gaspi_ctx_ib.rcqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,NULL, 0);
-
-  if(!glb_gaspi_ctx_ib.rcqGroups){
-    gaspi_print_error ("Failed to create CQ (libibverbs)");
-    return -1;
-  }
+  if(!glb_gaspi_ctx_ib.rcqGroups)
+    {
+      gaspi_print_error ("Failed to create CQ (libibverbs)");
+      return -1;
+    }
 
   glb_gaspi_ctx_ib.scqP = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,NULL, 0);
-  
-  if(!glb_gaspi_ctx_ib.scqP){
-    gaspi_print_error ("Failed to create CQ (libibverbs)");
-    return -1;
-  }
+  if(!glb_gaspi_ctx_ib.scqP)
+    {
+      gaspi_print_error ("Failed to create CQ (libibverbs)");
+      return -1;
+    }
 
-  glb_gaspi_ctx_ib.rcqP = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,glb_gaspi_ctx_ib.channelP, 0);
+  glb_gaspi_ctx_ib.rcqP = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL, glb_gaspi_ctx_ib.channelP, 0);
   
   if(!glb_gaspi_ctx_ib.rcqP)
     {
@@ -418,29 +430,23 @@ pgaspi_dev_init_core ()
       gaspi_print_error ("Failed to request CQ notifications (libibverbs)");
       return 1;
     }
-  
 
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
-      
-      glb_gaspi_ctx_ib.scqC[c] = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth,NULL, NULL, 0);
-      
+      glb_gaspi_ctx_ib.scqC[c] = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL, NULL, 0);
       if(!glb_gaspi_ctx_ib.scqC[c])
 	{
 	  gaspi_print_error ("Failed to create CQ (libibverbs)");
 	  return -1;
 	}
       
-    glb_gaspi_ctx_ib.rcqC[c] = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth,NULL, NULL, 0);
-    
-    if(!glb_gaspi_ctx_ib.rcqC[c])
-      {
-	gaspi_print_error ("Failed to create CQ (libibverbs)");
-	return -1;
-      }
-    
+      glb_gaspi_ctx_ib.rcqC[c] = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth,NULL, NULL, 0);
+      if(!glb_gaspi_ctx_ib.rcqC[c])
+	{
+	  gaspi_print_error ("Failed to create CQ (libibverbs)");
+	  return -1;
+	}
     }
-
 
   glb_gaspi_ctx_ib.qpGroups = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
   if(!glb_gaspi_ctx_ib.qpGroups)
@@ -451,7 +457,8 @@ pgaspi_dev_init_core ()
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       glb_gaspi_ctx_ib.qpC[c] = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc *sizeof (struct ibv_qp));
-      if(!glb_gaspi_ctx_ib.qpC[c]) return -1;
+      if(!glb_gaspi_ctx_ib.qpC[c])
+	return -1;
     }
   
   glb_gaspi_ctx_ib.qpP = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
@@ -462,9 +469,7 @@ pgaspi_dev_init_core ()
 
   if(glb_gaspi_cfg.network == GASPI_ETHERNET)
     {
-      
       const int ret = ibv_query_gid (glb_gaspi_ctx_ib.context, glb_gaspi_ctx_ib.ib_port,GASPI_GID_INDEX, &glb_gaspi_ctx_ib.gid);
-      
       if(ret)
 	{
 	  gaspi_print_error ("Failed to query gid (RoCE - libiverbs)");
@@ -487,14 +492,13 @@ pgaspi_dev_init_core ()
 	}
   }
 
-  glb_gaspi_ctx_ib.lrcd = (gaspi_rc_all *) calloc (glb_gaspi_ctx.tnc,sizeof (gaspi_rc_all));
+  glb_gaspi_ctx_ib.lrcd = (gaspi_rc_all *) calloc (glb_gaspi_ctx.tnc, sizeof(gaspi_rc_all));
   if(!glb_gaspi_ctx_ib.lrcd)
     {
       return -1;
     }
 
-  glb_gaspi_ctx_ib.rrcd = (gaspi_rc_all *) calloc (glb_gaspi_ctx.tnc,sizeof (gaspi_rc_all));
- 
+  glb_gaspi_ctx_ib.rrcd = (gaspi_rc_all *) calloc (glb_gaspi_ctx.tnc, sizeof(gaspi_rc_all));
   if(!glb_gaspi_ctx_ib.rrcd)
     {
       return -1;
@@ -502,7 +506,6 @@ pgaspi_dev_init_core ()
   
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
-      
       glb_gaspi_ctx_ib.lrcd[i].lid = glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].lid;
       
       struct timeval tv;
@@ -574,6 +577,7 @@ pgaspi_dev_create_endpoint(const int i)
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       qpi_attr.send_cq = glb_gaspi_ctx_ib.scqC[c];
+      //      qpi_attr.recv_cq = glb_gaspi_ctx_ib.scqC[c];
       qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqC[c];
       
       glb_gaspi_ctx_ib.qpC[c][i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
@@ -589,12 +593,12 @@ pgaspi_dev_create_endpoint(const int i)
   qpi_attr.srq = glb_gaspi_ctx_ib.srqP;
 
   glb_gaspi_ctx_ib.qpP[i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
-  if(!glb_gaspi_ctx_ib.qpP[i])
+  if( !glb_gaspi_ctx_ib.qpP[i] )
     {
-    gaspi_print_error ("Failed to create QP (libibverbs)");
-    goto errL;
+      gaspi_print_error ("Failed to create QP (libibverbs)");
+      goto errL;
     }
-
+  
   //init
   struct ibv_qp_attr qp_attr;
   memset (&qp_attr, 0, sizeof (struct ibv_qp_attr));
@@ -672,8 +676,8 @@ pgaspi_dev_disconnect_context(const int i, gaspi_timeout_t timeout_ms)
   if(!glb_gaspi_ib_init)
     return GASPI_ERROR;
 
-  if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
-    return GASPI_TIMEOUT;
+/*   if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms)) */
+/*     return GASPI_TIMEOUT; */
   
   if(glb_gaspi_ctx_ib.lrcd[i].cstat == 0)
     goto errL;//not connected
@@ -710,11 +714,11 @@ pgaspi_dev_disconnect_context(const int i, gaspi_timeout_t timeout_ms)
   glb_gaspi_ctx_ib.lrcd[i].istat=0;
   glb_gaspi_ctx_ib.lrcd[i].cstat=0;
   
-  unlock_gaspi(&glb_gaspi_ctx_lock);
+/*   unlock_gaspi(&glb_gaspi_ctx_lock); */
   return GASPI_SUCCESS;
 
 errL:
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+/*   unlock_gaspi (&glb_gaspi_ctx_lock); */
   return GASPI_ERROR;
 }
 
@@ -901,6 +905,7 @@ pgaspi_dev_cleanup_core ()
       return -1;
     }
 
+  //TODO: single loop should be enough
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
       if(glb_gaspi_ctx_ib.lrcd[i].istat==0)
@@ -958,13 +963,13 @@ pgaspi_dev_cleanup_core ()
 	    }
 	}
       
-    if(glb_gaspi_ctx_ib.qpC[c])
-      {
-	free (glb_gaspi_ctx_ib.qpC[c]);
-      }
-    
-    glb_gaspi_ctx_ib.qpC[c] = NULL;
-  }
+      if(glb_gaspi_ctx_ib.qpC[c])
+	{
+	  free (glb_gaspi_ctx_ib.qpC[c]);
+	}
+      
+      glb_gaspi_ctx_ib.qpC[c] = NULL;
+    }
 
   if(ibv_destroy_srq (glb_gaspi_ctx_ib.srqP))
     {
@@ -1015,34 +1020,34 @@ pgaspi_dev_cleanup_core ()
     {
       if(glb_gaspi_group_ib[i].id >= 0)
 	{
-
+	  
 	  if(munlock (glb_gaspi_group_ib[i].buf, glb_gaspi_group_ib[i].size)!= 0)
 	    {
 	      gaspi_print_error ("Failed to unlock memory (munlock)");
 	      return -1;
 	    }
+	  
+	  if(ibv_dereg_mr (glb_gaspi_group_ib[i].mr))
+	    {  
+	      gaspi_print_error ("Failed to de-register memory (libiverbs)");
+	      return -1;
+	    }
 
-      if(ibv_dereg_mr (glb_gaspi_group_ib[i].mr))
-	{  
-	  gaspi_print_error ("Failed to de-register memory (libiverbs)");
-	  return -1;
+	  if(glb_gaspi_group_ib[i].buf)
+	    {
+	      free (glb_gaspi_group_ib[i].buf);
+	    }
+	  
+	  glb_gaspi_group_ib[i].buf = NULL;
+	  
+	  if(glb_gaspi_group_ib[i].rrcd)
+	    {
+	      free (glb_gaspi_group_ib[i].rrcd);
+	    }
+	  glb_gaspi_group_ib[i].rrcd = NULL;
 	}
-
-      if(glb_gaspi_group_ib[i].buf)
-	{
-	  free (glb_gaspi_group_ib[i].buf);
-	}
-      
-      glb_gaspi_group_ib[i].buf = NULL;
-
-      if(glb_gaspi_group_ib[i].rrcd)
-	{
-	  free (glb_gaspi_group_ib[i].rrcd);
-	}
-      glb_gaspi_group_ib[i].rrcd = NULL;
     }
-  }
-
+  
   for(i = 0; i < 256; i++)
     {
       if(glb_gaspi_ctx_ib.rrmd[i] != NULL)

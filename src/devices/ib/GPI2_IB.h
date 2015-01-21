@@ -36,8 +36,8 @@ typedef struct
   int qpnP;
   int qpnC[GASPI_MAX_QP];
   int psn;
-  int rank,ret;
-  volatile int istat,cstat;
+  int rank, ret;
+  volatile int istat, cstat;
 } gaspi_rc_all;
 
 typedef struct
@@ -97,4 +97,5 @@ typedef struct
 
 gaspi_ib_ctx glb_gaspi_ctx_ib;
 
-#endif
+
+#endif // _GPI2_IB_H_

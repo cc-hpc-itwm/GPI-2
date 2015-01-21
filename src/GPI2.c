@@ -127,7 +127,7 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 
   if(pgaspi_dev_context_connected(i))
     {
-      goto okL; //already connected
+      goto okL; /* already connected */
     }
 
   eret = gaspi_connect_to_rank(i, timeout_ms);
@@ -139,12 +139,10 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   gaspi_cd_header cdh;
   const int rc_size = pgaspi_dev_get_sizeof_rc();
   cdh.op_len = rc_size;
-  
-  
   cdh.op = GASPI_SN_CONNECT;
   cdh.rank = glb_gaspi_ctx.rank;
 
-  int ret = write(glb_gaspi_ctx.sockfd[i],&cdh,sizeof(gaspi_cd_header));
+  int ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
   if(ret != sizeof(gaspi_cd_header))
     {
       gaspi_print_error("Failed to write to %d", i);
@@ -153,7 +151,7 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
       goto errL;
     }
 
-  ret = write(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_lrcd(i),rc_size);
+  ret = write(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
   if(ret != rc_size)
     {
       gaspi_print_error("Failed to write to %d", i);
@@ -162,11 +160,10 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
       goto errL;
     }
 
-  ret=read(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_rrcd(i),rc_size);
+  ret = read(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_rrcd(i), rc_size);
   if(ret != rc_size)
     {
       gaspi_print_error("Failed to read from %d", i);
-
       eret = GASPI_ERROR;
       goto errL;
     }
@@ -517,7 +514,9 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   /* need to wait to make sure everyone is connected */
   /* avoid problem of connecting to a node which is not yet ready (sn side) */
   /* TODO: should only be done when building infrastructure? */
-  while(glb_gaspi_init < glb_gaspi_ctx.tnc )
+
+  //FIXME
+  while(glb_gaspi_init < glb_gaspi_ctx.tnc - 1 )
     {
       gaspi_delay();
       if(gaspi_sn_status != GASPI_SN_STATE_OK)
@@ -527,7 +526,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  goto errL;
 	}
     }
-  
+
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
   if(glb_gaspi_cfg.build_infrastructure)
@@ -573,7 +572,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	}
       else
 	{
-	  gaspi_print_error("Group commit has failed (GASPI_GROUP_ALL)\n");
+	  gaspi_print_error("Rank %d: Group commit has failed (GASPI_GROUP_ALL)\n", glb_gaspi_ctx.rank);
 	  return GASPI_ERROR;
 	}
     }
