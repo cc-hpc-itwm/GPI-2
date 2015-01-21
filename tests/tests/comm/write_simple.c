@@ -17,60 +17,51 @@ int main(int argc, char *argv[])
 
   int rankSend = (myrank + 1) % numranks;
 
-  gaspi_printf("Seg size: %lu MB\n", _2GB/1024/1024);
-  if(gaspi_segment_create(0, _2GB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED) != GASPI_SUCCESS){
-    gaspi_printf("Failed to create segment\n");
-    return -1;
-  }
+  gaspi_printf("Seg size: %lu MB\n", _2GB / 1024 / 1024);
+  
+  ASSERT(gaspi_segment_create(0, _2GB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
   gaspi_size_t segSize;
   ASSERT( gaspi_segment_size(0, myrank, &segSize));
 
-
-  /* if(gaspi_segment_register(0, rankSend, GASPI_BLOCK) != GASPI_SUCCESS) */
   gaspi_printf("seg size %lu \n", segSize);
 
   unsigned char * pGlbMem;
 
   gaspi_pointer_t _vptr;
-  if(gaspi_segment_ptr(0, &_vptr) != GASPI_SUCCESS)
-    printf("gaspi_segment_ptr failed\n");
+  ASSERT(gaspi_segment_ptr(0, &_vptr));
 
   pGlbMem = ( unsigned char *) _vptr;
 
   gaspi_number_t qmax ;
   ASSERT (gaspi_queue_size_max(&qmax));
 
-  gaspi_printf("Queue max: %lu\n", qmax);
- 
-  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
-
   int i;
   gaspi_number_t queueSize;
 
-
-  unsigned long localOff= 814780664;
-  unsigned long remOff = 81478246;
   unsigned long size = 1800;
-  gaspi_printf("rank to send: %d\n", rankSend);
 
-  if (gaspi_write(0, //seg
-		  localOff,
-		  rankSend, //rank
-		  0, //seg rem
-		  remOff,
-		  size,
-		  1, //queue
-		  GASPI_BLOCK) != GASPI_SUCCESS){
+  for(i = 0; i < size / sizeof(unsigned char); i++)
+    pGlbMem[i] = myrank;
+  
+  gaspi_printf("Queue max: %lu\n", qmax);
 
-    gaspi_queue_size(1, &queueSize);
-    gaspi_printf (" failed with i = %d queue %u\n", i, queueSize);
-    exit(-1);
-    
-  }
+  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+
+  unsigned long localOff= 0;
+  unsigned long remOff = sizeof(unsigned char) * (size + 1);
+
+  ASSERT(gaspi_write(0, localOff, rankSend,
+		     0, remOff, size,
+		     1, GASPI_BLOCK));
+  
   ASSERT (gaspi_wait(1, GASPI_BLOCK));
 
-
+  /* check */
+  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+  for(i = 0; i < size / sizeof(unsigned char); i++)
+    assert(pGlbMem[i] == rankSend);
+  
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   
   ASSERT (gaspi_proc_term(GASPI_BLOCK));

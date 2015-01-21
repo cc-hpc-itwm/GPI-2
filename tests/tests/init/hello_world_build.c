@@ -87,18 +87,13 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_rank(&rank));
   ASSERT (gaspi_proc_num(&num));
   
-  gaspi_printf("Hello from rank %d of %d -> %d\n", 
+  printf("Hello from rank %d of %d -> %d\n", 
 	       rank, num, (rank + 1 ) % num );
 
   int i;
 
   gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK);
 
-/*   struct timespec sleep_time, rem; */
-/*   sleep_time.tv_sec = 60; */
-/*   sleep_time.tv_nsec = 0; */
-/*   nanosleep(&sleep_time, &rem); */
-  
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 
   return EXIT_SUCCESS;
