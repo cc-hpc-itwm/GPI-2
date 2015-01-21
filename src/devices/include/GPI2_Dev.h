@@ -213,26 +213,11 @@ pgaspi_dev_group_deregister_mem (const gaspi_group_t);
 gaspi_return_t
 pgaspi_dev_barrier (const gaspi_group_t, const gaspi_timeout_t);
 
-gaspi_return_t
-pgaspi_dev_allreduce (const gaspi_pointer_t,
-		      gaspi_pointer_t const,
-		      const gaspi_number_t,
-		      struct redux_args *args,
-		      const gaspi_group_t,
-		      const gaspi_timeout_t);
+int
+pgaspi_dev_poll_groups();
 
-
-
-gaspi_return_t
-pgaspi_dev_allreduce_user (const gaspi_pointer_t,
-			   gaspi_pointer_t const,
-			   const gaspi_number_t,
-			   const gaspi_size_t,
-			   gaspi_reduce_operation_t const,
-			   gaspi_state_t const, const gaspi_group_t,
-			   const gaspi_timeout_t);
-
-
+int
+pgaspi_dev_post_write(void *, int, int, void *, int);
 
 /* OPTION B */
 /* #include "GPI2_IB_IO.h" */
