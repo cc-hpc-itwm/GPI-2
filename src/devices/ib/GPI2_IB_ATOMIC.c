@@ -170,7 +170,5 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
   *val_old =
     *((gaspi_atomic_value_t *) (glb_gaspi_group_ib[0].buf + NEXT_OFFSET));
 
-  unlock_gaspi (&glb_gaspi_group_ib[0].gl);
   return GASPI_SUCCESS;
-
 }
