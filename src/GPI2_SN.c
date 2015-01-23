@@ -677,22 +677,6 @@ void *gaspi_sn_backend(void *arg)
 				  mgmt->op = GASPI_SN_HEADER;//next we expect new header
 				  mgmt->cdh.op = GASPI_SN_RESET;
 				  
-				  if(glb_gaspi_ib_init == 0)//just local stuff
-				    {
-				      //TODO: Why do it here and not on proc_init?
-				      if(pgaspi_dev_init_core() != GASPI_SUCCESS)
-					{
-					  
-					  gaspi_sn_print_error("Failed to initialized IB core");
-					  gaspi_sn_status = GASPI_SN_STATE_ERROR;
-					  gaspi_sn_err = GASPI_ERROR;
-					  
-					  return NULL;
-					}
-				      gaspi_init_collectives();
-
-				    }
-				  
 				  /* atomic update -> worker activated */
 				  if(__sync_fetch_and_add(&gaspi_master_topo_data, 1) == -1)
 				    {

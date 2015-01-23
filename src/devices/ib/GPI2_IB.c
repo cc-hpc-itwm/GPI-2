@@ -65,7 +65,7 @@ link_layer_str (uint8_t link_layer)
     case IBV_LINK_LAYER_INFINIBAND:
       return "IB";
     case IBV_LINK_LAYER_ETHERNET:
-      return "Ethernet";
+      return "Ethernet(RoCE)";
     default:
       return "Unknown";
     }
@@ -86,9 +86,7 @@ pgaspi_dev_init_core ()
   char boardIDbuf[256];
   int i, c, p, dev_idx = 0;
 
-  if (glb_gaspi_ib_init)
-    return -1;
-
+  //TODO: doesn't belong here
   //change/override num of queues at large scale
   if (glb_gaspi_ctx.tnc > 1000 && glb_gaspi_cfg.queue_num > 1)
     {
@@ -97,20 +95,10 @@ pgaspi_dev_init_core ()
     }
 
   memset (&glb_gaspi_ctx_ib, 0, sizeof (gaspi_ib_ctx));
-  memset (&glb_gaspi_group_ib, 0, GASPI_MAX_GROUPS * sizeof (gaspi_ib_group));
 
   for(i = 0; i < 256; i++)
     {
       glb_gaspi_ctx_ib.rrmd[i] = NULL;
-    }
-
-  for (i = 0; i < GASPI_MAX_GROUPS; i++)
-    { 
-      glb_gaspi_group_ib[i].id = -1;
-      glb_gaspi_group_ib[i].coll_op = GASPI_NONE;
-      glb_gaspi_group_ib[i].lastmask = 0x1;
-      glb_gaspi_group_ib[i].level = 0;
-      glb_gaspi_group_ib[i].dsize = 0;
     }
 
   for (i = 0; i < 64; i++)
@@ -528,29 +516,14 @@ pgaspi_dev_init_core ()
 	}
     }
 
-
-  for(i = 0; i < GASPI_MAX_QP + 3; i++)
-    {
-      glb_gaspi_ctx.qp_state_vec[i] = (unsigned char *) malloc (glb_gaspi_ctx.tnc);
-      if(!glb_gaspi_ctx.qp_state_vec[i])
-	{
-	  return -1;
-	}
-      memset (glb_gaspi_ctx.qp_state_vec[i], 0, glb_gaspi_ctx.tnc);
-    }
-
-  glb_gaspi_ib_init = 1;
-
   return 0;
 }
 
-
+//TODO: match return values
 int
 pgaspi_dev_create_endpoint(const int i)
 {
   int c;
-
-  lock_gaspi_tout(&gaspi_create_lock, GASPI_BLOCK);
 
   if(glb_gaspi_ctx_ib.lrcd[i].istat) goto okL;//already created
 
@@ -577,6 +550,7 @@ pgaspi_dev_create_endpoint(const int i)
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       qpi_attr.send_cq = glb_gaspi_ctx_ib.scqC[c];
+      //TODO:
       //      qpi_attr.recv_cq = glb_gaspi_ctx_ib.scqC[c];
       qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqC[c];
       
@@ -657,12 +631,10 @@ pgaspi_dev_create_endpoint(const int i)
   glb_gaspi_ctx_ib.lrcd[i].istat=1;
 
 okL:
-  unlock_gaspi(&gaspi_create_lock);
   return GASPI_SUCCESS;
 
 errL:
   glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
-  unlock_gaspi (&gaspi_create_lock);
   return GASPI_ERROR;
 
 }
@@ -673,12 +645,6 @@ pgaspi_dev_disconnect_context(const int i, gaspi_timeout_t timeout_ms)
 {
   int c;
 
-  if(!glb_gaspi_ib_init)
-    return GASPI_ERROR;
-
-/*   if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms)) */
-/*     return GASPI_TIMEOUT; */
-  
   if(glb_gaspi_ctx_ib.lrcd[i].cstat == 0)
     goto errL;//not connected
 
@@ -711,14 +677,12 @@ pgaspi_dev_disconnect_context(const int i, gaspi_timeout_t timeout_ms)
       glb_gaspi_ctx_ib.lrcd[i].qpnC[c] = 0;
     }
   
-  glb_gaspi_ctx_ib.lrcd[i].istat=0;
-  glb_gaspi_ctx_ib.lrcd[i].cstat=0;
+  glb_gaspi_ctx_ib.lrcd[i].istat = 0;
+  glb_gaspi_ctx_ib.lrcd[i].cstat = 0;
   
-/*   unlock_gaspi(&glb_gaspi_ctx_lock); */
   return GASPI_SUCCESS;
 
 errL:
-/*   unlock_gaspi (&glb_gaspi_ctx_lock); */
   return GASPI_ERROR;
 }
 
@@ -726,18 +690,10 @@ errL:
 int 
 pgaspi_dev_connect_context(const int i, gaspi_timeout_t timeout_ms)
 {
-  if(!glb_gaspi_ib_init)
-    {
-      return GASPI_ERROR;
-    }
-
-  if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
-    return GASPI_TIMEOUT;
-  
 
   if(glb_gaspi_ctx_ib.lrcd[i].cstat)
     {
-      goto okL;//already connected
+      return GASPI_SUCCESS;
     }
   
   struct ibv_qp_attr qp_attr;
@@ -881,29 +837,19 @@ pgaspi_dev_connect_context(const int i, gaspi_timeout_t timeout_ms)
       goto errL;
     }
   
+  glb_gaspi_ctx_ib.lrcd[i].cstat = 1;
   
-  glb_gaspi_ctx_ib.lrcd[i].cstat=1;
-  
- okL:
-  unlock_gaspi(&gaspi_ccontext_lock);
   return GASPI_SUCCESS;
   
  errL:
   glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
-  unlock_gaspi (&gaspi_ccontext_lock);
   return GASPI_ERROR;
-  
 }
 
 int
 pgaspi_dev_cleanup_core ()
 {
   int i, c;
-
-  if(!glb_gaspi_ib_init)
-    {
-      return -1;
-    }
 
   //TODO: single loop should be enough
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)
@@ -1201,6 +1147,12 @@ inline int
 pgaspi_dev_context_connected(const int i)
 {
   return glb_gaspi_ctx_ib.lrcd[i].cstat;
+}
+
+inline int
+pgaspi_dev_context_exists(const int i)
+{
+  return glb_gaspi_ctx_ib.lrcd[i].istat;
 }
 
 inline void *

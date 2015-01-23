@@ -119,12 +119,18 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
     return GASPI_ERROR;
 
   const int i = rank;
+
+  //TODO: verify the locking need
+  lock_gaspi_tout(&gaspi_create_lock, GASPI_BLOCK);
+  
   if(pgaspi_dev_create_endpoint(i) < 0)
     return GASPI_ERROR;
 
+  unlock_gaspi(&gaspi_create_lock);
+
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
-
+  
   if(pgaspi_dev_context_connected(i))
     {
       goto okL; /* already connected */
@@ -167,13 +173,19 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
       eret = GASPI_ERROR;
       goto errL;
     }
-            
-  if(pgaspi_dev_connect_context(i, timeout_ms) != 0)
+
+  if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
+    return GASPI_TIMEOUT;
+  
+  if(pgaspi_dev_connect_context(i, timeout_ms) != GASPI_SUCCESS)
     {
       gaspi_print_error("Failed to connect context");
+      unlock_gaspi(&gaspi_ccontext_lock);      
       eret = GASPI_ERROR;
       goto errL;
     }
+
+  unlock_gaspi(&gaspi_ccontext_lock);
 
   if(gaspi_close(glb_gaspi_ctx.sockfd[i]) != 0)
     {
@@ -218,6 +230,43 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 errL:
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return eret;
+}
+
+static int
+pgaspi_init_core()
+{
+  int i;
+
+  if (glb_gaspi_ib_init)
+    return -1;
+  
+  memset (&glb_gaspi_group_ib, 0, GASPI_MAX_GROUPS * sizeof (gaspi_ib_group));
+
+  for (i = 0; i < GASPI_MAX_GROUPS; i++)
+    { 
+      glb_gaspi_group_ib[i].id = -1;
+      glb_gaspi_group_ib[i].coll_op = GASPI_NONE;
+      glb_gaspi_group_ib[i].lastmask = 0x1;
+      glb_gaspi_group_ib[i].level = 0;
+      glb_gaspi_group_ib[i].dsize = 0;
+    }
+  
+  if(pgaspi_dev_init_core() != 0)
+    return -1;
+  
+  for(i = 0; i < GASPI_MAX_QP + 3; i++)
+    {
+      glb_gaspi_ctx.qp_state_vec[i] = (unsigned char *) malloc (glb_gaspi_ctx.tnc);
+      if(!glb_gaspi_ctx.qp_state_vec[i])
+	{
+	  return -1;
+	}
+      memset (glb_gaspi_ctx.qp_state_vec[i], 0, glb_gaspi_ctx.tnc);
+    }
+
+  glb_gaspi_ib_init = 1;
+
+  return 0;
 }
 
 #pragma weak gaspi_proc_init = pgaspi_proc_init
@@ -436,7 +485,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  glb_gaspi_ctx.sockfd[i] = -1;
 	}
 
-      if(pgaspi_dev_init_core() != GASPI_SUCCESS)
+      if(pgaspi_init_core() != GASPI_SUCCESS)
 	{
 	  eret = GASPI_ERROR;
 	  goto errL;
@@ -472,12 +521,19 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	    }
 	}
       
-      if(glb_gaspi_ib_init == 0)
+      if(glb_gaspi_ib_init == 0)//just local stuff
 	{
-	  gaspi_print_error("IB not initialized");
+
+	  if(pgaspi_init_core() != GASPI_SUCCESS)
+	    {
+	      gaspi_print_error("IB not initialized");
+	      
+	      eret=GASPI_ERROR;
+	      goto errL;
+	      
+	    }
 	  
-	  eret=GASPI_ERROR;
-	  goto errL;
+	  gaspi_init_collectives();
 	}
 
       //do connections
@@ -513,7 +569,10 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   
   /* need to wait to make sure everyone is connected */
   /* avoid problem of connecting to a node which is not yet ready (sn side) */
-  /* TODO: should only be done when building infrastructure? */
+  /* TODO:
+     1 - should only be done when building infrastructure?
+     2 - better implementatio possible
+  */
 
   //FIXME
   while(glb_gaspi_init < glb_gaspi_ctx.tnc - 1 )
@@ -610,6 +669,21 @@ pgaspi_initialized (gaspi_number_t *initialized)
   return GASPI_SUCCESS;
 }
 
+static gaspi_return_t
+pgaspi_cleanup_core()
+{
+
+  if(!glb_gaspi_ib_init)
+    {
+      return GASPI_ERROR;
+    }
+
+  if(pgaspi_dev_cleanup_core() != GASPI_SUCCESS)
+    return GASPI_ERROR;
+
+  return GASPI_SUCCESS;
+}
+
 //cleanup
 #pragma weak gaspi_proc_term = pgaspi_proc_term
 gaspi_return_t
@@ -648,7 +722,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
     }
 #endif
   
-  if(pgaspi_dev_cleanup_core() != GASPI_SUCCESS)
+  if(pgaspi_cleanup_core() != GASPI_SUCCESS)
     goto errL;
   
   unlock_gaspi (&glb_gaspi_ctx_lock);
