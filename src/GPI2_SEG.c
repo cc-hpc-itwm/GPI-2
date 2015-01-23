@@ -36,7 +36,8 @@ pgaspi_segment_max (gaspi_number_t * const segment_max)
 #pragma weak gaspi_segment_size = pgaspi_segment_size
 gaspi_return_t
 pgaspi_segment_size (const gaspi_segment_id_t segment_id,
-		     const gaspi_rank_t rank, gaspi_size_t * const size)
+		     const gaspi_rank_t rank,
+		     gaspi_size_t * const size)
 {
   gaspi_size_t seg_size = pgaspi_dev_get_mseg_size(segment_id, rank);
   
@@ -155,12 +156,17 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
+  if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS || size == 0)
+    return GASPI_ERROR;
+
   gaspi_return_t eret = GASPI_ERROR;
   
   lock_gaspi_tout (&gaspi_mseg_lock, GASPI_BLOCK);
 
   eret = pgaspi_dev_segment_alloc(segment_id, size, alloc_policy);
-  
+
+  glb_gaspi_ctx.mseg_cnt++;
+    
   unlock_gaspi (&gaspi_mseg_lock);
 
   return eret;
@@ -197,11 +203,80 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 
   eret = pgaspi_dev_segment_delete(segment_id);
 
+  glb_gaspi_ctx.mseg_cnt--;
+  
   unlock_gaspi (&gaspi_mseg_lock);
 
   return eret;
 }
 
+static int
+_gaspi_dev_exch_cdh(gaspi_cd_header *cdh,
+		    gaspi_rank_t rank)
+{
+  int ret = write(glb_gaspi_ctx.sockfd[rank], cdh, sizeof(gaspi_cd_header));
+  if(ret != sizeof(gaspi_cd_header))
+    {
+      gaspi_print_error("Failed to write (%d %p %lu)",
+			glb_gaspi_ctx.sockfd[rank], cdh, sizeof(gaspi_cd_header));
+
+      return -1;
+    }
+
+  int rret;
+  ret = read(glb_gaspi_ctx.sockfd[rank], &rret, sizeof(int));
+  if(ret != sizeof(int))
+    {
+      gaspi_print_error("Failed to read from rank %d", rank);
+      return -1;
+    }
+  
+  if(rret < 0)
+    {
+      gaspi_print_error("Read (unexpectedly) 0 bytes from %d\n", rank);
+      return -1;
+    }
+
+  return 0;
+}
+
+/* unlocked (internal) version */
+/* is called by different functions that use the same locks */
+
+gaspi_return_t
+_pgaspi_segment_register(const gaspi_segment_id_t segment_id,
+			 const gaspi_rank_t rank,
+			 const gaspi_timeout_t timeout_ms)
+  
+{
+  gaspi_return_t eret = gaspi_connect_to_rank(rank, timeout_ms);
+  if(eret != GASPI_SUCCESS)
+    {
+      return eret;
+    }
+
+  gaspi_cd_header cdh;
+  pgaspi_dev_init_cdh_segment(segment_id, glb_gaspi_ctx.rank, &cdh);
+
+  if(_gaspi_dev_exch_cdh(&cdh, rank) != 0)
+    {
+      gaspi_print_error("Failed to exch cdh with %d", rank);
+      return GASPI_ERROR;
+    }
+    
+  if(gaspi_close(glb_gaspi_ctx.sockfd[rank]) != 0)
+    {
+      gaspi_print_error("Failed to close connection to %d", rank);
+
+      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
+      
+      return GASPI_ERROR;
+    }
+
+  glb_gaspi_ctx.sockfd[rank] = -1;
+
+  return GASPI_SUCCESS;
+}
 
 #pragma weak gaspi_segment_register = pgaspi_segment_register
 gaspi_return_t
@@ -231,10 +306,48 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
       return GASPI_TIMEOUT;
     }
 
-  eret = pgaspi_dev_segment_register(segment_id, rank, timeout_ms);
+  eret = _pgaspi_segment_register(segment_id, rank, timeout_ms);
 
   unlock_gaspi(&glb_gaspi_ctx_lock);
 
+  return eret;
+}
+
+static gaspi_return_t
+pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
+				  const gaspi_group_t group,
+				  const gaspi_timeout_t timeout_ms)
+{
+  int r;
+  gaspi_return_t eret = GASPI_ERROR;
+
+  /* register segment to all other group members */
+  /* dont write several times !!! */
+  for(r = 1; r <= glb_gaspi_group_ib[group].tnc; r++)
+    {
+      int i = (glb_gaspi_group_ib[group].rank + r) % glb_gaspi_group_ib[group].tnc;
+
+      if(glb_gaspi_group_ib[group].rank_grp[i] == glb_gaspi_ctx.rank)
+	{
+	  pgaspi_dev_set_mseg_trans(segment_id, glb_gaspi_group_ib[group].rank_grp[i], 1);
+	  continue;
+	}
+
+      if( pgaspi_dev_get_mseg_trans(segment_id, glb_gaspi_group_ib[group].rank_grp[i]))
+	continue;
+
+      eret = _pgaspi_segment_register(segment_id, glb_gaspi_group_ib[group].rank_grp[i], timeout_ms);
+      if(eret != GASPI_SUCCESS)
+	{
+	  gaspi_print_error("Failed segment registration with %d\n",
+			    glb_gaspi_group_ib[group].rank_grp[i]);
+	  
+	  return GASPI_ERROR;
+	}
+    }//for
+
+  eret = pgaspi_dev_wait_remote_register(segment_id, group, timeout_ms);
+  
   return eret;
 }
 
@@ -257,7 +370,6 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
       gaspi_print_error("Invalid group ( > GASPI_MAX_GROUPS || < 0)");
       return GASPI_ERROR;
     }
-  
 #endif
   
   if(pgaspi_dev_segment_alloc (segment_id, size, alloc_policy) != 0)
@@ -273,14 +385,8 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  eret = pgaspi_dev_segment_register_group(segment_id, group, timeout_ms);
-  if(eret != GASPI_SUCCESS)
-    goto errL;
- 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
-  return GASPI_SUCCESS;
-  
-errL:
+  eret = pgaspi_segment_register_group(segment_id, group, timeout_ms);
+
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return eret;
 }    

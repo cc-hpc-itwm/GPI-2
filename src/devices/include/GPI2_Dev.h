@@ -61,6 +61,12 @@ pgaspi_dev_get_mseg_size(const gaspi_segment_id_t, const gaspi_rank_t);
 inline int
 pgaspi_seg_reg_sn(const gaspi_cd_header);
 
+inline void
+pgaspi_dev_set_mseg_trans(const gaspi_segment_id_t, const gaspi_rank_t, int);
+
+inline int
+pgaspi_dev_get_mseg_trans(const gaspi_segment_id_t, const gaspi_rank_t);
+
 
 /* Device interface (GASPI routines) */
 /* IO */
@@ -194,21 +200,12 @@ gaspi_return_t
 pgaspi_dev_segment_delete (const gaspi_segment_id_t);
 
 gaspi_return_t
-pgaspi_dev_segment_register(const gaspi_segment_id_t,
-			    const gaspi_rank_t,
-			    const gaspi_timeout_t);
-
-gaspi_return_t
-pgaspi_dev_segment_register_group(const gaspi_segment_id_t,
-				  const gaspi_group_t,
-				  const gaspi_timeout_t);
-
-gaspi_return_t
 pgaspi_dev_group_register_mem (int, unsigned int);
 
 
 gaspi_return_t
-pgaspi_dev_group_deregister_mem (const gaspi_group_t);
+pgaspi_dev_group_deregister_mem (const void *);
+
 
 gaspi_return_t
 pgaspi_dev_barrier (const gaspi_group_t, const gaspi_timeout_t);
