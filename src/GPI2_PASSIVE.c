@@ -66,7 +66,9 @@ pgaspi_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max
   gaspi_verify_null_ptr(passive_transfer_size_max);
 #endif  
 
-  return pgaspi_dev_passive_transfer_size_max(passive_transfer_size_max);
+  *passive_transfer_size_max = GASPI_MAX_TSIZE_P;
+
+  return GASPI_SUCCESS;
 }
 
 #pragma weak gaspi_passive_send     = pgaspi_passive_send

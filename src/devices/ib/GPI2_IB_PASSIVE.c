@@ -18,15 +18,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2.h"
 #include "GPI2_IB.h"
 
-
-gaspi_return_t
-pgaspi_dev_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max)
-{
-  *passive_transfer_size_max = GASPI_MAX_TSIZE_P;
-
-  return GASPI_SUCCESS;
-}
-
 gaspi_return_t
 pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
 		    const gaspi_offset_t offset_local,
