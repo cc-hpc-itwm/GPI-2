@@ -58,7 +58,6 @@ pgaspi_group_create (gaspi_group_t * const group)
     {
       goto errL;
     }
-  
 
   //TODO: for now as before
   if(id == GASPI_GROUP_ALL)
@@ -72,12 +71,6 @@ pgaspi_group_create (gaspi_group_t * const group)
       != 0)
     {
       gaspi_print_error ("Memory allocation (posix_memalign) failed");
-      goto errL;
-    }
-
-  if (mlock (glb_gaspi_group_ib[id].buf, size) != 0)
-    {
-      gaspi_print_error ("Memory locking (mlock) failed (of size %d)", size);
       goto errL;
     }
 
@@ -100,9 +93,23 @@ pgaspi_group_create (gaspi_group_t * const group)
   glb_gaspi_group_ib[id].pof2_exp = 0;
 
   gaspi_return_t eret = GASPI_ERROR;
+
   eret = pgaspi_dev_group_register_mem(id, size);
   if(eret != GASPI_SUCCESS)
     goto errL;
+
+  glb_gaspi_group_ib[id].rrcd = (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
+  if(glb_gaspi_group_ib[id].rrcd == NULL)
+    goto errL;
+  
+  memset (glb_gaspi_group_ib[id].rrcd, 0,
+	  glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
+  
+  glb_gaspi_group_ib[id].rrcd[glb_gaspi_ctx.rank].vaddrGroup =
+    (uintptr_t) glb_gaspi_group_ib[id].buf;
+
+  glb_gaspi_group_ib[id].rrcd[glb_gaspi_ctx.rank].rkeyGroup =
+    pgaspi_dev_group_get_mem_rkey(glb_gaspi_group_ib[id].mr);
 
   glb_gaspi_group_ib[id].rank_grp = (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
   if(!glb_gaspi_group_ib[id].rank_grp)
@@ -111,7 +118,6 @@ pgaspi_group_create (gaspi_group_t * const group)
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     glb_gaspi_group_ib[id].rank_grp[i] = -1;
   
-
   glb_gaspi_ctx.group_cnt++;
   *group = id;
 
@@ -121,7 +127,6 @@ pgaspi_group_create (gaspi_group_t * const group)
  errL:
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_ERROR;
-
 }
 
 #pragma weak gaspi_group_delete = pgaspi_group_delete
@@ -146,15 +151,8 @@ pgaspi_group_delete (const gaspi_group_t group)
     }
 #endif
 
-  //TODO: remove this
-  if (munlock (glb_gaspi_group_ib[group].buf, glb_gaspi_group_ib[group].size)
-      != 0)
-    {
-      gaspi_print_error ("Memory unlocking (munlock) failed");
-      goto errL;
-    }
-
   gaspi_return_t eret = GASPI_ERROR;
+
   eret = pgaspi_dev_group_deregister_mem(group);
   if(eret != GASPI_SUCCESS)
     goto errL;
@@ -172,6 +170,7 @@ pgaspi_group_delete (const gaspi_group_t group)
   glb_gaspi_group_ib[group].rrcd = NULL;
 
   glb_gaspi_group_ib[group].id = -1;
+
   glb_gaspi_ctx.group_cnt--;
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
@@ -577,9 +576,6 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
   glb_gaspi_group_ib[g].coll_op = GASPI_BARRIER;
 
-  //  gaspi_return_t eret = GASPI_ERROR;
-  //  eret = pgaspi_dev_barrier(g, timeout_ms);
-
   int i, index;
 
   const int size = glb_gaspi_group_ib[g].tnc;
@@ -940,25 +936,6 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
 	dst = glb_gaspi_group_ib[g].rank_grp[rank - 1];
 
-#ifdef CALL_DIRECTLY_IB	
-	slist.addr = (uintptr_t) send_ptr;
-	swr.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
-	swr.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
-	swr.wr_id = dst;
-	swrN.wr.rdma.remote_addr = glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle);
-	swrN.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
-	swrN.wr_id = dst;
-	  
-	if (ibv_post_send(glb_gaspi_ctx_tcp.qpGroups[dst], &swr, &bad_wr_send))
-	  {
-	      
-	    glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
-	      
-	    gaspi_print_error("Failed to post request to %u for gaspi_allreduce",dst);
-	    return GASPI_ERROR;
-	  }
-	  
-#else
 	if(pgaspi_dev_post_write(send_ptr, dsize, dst,
 				 glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048),
 				 g) != 0)
@@ -980,8 +957,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
 	    return GASPI_ERROR;
 	  }
-#endif	  
-	
+
 	//	glb_gaspi_ctx_tcp.ne_count_grp += 2;
 
       }
@@ -1014,16 +990,6 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
   if (pret < 0)
     {
   
-      /*       for (i = 0; i < glb_gaspi_ctx_tcp.ne_count_grp; i++) */
-      /* 	{ */
-      /* 	  if (glb_gaspi_ctx_tcp.wc_grp_send[i].status != TCP_WC_SUCCESS) */
-      /* 	    { */
-      /* 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_tcp.wc_grp_send[i].wr_id] = 1; */
-      /* 	    } */
-      /* 	} */
-      
-      /*       gaspi_print_error("Failed request to %lu. Collectives queue might be broken", */
-      /* 			glb_gaspi_ctx_tcp.wc_grp_send[i].wr_id); */
   
       return GASPI_ERROR;
     }

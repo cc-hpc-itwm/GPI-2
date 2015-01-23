@@ -27,40 +27,31 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 /* Group utilities */
 gaspi_return_t
-pgaspi_dev_group_register_mem (int id, unsigned int size)
+pgaspi_dev_group_register_mem (const int id, const unsigned int size)
 {
-
-  glb_gaspi_group_ib[id].mr =
-    ibv_reg_mr (glb_gaspi_ctx_ib.pd, glb_gaspi_group_ib[id].buf, size,
-		IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
-		IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
-
+  glb_gaspi_group_ib[id].mr =ibv_reg_mr (glb_gaspi_ctx_ib.pd, glb_gaspi_group_ib[id].buf, size,
+					 IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
+					 IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
+  
   if (glb_gaspi_group_ib[id].mr == NULL)
     {
       gaspi_print_error ("Memory registration failed (libibverbs)");
       return GASPI_ERROR;
     }
 
-  glb_gaspi_group_ib[id].rrcd = (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
-  if(glb_gaspi_group_ib[id].rrcd == NULL)
-    return GASPI_ERROR;
-  
-  memset (glb_gaspi_group_ib[id].rrcd, 0,
-	  glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
-
-  glb_gaspi_group_ib[id].rrcd[glb_gaspi_ctx.rank].vaddrGroup =
-    (uintptr_t) glb_gaspi_group_ib[id].buf;
-
-  glb_gaspi_group_ib[id].rrcd[glb_gaspi_ctx.rank].rkeyGroup =
-    ((struct ibv_mr *)glb_gaspi_group_ib[id].mr)->rkey;
-
   return GASPI_SUCCESS;
 }
 
-gaspi_return_t
-pgaspi_dev_group_deregister_mem (const gaspi_group_t group)
+unsigned int
+pgaspi_dev_group_get_mem_rkey(const void *mr)
 {
-  if (ibv_dereg_mr (glb_gaspi_group_ib[group].mr))
+  return ((struct ibv_mr *)mr)->rkey;
+}
+				 
+gaspi_return_t
+pgaspi_dev_group_deregister_mem (const int id)
+{
+  if (ibv_dereg_mr ((struct ibv_mr *)glb_gaspi_group_ib[id].mr))
     {
       gaspi_print_error ("Memory de-registration failed (libibverbs)");
       return GASPI_ERROR;
@@ -118,7 +109,7 @@ pgaspi_dev_post_write(void *local_addr, int length, int dst, void *remote_addr, 
   swr.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
   swr.wr_id = dst;
   
-  if (ibv_post_send ((struct ibv_qp *)  glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
+  if (ibv_post_send ((struct ibv_qp *) glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
       return 1;
 
   glb_gaspi_ctx_ib.ne_count_grp++;

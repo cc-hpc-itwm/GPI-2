@@ -204,7 +204,7 @@ pgaspi_dev_group_register_mem (int, unsigned int);
 
 
 gaspi_return_t
-pgaspi_dev_group_deregister_mem (const void *);
+pgaspi_dev_group_deregister_mem (const int);
 
 
 gaspi_return_t
