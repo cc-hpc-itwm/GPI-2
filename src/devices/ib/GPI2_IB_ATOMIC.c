@@ -34,7 +34,7 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
 
   slist.addr = (uintptr_t) (glb_gaspi_group_ib[0].buf + NEXT_OFFSET);
-  slist.length = 8;
+  slist.length = sizeof(gaspi_atomic_value_t);;
   slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[0].mr)->lkey;
 
   swr.wr.atomic.remote_addr =
@@ -113,7 +113,7 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 
   slist.addr = (uintptr_t) (glb_gaspi_group_ib[0].buf + NEXT_OFFSET);
 
-  slist.length = 8;
+  slist.length = sizeof(gaspi_atomic_value_t);
   slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[0].mr)->lkey;
 
   swr.wr.atomic.remote_addr =
