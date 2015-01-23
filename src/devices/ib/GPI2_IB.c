@@ -106,7 +106,7 @@ pgaspi_dev_init_core ()
       glb_gaspi_ctx_ib.wc_grp_send[i].status = IBV_WC_SUCCESS;
     }
   
-
+  /* Take care of IB device ( */
   glb_gaspi_ctx_ib.dev_list = ibv_get_device_list (&glb_gaspi_ctx_ib.num_dev);
   if (!glb_gaspi_ctx_ib.dev_list)
     {
@@ -166,6 +166,7 @@ pgaspi_dev_init_core ()
       return -1;
     }
 
+  /* Completion channel */
   glb_gaspi_ctx_ib.channelP = ibv_create_comp_channel (glb_gaspi_ctx_ib.context);
   if(!glb_gaspi_ctx_ib.channelP)
     {
@@ -173,6 +174,7 @@ pgaspi_dev_init_core ()
       return -1;
     }
 
+  /* Query device and print info */
   if(ibv_query_device(glb_gaspi_ctx_ib.context, &glb_gaspi_ctx_ib.device_attr))
     {
       gaspi_print_error ("Failed to query device (libibverbs)");
@@ -233,7 +235,7 @@ pgaspi_dev_init_core ()
 	}
     }
 
-
+  /* Port check */
   if(glb_gaspi_cfg.port_check)
     {
       if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)&& (glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE))
@@ -342,19 +344,15 @@ pgaspi_dev_init_core ()
     }
 
 
-  //notify src segment
+  /* Create internal memory space */
+  //TODO: has nothing to do with device
+  
   const unsigned int size = NOTIFY_OFFSET;
   const unsigned int page_size = sysconf (_SC_PAGESIZE);
 
   if(posix_memalign ((void **) &glb_gaspi_ctx_ib.nsrc.ptr, page_size, size)!= 0)
     {
       gaspi_print_error ("Memory allocation (posix_memalign) failed");
-      return -1;
-    }
-
-  if(mlock(glb_gaspi_ctx_ib.nsrc.buf, size) != 0)
-    {
-      gaspi_print_error ("Memory locking (mlock) failed (of size %d)", size);
       return -1;
     }
 
@@ -384,6 +382,7 @@ pgaspi_dev_init_core ()
       return -1;
     }
 
+  /* Create completion queues */
   glb_gaspi_ctx_ib.scqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,NULL, 0);
   if(!glb_gaspi_ctx_ib.scqGroups)
     {
@@ -436,6 +435,7 @@ pgaspi_dev_init_core ()
 	}
     }
 
+  /* Allocate space for QPs */
   glb_gaspi_ctx_ib.qpGroups = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
   if(!glb_gaspi_ctx_ib.qpGroups)
     {
@@ -967,12 +967,6 @@ pgaspi_dev_cleanup_core ()
       if(glb_gaspi_group_ib[i].id >= 0)
 	{
 	  
-	  if(munlock (glb_gaspi_group_ib[i].buf, glb_gaspi_group_ib[i].size)!= 0)
-	    {
-	      gaspi_print_error ("Failed to unlock memory (munlock)");
-	      return -1;
-	    }
-	  
 	  if(ibv_dereg_mr (glb_gaspi_group_ib[i].mr))
 	    {  
 	      gaspi_print_error ("Failed to de-register memory (libiverbs)");
@@ -1003,14 +997,8 @@ pgaspi_dev_cleanup_core ()
 #ifdef GPI2_CUDA
             if(glb_gaspi_ctx.use_gpus == 0 || glb_gaspi_ctx.gpu_count == 0)
 #endif	      
-	    if(munlock(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf,glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].size +NOTIFY_OFFSET) != 0)
-	      {
-		
-		gaspi_print_error ("Failed to unlock memory (munlock)");
-		return -1;
-	      }
-	    
-	    if(ibv_dereg_mr(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].mr))
+
+	      if(ibv_dereg_mr(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].mr))
 	      {
 		gaspi_print_error("Failed to de-register memory (libiverbs)");
 		return -1;
@@ -1050,13 +1038,7 @@ pgaspi_dev_cleanup_core ()
     }
   }
 
-  //dereg nsrc
-  if(munlock(glb_gaspi_ctx_ib.nsrc.buf,NOTIFY_OFFSET) != 0)
-    {
-      gaspi_print_error ("Failed to unlock memory (munlock)");
-      return -1;
-    }
-  
+  //dereg nsrc 
   if(ibv_dereg_mr(glb_gaspi_ctx_ib.nsrc.mr))
     {
       gaspi_print_error("Failed to de-register memory (libiverbs)");
