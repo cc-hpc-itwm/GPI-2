@@ -250,6 +250,12 @@ pgaspi_init_core()
       glb_gaspi_group_ib[i].level = 0;
       glb_gaspi_group_ib[i].dsize = 0;
     }
+  /* change/override num of queues at large scale */
+  if (glb_gaspi_ctx.tnc > 1000 && glb_gaspi_cfg.queue_num > 1)
+    {
+      gaspi_printf("Warning: setting number of queues to 1\n");
+      glb_gaspi_cfg.queue_num = 1;
+    }
   
   if(pgaspi_dev_init_core() != 0)
     return -1;

@@ -86,16 +86,9 @@ pgaspi_dev_init_core ()
   char boardIDbuf[256];
   int i, c, p, dev_idx = 0;
 
-  //TODO: doesn't belong here
-  //change/override num of queues at large scale
-  if (glb_gaspi_ctx.tnc > 1000 && glb_gaspi_cfg.queue_num > 1)
-    {
-      gaspi_printf("Warning: setting number of queues to 1\n");
-      glb_gaspi_cfg.queue_num = 1;
-    }
-
   memset (&glb_gaspi_ctx_ib, 0, sizeof (gaspi_ib_ctx));
 
+  /* TODO: magic numbers */
   for(i = 0; i < 256; i++)
     {
       glb_gaspi_ctx_ib.rrmd[i] = NULL;
@@ -166,7 +159,7 @@ pgaspi_dev_init_core ()
       return -1;
     }
 
-  /* Completion channel */
+  /* Completion channel (for passive communication) */
   glb_gaspi_ctx_ib.channelP = ibv_create_comp_channel (glb_gaspi_ctx_ib.context);
   if(!glb_gaspi_ctx_ib.channelP)
     {
@@ -345,7 +338,7 @@ pgaspi_dev_init_core ()
 
 
   /* Create internal memory space */
-  //TODO: has nothing to do with device
+  /* TODO: has nothing to do with device */
   
   const unsigned int size = NOTIFY_OFFSET;
   const unsigned int page_size = sysconf (_SC_PAGESIZE);
@@ -383,6 +376,7 @@ pgaspi_dev_init_core ()
     }
 
   /* Create completion queues */
+  /* Groups */
   glb_gaspi_ctx_ib.scqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,NULL, 0);
   if(!glb_gaspi_ctx_ib.scqGroups)
     {
@@ -397,6 +391,7 @@ pgaspi_dev_init_core ()
       return -1;
     }
 
+  /* Passive */
   glb_gaspi_ctx_ib.scqP = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL,NULL, 0);
   if(!glb_gaspi_ctx_ib.scqP)
     {
@@ -418,6 +413,7 @@ pgaspi_dev_init_core ()
       return 1;
     }
 
+  /* One-sided Communication */
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       glb_gaspi_ctx_ib.scqC[c] = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL, NULL, 0);
@@ -455,6 +451,7 @@ pgaspi_dev_init_core ()
       return -1;
     }
 
+  /* RoCE */
   if(glb_gaspi_cfg.network == GASPI_ETHERNET)
     {
       const int ret = ibv_query_gid (glb_gaspi_ctx_ib.context, glb_gaspi_ctx_ib.ib_port,GASPI_GID_INDEX, &glb_gaspi_ctx_ib.gid);
@@ -525,7 +522,10 @@ pgaspi_dev_create_endpoint(const int i)
 {
   int c;
 
-  if(glb_gaspi_ctx_ib.lrcd[i].istat) goto okL;//already created
+  if(glb_gaspi_ctx_ib.lrcd[i].istat)
+    {
+      goto okL; /* already created */
+    }
 
   //create
   struct ibv_qp_init_attr qpi_attr;
@@ -551,7 +551,7 @@ pgaspi_dev_create_endpoint(const int i)
     {
       qpi_attr.send_cq = glb_gaspi_ctx_ib.scqC[c];
       //TODO:
-      //      qpi_attr.recv_cq = glb_gaspi_ctx_ib.scqC[c];
+      // qpi_attr.recv_cq = glb_gaspi_ctx_ib.scqC[c];
       qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqC[c];
       
       glb_gaspi_ctx_ib.qpC[c][i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
@@ -628,7 +628,7 @@ pgaspi_dev_create_endpoint(const int i)
       glb_gaspi_ctx_ib.lrcd[i].qpnC[c] = glb_gaspi_ctx_ib.qpC[c][i]->qp_num;
     }
 
-  glb_gaspi_ctx_ib.lrcd[i].istat=1;
+  glb_gaspi_ctx_ib.lrcd[i].istat = 1;
 
 okL:
   return GASPI_SUCCESS;
@@ -636,7 +636,6 @@ okL:
 errL:
   glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
   return GASPI_ERROR;
-
 }
 
 
@@ -1121,7 +1120,6 @@ pgaspi_dev_get_lrcd(int rank)
 inline int
 pgaspi_dev_get_sizeof_rc()
 {
-
   return sizeof(gaspi_rc_all);
 }
 
@@ -1144,7 +1142,8 @@ pgaspi_dev_get_rrmd(const gaspi_segment_id_t segment_id)
 }
 
 inline unsigned long
-pgaspi_dev_get_mseg_size(const gaspi_segment_id_t segment_id, const gaspi_rank_t rank)
+pgaspi_dev_get_mseg_size(const gaspi_segment_id_t segment_id,
+			 const gaspi_rank_t rank)
 {
   return glb_gaspi_ctx_ib.rrmd[segment_id][rank].size;
 }
