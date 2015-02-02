@@ -88,7 +88,7 @@ pgaspi_dev_poll_groups()
 }
 
 int
-pgaspi_dev_post_write(void *local_addr, int length, int dst, void *remote_addr, int g)
+pgaspi_dev_post_write(void *local_addr, int length, int dst, void *remote_addr, int group)
 {
   
   struct ibv_sge slist;
@@ -97,7 +97,7 @@ pgaspi_dev_post_write(void *local_addr, int length, int dst, void *remote_addr, 
 
   slist.addr = (uintptr_t) local_addr;
   slist.length = length;
-  slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[g].mr)->lkey;
+  slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[group].mr)->lkey;
 
   swr.sg_list = &slist;
   swr.num_sge = 1;
@@ -106,7 +106,7 @@ pgaspi_dev_post_write(void *local_addr, int length, int dst, void *remote_addr, 
   swr.next = NULL;
 
   swr.wr.rdma.remote_addr = remote_addr;
-  swr.wr.rdma.rkey = glb_gaspi_group_ib[g].rrcd[dst].rkeyGroup;
+  swr.wr.rdma.rkey = glb_gaspi_group_ib[group].rrcd[dst].rkeyGroup;
   swr.wr_id = dst;
   
   if (ibv_post_send ((struct ibv_qp *) glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
