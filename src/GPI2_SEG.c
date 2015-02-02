@@ -241,7 +241,8 @@ _gaspi_dev_exch_cdh(gaspi_cd_header *cdh,
 }
 
 /* unlocked (internal) version */
-/* is called by different functions that use the same locks */
+/* is called by different functions (segment_register and
+   segment_register_group) that use the same locks */
 
 gaspi_return_t
 _pgaspi_segment_register(const gaspi_segment_id_t segment_id,
@@ -344,7 +345,7 @@ pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
 	  
 	  return GASPI_ERROR;
 	}
-    }//for
+    }
 
   eret = pgaspi_dev_wait_remote_register(segment_id, group, timeout_ms);
   
@@ -354,7 +355,8 @@ pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
 #pragma weak gaspi_segment_create = pgaspi_segment_create
 gaspi_return_t
 pgaspi_segment_create(const gaspi_segment_id_t segment_id,
-		      const gaspi_size_t size, const gaspi_group_t group,
+		      const gaspi_size_t size,
+		      const gaspi_group_t group,
 		      const gaspi_timeout_t timeout_ms,
 		      const gaspi_alloc_t alloc_policy)
 {
@@ -371,11 +373,14 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 #endif
+
+  gaspi_return_t eret = GASPI_ERROR;
   
-  if(pgaspi_dev_segment_alloc (segment_id, size, alloc_policy) != 0)
+  if(pgaspi_segment_alloc (segment_id, size, alloc_policy) != GASPI_SUCCESS)
     {
       gaspi_print_error("Segment allocation failed");
-      return GASPI_ERROR;
+      eret = GASPI_ERROR;
+      goto endL;
     }
 
   if(lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms))
@@ -383,10 +388,10 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
       return GASPI_TIMEOUT;
     }
 
-  gaspi_return_t eret = GASPI_ERROR;
-
   eret = pgaspi_segment_register_group(segment_id, group, timeout_ms);
 
+ endL:
+  
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return eret;
 }    
