@@ -27,7 +27,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 extern gaspi_context glb_gaspi_ctx;
 extern gaspi_config_t glb_gaspi_cfg;
 
-
 inline int
 pgaspi_dev_queue_size(const gaspi_queue_id_t queue)
 {
@@ -581,21 +580,21 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
 
   *((unsigned int *) slistN.addr) = notification_value;
 
-  slistN.length = 4; //TODO:?
+  slistN.length = sizeof(gaspi_notification_t);
   slistN.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[0].mr)->lkey;
 
 #ifdef GPI2_CUDA
   if((glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].cudaDevId >= 0))
     {
-      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].host_addr+notification_id*4);
+      swrN.wr.rdma.remote_addr =
+	(glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].host_addr + notification_id * sizeof(gaspi_notification_t));
       swrN.wr.rdma.rkey = glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].host_rkey;
     }
   else
 #endif
     {
       swrN.wr.rdma.remote_addr =
-	(glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].addr +
-	 notification_id * 4);
+	(glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].addr + notification_id * sizeof(gaspi_notification_t));
       swrN.wr.rdma.rkey = glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].rkey;
     }
 
@@ -687,7 +686,7 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
 
   *((unsigned int *) slistN.addr) = notification_value;
 
-  slistN.length = 4; //TODO
+  slistN.length = sizeof(gaspi_notification_t);
   slistN.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[0].mr)->lkey;
 
 #ifdef GPI2_CUDA
@@ -701,7 +700,7 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
     {
       swrN.wr.rdma.remote_addr =
 	(glb_gaspi_ctx_ib.rrmd[segment_id_notification][rank].addr +
-	 notification_id * 4); //TODO
+	 notification_id * sizeof(gaspi_notification_t));
       swrN.wr.rdma.rkey =
 	glb_gaspi_ctx_ib.rrmd[segment_id_notification][rank].rkey;
     }
