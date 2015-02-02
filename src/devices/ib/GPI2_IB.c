@@ -422,13 +422,6 @@ pgaspi_dev_init_core ()
 	  gaspi_print_error ("Failed to create CQ (libibverbs)");
 	  return -1;
 	}
-      
-      glb_gaspi_ctx_ib.rcqC[c] = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth,NULL, NULL, 0);
-      if(!glb_gaspi_ctx_ib.rcqC[c])
-	{
-	  gaspi_print_error ("Failed to create CQ (libibverbs)");
-	  return -1;
-	}
     }
 
   /* Allocate space for QPs */
@@ -550,9 +543,7 @@ pgaspi_dev_create_endpoint(const int i)
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       qpi_attr.send_cq = glb_gaspi_ctx_ib.scqC[c];
-      //TODO:
-      // qpi_attr.recv_cq = glb_gaspi_ctx_ib.scqC[c];
-      qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqC[c];
+      qpi_attr.recv_cq = glb_gaspi_ctx_ib.scqC[c];
       
       glb_gaspi_ctx_ib.qpC[c][i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
       if(!glb_gaspi_ctx_ib.qpC[c][i])
@@ -949,12 +940,6 @@ pgaspi_dev_cleanup_core ()
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqC[c]))
-	{
-	  gaspi_print_error ("Failed to destroy CQ (libibverbs)");
-	  return -1;
-	}
-
-      if(ibv_destroy_cq (glb_gaspi_ctx_ib.rcqC[c]))
 	{
 	  gaspi_print_error ("Failed to destroy CQ (libibverbs)");
 	  return -1;

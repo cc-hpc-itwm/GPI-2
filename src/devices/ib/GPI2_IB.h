@@ -84,15 +84,18 @@ typedef struct
   struct ibv_qp **qpP;
   struct ibv_cq *scqP;
   struct ibv_cq *rcqP;
-  struct ibv_cq *scqC[GASPI_MAX_QP], *rcqC[GASPI_MAX_QP];
+  struct ibv_cq *scqC[GASPI_MAX_QP];
   struct ibv_qp **qpC[GASPI_MAX_QP];
   union ibv_gid gid;
+
   gaspi_rc_all *lrcd, *rrcd;
   gaspi_rc_mseg *rrmd[256];
+  gaspi_rc_mseg nsrc;
+  
   int ne_count_grp;
   int ne_count_c[GASPI_MAX_QP];
   unsigned char ne_count_p[8192];
-  gaspi_rc_mseg nsrc;
+
 } gaspi_ib_ctx;
 
 gaspi_ib_ctx glb_gaspi_ctx_ib;
