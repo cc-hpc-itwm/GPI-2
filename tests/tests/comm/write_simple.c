@@ -48,18 +48,26 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  unsigned long localOff= 0;
-  unsigned long remOff = sizeof(unsigned char) * (size + 1);
+  unsigned long localOff = 0;
+  unsigned long remOff = size + 1;
 
-  ASSERT(gaspi_write(0, localOff, rankSend,
-		     0, remOff, size,
-		     1, GASPI_BLOCK));
+  ASSERT(gaspi_write_notify(0, localOff, rankSend,
+			    0, remOff, size,
+			    (gaspi_notification_id_t) myrank, 1,
+			    1, GASPI_BLOCK));
+
+  gaspi_rank_t rankGet = (myrank + numranks - 1) % numranks;
+  gaspi_notification_t got_val;
+  gaspi_notification_id_t got;
+  
+  ASSERT(gaspi_notify_waitsome(0, (gaspi_notification_id_t) rankGet, 1, &got, GASPI_BLOCK));
+  
+  ASSERT(gaspi_notify_reset(0, got, &got_val));
   
   ASSERT (gaspi_wait(1, GASPI_BLOCK));
 
   /* check */
-  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
-  for(i = 0; i < size / sizeof(unsigned char); i++)
+  for(i = size + 1; i < 2 * size / sizeof(unsigned char); i++)
     assert(pGlbMem[i] == rankSend);
   
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
