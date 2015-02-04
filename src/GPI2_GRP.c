@@ -48,7 +48,7 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   for (i = 0; i < GASPI_MAX_GROUPS; i++)
     {
-      if (glb_gaspi_group_ib[i].id == -1)
+      if (glb_gaspi_group_ctx[i].id == -1)
 	{
 	  id = i;
 	  break;
@@ -67,30 +67,30 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   page_size = sysconf (_SC_PAGESIZE);
 
-  if (posix_memalign ((void **) &glb_gaspi_group_ib[id].ptr, page_size, size)
+  if (posix_memalign ((void **) &glb_gaspi_group_ctx[id].ptr, page_size, size)
       != 0)
     {
       gaspi_print_error ("Memory allocation (posix_memalign) failed");
       goto errL;
     }
 
-  memset (glb_gaspi_group_ib[id].buf, 0, size);
+  memset (glb_gaspi_group_ctx[id].buf, 0, size);
 
-  glb_gaspi_group_ib[id].size = size;
-  glb_gaspi_group_ib[id].id = id;
-  glb_gaspi_group_ib[id].gl.lock = 0;
-  glb_gaspi_group_ib[id].togle = 0;
-  glb_gaspi_group_ib[id].barrier_cnt = 0;
-  glb_gaspi_group_ib[id].rank = 0;
-  glb_gaspi_group_ib[id].tnc = 0;
+  glb_gaspi_group_ctx[id].size = size;
+  glb_gaspi_group_ctx[id].id = id;
+  glb_gaspi_group_ctx[id].gl.lock = 0;
+  glb_gaspi_group_ctx[id].togle = 0;
+  glb_gaspi_group_ctx[id].barrier_cnt = 0;
+  glb_gaspi_group_ctx[id].rank = 0;
+  glb_gaspi_group_ctx[id].tnc = 0;
 
-  glb_gaspi_group_ib[id].coll_op = GASPI_NONE;
-  glb_gaspi_group_ib[id].lastmask = 0x1;
-  glb_gaspi_group_ib[id].level = 0;
-  glb_gaspi_group_ib[id].dsize = 0;
+  glb_gaspi_group_ctx[id].coll_op = GASPI_NONE;
+  glb_gaspi_group_ctx[id].lastmask = 0x1;
+  glb_gaspi_group_ctx[id].level = 0;
+  glb_gaspi_group_ctx[id].dsize = 0;
 
-  glb_gaspi_group_ib[id].next_pof2 = 0;
-  glb_gaspi_group_ib[id].pof2_exp = 0;
+  glb_gaspi_group_ctx[id].next_pof2 = 0;
+  glb_gaspi_group_ctx[id].pof2_exp = 0;
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -98,25 +98,25 @@ pgaspi_group_create (gaspi_group_t * const group)
   if(eret != GASPI_SUCCESS)
     goto errL;
 
-  glb_gaspi_group_ib[id].rrcd = (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
-  if(glb_gaspi_group_ib[id].rrcd == NULL)
+  glb_gaspi_group_ctx[id].rrcd = (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
+  if(glb_gaspi_group_ctx[id].rrcd == NULL)
     goto errL;
   
-  memset (glb_gaspi_group_ib[id].rrcd, 0,
+  memset (glb_gaspi_group_ctx[id].rrcd, 0,
 	  glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
   
-  glb_gaspi_group_ib[id].rrcd[glb_gaspi_ctx.rank].vaddrGroup =
-    (uintptr_t) glb_gaspi_group_ib[id].buf;
+  glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].vaddrGroup =
+    (uintptr_t) glb_gaspi_group_ctx[id].buf;
 
-  glb_gaspi_group_ib[id].rrcd[glb_gaspi_ctx.rank].rkeyGroup =
-    pgaspi_dev_group_get_mem_rkey(glb_gaspi_group_ib[id].mr);
+  glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].rkeyGroup =
+    pgaspi_dev_group_get_mem_rkey(glb_gaspi_group_ctx[id].mr);
 
-  glb_gaspi_group_ib[id].rank_grp = (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
-  if(!glb_gaspi_group_ib[id].rank_grp)
+  glb_gaspi_group_ctx[id].rank_grp = (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
+  if(!glb_gaspi_group_ctx[id].rank_grp)
     goto errL;
   
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
-    glb_gaspi_group_ib[id].rank_grp[i] = -1;
+    glb_gaspi_group_ctx[id].rank_grp[i] = -1;
   
   glb_gaspi_ctx.group_cnt++;
   *group = id;
@@ -144,7 +144,7 @@ pgaspi_group_delete (const gaspi_group_t group)
 
 #ifdef DEBUG
   if (group == 0 || group >= GASPI_MAX_GROUPS
-      || glb_gaspi_group_ib[group].id < 0)
+      || glb_gaspi_group_ctx[group].id < 0)
     {
       gaspi_print_error ("Invalid group to delete");
       goto errL;
@@ -157,19 +157,19 @@ pgaspi_group_delete (const gaspi_group_t group)
   if(eret != GASPI_SUCCESS)
     goto errL;
   
-  free (glb_gaspi_group_ib[group].buf);
-  glb_gaspi_group_ib[group].buf = NULL;
+  free (glb_gaspi_group_ctx[group].buf);
+  glb_gaspi_group_ctx[group].buf = NULL;
 
-  if (glb_gaspi_group_ib[group].rank_grp)
-    free (glb_gaspi_group_ib[group].rank_grp);
+  if (glb_gaspi_group_ctx[group].rank_grp)
+    free (glb_gaspi_group_ctx[group].rank_grp);
 
-  glb_gaspi_group_ib[group].rank_grp = NULL;
+  glb_gaspi_group_ctx[group].rank_grp = NULL;
 
-  if (glb_gaspi_group_ib[group].rrcd)
-    free (glb_gaspi_group_ib[group].rrcd);
-  glb_gaspi_group_ib[group].rrcd = NULL;
+  if (glb_gaspi_group_ctx[group].rrcd)
+    free (glb_gaspi_group_ctx[group].rrcd);
+  glb_gaspi_group_ctx[group].rrcd = NULL;
 
-  glb_gaspi_group_ib[group].id = -1;
+  glb_gaspi_group_ctx[group].id = -1;
 
   glb_gaspi_ctx.group_cnt--;
 
@@ -203,7 +203,7 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
   if (group >= GASPI_MAX_GROUPS
-      || glb_gaspi_group_ib[group].id < 0)
+      || glb_gaspi_group_ctx[group].id < 0)
     goto errL;
 
   if (rank >= glb_gaspi_ctx.tnc)
@@ -212,17 +212,17 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
       goto errL;
     }
 
-  for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
+  for (i = 0; i < glb_gaspi_group_ctx[group].tnc; i++)
     {
-      if (glb_gaspi_group_ib[group].rank_grp[i] == rank)
+      if (glb_gaspi_group_ctx[group].rank_grp[i] == rank)
 	{
 	  gaspi_print_error("Rank already present in group");
 	  goto errL;
 	}
     }
 
-  glb_gaspi_group_ib[group].rank_grp[glb_gaspi_group_ib[group].tnc++] = rank;
-  qsort (glb_gaspi_group_ib[group].rank_grp, glb_gaspi_group_ib[group].tnc,
+  glb_gaspi_group_ctx[group].rank_grp[glb_gaspi_group_ctx[group].tnc++] = rank;
+  qsort (glb_gaspi_group_ctx[group].rank_grp, glb_gaspi_group_ctx[group].tnc,
 	 sizeof (int), gaspi_comp_ranks);
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
@@ -249,46 +249,46 @@ pgaspi_group_commit (const gaspi_group_t group,
     return GASPI_TIMEOUT;
 
   if (group >= GASPI_MAX_GROUPS
-      || glb_gaspi_group_ib[group].id == -1)
+      || glb_gaspi_group_ctx[group].id == -1)
     {
       gaspi_print_error("Invalid group to commit to");
       goto errL;
     }
 
-  if (glb_gaspi_group_ib[group].tnc < 2)
+  if (glb_gaspi_group_ctx[group].tnc < 2)
     {
       gaspi_print_error("Group must have at least 2 ranks to be committed");
       goto errL;
     }
   
-  glb_gaspi_group_ib[group].rank = -1;
+  glb_gaspi_group_ctx[group].rank = -1;
 
-  for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
+  for (i = 0; i < glb_gaspi_group_ctx[group].tnc; i++)
     {
-      if (glb_gaspi_group_ib[group].rank_grp[i] == glb_gaspi_ctx.rank)
+      if (glb_gaspi_group_ctx[group].rank_grp[i] == glb_gaspi_ctx.rank)
 	{
-	  glb_gaspi_group_ib[group].rank = i;
+	  glb_gaspi_group_ctx[group].rank = i;
 	  break;
 	}
     }
 
-  if (glb_gaspi_group_ib[group].rank == -1)
+  if (glb_gaspi_group_ctx[group].rank == -1)
     {
       gaspi_print_error("Invalid group to commit to");
       goto errL;
     }
 
-  glb_gaspi_group_ib[group].next_pof2 = 1;
+  glb_gaspi_group_ctx[group].next_pof2 = 1;
 
-  while (glb_gaspi_group_ib[group].next_pof2 <= glb_gaspi_group_ib[group].tnc)
+  while (glb_gaspi_group_ctx[group].next_pof2 <= glb_gaspi_group_ctx[group].tnc)
     {
-      glb_gaspi_group_ib[group].next_pof2 <<= 1;
+      glb_gaspi_group_ctx[group].next_pof2 <<= 1;
     }
 
-  glb_gaspi_group_ib[group].next_pof2 >>= 1;
+  glb_gaspi_group_ctx[group].next_pof2 >>= 1;
 
-  glb_gaspi_group_ib[group].pof2_exp =
-    (__builtin_clz (glb_gaspi_group_ib[group].next_pof2) ^ 31U);
+  glb_gaspi_group_ctx[group].pof2_exp =
+    (__builtin_clz (glb_gaspi_group_ctx[group].next_pof2) ^ 31U);
 
   struct
   {
@@ -297,11 +297,11 @@ pgaspi_group_commit (const gaspi_group_t group,
 
 
   gb.cs = 0;
-  gb.tnc = glb_gaspi_group_ib[group].tnc;
+  gb.tnc = glb_gaspi_group_ctx[group].tnc;
   
-  for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
+  for (i = 0; i < glb_gaspi_group_ctx[group].tnc; i++)
     {
-      gb.cs ^= glb_gaspi_group_ib[group].rank_grp[i];
+      gb.cs ^= glb_gaspi_group_ctx[group].rank_grp[i];
     }
   
 
@@ -318,11 +318,11 @@ pgaspi_group_commit (const gaspi_group_t group,
 
   for(r = 1;r <= gb.tnc; r++)
     {
-      int i = (glb_gaspi_group_ib[group].rank+r)%gb.tnc;
+      int i = (glb_gaspi_group_ctx[group].rank+r)%gb.tnc;
 
-      if(glb_gaspi_group_ib[group].rank_grp[i]==glb_gaspi_ctx.rank) continue;
+      if(glb_gaspi_group_ctx[group].rank_grp[i]==glb_gaspi_ctx.rank) continue;
 
-      eret = gaspi_connect_to_rank(glb_gaspi_group_ib[group].rank_grp[i], timeout_ms);
+      eret = gaspi_connect_to_rank(glb_gaspi_group_ctx[group].rank_grp[i], timeout_ms);
       if(eret != GASPI_SUCCESS)
 	{
 	  goto errL;
@@ -333,20 +333,20 @@ pgaspi_group_commit (const gaspi_group_t group,
 	  memset(&rem_gb,0,sizeof(rem_gb));
 	  
 	  int ret;
-	  ret = write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
+	  ret = write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ctx[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
 	  if(ret != sizeof(gaspi_cd_header))
 	    {
 	      gaspi_print_error("Failed to write (%d %p %lu)",
-				glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
+				glb_gaspi_ctx.sockfd[glb_gaspi_group_ctx[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
 	      eret = GASPI_ERROR;
 	      goto errL;
 	    }
 	
-	  ret = read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rem_gb,sizeof(rem_gb));
+	  ret = read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ctx[group].rank_grp[i]],&rem_gb,sizeof(rem_gb));
 	  if(ret != sizeof(rem_gb))
 	    {
 	      gaspi_print_error("Failed to read (%d %p %lu)",
-				glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&rem_gb,sizeof(rem_gb));
+				glb_gaspi_ctx.sockfd[glb_gaspi_group_ctx[group].rank_grp[i]],&rem_gb,sizeof(rem_gb));
 
 	      eret = GASPI_ERROR;
 	      goto errL;
@@ -371,7 +371,7 @@ pgaspi_group_commit (const gaspi_group_t group,
 	      /* if(gb.cs != rem_gb.cs) */
 	      /* { */
 	      /* gaspi_print_error("Mismatch with rank %d: ranks in group dont match\n", */
-	      /* glb_gaspi_group_ib[group].rank_grp[i]); */
+	      /* glb_gaspi_group_ctx[group].rank_grp[i]); */
 	      /* eret = GASPI_ERROR; */
 	      /* goto errL; */
 	      /* } */
@@ -388,31 +388,31 @@ pgaspi_group_commit (const gaspi_group_t group,
 	      cdh.ret = group;
 	    
 	      int ret;
-	      ret = write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
+	      ret = write(glb_gaspi_ctx.sockfd[glb_gaspi_group_ctx[group].rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
 	      if(ret !=sizeof(gaspi_cd_header))
 		{
 		  gaspi_print_error("Failed to write (%d %p %lu)",
-				    glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
+				    glb_gaspi_ctx.sockfd[glb_gaspi_group_ctx[group].rank_grp[i]],
 				    &cdh,
 				    sizeof(gaspi_cd_header));
 
-		  glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
+		  glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ctx[group].rank_grp[i]] = 1;
 		  eret = GASPI_ERROR;
 		  goto errL;
 		}
 	    
-	      ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
-		       &glb_gaspi_group_ib[group].rrcd[glb_gaspi_group_ib[group].rank_grp[i]],
+	      ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ctx[group].rank_grp[i]],
+		       &glb_gaspi_group_ctx[group].rrcd[glb_gaspi_group_ctx[group].rank_grp[i]],
 		       sizeof(gaspi_rc_grp));
 
 	      if(ret != sizeof(gaspi_rc_grp))
 		{
 		  gaspi_print_error("Failed to read (%d %p %lu)",
-				    glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]],
-				    &glb_gaspi_group_ib[group].rrcd[glb_gaspi_group_ib[group].rank_grp[i]],
+				    glb_gaspi_ctx.sockfd[glb_gaspi_group_ctx[group].rank_grp[i]],
+				    &glb_gaspi_group_ctx[group].rrcd[glb_gaspi_group_ctx[group].rank_grp[i]],
 				    sizeof(gaspi_rc_grp));
 		
-		  glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ib[group].rank_grp[i]] = 1;
+		  glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ctx[group].rank_grp[i]] = 1;
 		  eret = GASPI_ERROR;
 		  goto errL;
 		}
@@ -421,13 +421,13 @@ pgaspi_group_commit (const gaspi_group_t group,
 	    }
 	}while(1);
 
-      if(gaspi_close(glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]]) != 0)
+      if(gaspi_close(glb_gaspi_ctx.sockfd[glb_gaspi_group_ctx[group].rank_grp[i]]) != 0)
 	{
-	  gaspi_print_error("Failed to close socket to %d", glb_gaspi_group_ib[group].rank_grp[i]);
+	  gaspi_print_error("Failed to close socket to %d", glb_gaspi_group_ctx[group].rank_grp[i]);
 	  eret = GASPI_ERROR;
 	  goto errL;
 	}
-      glb_gaspi_ctx.sockfd[glb_gaspi_group_ib[group].rank_grp[i]] = -1;
+      glb_gaspi_ctx.sockfd[glb_gaspi_group_ctx[group].rank_grp[i]] = -1;
       
 
     }//for
@@ -474,7 +474,7 @@ pgaspi_group_size (const gaspi_group_t group,
       gaspi_verify_null_ptr(group_size);
 #endif
       
-      *group_size = glb_gaspi_group_ib[group].tnc;
+      *group_size = glb_gaspi_group_ctx[group].tnc;
       return GASPI_SUCCESS;
     }
 
@@ -490,8 +490,8 @@ pgaspi_group_ranks (const gaspi_group_t group,
   int i;
   if (glb_gaspi_init && group < glb_gaspi_ctx.group_cnt)
     {
-      for (i = 0; i < glb_gaspi_group_ib[group].tnc; i++)
-	group_ranks[i] = glb_gaspi_group_ib[group].rank_grp[i];
+      for (i = 0; i < glb_gaspi_group_ctx[group].tnc; i++)
+	group_ranks[i] = glb_gaspi_group_ctx[group].rank_grp[i];
       return GASPI_SUCCESS;
     }
   gaspi_print_error("Invalid function before gaspi_proc_init or invalid group parameter");
@@ -547,7 +547,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       return GASPI_ERROR;
     }
   
-  if (g >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[g].id < 0 )
+  if (g >= GASPI_MAX_GROUPS || glb_gaspi_group_ctx[g].id < 0 )
     {
       gaspi_print_error("Invalid group %u (gaspi_barrier)", g);
       return GASPI_ERROR;
@@ -555,45 +555,45 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
 #endif  
 
-  if(lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, timeout_ms))
+  if(lock_gaspi_tout (&glb_gaspi_group_ctx[g].gl, timeout_ms))
     {
       return GASPI_TIMEOUT;
     }
     
   //other collectives active ?
-  if(!(glb_gaspi_group_ib[g].coll_op & GASPI_BARRIER))
+  if(!(glb_gaspi_group_ctx[g].coll_op & GASPI_BARRIER))
     {
-      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+      unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
       gaspi_print_error("Barrier: other coll. are active");
       return GASPI_ERROR;
     }
 
-  glb_gaspi_group_ib[g].coll_op = GASPI_BARRIER;
+  glb_gaspi_group_ctx[g].coll_op = GASPI_BARRIER;
 
   int index;
 
-  const int size = glb_gaspi_group_ib[g].tnc;
+  const int size = glb_gaspi_group_ctx[g].tnc;
 
-  if(glb_gaspi_group_ib[g].lastmask == 0x1)
+  if(glb_gaspi_group_ctx[g].lastmask == 0x1)
     {
-      glb_gaspi_group_ib[g].barrier_cnt++;
+      glb_gaspi_group_ctx[g].barrier_cnt++;
     }
 
-  unsigned char *barrier_ptr = glb_gaspi_group_ib[g].buf + 2 * size + glb_gaspi_group_ib[g].togle;
+  unsigned char *barrier_ptr = glb_gaspi_group_ctx[g].buf + 2 * size + glb_gaspi_group_ctx[g].togle;
 
-  barrier_ptr[0] = glb_gaspi_group_ib[g].barrier_cnt;
+  barrier_ptr[0] = glb_gaspi_group_ctx[g].barrier_cnt;
 
-  volatile unsigned char *rbuf = (volatile unsigned char *) (glb_gaspi_group_ib[g].buf);
+  volatile unsigned char *rbuf = (volatile unsigned char *) (glb_gaspi_group_ctx[g].buf);
 
-  const int rank = glb_gaspi_group_ib[g].rank;
-  int mask = glb_gaspi_group_ib[g].lastmask&0x7fffffff;
-  int jmp = glb_gaspi_group_ib[g].lastmask>>31;
+  const int rank = glb_gaspi_group_ctx[g].rank;
+  int mask = glb_gaspi_group_ctx[g].lastmask&0x7fffffff;
+  int jmp = glb_gaspi_group_ctx[g].lastmask>>31;
 
   const gaspi_cycles_t s0 = gaspi_get_cycles();
 
   while (mask < size)
     {
-      const int dst = glb_gaspi_group_ib[g].rank_grp[(rank + mask) % size];
+      const int dst = glb_gaspi_group_ctx[g].rank_grp[(rank + mask) % size];
       const int src = (rank - mask + size) % size;
 
       if(jmp)
@@ -603,20 +603,20 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	}
 
       if(pgaspi_dev_post_write((void *)barrier_ptr, 1, dst,
-			       (void *) (glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle)),
+			       (void *) (glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle)),
 			       g) != 0)
 	{
 	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	  gaspi_print_error("Failed to post request to %u for barrier",
 			    dst);
-	  unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+	  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
 	  return GASPI_ERROR;
 	}
 
     B0:
-      index = 2 * src + glb_gaspi_group_ib[g].togle;
+      index = 2 * src + glb_gaspi_group_ctx[g].togle;
       
-      while (rbuf[index] != glb_gaspi_group_ib[g].barrier_cnt)
+      while (rbuf[index] != glb_gaspi_group_ctx[g].barrier_cnt)
 	{
 	  //here we check for timeout to avoid active polling
 	  const gaspi_cycles_t s1 = gaspi_get_cycles();
@@ -625,8 +625,8 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       
 	  if(ms > timeout_ms)
 	    {
-	      glb_gaspi_group_ib[g].lastmask = mask|0x80000000;
-	      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+	      glb_gaspi_group_ctx[g].lastmask = mask|0x80000000;
+	      unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
 	      return GASPI_TIMEOUT;
 	    }
 	  // gaspi_delay (); 
@@ -638,16 +638,16 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   if(pgaspi_dev_poll_groups() < 0)
     {
       //      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = 1;
-      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+      unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
       return GASPI_ERROR;
     }
 
-  glb_gaspi_group_ib[g].togle = (glb_gaspi_group_ib[g].togle ^ 0x1);
-  glb_gaspi_group_ib[g].coll_op = GASPI_NONE;
-  glb_gaspi_group_ib[g].lastmask = 0x1;
+  glb_gaspi_group_ctx[g].togle = (glb_gaspi_group_ctx[g].togle ^ 0x1);
+  glb_gaspi_group_ctx[g].coll_op = GASPI_NONE;
+  glb_gaspi_group_ctx[g].lastmask = 0x1;
 
 
-  unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
 
   return GASPI_SUCCESS;
 }
@@ -678,7 +678,7 @@ _gaspi_check_allreduce_args(const gaspi_pointer_t buf_send,
       return -1;
     }
     
-  if (g >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[g].id < 0 )
+  if (g >= GASPI_MAX_GROUPS || glb_gaspi_group_ctx[g].id < 0 )
     {
       gaspi_print_error("Invalid group %u (gaspi_allreduce)", g);
       return -1;
@@ -701,36 +701,36 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
   const int dsize = r_args->f_args.elem_size * elem_cnt;
 
-  if( glb_gaspi_group_ib[g].level == 0 )
+  if( glb_gaspi_group_ctx[g].level == 0 )
     {
-      glb_gaspi_group_ib[g].barrier_cnt++;
+      glb_gaspi_group_ctx[g].barrier_cnt++;
     }
 
-  const int size = glb_gaspi_group_ib[g].tnc;
-  const int rank = glb_gaspi_group_ib[g].rank;
+  const int size = glb_gaspi_group_ctx[g].tnc;
+  const int rank = glb_gaspi_group_ctx[g].rank;
 
-  unsigned char *barrier_ptr = glb_gaspi_group_ib[g].buf + 2 * size + glb_gaspi_group_ib[g].togle;
-  barrier_ptr[0] = glb_gaspi_group_ib[g].barrier_cnt;
+  unsigned char *barrier_ptr = glb_gaspi_group_ctx[g].buf + 2 * size + glb_gaspi_group_ctx[g].togle;
+  barrier_ptr[0] = glb_gaspi_group_ctx[g].barrier_cnt;
 
-  volatile unsigned char *poll_buf = (volatile unsigned char *) (glb_gaspi_group_ib[g].buf);
+  volatile unsigned char *poll_buf = (volatile unsigned char *) (glb_gaspi_group_ctx[g].buf);
 
-  unsigned char *send_ptr = glb_gaspi_group_ib[g].buf + COLL_MEM_SEND + (glb_gaspi_group_ib[g].togle * 18 * 2048);
+  unsigned char *send_ptr = glb_gaspi_group_ctx[g].buf + COLL_MEM_SEND + (glb_gaspi_group_ctx[g].togle * 18 * 2048);
   memcpy (send_ptr, buf_send, dsize);
 
-  unsigned char *recv_ptr = glb_gaspi_group_ib[g].buf + COLL_MEM_RECV;
+  unsigned char *recv_ptr = glb_gaspi_group_ctx[g].buf + COLL_MEM_RECV;
 
-  const int rest = size - glb_gaspi_group_ib[g].next_pof2;
+  const int rest = size - glb_gaspi_group_ctx[g].next_pof2;
 
   const gaspi_cycles_t s0 = gaspi_get_cycles();
 
-  if(glb_gaspi_group_ib[g].level >= 2)
+  if(glb_gaspi_group_ctx[g].level >= 2)
     {
-      tmprank = glb_gaspi_group_ib[g].tmprank;
-      bid = glb_gaspi_group_ib[g].bid;
-      send_ptr += glb_gaspi_group_ib[g].dsize;
+      tmprank = glb_gaspi_group_ctx[g].tmprank;
+      bid = glb_gaspi_group_ctx[g].bid;
+      send_ptr += glb_gaspi_group_ctx[g].dsize;
       //goto L2;
-      if(glb_gaspi_group_ib[g].level==2) goto L2;
-      else if(glb_gaspi_group_ib[g].level==3) goto L3;
+      if(glb_gaspi_group_ctx[g].level==2) goto L2;
+      else if(glb_gaspi_group_ctx[g].level==3) goto L3;
     }
 
   if(rank < 2 * rest)
@@ -739,12 +739,12 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
       if(rank % 2 == 0)
 	{
       
-	  dst = glb_gaspi_group_ib[g].rank_grp[rank + 1];
+	  dst = glb_gaspi_group_ctx[g].rank_grp[rank + 1];
 
 	  if(pgaspi_dev_post_write(send_ptr,
 				   dsize,
 				   dst,
-				   glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048),
+				   glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
 				   g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -755,7 +755,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	    }
 
 	  if(pgaspi_dev_post_write(barrier_ptr, 1, dst,
-				   glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle),
+				   glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle),
 				   g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -771,9 +771,9 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
       else
 	{
 
-	  dst = 2 * (rank - 1) + glb_gaspi_group_ib[g].togle;
+	  dst = 2 * (rank - 1) + glb_gaspi_group_ctx[g].togle;
 
-	  while (poll_buf[dst] != glb_gaspi_group_ib[g].barrier_cnt)
+	  while (poll_buf[dst] != glb_gaspi_group_ctx[g].barrier_cnt)
 	    {
 	      //timeout...    
 	      const gaspi_cycles_t s1 = gaspi_get_cycles();
@@ -782,7 +782,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
       
 	      if(ms > timeout_ms)
 		{
-		  glb_gaspi_group_ib[g].level = 1;
+		  glb_gaspi_group_ctx[g].level = 1;
 
 		  return GASPI_TIMEOUT;
 		}
@@ -790,10 +790,10 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	      //gaspi_delay ();
 	    }
 
-	  void *dst_val = (void *) (recv_ptr + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
+	  void *dst_val = (void *) (recv_ptr + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048);
 	  void *local_val = (void *) send_ptr;
 	  send_ptr += dsize;
-	  glb_gaspi_group_ib[g].dsize+=dsize;
+	  glb_gaspi_group_ctx[g].dsize+=dsize;
 
 	  if(r_args->f_type == GASPI_OP)
 	    {
@@ -820,9 +820,9 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
       if (rest) bid++;
     }
 
-  glb_gaspi_group_ib[g].tmprank = tmprank;
-  glb_gaspi_group_ib[g].bid = bid;
-  glb_gaspi_group_ib[g].level = 2;
+  glb_gaspi_group_ctx[g].tmprank = tmprank;
+  glb_gaspi_group_ctx[g].bid = bid;
+  glb_gaspi_group_ctx[g].level = 2;
 
   //second phase
  L2:
@@ -831,15 +831,15 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
     {
 
       //mask = 0x1;
-      mask = glb_gaspi_group_ib[g].lastmask&0x7fffffff;
-      int jmp = glb_gaspi_group_ib[g].lastmask>>31;
+      mask = glb_gaspi_group_ctx[g].lastmask&0x7fffffff;
+      int jmp = glb_gaspi_group_ctx[g].lastmask>>31;
 
-      while (mask < glb_gaspi_group_ib[g].next_pof2)
+      while (mask < glb_gaspi_group_ctx[g].next_pof2)
 	{
 
 	  tmpdst = tmprank ^ mask;
 	  idst = (tmpdst < rest) ? tmpdst * 2 + 1 : tmpdst + rest;
-	  dst = glb_gaspi_group_ib[g].rank_grp[idst];
+	  dst = glb_gaspi_group_ctx[g].rank_grp[idst];
 	  if(jmp)
 	    {
 	      jmp = 0;
@@ -847,7 +847,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	    }
 
 	  if(pgaspi_dev_post_write(send_ptr, dsize, dst,
-				   glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048),
+				   glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
 				   g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -858,7 +858,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	    }
 
 	  if(pgaspi_dev_post_write(barrier_ptr, 1, dst,
-				   glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle),
+				   glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle),
 				   g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -870,9 +870,9 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
 	  //	  glb_gaspi_ctx_tcp.ne_count_grp += 2;
 	J2:
-	  dst = 2 * idst + glb_gaspi_group_ib[g].togle;
+	  dst = 2 * idst + glb_gaspi_group_ctx[g].togle;
 
-	  while (poll_buf[dst] != glb_gaspi_group_ib[g].barrier_cnt)
+	  while (poll_buf[dst] != glb_gaspi_group_ctx[g].barrier_cnt)
 	    {
 	      //timeout...
 	      const gaspi_cycles_t s1 = gaspi_get_cycles();
@@ -881,17 +881,17 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
       
 	      if(ms > timeout_ms)
 		{
-		  glb_gaspi_group_ib[g].lastmask = mask|0x80000000;
-		  glb_gaspi_group_ib[g].bid = bid;
+		  glb_gaspi_group_ctx[g].lastmask = mask|0x80000000;
+		  glb_gaspi_group_ctx[g].bid = bid;
 
 		  return GASPI_TIMEOUT;
 		}	      
 	    }
 	    
-	  void *dst_val = (void *) (recv_ptr + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
+	  void *dst_val = (void *) (recv_ptr + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048);
 	  void *local_val = (void *) send_ptr;
 	  send_ptr += dsize;
-	  glb_gaspi_group_ib[g].dsize+=dsize;
+	  glb_gaspi_group_ctx[g].dsize+=dsize;
 
 	  if(r_args->f_type == GASPI_OP)
 	    {
@@ -911,8 +911,8 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
     }
 
-  glb_gaspi_group_ib[g].bid = bid;
-  glb_gaspi_group_ib[g].level = 3;
+  glb_gaspi_group_ctx[g].bid = bid;
+  glb_gaspi_group_ctx[g].level = 3;
   //third phase
  L3:
 
@@ -921,10 +921,10 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
       
       if (rank % 2){
 
-	dst = glb_gaspi_group_ib[g].rank_grp[rank - 1];
+	dst = glb_gaspi_group_ctx[g].rank_grp[rank - 1];
 
 	if(pgaspi_dev_post_write(send_ptr, dsize, dst,
-				 glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048),
+				 glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
 				 g) != 0)
 	  {
 	    glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -935,7 +935,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	  }
 
 	if(pgaspi_dev_post_write(barrier_ptr, 1, dst,
-				 glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle),
+				 glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle),
 				 g) != 0)
 	  {
 	    glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -951,9 +951,9 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
       else
 	{
 
-	  dst = 2 * (rank + 1) + glb_gaspi_group_ib[g].togle;
+	  dst = 2 * (rank + 1) + glb_gaspi_group_ctx[g].togle;
 
-	  while (poll_buf[dst] != glb_gaspi_group_ib[g].barrier_cnt)
+	  while (poll_buf[dst] != glb_gaspi_group_ctx[g].barrier_cnt)
 	    {
 	      //timeout...
 	      const gaspi_cycles_t s1 = gaspi_get_cycles();
@@ -968,8 +968,8 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	      //gaspi_delay ();
 	    }
 
-	  bid += glb_gaspi_group_ib[g].pof2_exp;
-	  send_ptr = (recv_ptr + (2 * bid + glb_gaspi_group_ib[g].togle) * 2048);
+	  bid += glb_gaspi_group_ctx[g].pof2_exp;
+	  send_ptr = (recv_ptr + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048);
 	}
     }
   const int pret = pgaspi_dev_poll_groups();
@@ -983,13 +983,13 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
   //  glb_gaspi_ctx_tcp.ne_count_grp -= pret;
 
-  glb_gaspi_group_ib[g].togle = (glb_gaspi_group_ib[g].togle ^ 0x1);
+  glb_gaspi_group_ctx[g].togle = (glb_gaspi_group_ctx[g].togle ^ 0x1);
 
-  glb_gaspi_group_ib[g].coll_op = GASPI_NONE;
-  glb_gaspi_group_ib[g].lastmask = 0x1;
-  glb_gaspi_group_ib[g].level = 0;
-  glb_gaspi_group_ib[g].dsize = 0;
-  glb_gaspi_group_ib[g].bid   = 0;
+  glb_gaspi_group_ctx[g].coll_op = GASPI_NONE;
+  glb_gaspi_group_ctx[g].lastmask = 0x1;
+  glb_gaspi_group_ctx[g].level = 0;
+  glb_gaspi_group_ctx[g].dsize = 0;
+  glb_gaspi_group_ctx[g].bid   = 0;
 
   memcpy (buf_recv, send_ptr, dsize);
 
@@ -1020,21 +1020,21 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
     return GASPI_ERROR;
 #endif  
 
-  if(lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, timeout_ms))
+  if(lock_gaspi_tout (&glb_gaspi_group_ctx[g].gl, timeout_ms))
     {
       return GASPI_TIMEOUT;
     }
   
 
   //other collectives active ?
-  if(!(glb_gaspi_group_ib[g].coll_op & GASPI_ALLREDUCE))
+  if(!(glb_gaspi_group_ctx[g].coll_op & GASPI_ALLREDUCE))
     {
-      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+      unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
       gaspi_print_error("allreduce: other coll. are active !\n");
       return GASPI_ERROR;
     }
 
-  glb_gaspi_group_ib[g].coll_op = GASPI_ALLREDUCE;
+  glb_gaspi_group_ctx[g].coll_op = GASPI_ALLREDUCE;
 
 
 
@@ -1049,7 +1049,7 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
 			  &r_args, g, timeout_ms);
   
   
-  unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
 
   return GASPI_SUCCESS;
 }
@@ -1079,20 +1079,20 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
 
 #endif  
 
-  if(lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, timeout_ms))
+  if(lock_gaspi_tout (&glb_gaspi_group_ctx[g].gl, timeout_ms))
     {
       return GASPI_TIMEOUT;
     }
   
   /* Any other collectives active? */
-  if(!(glb_gaspi_group_ib[g].coll_op & GASPI_ALLREDUCE_USER))
+  if(!(glb_gaspi_group_ctx[g].coll_op & GASPI_ALLREDUCE_USER))
     {
-      unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+      unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
       gaspi_print_error("allreduce_user: other coll. are active");
       return GASPI_ERROR;
     }
 
-  glb_gaspi_group_ib[g].coll_op = GASPI_ALLREDUCE_USER;
+  glb_gaspi_group_ctx[g].coll_op = GASPI_ALLREDUCE_USER;
 
 
   gaspi_return_t eret = GASPI_ERROR;
@@ -1106,7 +1106,7 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
   eret = _gaspi_allreduce(buf_send, buf_recv, elem_cnt,
 			  &r_args, g, timeout_ms);
 
-  unlock_gaspi (&glb_gaspi_group_ib[g].gl);
+  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
 
   return eret;
 }

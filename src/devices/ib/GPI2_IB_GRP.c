@@ -29,11 +29,11 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 gaspi_return_t
 pgaspi_dev_group_register_mem (const int id, const unsigned int size)
 {
-  glb_gaspi_group_ib[id].mr =ibv_reg_mr (glb_gaspi_ctx_ib.pd, glb_gaspi_group_ib[id].buf, size,
+  glb_gaspi_group_ctx[id].mr =ibv_reg_mr (glb_gaspi_ctx_ib.pd, glb_gaspi_group_ctx[id].buf, size,
 					 IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
 					 IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
   
-  if (glb_gaspi_group_ib[id].mr == NULL)
+  if (glb_gaspi_group_ctx[id].mr == NULL)
     {
       gaspi_print_error ("Memory registration failed (libibverbs)");
       return GASPI_ERROR;
@@ -51,7 +51,7 @@ pgaspi_dev_group_get_mem_rkey(const void *mr)
 gaspi_return_t
 pgaspi_dev_group_deregister_mem (const int id)
 {
-  if (ibv_dereg_mr ((struct ibv_mr *)glb_gaspi_group_ib[id].mr))
+  if (ibv_dereg_mr ((struct ibv_mr *)glb_gaspi_group_ctx[id].mr))
     {
       gaspi_print_error ("Memory de-registration failed (libibverbs)");
       return GASPI_ERROR;
@@ -97,7 +97,7 @@ pgaspi_dev_post_write(void *local_addr, int length, int dst, void *remote_addr, 
 
   slist.addr = (uintptr_t) local_addr;
   slist.length = length;
-  slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ib[group].mr)->lkey;
+  slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ctx[group].mr)->lkey;
 
   swr.sg_list = &slist;
   swr.num_sge = 1;
@@ -106,7 +106,7 @@ pgaspi_dev_post_write(void *local_addr, int length, int dst, void *remote_addr, 
   swr.next = NULL;
 
   swr.wr.rdma.remote_addr = (uint64_t) remote_addr;
-  swr.wr.rdma.rkey = glb_gaspi_group_ib[group].rrcd[dst].rkeyGroup;
+  swr.wr.rdma.rkey = glb_gaspi_group_ctx[group].rrcd[dst].rkeyGroup;
   swr.wr_id = dst;
   
   if (ibv_post_send ((struct ibv_qp *) glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))

@@ -535,7 +535,7 @@ gaspi_return_t pgaspi_gpu_write_notify(const gaspi_segment_id_t segment_id_local
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = 4;
-  slistN.lkey = glb_gaspi_group_ib[0].mr->lkey;
+  slistN.lkey = glb_gaspi_group_ctx[0].mr->lkey;
 
   if((glb_gaspi_ctx_ib.rrmd[segment_id_remote][rank].cudaDevId >= 0))
   {

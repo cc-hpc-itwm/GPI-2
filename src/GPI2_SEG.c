@@ -326,24 +326,24 @@ pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
 
   /* register segment to all other group members */
   /* dont write several times !!! */
-  for(r = 1; r <= glb_gaspi_group_ib[group].tnc; r++)
+  for(r = 1; r <= glb_gaspi_group_ctx[group].tnc; r++)
     {
-      int i = (glb_gaspi_group_ib[group].rank + r) % glb_gaspi_group_ib[group].tnc;
+      int i = (glb_gaspi_group_ctx[group].rank + r) % glb_gaspi_group_ctx[group].tnc;
 
-      if(glb_gaspi_group_ib[group].rank_grp[i] == glb_gaspi_ctx.rank)
+      if(glb_gaspi_group_ctx[group].rank_grp[i] == glb_gaspi_ctx.rank)
 	{
-	  pgaspi_dev_set_mseg_trans(segment_id, glb_gaspi_group_ib[group].rank_grp[i], 1);
+	  pgaspi_dev_set_mseg_trans(segment_id, glb_gaspi_group_ctx[group].rank_grp[i], 1);
 	  continue;
 	}
 
-      if( pgaspi_dev_get_mseg_trans(segment_id, glb_gaspi_group_ib[group].rank_grp[i]))
+      if( pgaspi_dev_get_mseg_trans(segment_id, glb_gaspi_group_ctx[group].rank_grp[i]))
 	continue;
 
-      eret = _pgaspi_segment_register(segment_id, glb_gaspi_group_ib[group].rank_grp[i], timeout_ms);
+      eret = _pgaspi_segment_register(segment_id, glb_gaspi_group_ctx[group].rank_grp[i], timeout_ms);
       if(eret != GASPI_SUCCESS)
 	{
 	  gaspi_print_error("Failed segment registration with %d\n",
-			    glb_gaspi_group_ib[group].rank_grp[i]);
+			    glb_gaspi_group_ctx[group].rank_grp[i]);
 	  
 	  return GASPI_ERROR;
 	}
@@ -369,7 +369,7 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-  if(group >= GASPI_MAX_GROUPS || glb_gaspi_group_ib[group].id < 0)
+  if(group >= GASPI_MAX_GROUPS || glb_gaspi_group_ctx[group].id < 0)
     {
       gaspi_print_error("Invalid group ( > GASPI_MAX_GROUPS || < 0)");
       return GASPI_ERROR;

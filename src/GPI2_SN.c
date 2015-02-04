@@ -242,7 +242,7 @@ void gaspi_sn_cleanup(int sig)
 }
 
 /* extern gaspi_ib_ctx glb_gaspi_ctx_ib; */
-/* extern gaspi_ib_group glb_gaspi_group_ib[GASPI_MAX_GROUPS]; */
+/* extern gaspi_ib_group glb_gaspi_group_ctx[GASPI_MAX_GROUPS]; */
 
 int gaspi_seg_reg_sn(const gaspi_cd_header snp);
 
@@ -563,16 +563,16 @@ void *gaspi_sn_backend(void *arg)
 				    const int group = mgmt->cdh.rank;
 				    const int tnc = mgmt->cdh.tnc;
 				    
-				    if(glb_gaspi_group_ib[group].id >= 0)
+				    if(glb_gaspi_group_ctx[group].id >= 0)
 				      {
-					if(glb_gaspi_group_ib[group].tnc == tnc)
+					if(glb_gaspi_group_ctx[group].tnc == tnc)
 					  {
 					    gb.ret=0;gb.tnc=tnc;
 					    
 					    for(i = 0;i < tnc; i++)
 					      {
-						if(NULL != glb_gaspi_group_ib[group].rank_grp)
-						  gb.cs ^= glb_gaspi_group_ib[group].rank_grp[i];
+						if(NULL != glb_gaspi_group_ctx[group].rank_grp)
+						  gb.cs ^= glb_gaspi_group_ctx[group].rank_grp[i];
 					      }
 					  }
 				      }
@@ -609,7 +609,7 @@ void *gaspi_sn_backend(void *arg)
 				  {
 				    int done = 0;
 				    int len = sizeof (gaspi_rc_grp);
-				    char *ptr = (char*)&glb_gaspi_group_ib[mgmt->cdh.ret].rrcd[glb_gaspi_ctx.rank];
+				    char *ptr = (char*)&glb_gaspi_group_ctx[mgmt->cdh.ret].rrcd[glb_gaspi_ctx.rank];
 				    
 				    while(done < len)
 				      {
@@ -697,8 +697,8 @@ void *gaspi_sn_backend(void *arg)
 				      
 				      return NULL;
 				    }
-
-				  if(pgaspi_dev_connect_context(mgmt->cdh.rank, GASPI_BLOCK) != 0)
+				  //TODO: have to be here?
+				  if(pgaspi_dev_connect_context(mgmt->cdh.rank) != 0)
 				    {
 				      gaspi_sn_print_error("Failed to connect context");
 				      gaspi_sn_status = GASPI_SN_STATE_ERROR;

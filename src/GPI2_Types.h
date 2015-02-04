@@ -103,8 +103,8 @@ typedef struct{
   int pof2_exp;
   int *rank_grp;
   gaspi_rc_grp *rrcd;
-} gaspi_ib_group;
+} gaspi_group_ctx;
 
-gaspi_ib_group glb_gaspi_group_ib[GASPI_MAX_GROUPS];
+gaspi_group_ctx glb_gaspi_group_ctx[GASPI_MAX_GROUPS];
 
 #endif /* _GPI2_TYPES_H_ */

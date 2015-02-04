@@ -240,15 +240,15 @@ pgaspi_init_core()
   if (glb_gaspi_ib_init)
     return -1;
   
-  memset (&glb_gaspi_group_ib, 0, GASPI_MAX_GROUPS * sizeof (gaspi_ib_group));
+  memset (&glb_gaspi_group_ctx, 0, GASPI_MAX_GROUPS * sizeof (gaspi_group_ctx));
 
   for (i = 0; i < GASPI_MAX_GROUPS; i++)
     { 
-      glb_gaspi_group_ib[i].id = -1;
-      glb_gaspi_group_ib[i].coll_op = GASPI_NONE;
-      glb_gaspi_group_ib[i].lastmask = 0x1;
-      glb_gaspi_group_ib[i].level = 0;
-      glb_gaspi_group_ib[i].dsize = 0;
+      glb_gaspi_group_ctx[i].id = -1;
+      glb_gaspi_group_ctx[i].coll_op = GASPI_NONE;
+      glb_gaspi_group_ctx[i].lastmask = 0x1;
+      glb_gaspi_group_ctx[i].level = 0;
+      glb_gaspi_group_ctx[i].dsize = 0;
     }
   /* change/override num of queues at large scale */
   if (glb_gaspi_ctx.tnc > 1000 && glb_gaspi_cfg.queue_num > 1)
@@ -608,7 +608,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	}
       
       //create GASPI_GROUP_ALL
-      if(glb_gaspi_group_ib[GASPI_GROUP_ALL].id == -1)
+      if(glb_gaspi_group_ctx[GASPI_GROUP_ALL].id == -1)
 	{
 	  gaspi_group_t g0;
 	  if(gaspi_group_create(&g0) != GASPI_SUCCESS)
@@ -646,7 +646,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
     {
       //just reserve GASPI_GROUP_ALL
       glb_gaspi_ctx.group_cnt = 1;
-      glb_gaspi_group_ib[GASPI_GROUP_ALL].id = -2;//disable
+      glb_gaspi_group_ctx[GASPI_GROUP_ALL].id = -2;//disable
       eret = GASPI_SUCCESS;
     }
   

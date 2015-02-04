@@ -948,27 +948,27 @@ pgaspi_dev_cleanup_core ()
   
   for(i = 0; i < GASPI_MAX_GROUPS; i++)
     {
-      if(glb_gaspi_group_ib[i].id >= 0)
+      if(glb_gaspi_group_ctx[i].id >= 0)
 	{
 	  
-	  if(ibv_dereg_mr (glb_gaspi_group_ib[i].mr))
+	  if(ibv_dereg_mr (glb_gaspi_group_ctx[i].mr))
 	    {  
 	      gaspi_print_error ("Failed to de-register memory (libiverbs)");
 	      return -1;
 	    }
 
-	  if(glb_gaspi_group_ib[i].buf)
+	  if(glb_gaspi_group_ctx[i].buf)
 	    {
-	      free (glb_gaspi_group_ib[i].buf);
+	      free (glb_gaspi_group_ctx[i].buf);
 	    }
 	  
-	  glb_gaspi_group_ib[i].buf = NULL;
+	  glb_gaspi_group_ctx[i].buf = NULL;
 	  
-	  if(glb_gaspi_group_ib[i].rrcd)
+	  if(glb_gaspi_group_ctx[i].rrcd)
 	    {
-	      free (glb_gaspi_group_ib[i].rrcd);
+	      free (glb_gaspi_group_ctx[i].rrcd);
 	    }
-	  glb_gaspi_group_ib[i].rrcd = NULL;
+	  glb_gaspi_group_ctx[i].rrcd = NULL;
 	}
     }
   

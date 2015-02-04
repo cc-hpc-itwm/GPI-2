@@ -330,9 +330,9 @@ pgaspi_dev_wait_remote_register(const gaspi_segment_id_t segment_id,
     {
       int cnt = 0;
       
-      for(r = 0; r < glb_gaspi_group_ib[group].tnc; r++)
+      for(r = 0; r < glb_gaspi_group_ctx[group].tnc; r++)
 	{
-	  int i = glb_gaspi_group_ib[group].rank_grp[r];
+	  int i = glb_gaspi_group_ctx[group].rank_grp[r];
 
 	  //TODO: only here is ctx_ib needed
 	  ulong s = gaspi_load_ulong(&glb_gaspi_ctx_ib.rrmd[segment_id][i].size);
@@ -340,7 +340,7 @@ pgaspi_dev_wait_remote_register(const gaspi_segment_id_t segment_id,
 	    cnt++;
 	}
       
-      if(cnt == glb_gaspi_group_ib[group].tnc)
+      if(cnt == glb_gaspi_group_ctx[group].tnc)
 	break;
 
       ftime(&t1);
