@@ -17,6 +17,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <sys/timeb.h>
+#include <unistd.h>
 
 #include "GPI2.h"
 #include "GPI2_Dev.h"
@@ -102,7 +103,7 @@ pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 #pragma weak gaspi_segment_list = pgaspi_segment_list
 gaspi_return_t
 pgaspi_segment_list (const gaspi_number_t num,
-		    gaspi_segment_id_t * const segment_id_list)
+		     gaspi_segment_id_t * const segment_id_list)
 {
   int i, idx = 0;
 
@@ -115,10 +116,11 @@ pgaspi_segment_list (const gaspi_number_t num,
 #endif
   
   //TODO: 256 -> readable
+  //TODO: data race to glb_gaspi_ctx.mseg_cnt
   for (i = 0; i < 256; i++)
     {
-      if(pgaspi_dev_get_rrmd(i) != NULL)
-	segment_id_list[idx++] = i;
+      if(pgaspi_dev_get_rrmd((gaspi_segment_id_t)i) != NULL)
+	segment_id_list[idx++] = (gaspi_segment_id_t) i;
     }
 
   if (idx != glb_gaspi_ctx.mseg_cnt)
@@ -135,7 +137,7 @@ pgaspi_segment_num (gaspi_number_t * const segment_num)
 {
   if (glb_gaspi_init)
     {
-      *segment_num = glb_gaspi_ctx.mseg_cnt;
+      *segment_num = (gaspi_number_t) glb_gaspi_ctx.mseg_cnt;
       return GASPI_SUCCESS;
     }
 

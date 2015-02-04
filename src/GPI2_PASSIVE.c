@@ -24,8 +24,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 static int
 _check_func_params(const gaspi_segment_id_t segment_id_local,
 		   const gaspi_offset_t offset_local,
-		   const gaspi_size_t size,
-		   const gaspi_timeout_t timeout_ms)
+		   const gaspi_size_t size)
 {
   
   if (pgaspi_dev_get_rrmd(segment_id_local) == NULL)
@@ -43,12 +42,6 @@ _check_func_params(const gaspi_segment_id_t segment_id_local,
   if( size < 1 || size > GASPI_MAX_TSIZE_P )
     {
       gaspi_print_error("Invalid size (gaspi_passive_receive)");    
-      return -1;
-    }
-
-  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
-    {
-      gaspi_print_error("Invalid timeout: %lu", timeout_ms);
       return -1;
     }
 
@@ -80,7 +73,7 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 {
  
 #ifdef DEBUG
-  if(_check_func_params(segment_id_local, offset_local, size, timeout_ms) < 0)
+  if(_check_func_params(segment_id_local, offset_local, size) < 0)
     {
       return GASPI_ERROR;
     }
@@ -108,7 +101,7 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 {
   
 #ifdef DEBUG
-  if(_check_func_params(segment_id_local, offset_local, size, timeout_ms) < 0)
+  if(_check_func_params(segment_id_local, offset_local, size) < 0)
     {
       return GASPI_ERROR;
     }

@@ -631,7 +631,7 @@ errL:
 
 
 int
-pgaspi_dev_disconnect_context(const int i, gaspi_timeout_t timeout_ms)
+pgaspi_dev_disconnect_context(const int i)
 {
   int c;
 
@@ -678,7 +678,7 @@ errL:
 
 
 int 
-pgaspi_dev_connect_context(const int i, gaspi_timeout_t timeout_ms)
+pgaspi_dev_connect_context(const int i)
 {
 
   if(glb_gaspi_ctx_ib.lrcd[i].cstat)
@@ -1102,7 +1102,7 @@ pgaspi_dev_get_lrcd(int rank)
   return (char *)&glb_gaspi_ctx_ib.lrcd[rank];
 }
 
-inline int
+inline size_t
 pgaspi_dev_get_sizeof_rc()
 {
   return sizeof(gaspi_rc_all);

@@ -553,12 +553,6 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       return GASPI_ERROR;
     }
 
-  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
-    {
-      gaspi_print_error("Invalid timeout: %lu", timeout_ms);
-      return GASPI_ERROR;
-    }
-
 #endif  
 
   if(lock_gaspi_tout (&glb_gaspi_group_ib[g].gl, timeout_ms))
@@ -576,7 +570,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
   glb_gaspi_group_ib[g].coll_op = GASPI_BARRIER;
 
-  int i, index;
+  int index;
 
   const int size = glb_gaspi_group_ib[g].tnc;
 
@@ -608,8 +602,8 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	  goto B0;
 	}
 
-      if(pgaspi_dev_post_write(barrier_ptr, 1, dst,
-			       glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle),
+      if(pgaspi_dev_post_write((void *)barrier_ptr, 1, dst,
+			       (void *) (glb_gaspi_group_ib[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ib[g].togle)),
 			       g) != 0)
 	{
 	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -664,8 +658,7 @@ _gaspi_check_allreduce_args(const gaspi_pointer_t buf_send,
 			    const gaspi_number_t elem_cnt,
 			    const gaspi_operation_t op,
 			    const gaspi_datatype_t type,
-			    const gaspi_group_t g,
-			    const gaspi_timeout_t timeout_ms)
+			    const gaspi_group_t g)
 {
   if(buf_send == NULL || buf_recv == NULL)
     {
@@ -691,12 +684,6 @@ _gaspi_check_allreduce_args(const gaspi_pointer_t buf_send,
       return -1;
     }
 
-  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
-    {
-      gaspi_print_error("Invalid timeout: %lu", timeout_ms);
-      return -1;
-    }
-
   return 0;
 }
 #endif
@@ -710,7 +697,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 		  const gaspi_timeout_t timeout_ms)
 {
   int idst, dst, bid = 0;
-  int i, mask, tmprank, tmpdst;
+  int mask, tmprank, tmpdst;
 
   const int dsize = r_args->f_args.elem_size * elem_cnt;
 
@@ -875,7 +862,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 				   g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
-	      gaspi_print_error("Failed to post request to %u for barrier (%d)",
+	      gaspi_print_error("Failed to post request to %u for barrier.",
 				dst);
 
 	      return GASPI_ERROR;
@@ -1029,7 +1016,7 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
     }
 
   if(_gaspi_check_allreduce_args(buf_send, buf_recv, elem_cnt, op,
-				 type, g, timeout_ms) < 0)
+				 type, g) < 0)
     return GASPI_ERROR;
 #endif  
 
@@ -1087,7 +1074,7 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
   
   /* Check with fake OP and TYPE  */
   if(_gaspi_check_allreduce_args(buf_send, buf_recv, elem_cnt,
-				 GASPI_TYPE_INT, GASPI_OP_SUM, g, timeout_ms) < 0)
+				 GASPI_TYPE_INT, GASPI_OP_SUM, g) < 0)
     return GASPI_ERROR;
 
 #endif  

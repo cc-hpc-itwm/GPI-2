@@ -55,12 +55,6 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
-    {
-      gaspi_print_error("Invalid timeout: %lu", timeout_ms);
-      return GASPI_ERROR;
-    }
-
 #endif
   gaspi_return_t eret = GASPI_ERROR;
   
@@ -74,7 +68,7 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
     return GASPI_TIMEOUT;
   
   eret = pgaspi_dev_atomic_fetch_add(segment_id, offset, rank,
-				     val_add, val_old, timeout_ms);
+				     val_add, val_old);
   
   unlock_gaspi (&glb_gaspi_group_ib[0].gl);
   return eret;
@@ -115,11 +109,6 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
   
-  if(timeout_ms < GASPI_TEST || timeout_ms > GASPI_BLOCK)
-    {
-      gaspi_print_error("Invalid timeout: %lu", timeout_ms);
-      return GASPI_ERROR;
-    }
 #endif
 
   gaspi_return_t eret = GASPI_ERROR;
@@ -134,8 +123,7 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
     return GASPI_TIMEOUT;
 
   eret = pgaspi_dev_atomic_compare_swap(segment_id, offset, rank,
-					comparator, val_new, val_old,
-					timeout_ms);
+					comparator, val_new, val_old);
 
   unlock_gaspi (&glb_gaspi_group_ib[0].gl);
 

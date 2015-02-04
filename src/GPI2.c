@@ -97,7 +97,7 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
     {
       if(atoi(numaPtr) == 1)
 	{
-	  *socket = glb_gaspi_ctx.localSocket;
+	  *socket = (gaspi_uchar) glb_gaspi_ctx.localSocket;
 	  
 	  return GASPI_SUCCESS;
 	}
@@ -118,7 +118,7 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   if(!glb_gaspi_ib_init)
     return GASPI_ERROR;
 
-  const int i = rank;
+  const int i = (int) rank;
 
   //TODO: verify the locking need
   lock_gaspi_tout(&gaspi_create_lock, GASPI_BLOCK);
@@ -136,19 +136,19 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
       goto okL; /* already connected */
     }
 
-  eret = gaspi_connect_to_rank(i, timeout_ms);
+  eret = gaspi_connect_to_rank(rank, timeout_ms);
   if(eret != GASPI_SUCCESS)
     {
       goto errL;
     }
 
   gaspi_cd_header cdh;
-  const int rc_size = pgaspi_dev_get_sizeof_rc();
-  cdh.op_len = rc_size;
+  const size_t rc_size = pgaspi_dev_get_sizeof_rc();
+  cdh.op_len = (int) rc_size;
   cdh.op = GASPI_SN_CONNECT;
   cdh.rank = glb_gaspi_ctx.rank;
 
-  int ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
+  ssize_t ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
   if(ret != sizeof(gaspi_cd_header))
     {
       gaspi_print_error("Failed to write to %d", i);
@@ -158,7 +158,7 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
     }
 
   ret = write(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
-  if(ret != rc_size)
+  if(ret != (ssize_t) rc_size)
     {
       gaspi_print_error("Failed to write to %d", i);
 
@@ -167,7 +167,7 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
     }
 
   ret = read(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_rrcd(i), rc_size);
-  if(ret != rc_size)
+  if(ret != (ssize_t) rc_size)
     {
       gaspi_print_error("Failed to read from %d", i);
       eret = GASPI_ERROR;
@@ -177,7 +177,7 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
     return GASPI_TIMEOUT;
   
-  if(pgaspi_dev_connect_context(i, timeout_ms) != GASPI_SUCCESS)
+  if(pgaspi_dev_connect_context(i) != GASPI_SUCCESS)
     {
       gaspi_print_error("Failed to connect context");
       unlock_gaspi(&gaspi_ccontext_lock);      
@@ -220,7 +220,7 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
-  eret = pgaspi_dev_disconnect_context(i, timeout_ms);
+  eret = pgaspi_dev_disconnect_context(i);
   if(eret != GASPI_SUCCESS)
     goto errL;
   
@@ -262,7 +262,7 @@ pgaspi_init_core()
   
   for(i = 0; i < GASPI_MAX_QP + 3; i++)
     {
-      glb_gaspi_ctx.qp_state_vec[i] = (unsigned char *) malloc (glb_gaspi_ctx.tnc);
+      glb_gaspi_ctx.qp_state_vec[i] = (unsigned char *) malloc ((size_t) glb_gaspi_ctx.tnc);
       if(!glb_gaspi_ctx.qp_state_vec[i])
 	{
 	  return -1;
@@ -281,7 +281,8 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 {
   gaspi_return_t eret = GASPI_ERROR;
   int i;
-
+  const int num_queues = (int) glb_gaspi_cfg.queue_num;
+  
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
@@ -290,7 +291,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       glb_gaspi_ctx.lockPS.lock = 0;
       glb_gaspi_ctx.lockPR.lock = 0;
     
-      for (i = 0; i < glb_gaspi_cfg.queue_num; i++)
+      for (i = 0; i < num_queues; i++)
 	glb_gaspi_ctx.lockC[i].lock = 0;
 
       memset (&glb_gaspi_ctx, 0, sizeof (gaspi_context));
@@ -548,7 +549,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  if(glb_gaspi_ctx.sockfd[i] != -1)
 	    continue;
 
-	  eret = gaspi_connect_to_rank(i, timeout_ms);
+	  eret = gaspi_connect_to_rank((gaspi_rank_t) i, timeout_ms);
 	  if(eret != GASPI_SUCCESS)
 	    {
 	      gaspi_print_error("Failed to connect to %d", i);
@@ -599,7 +600,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       //connect all ranks
       for(i = glb_gaspi_ctx.rank; i < glb_gaspi_ctx.tnc; i++)
 	{
-	  if(gaspi_connect(i, timeout_ms) != GASPI_SUCCESS)
+	  if(gaspi_connect((gaspi_rank_t) i, timeout_ms) != GASPI_SUCCESS)
 	    {
 	      gaspi_print_error("Failed to gaspi_connect to %d\n", i);
 	      return GASPI_ERROR;
@@ -618,7 +619,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  
 	  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
 	    {
-	      if(gaspi_group_add(g0,i) != GASPI_SUCCESS)
+	      if(gaspi_group_add(g0, (gaspi_rank_t) i) != GASPI_SUCCESS)
 		{
 		  gaspi_print_error("Addition of rank to GASPI_GROUP_ALL failed");
 		  return GASPI_ERROR;
@@ -666,7 +667,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
 #pragma weak gaspi_initialized = pgaspi_initialized
 gaspi_return_t
-pgaspi_initialized (gaspi_number_t *initialized)
+pgaspi_initialized (int *initialized)
 {
   gaspi_verify_null_ptr(initialized);
   
@@ -798,7 +799,7 @@ pgaspi_proc_rank (gaspi_rank_t * const rank)
     {
       gaspi_verify_null_ptr(rank);
 
-      *rank = glb_gaspi_ctx.rank;
+      *rank = (gaspi_rank_t) glb_gaspi_ctx.rank;
       return GASPI_SUCCESS;
     }
   else
@@ -816,7 +817,7 @@ pgaspi_proc_num (gaspi_rank_t * const proc_num)
     {
       gaspi_verify_null_ptr(proc_num);
 
-      *proc_num = glb_gaspi_ctx.tnc;
+      *proc_num = (gaspi_rank_t) glb_gaspi_ctx.tnc;
       return GASPI_SUCCESS;
     }
   else
@@ -860,7 +861,8 @@ pgaspi_proc_local_num(gaspi_rank_t * const local_num)
       while(glb_gaspi_ctx.poff[rank + 1] != 0)
 	rank++;
 	    
-      *local_num  = glb_gaspi_ctx.poff[rank] + 1;
+      *local_num  = (gaspi_rank_t) ( glb_gaspi_ctx.poff[rank] + 1);
+      
       
       return GASPI_SUCCESS;
     }
@@ -974,7 +976,7 @@ pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
   if (!glb_gaspi_ib_init || state_vector == NULL)
     return GASPI_ERROR;
 
-  memset (state_vector, 0, glb_gaspi_ctx.tnc);
+  memset (state_vector, 0, (size_t) glb_gaspi_ctx.tnc);
 
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     {

@@ -37,7 +37,7 @@ pgaspi_queue_size (const gaspi_queue_id_t queue,
 
   gaspi_verify_null_ptr(queue_size);
 
-  *queue_size = pgaspi_dev_queue_size(queue);
+  *queue_size = (gaspi_number_t) pgaspi_dev_queue_size(queue);
   
   return GASPI_SUCCESS;
 }
@@ -179,12 +179,6 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
       return -1;
     }
 
-  if(timeout < GASPI_TEST || timeout > GASPI_BLOCK)
-    {
-      gaspi_print_error("Invalid timeout: %lu", timeout);
-      return -1;
-    }
-  
   return 0;
 }
 #endif //DEBUG
@@ -217,8 +211,8 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
     return GASPI_TIMEOUT;
 
   eret = pgaspi_dev_write(segment_id_local, offset_local, rank,
-			  segment_id_remote,offset_remote, size,
-			  queue, timeout_ms);
+			  segment_id_remote,offset_remote, (unsigned int) size,
+			  queue);
 
 #ifdef DEBUG
   if(eret == GASPI_ERROR)
@@ -263,8 +257,8 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
     return GASPI_TIMEOUT;
   
   eret = pgaspi_dev_read(segment_id_local, offset_local, rank,
-			segment_id_remote,offset_remote, size,
-			queue, timeout_ms);
+			 segment_id_remote,offset_remote, (unsigned int) size,
+			queue);
 
 #ifdef DEBUG
   if(eret == GASPI_ERROR)
@@ -326,7 +320,7 @@ pgaspi_write_list (const gaspi_number_t num,
 		   const gaspi_timeout_t timeout_ms)
 {
 #ifdef DEBUG
-  gaspi_number_t n;
+  int n;
   
   if (!glb_gaspi_init)
     return GASPI_ERROR;
@@ -347,13 +341,13 @@ pgaspi_write_list (const gaspi_number_t num,
   
 #endif
   gaspi_return_t eret = GASPI_ERROR;
-
+  
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
-
+  
   eret = pgaspi_dev_write_list(num, segment_id_local, offset_local, rank,
 			       segment_id_remote, offset_remote, size,
-			       queue,timeout_ms);
+			       queue);
 #ifdef DEBUG
   if(eret == GASPI_ERROR)
     {
@@ -413,11 +407,11 @@ pgaspi_read_list (const gaspi_number_t num,
   
   eret = pgaspi_dev_read_list(num, segment_id_local, offset_local, rank,
 			      segment_id_remote, offset_remote, size,
-			      queue, timeout_ms);
+			      queue);
 #ifdef DEBUG
   if(eret == GASPI_ERROR)
     {
-      int n;
+      gaspi_number_t n;
       for(n = 0; n < num; n++)
 	{
 	  _print_func_params("gaspi_read_list", segment_id_local[n], offset_local[n], rank,
@@ -467,7 +461,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
 
   eret = pgaspi_dev_notify(segment_id_remote, rank,
 			   notification_id, notification_value,
-			   queue, timeout_ms);
+			   queue);
 
   //TODO: some debug when failure?
   
@@ -511,7 +505,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 }
 
 
-#pragma weak gaspi_notify_reset     = pgaspi_notify_reset
+#pragma weak gaspi_notify_reset = pgaspi_notify_reset
 gaspi_return_t
 pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
 		    const gaspi_notification_id_t notification_id,
@@ -571,7 +565,7 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
   eret = pgaspi_dev_write_notify(segment_id_local, offset_local, rank,
 				 segment_id_remote, offset_remote, size,
 				 notification_id, notification_value,
-				 queue, timeout_ms);
+				 queue);
 
 #ifdef DEBUG
   if(eret == GASPI_ERROR)
@@ -639,10 +633,10 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  eret = gaspi_write_list_notify(num, segment_id_local, offset_local, rank,
-				 segment_id_remote, offset_remote, size,
-				 segment_id_notification, notification_id, notification_value,
-				 queue, timeout_ms);
+  eret = pgaspi_dev_write_list_notify(num, segment_id_local, offset_local, rank,
+				      segment_id_remote, offset_remote, (unsigned int *)size,
+				      segment_id_notification, notification_id, notification_value,
+				      queue);
 
 #ifdef DEBUG
   if(eret == GASPI_ERROR)
