@@ -230,7 +230,7 @@ int
 pgaspi_dev_poll_groups();
 
 int
-pgaspi_dev_post_write(void *, int, int, void *, int);
+pgaspi_dev_post_group_write(void *, int, int, void *, int);
 
 /* OPTION B */
 /* #include "GPI2_IB_IO.h" */

@@ -602,9 +602,9 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	  goto B0;
 	}
 
-      if(pgaspi_dev_post_write((void *)barrier_ptr, 1, dst,
-			       (void *) (glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle)),
-			       g) != 0)
+      if(pgaspi_dev_post_group_write((void *)barrier_ptr, 1, dst,
+				     (void *) (glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle)),
+				     g) != 0)
 	{
 	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	  gaspi_print_error("Failed to post request to %u for barrier",
@@ -741,11 +741,11 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
       
 	  dst = glb_gaspi_group_ctx[g].rank_grp[rank + 1];
 
-	  if(pgaspi_dev_post_write(send_ptr,
-				   dsize,
-				   dst,
-				   glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
-				   g) != 0)
+	  if(pgaspi_dev_post_group_write(send_ptr,
+					 dsize,
+					 dst,
+					 glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
+					 g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      gaspi_print_error("Failed to post request to %u for data",
@@ -754,9 +754,9 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	      return GASPI_ERROR;
 	    }
 
-	  if(pgaspi_dev_post_write(barrier_ptr, 1, dst,
-				   glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle),
-				   g) != 0)
+	  if(pgaspi_dev_post_group_write(barrier_ptr, 1, dst,
+					 glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle),
+					 g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      gaspi_print_error("Failed to post request to %u for barrier",
@@ -846,9 +846,9 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	      goto J2;
 	    }
 
-	  if(pgaspi_dev_post_write(send_ptr, dsize, dst,
-				   glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
-				   g) != 0)
+	  if(pgaspi_dev_post_group_write(send_ptr, dsize, dst,
+					 glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
+					 g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      gaspi_print_error("Failed to post request to %u for data",
@@ -857,9 +857,9 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	      return GASPI_ERROR;
 	    }
 
-	  if(pgaspi_dev_post_write(barrier_ptr, 1, dst,
-				   glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle),
-				   g) != 0)
+	  if(pgaspi_dev_post_group_write(barrier_ptr, 1, dst,
+					 glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle),
+					 g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	      gaspi_print_error("Failed to post request to %u for barrier.",
@@ -923,9 +923,9 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
 	dst = glb_gaspi_group_ctx[g].rank_grp[rank - 1];
 
-	if(pgaspi_dev_post_write(send_ptr, dsize, dst,
-				 glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
-				 g) != 0)
+	if(pgaspi_dev_post_group_write(send_ptr, dsize, dst,
+				       glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
+				       g) != 0)
 	  {
 	    glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	    gaspi_print_error("Failed to post request to %u for data",
@@ -934,9 +934,9 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	    return GASPI_ERROR;
 	  }
 
-	if(pgaspi_dev_post_write(barrier_ptr, 1, dst,
-				 glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle),
-				 g) != 0)
+	if(pgaspi_dev_post_group_write(barrier_ptr, 1, dst,
+				       glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle),
+				       g) != 0)
 	  {
 	    glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
 	    gaspi_print_error("Failed to post request to %u for barrier",
