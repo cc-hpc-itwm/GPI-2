@@ -36,8 +36,6 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
   const int bit_pos = rank - (byte_id * 8);
   const unsigned char bit_cmp = 1 << bit_pos;
 
-  printf("Rank %d to %d: id %d pos %d cmp %u\n", glb_gaspi_ctx.rank,rank,byte_id, bit_pos, bit_cmp);
-
   if (passive_counter[byte_id] & bit_cmp)
     goto checkL;
 
