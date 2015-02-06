@@ -21,7 +21,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 gaspi_return_t
 pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
-			     const gaspi_offset_t offset, const gaspi_rank_t rank,
+			     const gaspi_offset_t offset,
+			     const gaspi_rank_t rank,
 			     const gaspi_atomic_value_t val_add,
 			     gaspi_atomic_value_t * const val_old)
 {
@@ -31,15 +32,12 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
   struct ibv_send_wr swr;
   int i;
 
-
   slist.addr = (uintptr_t) (glb_gaspi_group_ctx[0].buf + NEXT_OFFSET);
   slist.length = sizeof(gaspi_atomic_value_t);
   slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ctx[0].mr)->lkey;
 
   swr.wr.atomic.remote_addr =
     glb_gaspi_ctx.rrmd[segment_id][rank].addr + NOTIFY_OFFSET + offset;
-
-
 
   swr.wr.atomic.rkey = glb_gaspi_ctx.rrmd[segment_id][rank].rkey;
   swr.wr.atomic.compare_add = val_add;
@@ -60,16 +58,13 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
   glb_gaspi_ctx.ne_count_grp++;
 
-
   int ne = 0;
   for (i = 0; i < glb_gaspi_ctx.ne_count_grp; i++)
     {
       do
 	{
-	  ne =
-	    ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, 1,
-			 glb_gaspi_ctx_ib.wc_grp_send);
-
+	  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, 1,
+			    glb_gaspi_ctx_ib.wc_grp_send);
 	}
       while (ne == 0);
 
@@ -81,16 +76,15 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 					wr_id] = 1;
 
 	  gaspi_print_error("Failed request to %lu : %s",
-		       glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 
-		       ibv_wc_status_str(glb_gaspi_ctx_ib.wc_grp_send[i].status));
+			    glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 
+			    ibv_wc_status_str(glb_gaspi_ctx_ib.wc_grp_send[i].status));
 
 	  return GASPI_ERROR;
 	}
     }
 
-    glb_gaspi_ctx.ne_count_grp = 0;
-  *val_old =
-    *((gaspi_atomic_value_t *) (glb_gaspi_group_ctx[0].buf + NEXT_OFFSET));
+  //TODO: remove from here
+  glb_gaspi_ctx.ne_count_grp = 0;
 
   return GASPI_SUCCESS;
 }
@@ -161,7 +155,5 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 
   glb_gaspi_ctx.ne_count_grp = 0;
   
-  *val_old = *((gaspi_atomic_value_t *) (glb_gaspi_group_ctx[0].buf + NEXT_OFFSET));
-
   return GASPI_SUCCESS;
 }
