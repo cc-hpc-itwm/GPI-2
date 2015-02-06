@@ -29,12 +29,14 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define NOTIFY_OFFSET     (65536*4)
 
 gaspi_context glb_gaspi_ctx;
+gaspi_group_ctx glb_gaspi_group_ctx[GASPI_MAX_GROUPS];
 
 volatile int glb_gaspi_init;         //Is GPI-2 initialized?
 volatile int glb_gaspi_sn_init;      //Is the SN up?
 volatile int glb_gaspi_ib_init;      //Is IB initialized?
 volatile int gaspi_master_topo_data; //Do we have topology info from master?
 volatile int gaspi_rrcd_data;        //??
+
 
 //locks
 gaspi_lock_t glb_gaspi_ctx_lock;

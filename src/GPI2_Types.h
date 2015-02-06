@@ -141,7 +141,4 @@ typedef struct{
   gaspi_rc_grp *rrcd; //TODO: use gaspi_rc_mseg
 } gaspi_group_ctx;
 
-//TODO: it's not a type, move from here (to GPI2.h or something)
-gaspi_group_ctx glb_gaspi_group_ctx[GASPI_MAX_GROUPS];
-
 #endif /* _GPI2_TYPES_H_ */
