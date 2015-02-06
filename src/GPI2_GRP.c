@@ -24,6 +24,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2.h"
 #include "GPI2_Coll.h"
 #include "GPI2_Dev.h"
+#include "GPI2_SN.h"
 
 const unsigned int glb_gaspi_typ_size[6] = { 4, 4, 4, 8, 8, 8 };
 
@@ -94,10 +95,6 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  eret = pgaspi_dev_group_register_mem(id, size);
-  if(eret != GASPI_SUCCESS)
-    goto errL;
-
   glb_gaspi_group_ctx[id].rrcd = (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
   if(glb_gaspi_group_ctx[id].rrcd == NULL)
     goto errL;
@@ -108,8 +105,11 @@ pgaspi_group_create (gaspi_group_t * const group)
   glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].vaddrGroup =
     (uintptr_t) glb_gaspi_group_ctx[id].buf;
 
-  glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].rkeyGroup =
-    pgaspi_dev_group_get_mem_rkey(glb_gaspi_group_ctx[id].mr);
+  eret = pgaspi_dev_group_register_mem(id, size);
+  if(eret != GASPI_SUCCESS)
+    {
+      goto errL;
+    }
 
   glb_gaspi_group_ctx[id].rank_grp = (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
   if(!glb_gaspi_group_ctx[id].rank_grp)
@@ -125,6 +125,7 @@ pgaspi_group_create (gaspi_group_t * const group)
   return GASPI_SUCCESS;
 
  errL:
+  /* TODO: free memory  */
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_ERROR;
 }
@@ -612,7 +613,8 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
 	  return GASPI_ERROR;
 	}
-
+      glb_gaspi_ctx.ne_count_grp++;
+      
     B0:
       index = 2 * src + glb_gaspi_group_ctx[g].togle;
       
@@ -635,13 +637,15 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       mask <<= 1;
     } //while...
 
-  if(pgaspi_dev_poll_groups() < 0)
+  const int pret = pgaspi_dev_poll_groups();
+  if (pret < 0)
     {
-      //      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = 1;
       unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
       return GASPI_ERROR;
     }
 
+  glb_gaspi_ctx.ne_count_grp -= pret;
+    
   glb_gaspi_group_ctx[g].togle = (glb_gaspi_group_ctx[g].togle ^ 0x1);
   glb_gaspi_group_ctx[g].coll_op = GASPI_NONE;
   glb_gaspi_group_ctx[g].lastmask = 0x1;
@@ -764,8 +768,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
 	      return GASPI_ERROR;
 	    }
-
-	  //	  glb_gaspi_ctx_tcp.ne_count_grp += 2;
+	  glb_gaspi_ctx.ne_count_grp+=2;
 	  tmprank = -1;
 	}
       else
@@ -867,8 +870,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
 	      return GASPI_ERROR;
 	    }
-
-	  //	  glb_gaspi_ctx_tcp.ne_count_grp += 2;
+	    glb_gaspi_ctx.ne_count_grp+=2;
 	J2:
 	  dst = 2 * idst + glb_gaspi_group_ctx[g].togle;
 
@@ -944,9 +946,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
 	    return GASPI_ERROR;
 	  }
-
-	//	glb_gaspi_ctx_tcp.ne_count_grp += 2;
-
+	  glb_gaspi_ctx.ne_count_grp+=2;
       }
       else
 	{
@@ -962,7 +962,6 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
       
 	      if(ms > timeout_ms)
 		{
-
 		  return GASPI_TIMEOUT;
 		}   
 	      //gaspi_delay ();
@@ -976,13 +975,12 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
   if (pret < 0)
     {
-  
-  
+ 
       return GASPI_ERROR;
     }
 
-  //  glb_gaspi_ctx_tcp.ne_count_grp -= pret;
-
+  glb_gaspi_ctx.ne_count_grp -= pret;
+  
   glb_gaspi_group_ctx[g].togle = (glb_gaspi_group_ctx[g].togle ^ 0x1);
 
   glb_gaspi_group_ctx[g].coll_op = GASPI_NONE;

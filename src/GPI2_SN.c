@@ -60,6 +60,53 @@ int gaspi_set_non_blocking(int sock)
   return 0;
 }
 
+int
+gaspi_seg_reg_sn(const gaspi_cd_header snp)
+{
+
+  if(!glb_gaspi_ib_init) 
+    return GASPI_ERROR;
+
+  //TODO: include timeout?
+  lock_gaspi_tout(&gaspi_mseg_lock,GASPI_BLOCK);
+
+  if(glb_gaspi_ctx.rrmd[snp.seg_id] == NULL)
+    {
+      glb_gaspi_ctx.rrmd[snp.seg_id] = (gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+
+      if(!glb_gaspi_ctx.rrmd[snp.seg_id]) 
+	goto errL;
+      
+    memset(glb_gaspi_ctx.rrmd[snp.seg_id], 0, glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+  }
+
+  //TODO: don't allow re-registration
+  //for now we allow re-registration
+  //if(glb_gaspi_ctx.rrmd[snp.seg_id][snp.rem_rank].size) -> re-registration error case
+
+  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey = snp.rkey;
+  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].addr = snp.addr;
+  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].size = snp.size;
+
+#ifdef GPI2_CUDA
+  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].host_rkey = snp.host_rkey;
+  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].host_addr = snp.host_addr;
+
+  if(snp.host_addr != 0)
+    glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].cudaDevId = 1;
+  else
+    glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].cudaDevId = -1;
+#endif
+
+  unlock_gaspi(&gaspi_mseg_lock);
+  return 0;
+
+errL:
+  unlock_gaspi(&gaspi_mseg_lock);
+  return -1;
+
+}
+
 /* check open files limit and try to increase */
 static int gaspi_check_ofile_limit()
 {
@@ -689,25 +736,34 @@ void *gaspi_sn_backend(void *arg)
 				}
 			      else if(mgmt->op == GASPI_SN_CONNECT)
 				{
-				  if(pgaspi_dev_create_endpoint(mgmt->cdh.rank) !=0 )
-				    {
-				      gaspi_sn_print_error("Failed to create endpoint");
-				      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-				      gaspi_sn_err = GASPI_ERROR;
-				      
-				      return NULL;
-				    }
+				  lock_gaspi_tout(&gaspi_create_lock, GASPI_BLOCK);
+				  if(!glb_gaspi_ctx.ep_conn[mgmt->cdh.rank].istat)
+				    if(pgaspi_dev_create_endpoint(mgmt->cdh.rank) !=0 )
+				      {
+					gaspi_sn_print_error("Failed to create endpoint");
+					gaspi_sn_status = GASPI_SN_STATE_ERROR;
+					gaspi_sn_err = GASPI_ERROR;
+					unlock_gaspi(&gaspi_create_lock);    
+					return NULL;
+				      }
+				  glb_gaspi_ctx.ep_conn[mgmt->cdh.rank].istat = 1;
+				  unlock_gaspi(&gaspi_create_lock);
+
 				  //TODO: have to be here?
-				  if(pgaspi_dev_connect_context(mgmt->cdh.rank) != 0)
-				    {
-				      gaspi_sn_print_error("Failed to connect context");
-				      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-				      gaspi_sn_err = GASPI_ERROR;
-				      
-				      return NULL;
-				    }
-				  
-				  int done = 0;
+				  lock_gaspi_tout(&gaspi_ccontext_lock, GASPI_BLOCK);
+				  if(!glb_gaspi_ctx.ep_conn[mgmt->cdh.rank].cstat)
+				    if(pgaspi_dev_connect_context(mgmt->cdh.rank) != 0)
+				      {
+					gaspi_sn_print_error("Failed to connect context");
+					gaspi_sn_status = GASPI_SN_STATE_ERROR;
+					gaspi_sn_err = GASPI_ERROR;
+					
+					return NULL;
+				      }
+				  glb_gaspi_ctx.ep_conn[mgmt->cdh.rank].cstat = 1;
+				  unlock_gaspi(&gaspi_ccontext_lock);
+
+				    int done = 0;
 				  int len = pgaspi_dev_get_sizeof_rc();
 				  char *ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
 

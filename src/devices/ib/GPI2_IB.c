@@ -80,6 +80,26 @@ pgaspi_null_gid (union ibv_gid *gid)
 	   raw[15]);
 }
 
+
+/* Utilities */
+inline char *
+pgaspi_dev_get_rrcd(int rank)
+{
+  return (char *)&glb_gaspi_ctx_ib.remote_info[rank];
+}
+
+inline char *
+pgaspi_dev_get_lrcd(int rank)
+{
+  return (char *)&glb_gaspi_ctx_ib.local_info[rank];  
+}
+
+inline size_t
+pgaspi_dev_get_sizeof_rc()
+{
+  return sizeof(struct ib_ctx_info);
+}
+
 int
 pgaspi_dev_init_core ()
 {
@@ -87,12 +107,6 @@ pgaspi_dev_init_core ()
   int i, c, p, dev_idx = 0;
 
   memset (&glb_gaspi_ctx_ib, 0, sizeof (gaspi_ib_ctx));
-
-  /* TODO: magic numbers */
-  for(i = 0; i < 256; i++)
-    {
-      glb_gaspi_ctx_ib.rrmd[i] = NULL;
-    }
 
   for (i = 0; i < 64; i++)
     {
@@ -180,11 +194,11 @@ pgaspi_dev_init_core ()
 
   for(p = 0; p < MIN (glb_gaspi_ctx_ib.device_attr.phys_port_cnt, 2); p++)
     {
-    if(ibv_query_port(glb_gaspi_ctx_ib.context, (unsigned char) (p + 1),&glb_gaspi_ctx_ib.port_attr[p]))
-      {
-	gaspi_print_error ("Failed to query port (libibverbs)");
-	return -1;
-      }
+      if(ibv_query_port(glb_gaspi_ctx_ib.context, (unsigned char) (p + 1),&glb_gaspi_ctx_ib.port_attr[p]))
+	{
+	  gaspi_print_error ("Failed to query port (libibverbs)");
+	  return -1;
+	}
     }
 
   if (glb_gaspi_cfg.net_info)
@@ -279,7 +293,7 @@ pgaspi_dev_init_core ()
 	       ||(glb_gaspi_ctx_ib.port_attr[1].link_layer != IBV_LINK_LAYER_ETHERNET)){
 	      
 	      gaspi_print_error ("No active Ethernet (RoCE) port found");
-          return -1;
+	      return -1;
 	    }
 	    
 	    glb_gaspi_ctx_ib.ib_port = 2;
@@ -292,35 +306,33 @@ pgaspi_dev_init_core ()
       glb_gaspi_ctx_ib.ib_port = 1;
     }
   
-  if(glb_gaspi_cfg.net_info) gaspi_printf ("\tusing port : %d\n", glb_gaspi_ctx_ib.ib_port);
+  if(glb_gaspi_cfg.net_info)
+    gaspi_printf ("\tusing port : %d\n", glb_gaspi_ctx_ib.ib_port);
   
 
   if (glb_gaspi_cfg.network == GASPI_IB)
     {
-
-    if(glb_gaspi_cfg.mtu == 0)
-      {
-
-	switch(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].active_mtu){
-	  
-	case IBV_MTU_1024:
-	  glb_gaspi_cfg.mtu = 1024;
-	  break;
-	case IBV_MTU_2048:
-	  glb_gaspi_cfg.mtu = 2048;
-	  break;
-	case IBV_MTU_4096:
-	  glb_gaspi_cfg.mtu = 4096;
-	  break;
-	default:
-	  break;
-	};
-	
-      }
+      if(glb_gaspi_cfg.mtu == 0)
+	{
+	  switch(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].active_mtu){
+	    
+	  case IBV_MTU_1024:
+	    glb_gaspi_cfg.mtu = 1024;
+	    break;
+	  case IBV_MTU_2048:
+	    glb_gaspi_cfg.mtu = 2048;
+	    break;
+	  case IBV_MTU_4096:
+	    glb_gaspi_cfg.mtu = 4096;
+	    break;
+	  default:
+	    break;
+	  };
+	}
   
-    if(glb_gaspi_cfg.net_info)
-      gaspi_printf ("\tmtu        : %d\n", glb_gaspi_cfg.mtu);
-  }
+      if(glb_gaspi_cfg.net_info)
+	gaspi_printf ("\tmtu        : %d\n", glb_gaspi_cfg.mtu);
+    }
 
 
   if(glb_gaspi_cfg.network == GASPI_ETHERNET)
@@ -336,28 +348,15 @@ pgaspi_dev_init_core ()
       return -1;
     }
 
+  glb_gaspi_ctx.nsrc.mr = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
+				     (struct ibv_mr *) glb_gaspi_ctx.nsrc.buf,
+				     glb_gaspi_ctx.nsrc.size,
+				     IBV_ACCESS_REMOTE_WRITE
+				     | IBV_ACCESS_LOCAL_WRITE
+				     | IBV_ACCESS_REMOTE_READ
+				     | IBV_ACCESS_REMOTE_ATOMIC);
 
-  /* Create internal memory space */
-  /* TODO: has nothing to do with device */
-  
-  const unsigned int size = NOTIFY_OFFSET;
-  const unsigned int page_size = sysconf (_SC_PAGESIZE);
-
-  if(posix_memalign ((void **) &glb_gaspi_ctx_ib.nsrc.ptr, page_size, size)!= 0)
-    {
-      gaspi_print_error ("Memory allocation (posix_memalign) failed");
-      return -1;
-    }
-
-  memset(glb_gaspi_ctx_ib.nsrc.buf, 0, size);
-
-  glb_gaspi_ctx_ib.nsrc.mr = ibv_reg_mr(glb_gaspi_ctx_ib.pd,glb_gaspi_ctx_ib.nsrc.buf,size,
-                                        IBV_ACCESS_REMOTE_WRITE
-					| IBV_ACCESS_LOCAL_WRITE
-					| IBV_ACCESS_REMOTE_READ
-					| IBV_ACCESS_REMOTE_ATOMIC);
-
-  if(!glb_gaspi_ctx_ib.nsrc.mr)
+  if(!glb_gaspi_ctx.nsrc.mr)
     {
       gaspi_print_error ("Memory registration failed (libibverbs)");
       return -1;
@@ -468,32 +467,33 @@ pgaspi_dev_init_core ()
 	       glb_gaspi_ctx_ib.gid.raw[12], glb_gaspi_ctx_ib.gid.raw[13],
 	       glb_gaspi_ctx_ib.gid.raw[14], glb_gaspi_ctx_ib.gid.raw[15]);
 	}
-  }
+    }
 
-  glb_gaspi_ctx_ib.lrcd = (gaspi_rc_all *) calloc (glb_gaspi_ctx.tnc, sizeof(gaspi_rc_all));
-  if(!glb_gaspi_ctx_ib.lrcd)
+  glb_gaspi_ctx_ib.local_info = (struct ib_ctx_info *) calloc (glb_gaspi_ctx.tnc, sizeof(struct ib_ctx_info));
+  if(!glb_gaspi_ctx_ib.local_info)
     {
       return -1;
     }
 
-  glb_gaspi_ctx_ib.rrcd = (gaspi_rc_all *) calloc (glb_gaspi_ctx.tnc, sizeof(gaspi_rc_all));
-  if(!glb_gaspi_ctx_ib.rrcd)
+  glb_gaspi_ctx_ib.remote_info = (struct ib_ctx_info *) calloc (glb_gaspi_ctx.tnc, sizeof(struct ib_ctx_info));
+
+  if(!glb_gaspi_ctx_ib.remote_info)
     {
       return -1;
     }
   
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
-      glb_gaspi_ctx_ib.lrcd[i].lid = glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].lid;
+      glb_gaspi_ctx_ib.local_info[i].lid = glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].lid;
       
       struct timeval tv;
       gettimeofday (&tv, NULL);
       srand48 (tv.tv_usec);
-      glb_gaspi_ctx_ib.lrcd[i].psn = lrand48 () & 0xffffff;
+      glb_gaspi_ctx_ib.local_info[i].psn = lrand48 () & 0xffffff;
       
       if(glb_gaspi_cfg.port_check)
 	{
-	  if(!glb_gaspi_ctx_ib.lrcd[i].lid && (glb_gaspi_cfg.network == GASPI_IB))
+	  if(!glb_gaspi_ctx_ib.local_info[i].lid && (glb_gaspi_cfg.network == GASPI_IB))
 	    {
 	      gaspi_print_error("Failed to find topology! Is subnet-manager running ?");
 	      return -1;
@@ -502,7 +502,7 @@ pgaspi_dev_init_core ()
 
       if(glb_gaspi_cfg.network == GASPI_ETHERNET)
 	{
-	  glb_gaspi_ctx_ib.lrcd[i].gid = glb_gaspi_ctx_ib.gid;
+	  glb_gaspi_ctx_ib.local_info[i].gid = glb_gaspi_ctx_ib.gid;
 	}
     }
 
@@ -514,11 +514,6 @@ int
 pgaspi_dev_create_endpoint(const int i)
 {
   int c;
-
-  if(glb_gaspi_ctx_ib.lrcd[i].istat)
-    {
-      goto okL; /* already created */
-    }
 
   //create
   struct ibv_qp_init_attr qpi_attr;
@@ -532,6 +527,7 @@ pgaspi_dev_create_endpoint(const int i)
   qpi_attr.send_cq = glb_gaspi_ctx_ib.scqGroups;
   qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqGroups;
 
+  /* Groups QP*/
   glb_gaspi_ctx_ib.qpGroups[i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
   if(!glb_gaspi_ctx_ib.qpGroups[i])
     {
@@ -539,7 +535,7 @@ pgaspi_dev_create_endpoint(const int i)
       goto errL;
     }
 
-  
+  /* IO QPs*/
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       qpi_attr.send_cq = glb_gaspi_ctx_ib.scqC[c];
@@ -552,7 +548,8 @@ pgaspi_dev_create_endpoint(const int i)
 	  goto errL;
 	}
     }
-  
+
+  /* Passive QP */
   qpi_attr.send_cq = glb_gaspi_ctx_ib.scqP;
   qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqP;
   qpi_attr.srq = glb_gaspi_ctx_ib.srqP;
@@ -564,7 +561,7 @@ pgaspi_dev_create_endpoint(const int i)
       goto errL;
     }
   
-  //init
+  /* Set to init */
   struct ibv_qp_attr qp_attr;
   memset (&qp_attr, 0, sizeof (struct ibv_qp_attr));
 
@@ -609,23 +606,17 @@ pgaspi_dev_create_endpoint(const int i)
       goto errL;
     }
 
-  
-  glb_gaspi_ctx_ib.lrcd[i].qpnGroup = glb_gaspi_ctx_ib.qpGroups[i]->qp_num;
-
-  glb_gaspi_ctx_ib.lrcd[i].qpnP = glb_gaspi_ctx_ib.qpP[i]->qp_num;
+  glb_gaspi_ctx_ib.local_info[i].qpnGroup = glb_gaspi_ctx_ib.qpGroups[i]->qp_num;
+  glb_gaspi_ctx_ib.local_info[i].qpnP = glb_gaspi_ctx_ib.qpP[i]->qp_num;
   
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
-      glb_gaspi_ctx_ib.lrcd[i].qpnC[c] = glb_gaspi_ctx_ib.qpC[c][i]->qp_num;
+      glb_gaspi_ctx_ib.local_info[i].qpnC[c] = glb_gaspi_ctx_ib.qpC[c][i]->qp_num;
     }
 
-  glb_gaspi_ctx_ib.lrcd[i].istat = 1;
-
-okL:
   return GASPI_SUCCESS;
 
 errL:
-  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
   return GASPI_ERROR;
 }
 
@@ -634,9 +625,6 @@ int
 pgaspi_dev_disconnect_context(const int i)
 {
   int c;
-
-  if(glb_gaspi_ctx_ib.lrcd[i].cstat == 0)
-    goto errL;//not connected
 
   if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpGroups[i]))
     {
@@ -659,16 +647,13 @@ pgaspi_dev_disconnect_context(const int i)
       goto errL;
     }
   
-  glb_gaspi_ctx_ib.lrcd[i].qpnGroup = 0;
-  glb_gaspi_ctx_ib.lrcd[i].qpnP = 0;
+  glb_gaspi_ctx_ib.local_info[i].qpnGroup = 0;
+  glb_gaspi_ctx_ib.local_info[i].qpnP = 0;
   
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
-      glb_gaspi_ctx_ib.lrcd[i].qpnC[c] = 0;
+      glb_gaspi_ctx_ib.local_info[i].qpnC[c] = 0;
     }
-  
-  glb_gaspi_ctx_ib.lrcd[i].istat = 0;
-  glb_gaspi_ctx_ib.lrcd[i].cstat = 0;
   
   return GASPI_SUCCESS;
 
@@ -676,21 +661,15 @@ errL:
   return GASPI_ERROR;
 }
 
-
 int 
 pgaspi_dev_connect_context(const int i)
 {
 
-  if(glb_gaspi_ctx_ib.lrcd[i].cstat)
-    {
-      return GASPI_SUCCESS;
-    }
-  
   struct ibv_qp_attr qp_attr;
   int c;
 
   memset(&qp_attr, 0, sizeof (qp_attr));
-
+    
   switch(glb_gaspi_cfg.mtu){
     case 1024:
       qp_attr.path_mtu = IBV_MTU_1024;
@@ -705,23 +684,23 @@ pgaspi_dev_connect_context(const int i)
       printf("unexpected MTU:%d\n",glb_gaspi_cfg.mtu);
       goto errL;
   };
-
+  
   //ready2recv
   qp_attr.qp_state = IBV_QPS_RTR;
-  qp_attr.dest_qp_num = glb_gaspi_ctx_ib.rrcd[i].qpnGroup;
-  qp_attr.rq_psn = glb_gaspi_ctx_ib.rrcd[i].psn;
+  qp_attr.dest_qp_num = glb_gaspi_ctx_ib.remote_info[i].qpnGroup; 
+  qp_attr.rq_psn = glb_gaspi_ctx_ib.remote_info[i].psn;
   qp_attr.max_dest_rd_atomic = glb_gaspi_ctx_ib.max_rd_atomic;
   qp_attr.min_rnr_timer = 12;
 
   if(glb_gaspi_cfg.network == GASPI_IB)
     {
       qp_attr.ah_attr.is_global = 0;
-      qp_attr.ah_attr.dlid = (unsigned short) glb_gaspi_ctx_ib.rrcd[i].lid;
+      qp_attr.ah_attr.dlid = (unsigned short) glb_gaspi_ctx_ib.remote_info[i].lid;
     }
   else
     {
       qp_attr.ah_attr.is_global = 1;
-      qp_attr.ah_attr.grh.dgid = glb_gaspi_ctx_ib.rrcd[i].gid;
+      qp_attr.ah_attr.grh.dgid = glb_gaspi_ctx_ib.remote_info[i].gid;
       qp_attr.ah_attr.grh.hop_limit = 1;
     }
 
@@ -745,7 +724,7 @@ pgaspi_dev_connect_context(const int i)
   
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
-      qp_attr.dest_qp_num = glb_gaspi_ctx_ib.rrcd[i].qpnC[c];
+      qp_attr.dest_qp_num = glb_gaspi_ctx_ib.remote_info[i].qpnC[c];
       
       if(ibv_modify_qp(glb_gaspi_ctx_ib.qpC[c][i], &qp_attr,
 		       IBV_QP_STATE
@@ -762,7 +741,7 @@ pgaspi_dev_connect_context(const int i)
     }
   
   
-  qp_attr.dest_qp_num = glb_gaspi_ctx_ib.rrcd[i].qpnP;
+  qp_attr.dest_qp_num = glb_gaspi_ctx_ib.remote_info[i].qpnP;
 
   if(ibv_modify_qp(glb_gaspi_ctx_ib.qpP[i], &qp_attr,
 		   IBV_QP_STATE
@@ -782,7 +761,7 @@ pgaspi_dev_connect_context(const int i)
   qp_attr.retry_cnt = GASPI_QP_RETRY;
   qp_attr.rnr_retry = GASPI_QP_RETRY;
   qp_attr.qp_state = IBV_QPS_RTS;
-  qp_attr.sq_psn = glb_gaspi_ctx_ib.lrcd[i].psn;
+  qp_attr.sq_psn = glb_gaspi_ctx_ib.local_info[i].psn;
   qp_attr.max_rd_atomic = glb_gaspi_ctx_ib.max_rd_atomic;
 
   if(ibv_modify_qp(glb_gaspi_ctx_ib.qpGroups[i], &qp_attr,
@@ -826,9 +805,7 @@ pgaspi_dev_connect_context(const int i)
       gaspi_print_error ("Failed to modify QP (libibverbs)");
       goto errL;
     }
-  
-  glb_gaspi_ctx_ib.lrcd[i].cstat = 1;
-  
+
   return GASPI_SUCCESS;
   
  errL:
@@ -844,7 +821,7 @@ pgaspi_dev_cleanup_core ()
   //TODO: single loop should be enough
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
-      if(glb_gaspi_ctx_ib.lrcd[i].istat==0)
+      if(glb_gaspi_ctx.ep_conn[i].istat == 0)      
 	continue;
       
       if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpGroups[i]))
@@ -863,7 +840,7 @@ pgaspi_dev_cleanup_core ()
 
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
-      if(glb_gaspi_ctx_ib.lrcd[i].istat==0)
+      if(glb_gaspi_ctx.ep_conn[i].istat==0)      
 	{
 	  continue;
 	}
@@ -887,7 +864,7 @@ pgaspi_dev_cleanup_core ()
       
       for(i = 0; i < glb_gaspi_ctx.tnc; i++)
 	{
-	  if(glb_gaspi_ctx_ib.lrcd[i].istat==0)
+	  if(glb_gaspi_ctx.ep_conn[i].istat == 0)	  
 	    {
 	      continue;
 	    }
@@ -974,67 +951,67 @@ pgaspi_dev_cleanup_core ()
   
   for(i = 0; i < 256; i++)
     {
-      if(glb_gaspi_ctx_ib.rrmd[i] != NULL)
+      if(glb_gaspi_ctx.rrmd[i] != NULL)
       {
-	if(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].size)
+	if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].size)
 	  {
 #ifdef GPI2_CUDA
             if(glb_gaspi_ctx.use_gpus == 0 || glb_gaspi_ctx.gpu_count == 0)
 #endif	      
 
-	      if(ibv_dereg_mr(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].mr))
+	      if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].mr))
 	      {
 		gaspi_print_error("Failed to de-register memory (libiverbs)");
 		return -1;
 	      }
 #if GPI2_CUDA
-	    if(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].cudaDevId >= 0)
+	    if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cudaDevId >= 0)
 	      {
-		if(ibv_dereg_mr(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].host_mr))
+		if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_mr))
 		  {
 		    gaspi_print_error("Failed to de-register memory (libiverbs)\n");
 		    return -1;
 		  }
-		cudaSetDevice( (glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].cudaDevId));
-		if(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf)
-		  cudaFree(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf);
+		cudaSetDevice( (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cudaDevId));
+		if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf)
+		  cudaFree(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
 
-		if(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].host_ptr)
-		  cudaFreeHost(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].host_ptr);
+		if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_ptr)
+		  cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_ptr);
 	    }
 	    else if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
-	      cudaFreeHost(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf);
+	      cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
 	    else
 #endif	    
-	    if(glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf)
+	    if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf)
 	      {
-		free (glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf);
+		free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
 	      }
 	    
-	    glb_gaspi_ctx_ib.rrmd[i][glb_gaspi_ctx.rank].buf = NULL;
+	    glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf = NULL;
       }
 
-      if(glb_gaspi_ctx_ib.rrmd[i])
+      if(glb_gaspi_ctx.rrmd[i])
 	{
-	  free (glb_gaspi_ctx_ib.rrmd[i]);
+	  free (glb_gaspi_ctx.rrmd[i]);
 	}
-      glb_gaspi_ctx_ib.rrmd[i] = NULL;
+      glb_gaspi_ctx.rrmd[i] = NULL;
     }
   }
 
   //dereg nsrc 
-  if(ibv_dereg_mr(glb_gaspi_ctx_ib.nsrc.mr))
+  if(ibv_dereg_mr(glb_gaspi_ctx.nsrc.mr))
     {
       gaspi_print_error("Failed to de-register memory (libiverbs)");
       return -1;
     }
 
-  if(glb_gaspi_ctx_ib.nsrc.buf)
+  if(glb_gaspi_ctx.nsrc.buf)
     {
-      free(glb_gaspi_ctx_ib.nsrc.buf);
+      free(glb_gaspi_ctx.nsrc.buf);
     }
   
-  glb_gaspi_ctx_ib.nsrc.buf=NULL;
+  glb_gaspi_ctx.nsrc.buf = NULL;
 
   if(ibv_dealloc_pd (glb_gaspi_ctx_ib.pd))
     {
@@ -1045,10 +1022,11 @@ pgaspi_dev_cleanup_core ()
   if(glb_gaspi_ctx_ib.channelP)
     {
       
-      if(ibv_destroy_comp_channel (glb_gaspi_ctx_ib.channelP)){
-	gaspi_print_error("Failed to destroy completion channel (libibverbs)");
-	return -1;
-      }
+      if(ibv_destroy_comp_channel (glb_gaspi_ctx_ib.channelP))
+	{
+	  gaspi_print_error("Failed to destroy completion channel (libibverbs)");
+	  return -1;
+	}
     }
   
   if(ibv_close_device (glb_gaspi_ctx_ib.context))
@@ -1071,65 +1049,20 @@ pgaspi_dev_cleanup_core ()
 	}
       glb_gaspi_ctx.qp_state_vec[i] = NULL;
     }
-  
-  if(glb_gaspi_ctx_ib.lrcd)
-    {
-      free (glb_gaspi_ctx_ib.lrcd);
-    }
-  
-  glb_gaspi_ctx_ib.lrcd = NULL;
 
-  if(glb_gaspi_ctx_ib.rrcd)
+  if(glb_gaspi_ctx_ib.local_info)
     {
-      free (glb_gaspi_ctx_ib.rrcd);
+      free (glb_gaspi_ctx_ib.local_info);
     }
   
-  glb_gaspi_ctx_ib.rrcd = NULL;
+  glb_gaspi_ctx_ib.local_info = NULL;
+
+  if(glb_gaspi_ctx_ib.remote_info)
+    {
+      free (glb_gaspi_ctx_ib.remote_info);
+    }
+  
+  glb_gaspi_ctx_ib.remote_info = NULL;
 
   return 0;
 }
-
-
-inline char *
-pgaspi_dev_get_rrcd(int rank)
-{
-  return (char *)&glb_gaspi_ctx_ib.rrcd[rank];
-}
-
-inline char *
-pgaspi_dev_get_lrcd(int rank)
-{
-  return (char *)&glb_gaspi_ctx_ib.lrcd[rank];
-}
-
-inline size_t
-pgaspi_dev_get_sizeof_rc()
-{
-  return sizeof(gaspi_rc_all);
-}
-
-inline int
-pgaspi_dev_context_connected(const int i)
-{
-  return glb_gaspi_ctx_ib.lrcd[i].cstat;
-}
-
-inline int
-pgaspi_dev_context_exists(const int i)
-{
-  return glb_gaspi_ctx_ib.lrcd[i].istat;
-}
-
-inline void *
-pgaspi_dev_get_rrmd(const gaspi_segment_id_t segment_id)
-{
-  return glb_gaspi_ctx_ib.rrmd[segment_id];
-}
-
-inline unsigned long
-pgaspi_dev_get_mseg_size(const gaspi_segment_id_t segment_id,
-			 const gaspi_rank_t rank)
-{
-  return glb_gaspi_ctx_ib.rrmd[segment_id][rank].size;
-}
-

@@ -38,12 +38,10 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
     goto checkL;
 
   slist.addr =
-    (uintptr_t) (glb_gaspi_ctx_ib.
-		 rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
+    (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
 		 NOTIFY_OFFSET + offset_local);
   slist.length = size;
-  slist.lkey =
-    glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr->lkey;
+  slist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr)->lkey;
 
   swr.sg_list = &slist;
   swr.num_sge = 1;
@@ -115,12 +113,10 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
   struct timeval tout;
 
   rlist.addr =
-    (uintptr_t) (glb_gaspi_ctx_ib.
-		 rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
+    (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
 		 NOTIFY_OFFSET + offset_local);
   rlist.length = size;
-  rlist.lkey =
-    glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr->lkey;
+  rlist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr)->lkey;
   rwr.wr_id = glb_gaspi_ctx.rank;
   rwr.sg_list = &rlist;
   rwr.num_sge = 1;

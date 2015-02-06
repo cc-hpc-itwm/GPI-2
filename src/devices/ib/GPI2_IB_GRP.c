@@ -26,6 +26,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 
 /* Group utilities */
+/* TODO: merge this with gaspi_dev_register_mem */
 gaspi_return_t
 pgaspi_dev_group_register_mem (const int id, const unsigned int size)
 {
@@ -39,13 +40,11 @@ pgaspi_dev_group_register_mem (const int id, const unsigned int size)
       return GASPI_ERROR;
     }
 
-  return GASPI_SUCCESS;
-}
+  
+  glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].rkeyGroup =
+    ((struct ibv_mr *)glb_gaspi_group_ctx[id].mr)->rkey;
 
-unsigned int
-pgaspi_dev_group_get_mem_rkey(const void *mr)
-{
-  return ((struct ibv_mr *)mr)->rkey;
+  return GASPI_SUCCESS;
 }
 				 
 gaspi_return_t
@@ -65,11 +64,11 @@ pgaspi_dev_poll_groups()
 {
   int i;
   
-  const int pret = ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.ne_count_grp,glb_gaspi_ctx_ib.wc_grp_send);
+  const int pret = ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx.ne_count_grp,glb_gaspi_ctx_ib.wc_grp_send);
   
   if (pret < 0)
     {
-      for (i = 0; i < glb_gaspi_ctx_ib.ne_count_grp; i++)
+      for (i = 0; i < glb_gaspi_ctx.ne_count_grp; i++)
 	{
 	  if (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS)
 	    {
@@ -81,8 +80,6 @@ pgaspi_dev_poll_groups()
 			glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
       return GASPI_ERROR;
     }
-
-  glb_gaspi_ctx_ib.ne_count_grp -= pret;
 
   return pret;
 }
@@ -112,7 +109,5 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
   if (ibv_post_send ((struct ibv_qp *) glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
       return 1;
 
-  glb_gaspi_ctx_ib.ne_count_grp++;
-  
   return 0;
 }

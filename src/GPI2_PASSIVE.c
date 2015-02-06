@@ -27,13 +27,13 @@ _check_func_params(const gaspi_segment_id_t segment_id_local,
 		   const gaspi_size_t size)
 {
   
-  if (pgaspi_dev_get_rrmd(segment_id_local) == NULL)
+  if (glb_gaspi_ctx.rrmd[segment_id_local] == NULL)
     {
       gaspi_print_error("Invalid local segment (gaspi_passive_receive)");    
       return -1;
     }
   
-  if( offset_local > pgaspi_dev_get_mseg_size(segment_id_local, glb_gaspi_ctx.rank))
+  if( offset_local > glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].size)
     {
       gaspi_print_error("Invalid offsets (gaspi_passive_receive)");    
       return -1;

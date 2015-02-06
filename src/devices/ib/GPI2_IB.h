@@ -28,43 +28,23 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_QP_TIMEOUT  (20)
 #define GASPI_QP_RETRY    (7)
 
-typedef struct
+/* IB-specific */
+struct ib_ctx_info
 {
-  int lid;
+  int lid;  
+  int psn;
   union ibv_gid gid;
   int qpnGroup;
   int qpnP;
   int qpnC[GASPI_MAX_QP];
-  int psn;
-  int rank, ret;
-  volatile int istat, cstat;
-} gaspi_rc_all;
+};
 
 typedef struct
 {
-  union
-  {
-    unsigned char *buf;
-    void *ptr;
-  };
-  struct ibv_mr *mr;
-  unsigned int rkey;
-  unsigned long addr, size;
-  int trans;
-#ifdef GPI2_CUDA
-  int cudaDevId;
-  union
-  {
-   void* host_ptr;
-   unsigned long host_addr;
-  };
-  struct ibv_mr *host_mr;
-  unsigned int host_rkey;
-#endif
-} gaspi_rc_mseg;
-
-typedef struct
-{
+  int ib_card_typ;
+  int num_dev;
+  int max_rd_atomic;
+  int ib_port;
   struct ibv_device **dev_list;
   struct ibv_device *ib_dev;
   struct ibv_context *context;
@@ -73,10 +53,6 @@ typedef struct
   struct ibv_device_attr device_attr;
   struct ibv_port_attr port_attr[2];
   struct ibv_srq_init_attr srq_attr;
-  int ib_card_typ;
-  int num_dev;
-  int max_rd_atomic;
-  int ib_port;
   struct ibv_cq *scqGroups, *rcqGroups;
   struct ibv_qp **qpGroups;
   struct ibv_wc wc_grp_send[64];
@@ -88,11 +64,10 @@ typedef struct
   struct ibv_qp **qpC[GASPI_MAX_QP];
   union ibv_gid gid;
 
-  gaspi_rc_all *lrcd, *rrcd;
-  gaspi_rc_mseg *rrmd[256];
-  gaspi_rc_mseg nsrc;
+  struct ib_ctx_info *local_info;
+  struct ib_ctx_info *remote_info;
   
-  int ne_count_grp;
+  //  int ne_count_grp;
   int ne_count_c[GASPI_MAX_QP];
   unsigned char ne_count_p[8192];
 

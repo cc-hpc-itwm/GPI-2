@@ -138,13 +138,13 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
 {
 
   
-  if (pgaspi_dev_get_rrmd(segment_id_local) == NULL)
+  if (glb_gaspi_ctx.rrmd[segment_id_local] == NULL)
     {
       gaspi_print_error("Invalid local segment %d (%s)", segment_id_local, func_name);
       return -1;
     }
   
-  if (pgaspi_dev_get_rrmd(segment_id_remote) == NULL)
+  if (glb_gaspi_ctx.rrmd[segment_id_remote] == NULL)
     {
       gaspi_print_error("Invalid remote segment %d (%s)", segment_id_remote, func_name);
       return -1;
@@ -156,18 +156,18 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
       return -1;
     }
   
-  if( offset_local > pgaspi_dev_get_mseg_size(segment_id_local, rank)
-      || offset_remote > pgaspi_dev_get_mseg_size(segment_id_remote, rank))
+  if( offset_local > glb_gaspi_ctx.rrmd[segment_id_local][rank].size
+    || offset_remote > glb_gaspi_ctx.rrmd[segment_id_remote][rank].size)
     {
       gaspi_print_error("Invalid offsets: local %lu remote %lu (%s)",
 			offset_local, offset_remote, func_name);
       return -1;
     }
     
-  if(   size < 1
-     || size > GASPI_MAX_TSIZE_C
-     || size > pgaspi_dev_get_mseg_size(segment_id_remote, rank)
-	|| size > pgaspi_dev_get_mseg_size(segment_id_local, rank))
+  if( size < 1
+      || size > GASPI_MAX_TSIZE_C
+      || size > glb_gaspi_ctx.rrmd[segment_id_remote][rank].size
+      || size > glb_gaspi_ctx.rrmd[segment_id_local][rank].size)
     {
       gaspi_print_error("Invalid size: %lu (%s)", size,func_name);
       return -1;
@@ -436,7 +436,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
 {
 
 #ifdef DEBUG
-  if (pgaspi_dev_get_rrmd(segment_id_remote) == NULL)
+  if (glb_gaspi_ctx.rrmd[segment_id_remote] == NULL)
     {
       gaspi_print_error("Invalid remote segment: %u (gaspi_notify)", segment_id_remote);    
       return GASPI_ERROR;
@@ -480,7 +480,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 {
 
 #ifdef DEBUG
-  if (pgaspi_dev_get_rrmd(segment_id_local) == NULL)
+  if (glb_gaspi_ctx.rrmd[segment_id_local] == NULL)
     {
       gaspi_print_error("Invalid segment: %u  (gaspi_notify_waitsome)", segment_id_local);    
       return GASPI_ERROR;
@@ -513,7 +513,7 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
 {
 
 #ifdef DEBUG
-  if (pgaspi_dev_get_rrmd(segment_id_local) == NULL)
+  if (glb_gaspi_ctx.rrmd[segment_id_local] == NULL)
     {
       gaspi_print_error("Invalid segment: %u (gaspi_notify_reset)", segment_id_local);    
       return GASPI_ERROR;

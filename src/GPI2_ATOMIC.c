@@ -31,7 +31,7 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 {
 
 #ifdef DEBUG
-  if (pgaspi_dev_get_rrmd(segment_id) == NULL)
+  if (glb_gaspi_ctx.rrmd[segment_id] == NULL)
     {
       gaspi_print_error("Invalid segment (gaspi_atomic_fetch_add)");    
       return GASPI_ERROR;
@@ -43,7 +43,7 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
   
-  if( offset > pgaspi_dev_get_mseg_size(segment_id, rank))
+  if( offset > glb_gaspi_ctx.rrmd[segment_id][rank].size)
     {
       gaspi_print_error("Invalid offsets (gaspi_atomic_fetch_add)");    
       return GASPI_ERROR;
@@ -85,7 +85,7 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 			    const gaspi_timeout_t timeout_ms)
 {
 #ifdef DEBUG
-  if (pgaspi_dev_get_rrmd(segment_id) == NULL)
+  if (glb_gaspi_ctx.rrmd[segment_id] == NULL)
     {
       gaspi_print_error("Invalid segment (gaspi_atomic_compare_swap)");    
       return GASPI_ERROR;
@@ -97,7 +97,7 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-  if( offset > pgaspi_dev_get_mseg_size(segment_id, rank))
+  if( offset > glb_gaspi_ctx.rrmd[segment_id][rank].size)
     {
       gaspi_print_error("Invalid offsets (gaspi_atomic_compare_swap)");    
       return GASPI_ERROR;

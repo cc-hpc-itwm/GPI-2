@@ -33,15 +33,15 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
 
   slist.addr = (uintptr_t) (glb_gaspi_group_ctx[0].buf + NEXT_OFFSET);
-  slist.length = sizeof(gaspi_atomic_value_t);;
+  slist.length = sizeof(gaspi_atomic_value_t);
   slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ctx[0].mr)->lkey;
 
   swr.wr.atomic.remote_addr =
-    glb_gaspi_ctx_ib.rrmd[segment_id][rank].addr + NOTIFY_OFFSET + offset;
+    glb_gaspi_ctx.rrmd[segment_id][rank].addr + NOTIFY_OFFSET + offset;
 
 
 
-  swr.wr.atomic.rkey = glb_gaspi_ctx_ib.rrmd[segment_id][rank].rkey;
+  swr.wr.atomic.rkey = glb_gaspi_ctx.rrmd[segment_id][rank].rkey;
   swr.wr.atomic.compare_add = val_add;
 
   swr.wr_id = rank;
@@ -58,11 +58,11 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx_ib.ne_count_grp++;
+  glb_gaspi_ctx.ne_count_grp++;
 
 
   int ne = 0;
-  for (i = 0; i < glb_gaspi_ctx_ib.ne_count_grp; i++)
+  for (i = 0; i < glb_gaspi_ctx.ne_count_grp; i++)
     {
       do
 	{
@@ -88,7 +88,7 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 	}
     }
 
-  glb_gaspi_ctx_ib.ne_count_grp = 0;
+    glb_gaspi_ctx.ne_count_grp = 0;
   *val_old =
     *((gaspi_atomic_value_t *) (glb_gaspi_group_ctx[0].buf + NEXT_OFFSET));
 
@@ -115,9 +115,9 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
   slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ctx[0].mr)->lkey;
 
   swr.wr.atomic.remote_addr =
-    glb_gaspi_ctx_ib.rrmd[segment_id][rank].addr + NOTIFY_OFFSET + offset;
+    glb_gaspi_ctx.rrmd[segment_id][rank].addr + NOTIFY_OFFSET + offset;
 
-  swr.wr.atomic.rkey = glb_gaspi_ctx_ib.rrmd[segment_id][rank].rkey;
+  swr.wr.atomic.rkey = glb_gaspi_ctx.rrmd[segment_id][rank].rkey;
   swr.wr.atomic.compare_add = comparator;
   swr.wr.atomic.swap = val_new;
 
@@ -135,38 +135,33 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx_ib.ne_count_grp++;
-
+  glb_gaspi_ctx.ne_count_grp++;
 
   int ne = 0;
-  for (i = 0; i < glb_gaspi_ctx_ib.ne_count_grp; i++)
+  for (i = 0; i < glb_gaspi_ctx.ne_count_grp; i++)
     {
       do
 	{
-	  ne =
-	    ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, 1,
-			 glb_gaspi_ctx_ib.wc_grp_send);
-
+	  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, 1,
+			    glb_gaspi_ctx_ib.wc_grp_send);
 	}
       while (ne == 0);
 
-      if ((ne < 0)
-	  || (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS))
+      if ((ne < 0) || (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS))
 	{
-	  glb_gaspi_ctx.
-	    qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].
-					wr_id] = 1;
+	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = 1;
 
  	  gaspi_print_error("Failed request to %lu : %s",
-		       glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 
-		       ibv_wc_status_str(glb_gaspi_ctx_ib.wc_grp_send[i].status));
+			    glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 
+			    ibv_wc_status_str(glb_gaspi_ctx_ib.wc_grp_send[i].status));
+
 	  return GASPI_ERROR;
 	}
     }
 
-  glb_gaspi_ctx_ib.ne_count_grp = 0;
-  *val_old =
-    *((gaspi_atomic_value_t *) (glb_gaspi_group_ctx[0].buf + NEXT_OFFSET));
+  glb_gaspi_ctx.ne_count_grp = 0;
+  
+  *val_old = *((gaspi_atomic_value_t *) (glb_gaspi_group_ctx[0].buf + NEXT_OFFSET));
 
   return GASPI_SUCCESS;
 }

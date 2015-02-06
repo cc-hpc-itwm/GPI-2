@@ -34,6 +34,39 @@ typedef struct
 enum
 { MASTER_PROC = 1, WORKER_PROC = 2 };
 
+/* connection status to a endpoint */
+typedef struct
+{
+  gaspi_rank_t rank; /* to whom */
+  /*   int ret; // Unused? */
+  volatile int istat; /* created? */
+  volatile int cstat; /* connected? */
+} gaspi_endpoint_conn_t;
+
+typedef struct
+{
+  union
+  {
+    unsigned char *buf;
+    void *ptr;
+  };
+  void *mr;
+  unsigned int rkey;
+  unsigned long addr, size;
+  int trans; /* info transmitted */
+  
+#ifdef GPI2_CUDA
+  int cudaDevId;
+  union
+  {
+   void* host_ptr;
+   unsigned long host_addr;
+  };
+  void host_mr;
+  unsigned int host_rkey;
+#endif
+} gaspi_rc_mseg;
+
 typedef struct
 {
   int localSocket;
@@ -47,6 +80,7 @@ typedef struct
   char *hn_poff;
   char *poff;
   int group_cnt;
+
   int mseg_cnt;
   unsigned char *qp_state_vec[GASPI_MAX_QP + 3];
   char mtyp[64];
@@ -59,14 +93,18 @@ typedef struct
   int gpu_count;
   int use_gpus;
 #endif
-       
-} gaspi_context;
 
-typedef struct
-{
-  int rank;
-  int tnc;
-} gaspi_node_init;
+  gaspi_rc_mseg nsrc;
+  gaspi_rc_mseg *rrmd[256];
+
+  gaspi_endpoint_conn_t *ep_conn;
+
+  /* Comm counters  */
+  int ne_count_grp;
+/*   int ne_count_c[GASPI_MAX_QP]; */
+/*   unsigned char ne_count_p[8192]; */
+
+} gaspi_context;
 
 typedef enum{
   GASPI_BARRIER = 1,
@@ -81,14 +119,12 @@ typedef struct
   unsigned long vaddrGroup;
 } gaspi_rc_grp;
 
-
 typedef struct{
   union
   {
     unsigned char *buf;
     void *ptr;
   };
-  //  struct ibv_mr *mr;
   void *mr;
   int id;
   unsigned int size;
@@ -102,9 +138,10 @@ typedef struct{
   int next_pof2;
   int pof2_exp;
   int *rank_grp;
-  gaspi_rc_grp *rrcd;
+  gaspi_rc_grp *rrcd; //TODO: use gaspi_rc_mseg
 } gaspi_group_ctx;
 
+//TODO: it's not a type, move from here (to GPI2.h or something)
 gaspi_group_ctx glb_gaspi_group_ctx[GASPI_MAX_GROUPS];
 
 #endif /* _GPI2_TYPES_H_ */

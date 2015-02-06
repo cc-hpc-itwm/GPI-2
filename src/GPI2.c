@@ -120,20 +120,33 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 
   const int i = (int) rank;
 
-  //TODO: verify the locking need
+  //TODO: verify the locking needs/problems
   lock_gaspi_tout(&gaspi_create_lock, GASPI_BLOCK);
-  
-  if(pgaspi_dev_create_endpoint(i) < 0)
-    return GASPI_ERROR;
 
+  if(glb_gaspi_ctx.ep_conn[i].istat)
+    {
+      unlock_gaspi(&gaspi_create_lock);
+      return GASPI_SUCCESS;
+    }
+
+  if(pgaspi_dev_create_endpoint(i) < 0)
+    {
+      glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
+      return GASPI_ERROR;
+    }
+
+  glb_gaspi_ctx.ep_conn[i].istat = 1;
+  
   unlock_gaspi(&gaspi_create_lock);
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
   
-  if(pgaspi_dev_context_connected(i))
+  if(glb_gaspi_ctx.ep_conn[i].cstat == 1)
     {
-      goto okL; /* already connected */
+      /* already connected */
+      unlock_gaspi(&glb_gaspi_ctx_lock);
+      return GASPI_SUCCESS;
     }
 
   eret = gaspi_connect_to_rank(rank, timeout_ms);
@@ -147,25 +160,25 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   cdh.op_len = (int) rc_size;
   cdh.op = GASPI_SN_CONNECT;
   cdh.rank = glb_gaspi_ctx.rank;
-
+  
   ssize_t ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
   if(ret != sizeof(gaspi_cd_header))
     {
       gaspi_print_error("Failed to write to %d", i);
-
+      
       eret = GASPI_ERROR;
       goto errL;
     }
-
+  
   ret = write(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
   if(ret != (ssize_t) rc_size)
     {
       gaspi_print_error("Failed to write to %d", i);
-
+      
       eret = GASPI_ERROR;
       goto errL;
     }
-
+  
   ret = read(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_rrcd(i), rc_size);
   if(ret != (ssize_t) rc_size)
     {
@@ -173,10 +186,19 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
       eret = GASPI_ERROR;
       goto errL;
     }
-
-  if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
-    return GASPI_TIMEOUT;
   
+  if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
+    {
+      eret = GASPI_TIMEOUT;
+      goto errL;
+    }
+
+  if(glb_gaspi_ctx.ep_conn[i].cstat)
+    {
+      unlock_gaspi(&gaspi_ccontext_lock);
+      goto okL;
+    }
+
   if(pgaspi_dev_connect_context(i) != GASPI_SUCCESS)
     {
       gaspi_print_error("Failed to connect context");
@@ -185,6 +207,8 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
       goto errL;
     }
 
+  glb_gaspi_ctx.ep_conn[i].cstat = 1;
+  
   unlock_gaspi(&gaspi_ccontext_lock);
 
   if(gaspi_close(glb_gaspi_ctx.sockfd[i]) != 0)
@@ -197,8 +221,9 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 
  okL:
   unlock_gaspi(&glb_gaspi_ctx_lock);
-  return GASPI_SUCCESS;
 
+  return GASPI_SUCCESS;
+  
  errL:
   glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
   unlock_gaspi(&glb_gaspi_ctx_lock);
@@ -220,10 +245,18 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
+  /* Not connected */
+  /*  TODO: error or success? atm, error */
+  if(glb_gaspi_ctx.ep_conn[i].cstat == 0) 
+    goto errL;
+  
   eret = pgaspi_dev_disconnect_context(i);
   if(eret != GASPI_SUCCESS)
     goto errL;
-  
+
+  glb_gaspi_ctx.ep_conn[i].istat = 0;
+  glb_gaspi_ctx.ep_conn[i].cstat = 0;
+
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
 
@@ -250,13 +283,40 @@ pgaspi_init_core()
       glb_gaspi_group_ctx[i].level = 0;
       glb_gaspi_group_ctx[i].dsize = 0;
     }
+
   /* change/override num of queues at large scale */
   if (glb_gaspi_ctx.tnc > 1000 && glb_gaspi_cfg.queue_num > 1)
     {
       gaspi_printf("Warning: setting number of queues to 1\n");
       glb_gaspi_cfg.queue_num = 1;
     }
+
+  /* Create internal memory space */
+  const unsigned int size = NOTIFY_OFFSET;
+  const unsigned int page_size = sysconf (_SC_PAGESIZE);
+
+  glb_gaspi_ctx.nsrc.size = size;
   
+  if(posix_memalign ((void **) &glb_gaspi_ctx.nsrc.ptr, page_size, size)!= 0)
+    {
+      gaspi_print_error ("Memory allocation (posix_memalign) failed");
+      return -1;
+    }
+
+  memset(glb_gaspi_ctx.nsrc.buf, 0, size);
+  
+  /* TODO: magic numbers */
+  for(i = 0; i < 256; i++)
+    {
+      glb_gaspi_ctx.rrmd[i] = NULL;
+    }
+
+  glb_gaspi_ctx.ep_conn = (gaspi_endpoint_conn_t *) malloc(glb_gaspi_ctx.tnc * sizeof(gaspi_endpoint_conn_t));
+  if (glb_gaspi_ctx.ep_conn == NULL)
+    return -1;
+  memset(glb_gaspi_ctx.ep_conn, 0, glb_gaspi_ctx.tnc * sizeof(gaspi_endpoint_conn_t));
+  
+
   if(pgaspi_dev_init_core() != 0)
     return -1;
   
@@ -578,7 +638,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   /* avoid problem of connecting to a node which is not yet ready (sn side) */
   /* TODO:
      1 - should only be done when building infrastructure?
-     2 - better implementatio possible
+     2 - better implementation possible
   */
 
   //FIXME
@@ -602,7 +662,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	{
 	  if(gaspi_connect((gaspi_rank_t) i, timeout_ms) != GASPI_SUCCESS)
 	    {
-	      gaspi_print_error("Failed to gaspi_connect to %d\n", i);
 	      return GASPI_ERROR;
 	    }
 	}
@@ -685,6 +744,7 @@ pgaspi_cleanup_core()
       return GASPI_ERROR;
     }
 
+  
   if(pgaspi_dev_cleanup_core() != GASPI_SUCCESS)
     return GASPI_ERROR;
 
