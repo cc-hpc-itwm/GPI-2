@@ -912,7 +912,7 @@ pgaspi_dev_cleanup_core ()
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
       return -1;
-  }
+    }
   
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
@@ -952,52 +952,52 @@ pgaspi_dev_cleanup_core ()
   for(i = 0; i < 256; i++)
     {
       if(glb_gaspi_ctx.rrmd[i] != NULL)
-      {
-	if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].size)
-	  {
+	{
+	  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].size)
+	    {
 #ifdef GPI2_CUDA
-            if(glb_gaspi_ctx.use_gpus == 0 || glb_gaspi_ctx.gpu_count == 0)
+	      if(glb_gaspi_ctx.use_gpus == 0 || glb_gaspi_ctx.gpu_count == 0)
 #endif	      
 
-	      if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].mr))
-	      {
-		gaspi_print_error("Failed to de-register memory (libiverbs)");
-		return -1;
-	      }
-#if GPI2_CUDA
-	    if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cudaDevId >= 0)
-	      {
-		if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_mr))
+		if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].mr))
 		  {
-		    gaspi_print_error("Failed to de-register memory (libiverbs)\n");
+		    gaspi_print_error("Failed to de-register memory (libiverbs)");
 		    return -1;
 		  }
-		cudaSetDevice( (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cudaDevId));
-		if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf)
-		  cudaFree(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
+#if GPI2_CUDA
+	      if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cudaDevId >= 0)
+		{
+		  if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_mr))
+		    {
+		      gaspi_print_error("Failed to de-register memory (libiverbs)\n");
+		      return -1;
+		    }
+		  cudaSetDevice( (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cudaDevId));
+		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf)
+		    cudaFree(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
 
-		if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_ptr)
-		  cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_ptr);
-	    }
-	    else if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
-	      cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
-	    else
+		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_ptr)
+		    cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_ptr);
+		}
+	      else if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
+		cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
+	      else
 #endif	    
-	    if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf)
-	      {
-		free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
-	      }
+		if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf)
+		  {
+		    free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
+		  }
 	    
-	    glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf = NULL;
-      }
+	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf = NULL;
+	    }
 
-      if(glb_gaspi_ctx.rrmd[i])
-	{
-	  free (glb_gaspi_ctx.rrmd[i]);
+	  if(glb_gaspi_ctx.rrmd[i])
+	    {
+	      free (glb_gaspi_ctx.rrmd[i]);
+	    }
+	  glb_gaspi_ctx.rrmd[i] = NULL;
 	}
-      glb_gaspi_ctx.rrmd[i] = NULL;
     }
-  }
 
   //dereg nsrc 
   if(ibv_dereg_mr(glb_gaspi_ctx.nsrc.mr))
@@ -1005,13 +1005,6 @@ pgaspi_dev_cleanup_core ()
       gaspi_print_error("Failed to de-register memory (libiverbs)");
       return -1;
     }
-
-  if(glb_gaspi_ctx.nsrc.buf)
-    {
-      free(glb_gaspi_ctx.nsrc.buf);
-    }
-  
-  glb_gaspi_ctx.nsrc.buf = NULL;
 
   if(ibv_dealloc_pd (glb_gaspi_ctx_ib.pd))
     {
@@ -1039,16 +1032,6 @@ pgaspi_dev_cleanup_core ()
     {
       ibv_free_device_list (glb_gaspi_ctx_ib.dev_list);
     }
-  
-
-  for(i = 0; i < GASPI_MAX_QP + 3; i++)
-    {
-      if(glb_gaspi_ctx.qp_state_vec[i])
-	{
-	  free (glb_gaspi_ctx.qp_state_vec[i]);
-	}
-      glb_gaspi_ctx.qp_state_vec[i] = NULL;
-    }
 
   if(glb_gaspi_ctx_ib.local_info)
     {
@@ -1056,7 +1039,7 @@ pgaspi_dev_cleanup_core ()
     }
   
   glb_gaspi_ctx_ib.local_info = NULL;
-
+  
   if(glb_gaspi_ctx_ib.remote_info)
     {
       free (glb_gaspi_ctx_ib.remote_info);

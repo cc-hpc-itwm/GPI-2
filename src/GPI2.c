@@ -738,16 +738,32 @@ pgaspi_initialized (int *initialized)
 static gaspi_return_t
 pgaspi_cleanup_core()
 {
-
+  int i;
+  
   if(!glb_gaspi_ib_init)
     {
       return GASPI_ERROR;
     }
-
   
   if(pgaspi_dev_cleanup_core() != GASPI_SUCCESS)
     return GASPI_ERROR;
 
+  if(glb_gaspi_ctx.nsrc.buf)
+    {
+      free(glb_gaspi_ctx.nsrc.buf);
+    }
+  
+  glb_gaspi_ctx.nsrc.buf = NULL;
+
+  for(i = 0; i < GASPI_MAX_QP + 3; i++)
+    {
+      if(glb_gaspi_ctx.qp_state_vec[i])
+	{
+	  free (glb_gaspi_ctx.qp_state_vec[i]);
+	}
+      glb_gaspi_ctx.qp_state_vec[i] = NULL;
+    }
+    
   return GASPI_SUCCESS;
 }
 
