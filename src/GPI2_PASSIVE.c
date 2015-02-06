@@ -85,7 +85,7 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
     return GASPI_TIMEOUT;
 
   eret = pgaspi_dev_passive_send(segment_id_local, offset_local, rank,
-				 size, timeout_ms);
+				 size, glb_gaspi_ctx.ne_count_p, timeout_ms);
 
   unlock_gaspi (&glb_gaspi_ctx.lockPS);
 

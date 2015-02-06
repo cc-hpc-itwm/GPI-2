@@ -20,9 +20,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 gaspi_return_t
 pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
-		    const gaspi_offset_t offset_local,
-		    const gaspi_rank_t rank, const gaspi_size_t size,
-		    const gaspi_timeout_t timeout_ms)
+			 const gaspi_offset_t offset_local,
+			 const gaspi_rank_t rank, const gaspi_size_t size,
+			 unsigned char *passive_counter,
+			 const gaspi_timeout_t timeout_ms)
 {
 
   struct ibv_send_wr *bad_wr;
@@ -34,11 +35,13 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
   const int byte_id = rank >> 3;
   const int bit_pos = rank - (byte_id * 8);
   const unsigned char bit_cmp = 1 << bit_pos;
-  if (glb_gaspi_ctx_ib.ne_count_p[byte_id] & bit_cmp)
+
+  printf("Rank %d to %d: id %d pos %d cmp %u\n", glb_gaspi_ctx.rank,rank,byte_id, bit_pos, bit_cmp);
+
+  if (passive_counter[byte_id] & bit_cmp)
     goto checkL;
 
-  slist.addr =
-    (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
+  slist.addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
 		 NOTIFY_OFFSET + offset_local);
   slist.length = size;
   slist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr)->lkey;
@@ -57,7 +60,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx_ib.ne_count_p[byte_id] |= bit_cmp;
+    passive_counter[byte_id] |= bit_cmp;
 
 checkL:
 
@@ -79,7 +82,6 @@ checkL:
 	      return GASPI_TIMEOUT;
 	    }
 	}
-
     }
   while (ne == 0);
 
@@ -90,7 +92,7 @@ checkL:
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx_ib.ne_count_p[byte_id] &= (~bit_cmp);
+  passive_counter[byte_id] &= (~bit_cmp);
 
   return GASPI_SUCCESS;
 }

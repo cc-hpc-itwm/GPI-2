@@ -67,9 +67,7 @@ typedef struct
   struct ib_ctx_info *local_info;
   struct ib_ctx_info *remote_info;
   
-  //  int ne_count_grp;
-  int ne_count_c[GASPI_MAX_QP];
-  unsigned char ne_count_p[8192];
+  //  unsigned char ne_count_p[8192];
 
 } gaspi_ib_ctx;
 

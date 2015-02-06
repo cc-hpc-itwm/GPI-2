@@ -27,12 +27,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 extern gaspi_context glb_gaspi_ctx;
 extern gaspi_config_t glb_gaspi_cfg;
 
-inline int
-pgaspi_dev_queue_size(const gaspi_queue_id_t queue)
-{
-  return glb_gaspi_ctx_ib.ne_count_c[queue];
-}
- 
 
 /* Communication functions */
 gaspi_return_t
@@ -94,8 +88,6 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx_ib.ne_count_c[queue]++;
-
   return GASPI_SUCCESS;
 }
 
@@ -150,19 +142,19 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx_ib.ne_count_c[queue]++;
-
   return GASPI_SUCCESS;
 }
 
 gaspi_return_t
-pgaspi_dev_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
+pgaspi_dev_wait (const gaspi_queue_id_t queue,
+		 int * counter,
+		 const gaspi_timeout_t timeout_ms)
 {
 
   int ne = 0, i;
   struct ibv_wc wc;
 
-  const int nr = glb_gaspi_ctx_ib.ne_count_c[queue];
+  const int nr = *counter;//glb_gaspi_ctx_ib.ne_count_c[queue];
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
 
   for (i = 0; i < nr; i++)
@@ -170,8 +162,9 @@ pgaspi_dev_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
       do
 	{
 	  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqC[queue], 1, &wc);
-	  glb_gaspi_ctx_ib.ne_count_c[queue] -= ne;
-
+	  //	  glb_gaspi_ctx_ib.ne_count_c[queue] -= ne;
+	  *counter -= ne;
+	  
 	  if (ne == 0)
 	    {
 	      const gaspi_cycles_t s1 = gaspi_get_cycles ();
@@ -270,8 +263,6 @@ pgaspi_dev_write_list (const gaspi_number_t num,
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx_ib.ne_count_c[queue] +=  num;
-
   return GASPI_SUCCESS;
 }
 
@@ -336,8 +327,6 @@ pgaspi_dev_read_list (const gaspi_number_t num,
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx_ib.ne_count_c[queue] += (int) num;
-
   return GASPI_SUCCESS;
 }
 
@@ -386,8 +375,6 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
 
       return GASPI_ERROR;
     }
-
-  glb_gaspi_ctx_ib.ne_count_c[queue]++;
 
   return GASPI_SUCCESS;
 
@@ -589,8 +576,6 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx_ib.ne_count_c[queue] += 2;
-
   return GASPI_SUCCESS;
 }
 
@@ -693,8 +678,6 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
       
       return GASPI_ERROR;
     }
-
-  glb_gaspi_ctx_ib.ne_count_c[queue] += (int) (num + 1);
 
   return GASPI_SUCCESS;
 }

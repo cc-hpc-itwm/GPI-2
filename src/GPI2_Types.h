@@ -101,8 +101,8 @@ typedef struct
 
   /* Comm counters  */
   int ne_count_grp;
-/*   int ne_count_c[GASPI_MAX_QP]; */
-/*   unsigned char ne_count_p[8192]; */
+  int ne_count_c[GASPI_MAX_QP];
+  unsigned char ne_count_p[8192]; //TODO: dynamic size
 
 } gaspi_context;
 
