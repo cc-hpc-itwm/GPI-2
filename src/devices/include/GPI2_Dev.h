@@ -127,19 +127,6 @@ pgaspi_dev_notify (const gaspi_segment_id_t,
 		   const gaspi_queue_id_t);
 
 gaspi_return_t
-pgaspi_dev_notify_waitsome (const gaspi_segment_id_t,
-			    const gaspi_notification_id_t,
-			    const gaspi_number_t,
-			    gaspi_notification_id_t * const,
-			    const gaspi_timeout_t);
-
-
-gaspi_return_t
-pgaspi_dev_notify_reset (const gaspi_segment_id_t,
-			 const gaspi_notification_id_t,
-			 gaspi_notification_t * const );
-
-gaspi_return_t
 pgaspi_dev_write_notify (const gaspi_segment_id_t,
 			 const gaspi_offset_t,
 			 const gaspi_rank_t,

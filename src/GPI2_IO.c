@@ -507,8 +507,88 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
   
 #endif
 
-  return pgaspi_dev_notify_waitsome(segment_id_local, notification_begin,
-				    num, first_id, timeout_ms);
+    volatile unsigned char *segPtr;
+  int loop = 1;
+  gaspi_notification_id_t n;
+  
+
+#ifdef GPI2_CUDA
+  if(glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].cudaDevId >=0 )
+    {
+      segPtr =  (volatile unsigned char*)glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].host_addr;
+    }
+  else
+#endif
+
+    segPtr = (volatile unsigned char *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr;
+  
+  volatile unsigned int *p = (volatile unsigned int *) segPtr;
+
+  if (timeout_ms == GASPI_BLOCK)
+    {
+      while (loop)
+	{
+	  for (n = notification_begin; n < (notification_begin + num); n++)
+	    {
+	      if (p[n])
+		{
+		  *first_id = n;
+		  loop = 0;
+		  return GASPI_SUCCESS;
+		}
+	    }
+
+	  gaspi_delay ();
+	}
+
+      return GASPI_SUCCESS;
+    }
+  else if (timeout_ms == GASPI_TEST)
+    {
+
+      for (n = notification_begin; n < (notification_begin + num); n++)
+	{
+	  if (p[n])
+	    {
+	      *first_id = n;
+	      loop = 0;
+	      return GASPI_SUCCESS;
+	    }
+	}
+
+      return GASPI_TIMEOUT;
+    }
+
+  const gaspi_cycles_t s0 = gaspi_get_cycles ();
+
+  while (loop)
+    {
+      for (n = notification_begin; n < (notification_begin + num); n++)
+	{
+	  if (p[n])
+	    {
+	      *first_id = n;
+	      loop = 0;
+	      return GASPI_SUCCESS;
+	    }
+	}
+
+      const gaspi_cycles_t s1 = gaspi_get_cycles ();
+      const gaspi_cycles_t tdelta = s1 - s0;
+
+      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+      if (ms > timeout_ms)
+	{
+	  return GASPI_TIMEOUT;
+	}
+
+      gaspi_delay ();
+    }
+
+  return GASPI_SUCCESS;
+  
+/*   return pgaspi_dev_notify_waitsome(segment_id_local, notification_begin, */
+/* 				    num, first_id, timeout_ms); */
 }
 
 
@@ -533,7 +613,26 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
   
 #endif
 
-  return pgaspi_dev_notify_reset(segment_id_local, notification_id, old_notification_val);
+    volatile unsigned char *segPtr;
+
+#ifdef GPI2_CUDA
+  if(glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].cudaDevId >= 0)
+    segPtr =  (volatile unsigned char*)glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].host_addr;
+  else
+#endif
+    segPtr = (volatile unsigned char *)
+      glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr;
+  
+  volatile unsigned int *p = (volatile unsigned int *) segPtr;
+
+  const unsigned int res = __sync_val_compare_and_swap (&p[notification_id], p[notification_id], 0);
+
+  if(old_notification_val != NULL)
+    *old_notification_val = res;
+
+  return GASPI_SUCCESS;
+
+  //  return pgaspi_dev_notify_reset(segment_id_local, notification_id, old_notification_val);
 }
 
 
