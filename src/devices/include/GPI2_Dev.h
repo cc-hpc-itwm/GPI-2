@@ -178,11 +178,6 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t,
 				const gaspi_atomic_value_t,
 				gaspi_atomic_value_t * const);
 
-
-gaspi_return_t
-pgaspi_dev_passive_transfer_size_max (gaspi_size_t * const);
-
-
 gaspi_return_t
 pgaspi_dev_passive_send (const gaspi_segment_id_t,
 			 const gaspi_offset_t,
