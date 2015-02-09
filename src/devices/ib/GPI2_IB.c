@@ -34,6 +34,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_IB.h"
 
 /* Globals */
+/* TODO: to remove */
 extern gaspi_config_t glb_gaspi_cfg;
 
 static char *port_state_str[] = {
@@ -270,8 +271,10 @@ pgaspi_dev_init_core ()
 	  
 	  glb_gaspi_ctx_ib.ib_port = 2;
 	}
-      
-      if(!glb_gaspi_cfg.user_net){//user didnt choose something, so we use network type of first active port
+
+      /* user didnt choose something, so we use network type of first active port */
+      if(!glb_gaspi_cfg.user_net)
+	{
 	
 	if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_INFINIBAND) glb_gaspi_cfg.network = GASPI_IB;
 	else if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_ETHERNET) glb_gaspi_cfg.network = GASPI_ETHERNET;
@@ -300,7 +303,7 @@ pgaspi_dev_init_core ()
 	  }
 	}
       
-    }//if(glb_gaspi_cfg.port_check)
+    }/* if(glb_gaspi_cfg.port_check) */
   else
     {
       glb_gaspi_ctx_ib.ib_port = 1;
@@ -509,13 +512,13 @@ pgaspi_dev_init_core ()
   return 0;
 }
 
-//TODO: match return values
+/* TODO: match return values */
 int
 pgaspi_dev_create_endpoint(const int i)
 {
   int c;
 
-  //create
+  /* Set attributes */
   struct ibv_qp_init_attr qpi_attr;
   memset (&qpi_attr, 0, sizeof (struct ibv_qp_init_attr));
   qpi_attr.cap.max_send_wr = glb_gaspi_cfg.queue_depth;
@@ -685,7 +688,7 @@ pgaspi_dev_connect_context(const int i)
       goto errL;
   };
   
-  //ready2recv
+  /* ready2recv */
   qp_attr.qp_state = IBV_QPS_RTR;
   qp_attr.dest_qp_num = glb_gaspi_ctx_ib.remote_info[i].qpnGroup; 
   qp_attr.rq_psn = glb_gaspi_ctx_ib.remote_info[i].psn;
@@ -756,7 +759,7 @@ pgaspi_dev_connect_context(const int i)
       goto errL;
     }
   
-  //ready2send
+  /* ready2send */
   qp_attr.timeout = GASPI_QP_TIMEOUT;
   qp_attr.retry_cnt = GASPI_QP_RETRY;
   qp_attr.rnr_retry = GASPI_QP_RETRY;
@@ -818,7 +821,7 @@ pgaspi_dev_cleanup_core ()
 {
   int i, c;
 
-  //TODO: single loop should be enough
+  /* TODO: single loop should be enough */
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
       if(glb_gaspi_ctx.ep_conn[i].istat == 0)      
@@ -884,11 +887,6 @@ pgaspi_dev_cleanup_core ()
       glb_gaspi_ctx_ib.qpC[c] = NULL;
     }
 
-  if(ibv_destroy_srq (glb_gaspi_ctx_ib.srqP))
-    {
-      gaspi_print_error ("Failed to destroy SRQ (libibverbs)");
-      return -1;
-    }
 
   if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqGroups))
     {
@@ -911,6 +909,12 @@ pgaspi_dev_cleanup_core ()
   if(ibv_destroy_cq (glb_gaspi_ctx_ib.rcqP))
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
+      return -1;
+    }
+
+  if(ibv_destroy_srq (glb_gaspi_ctx_ib.srqP))
+    {
+      gaspi_print_error ("Failed to destroy SRQ (libibverbs)");
       return -1;
     }
   
