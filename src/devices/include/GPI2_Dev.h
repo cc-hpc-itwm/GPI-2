@@ -35,13 +35,6 @@ pgaspi_dev_get_lrcd(int);
 inline size_t
 pgaspi_dev_get_sizeof_rc();
 
-//TODO: following 2 functions should go away
-gaspi_return_t
-pgaspi_dev_group_register_mem (const int, const unsigned int);
-
-gaspi_return_t
-pgaspi_dev_group_deregister_mem (const int);
-
 /* Groups */
 int
 pgaspi_dev_poll_groups();
@@ -68,10 +61,10 @@ int
 pgaspi_dev_cleanup_core();
 
 int
-pgaspi_dev_register_mem(const gaspi_segment_id_t, const gaspi_size_t);
+pgaspi_dev_register_mem(gaspi_rc_mseg *, const gaspi_size_t);
 
 int
-pgaspi_dev_unregister_mem(const gaspi_segment_id_t);
+pgaspi_dev_unregister_mem(const gaspi_rc_mseg *);
 
 int
 pgaspi_dev_connect_context(const int);

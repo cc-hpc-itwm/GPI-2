@@ -213,7 +213,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].ptr, 0,
 	    size + NOTIFY_OFFSET);
 
-  if(pgaspi_dev_register_mem(segment_id, size) < 0)
+  if(pgaspi_dev_register_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank]), size + NOTIFY_OFFSET) < 0)
     {
       goto endL;
     }
@@ -268,7 +268,7 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 #ifdef GPI2_CUDA  
   eret = pgaspi_dev_segment_delete(segment_id);
 #else
-  if(pgaspi_dev_unregister_mem(segment_id) < 0)
+  if(pgaspi_dev_unregister_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank])) < 0)
     {
       unlock_gaspi (&gaspi_mseg_lock);
       return GASPI_ERROR;

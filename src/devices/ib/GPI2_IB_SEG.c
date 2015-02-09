@@ -34,33 +34,32 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_SN.h"
 
 int
-pgaspi_dev_register_mem(const gaspi_segment_id_t segment_id, const gaspi_size_t size)
+pgaspi_dev_register_mem(gaspi_rc_mseg *seg, const gaspi_size_t size)
 {
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr =
+  seg->mr =
     ibv_reg_mr (glb_gaspi_ctx_ib.pd,
-		glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf,
-		size + NOTIFY_OFFSET,
+		seg->buf,
+		size,
 		IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
 		IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
 
-  if (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr == NULL) 
+  if (seg->mr == NULL) 
     {
       gaspi_print_error ("Memory registration failed (libibverbs)");
       return -1;
     }
 
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey =
-    ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr)->rkey;
-
+  seg->rkey =
+    ((struct ibv_mr *) seg->mr)->rkey;
 
   return 0;
 }
 
 int
-pgaspi_dev_unregister_mem(const gaspi_segment_id_t segment_id)
+pgaspi_dev_unregister_mem(const gaspi_rc_mseg * seg)
 {
  
-  if (ibv_dereg_mr ((struct ibv_mr *)glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr))
+  if (ibv_dereg_mr ((struct ibv_mr *)seg->mr))
     {
       gaspi_print_error ("Memory de-registration failed (libibverbs)");
       return -1;

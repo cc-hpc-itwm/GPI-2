@@ -655,7 +655,7 @@ void *gaspi_sn_backend(void *arg)
 				else if(mgmt->cdh.op==GASPI_SN_GRP_CONNECT)
 				  {
 				    int done = 0;
-				    int len = sizeof (gaspi_rc_grp);
+				    int len = sizeof (gaspi_rc_mseg);
 				    char *ptr = (char*)&glb_gaspi_group_ctx[mgmt->cdh.ret].rrcd[glb_gaspi_ctx.rank];
 				    
 				    while(done < len)

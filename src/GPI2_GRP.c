@@ -68,16 +68,25 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   page_size = sysconf (_SC_PAGESIZE);
 
-  if (posix_memalign ((void **) &glb_gaspi_group_ctx[id].ptr, page_size, size)
+  glb_gaspi_group_ctx[id].rrcd = (gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+  if(glb_gaspi_group_ctx[id].rrcd == NULL)
+    goto errL;
+  
+  memset (glb_gaspi_group_ctx[id].rrcd, 0, glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+  
+  if (posix_memalign ((void **) &glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].ptr, page_size, size)
       != 0)
     {
       gaspi_print_error ("Memory allocation (posix_memalign) failed");
       goto errL;
     }
+  
+  glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].addr =
+    (uintptr_t) glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].buf;
+  
+  memset (glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].buf, 0, size);
 
-  memset (glb_gaspi_group_ctx[id].buf, 0, size);
-
-  glb_gaspi_group_ctx[id].size = size;
+  glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].size = size;
   glb_gaspi_group_ctx[id].id = id;
   glb_gaspi_group_ctx[id].gl.lock = 0;
   glb_gaspi_group_ctx[id].togle = 0;
@@ -95,17 +104,7 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  glb_gaspi_group_ctx[id].rrcd = (gaspi_rc_grp *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
-  if(glb_gaspi_group_ctx[id].rrcd == NULL)
-    goto errL;
-  
-  memset (glb_gaspi_group_ctx[id].rrcd, 0,
-	  glb_gaspi_ctx.tnc * sizeof (gaspi_rc_grp));
-  
-  glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].vaddrGroup =
-    (uintptr_t) glb_gaspi_group_ctx[id].buf;
-
-  eret = pgaspi_dev_group_register_mem(id, size);
+  eret = pgaspi_dev_register_mem(&(glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank]), size);
   if(eret != GASPI_SUCCESS)
     {
       goto errL;
@@ -154,12 +153,12 @@ pgaspi_group_delete (const gaspi_group_t group)
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  eret = pgaspi_dev_group_deregister_mem(group);
+  eret = pgaspi_dev_unregister_mem(&(glb_gaspi_group_ctx[group].rrcd[glb_gaspi_ctx.rank]));
   if(eret != GASPI_SUCCESS)
     goto errL;
   
-  free (glb_gaspi_group_ctx[group].buf);
-  glb_gaspi_group_ctx[group].buf = NULL;
+  free (glb_gaspi_group_ctx[group].rrcd[glb_gaspi_ctx.rank].buf);
+  glb_gaspi_group_ctx[group].rrcd[glb_gaspi_ctx.rank].buf = NULL;
 
   if (glb_gaspi_group_ctx[group].rank_grp)
     free (glb_gaspi_group_ctx[group].rank_grp);
@@ -383,7 +382,7 @@ pgaspi_group_commit (const gaspi_group_t group,
 	    { 
 	      //connect groups
 	      gaspi_cd_header cdh;
-	      cdh.op_len = sizeof(gaspi_rc_grp);
+	      cdh.op_len = sizeof(gaspi_rc_mseg);
 	      cdh.op = GASPI_SN_GRP_CONNECT;
 	      cdh.rank = glb_gaspi_ctx.rank;
 	      cdh.ret = group;
@@ -404,14 +403,14 @@ pgaspi_group_commit (const gaspi_group_t group,
 	    
 	      ret=read(glb_gaspi_ctx.sockfd[glb_gaspi_group_ctx[group].rank_grp[i]],
 		       &glb_gaspi_group_ctx[group].rrcd[glb_gaspi_group_ctx[group].rank_grp[i]],
-		       sizeof(gaspi_rc_grp));
+		       sizeof(gaspi_rc_mseg));
 
-	      if(ret != sizeof(gaspi_rc_grp))
+	      if(ret != sizeof(gaspi_rc_mseg))
 		{
 		  gaspi_print_error("Failed to read (%d %p %lu)",
 				    glb_gaspi_ctx.sockfd[glb_gaspi_group_ctx[group].rank_grp[i]],
 				    &glb_gaspi_group_ctx[group].rrcd[glb_gaspi_group_ctx[group].rank_grp[i]],
-				    sizeof(gaspi_rc_grp));
+				    sizeof(gaspi_rc_mseg));
 		
 		  glb_gaspi_ctx.qp_state_vec[GASPI_SN][glb_gaspi_group_ctx[group].rank_grp[i]] = 1;
 		  eret = GASPI_ERROR;
@@ -580,11 +579,11 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       glb_gaspi_group_ctx[g].barrier_cnt++;
     }
 
-  unsigned char *barrier_ptr = glb_gaspi_group_ctx[g].buf + 2 * size + glb_gaspi_group_ctx[g].togle;
+  unsigned char *barrier_ptr = glb_gaspi_group_ctx[g].rrcd[glb_gaspi_ctx.rank].buf + 2 * size + glb_gaspi_group_ctx[g].togle;
 
   barrier_ptr[0] = glb_gaspi_group_ctx[g].barrier_cnt;
 
-  volatile unsigned char *rbuf = (volatile unsigned char *) (glb_gaspi_group_ctx[g].buf);
+  volatile unsigned char *rbuf = (volatile unsigned char *) (glb_gaspi_group_ctx[g].rrcd[glb_gaspi_ctx.rank].buf);
 
   const int rank = glb_gaspi_group_ctx[g].rank;
   int mask = glb_gaspi_group_ctx[g].lastmask&0x7fffffff;
@@ -604,7 +603,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	}
 
       if(pgaspi_dev_post_group_write((void *)barrier_ptr, 1, dst,
-				     (void *) (glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle)),
+				     (void *) (glb_gaspi_group_ctx[g].rrcd[dst].addr + (2 * rank + glb_gaspi_group_ctx[g].togle)),
 				     g) != 0)
 	{
 	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -713,16 +712,16 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
   const int size = glb_gaspi_group_ctx[g].tnc;
   const int rank = glb_gaspi_group_ctx[g].rank;
 
-  unsigned char *barrier_ptr = glb_gaspi_group_ctx[g].buf + 2 * size + glb_gaspi_group_ctx[g].togle;
+  unsigned char *barrier_ptr = glb_gaspi_group_ctx[g].rrcd[glb_gaspi_ctx.rank].buf + 2 * size + glb_gaspi_group_ctx[g].togle;
   barrier_ptr[0] = glb_gaspi_group_ctx[g].barrier_cnt;
 
-  volatile unsigned char *poll_buf = (volatile unsigned char *) (glb_gaspi_group_ctx[g].buf);
+  volatile unsigned char *poll_buf = (volatile unsigned char *) (glb_gaspi_group_ctx[g].rrcd[glb_gaspi_ctx.rank].buf);
 
-  unsigned char *send_ptr = glb_gaspi_group_ctx[g].buf + COLL_MEM_SEND + (glb_gaspi_group_ctx[g].togle * 18 * 2048);
+  unsigned char *send_ptr = glb_gaspi_group_ctx[g].rrcd[glb_gaspi_ctx.rank].buf + COLL_MEM_SEND + (glb_gaspi_group_ctx[g].togle * 18 * 2048);
   memcpy (send_ptr, buf_send, dsize);
 
-  unsigned char *recv_ptr = glb_gaspi_group_ctx[g].buf + COLL_MEM_RECV;
-
+  unsigned char *recv_ptr = glb_gaspi_group_ctx[g].rrcd[glb_gaspi_ctx.rank].buf + COLL_MEM_RECV;
+    
   const int rest = size - glb_gaspi_group_ctx[g].next_pof2;
 
   const gaspi_cycles_t s0 = gaspi_get_cycles();
@@ -748,7 +747,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	  if(pgaspi_dev_post_group_write(send_ptr,
 					 dsize,
 					 dst,
-					 glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
+					 glb_gaspi_group_ctx[g].rrcd[dst].addr + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
 					 g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -759,7 +758,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	    }
 
 	  if(pgaspi_dev_post_group_write(barrier_ptr, 1, dst,
-					 glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle),
+					 glb_gaspi_group_ctx[g].rrcd[dst].addr + (2 * rank + glb_gaspi_group_ctx[g].togle),
 					 g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -850,7 +849,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	    }
 
 	  if(pgaspi_dev_post_group_write(send_ptr, dsize, dst,
-					 glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
+					 glb_gaspi_group_ctx[g].rrcd[dst].addr + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
 					 g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -861,7 +860,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	    }
 
 	  if(pgaspi_dev_post_group_write(barrier_ptr, 1, dst,
-					 glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle),
+					 glb_gaspi_group_ctx[g].rrcd[dst].addr + (2 * rank + glb_gaspi_group_ctx[g].togle),
 					 g) != 0)
 	    {
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -926,7 +925,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	dst = glb_gaspi_group_ctx[g].rank_grp[rank - 1];
 
 	if(pgaspi_dev_post_group_write(send_ptr, dsize, dst,
-				       glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
+				       glb_gaspi_group_ctx[g].rrcd[dst].addr + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048),
 				       g) != 0)
 	  {
 	    glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
@@ -937,7 +936,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	  }
 
 	if(pgaspi_dev_post_group_write(barrier_ptr, 1, dst,
-				       glb_gaspi_group_ctx[g].rrcd[dst].vaddrGroup + (2 * rank + glb_gaspi_group_ctx[g].togle),
+				       glb_gaspi_group_ctx[g].rrcd[dst].addr + (2 * rank + glb_gaspi_group_ctx[g].togle),
 				       g) != 0)
 	  {
 	    glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;

@@ -26,39 +26,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 
 /* Group utilities */
-/* TODO: merge this with gaspi_dev_register_mem */
-gaspi_return_t
-pgaspi_dev_group_register_mem (const int id, const unsigned int size)
-{
-  glb_gaspi_group_ctx[id].mr =ibv_reg_mr (glb_gaspi_ctx_ib.pd, glb_gaspi_group_ctx[id].buf, size,
-					 IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
-					 IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
-  
-  if (glb_gaspi_group_ctx[id].mr == NULL)
-    {
-      gaspi_print_error ("Memory registration failed (libibverbs)");
-      return GASPI_ERROR;
-    }
-
-  
-  glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].rkeyGroup =
-    ((struct ibv_mr *)glb_gaspi_group_ctx[id].mr)->rkey;
-
-  return GASPI_SUCCESS;
-}
-				 
-gaspi_return_t
-pgaspi_dev_group_deregister_mem (const int id)
-{
-  if (ibv_dereg_mr ((struct ibv_mr *)glb_gaspi_group_ctx[id].mr))
-    {
-      gaspi_print_error ("Memory de-registration failed (libibverbs)");
-      return GASPI_ERROR;
-    }
-
-  return GASPI_SUCCESS;
-}
-
 int
 pgaspi_dev_poll_groups()
 {
@@ -94,7 +61,7 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
 
   slist.addr = (uintptr_t) local_addr;
   slist.length = length;
-  slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ctx[group].mr)->lkey;
+  slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ctx[group].rrcd[glb_gaspi_ctx.rank].mr)->lkey;
 
   swr.sg_list = &slist;
   swr.num_sge = 1;
@@ -103,7 +70,7 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
   swr.next = NULL;
 
   swr.wr.rdma.remote_addr = (uint64_t) remote_addr;
-  swr.wr.rdma.rkey = glb_gaspi_group_ctx[group].rrcd[dst].rkeyGroup;
+  swr.wr.rdma.rkey = glb_gaspi_group_ctx[group].rrcd[dst].rkey;
   swr.wr_id = dst;
   
   if (ibv_post_send ((struct ibv_qp *) glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))

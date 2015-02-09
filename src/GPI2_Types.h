@@ -38,7 +38,6 @@ enum
 typedef struct
 {
   gaspi_rank_t rank; /* to whom */
-  /*   int ret; // Unused? */
   volatile int istat; /* created? */
   volatile int cstat; /* connected? */
 } gaspi_endpoint_conn_t;
@@ -115,19 +114,7 @@ typedef enum{
 
 typedef struct
 {
-  unsigned int rkeyGroup;
-  unsigned long vaddrGroup;
-} gaspi_rc_grp;
-
-typedef struct{
-  union
-  {
-    unsigned char *buf;
-    void *ptr;
-  };
-  void *mr;
   int id;
-  unsigned int size;
   gaspi_lock_t gl;
   volatile unsigned char barrier_cnt;
   volatile unsigned char togle;
@@ -138,7 +125,7 @@ typedef struct{
   int next_pof2;
   int pof2_exp;
   int *rank_grp;
-  gaspi_rc_grp *rrcd; //TODO: use gaspi_rc_mseg
+  gaspi_rc_mseg *rrcd;
 } gaspi_group_ctx;
 
 #endif /* _GPI2_TYPES_H_ */
