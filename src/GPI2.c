@@ -788,10 +788,16 @@ pgaspi_cleanup_core()
 	}
     }
 
-
+  
   /* Device clean-up */
   if(pgaspi_dev_cleanup_core() != GASPI_SUCCESS)
     return GASPI_ERROR;
+
+  if(glb_gaspi_ctx.hn_poff)
+    free (glb_gaspi_ctx.hn_poff);
+  
+  if (glb_gaspi_ctx.ep_conn != NULL)
+    free(glb_gaspi_ctx.ep_conn);
 
   for(i = 0; i < GASPI_MAX_QP + 3; i++)
     {
@@ -832,7 +838,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
 
       free(glb_gaspi_ctx.sockfd);
     }
-
+ 
 #ifdef GPI2_WITH_MPI
   if(glb_gaspi_ctx.rank == 0)
     {
