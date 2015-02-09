@@ -160,7 +160,7 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   cdh.op_len = (int) rc_size;
   cdh.op = GASPI_SN_CONNECT;
   cdh.rank = glb_gaspi_ctx.rank;
-  
+
   ssize_t ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
   if(ret != sizeof(gaspi_cd_header))
     {
@@ -186,7 +186,7 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
       eret = GASPI_ERROR;
       goto errL;
     }
-  
+
   if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
     {
       eret = GASPI_TIMEOUT;
@@ -745,8 +745,11 @@ pgaspi_cleanup_core()
       return GASPI_ERROR;
     }
   
-  if(pgaspi_dev_cleanup_core() != GASPI_SUCCESS)
-    return GASPI_ERROR;
+  if(pgaspi_dev_unregister_mem(&(glb_gaspi_ctx.nsrc)) != 0)
+    {
+      gaspi_print_error ("Failed to de-register internal memory");
+      return -1;
+    }
 
   if(glb_gaspi_ctx.nsrc.buf)
     {
@@ -754,6 +757,35 @@ pgaspi_cleanup_core()
     }
   
   glb_gaspi_ctx.nsrc.buf = NULL;
+
+  for(i = 0; i < GASPI_MAX_GROUPS; i++)
+    {
+      if(glb_gaspi_group_ctx[i].id >= 0)
+	{
+	  if(pgaspi_dev_unregister_mem(&(glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank])) != 0)
+	    {
+	      gaspi_print_error ("Failed to de-register group memory");
+	      return -1;
+	    }
+
+	  if(glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf)
+	    {
+	      free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf);
+	    }
+
+	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf = NULL;
+
+	  if(glb_gaspi_group_ctx[i].rrcd)
+	    {
+	      free (glb_gaspi_group_ctx[i].rrcd);
+	    }
+	  glb_gaspi_group_ctx[i].rrcd = NULL;
+	}
+    }
+
+  /* Device clean-up */
+  if(pgaspi_dev_cleanup_core() != GASPI_SUCCESS)
+    return GASPI_ERROR;
 
   for(i = 0; i < GASPI_MAX_QP + 3; i++)
     {

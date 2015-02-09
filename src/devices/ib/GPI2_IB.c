@@ -922,32 +922,8 @@ pgaspi_dev_cleanup_core ()
 	  return -1;
 	}
     }
-  
-  for(i = 0; i < GASPI_MAX_GROUPS; i++)
-    {
-      if(glb_gaspi_group_ctx[i].id >= 0)
-	{
-	  if(ibv_dereg_mr (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].mr))
-	    {  
-	      gaspi_print_error ("Failed to de-register memory (libiverbs)");
-	      return -1;
-	    }
 
-	  if(glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf)
-	    {
-	      free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf);
-	    }
-	  
-	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf = NULL;
-	  
-	  if(glb_gaspi_group_ctx[i].rrcd)
-	    {
-	      free (glb_gaspi_group_ctx[i].rrcd);
-	    }
-	  glb_gaspi_group_ctx[i].rrcd = NULL;
-	}
-    }
-  
+/*  TODO: to remove from here <<< LOOP*/
   for(i = 0; i < 256; i++)
     {
       if(glb_gaspi_ctx.rrmd[i] != NULL)
@@ -997,14 +973,8 @@ pgaspi_dev_cleanup_core ()
 	  glb_gaspi_ctx.rrmd[i] = NULL;
 	}
     }
-
-  //dereg nsrc 
-  if(ibv_dereg_mr(glb_gaspi_ctx.nsrc.mr))
-    {
-      gaspi_print_error("Failed to de-register memory (libiverbs)");
-      return -1;
-    }
-
+  /*>>> LOOP */
+  
   if(ibv_dealloc_pd (glb_gaspi_ctx_ib.pd))
     {
       gaspi_print_error("Failed to de-allocate protection domain (libibverbs)");
