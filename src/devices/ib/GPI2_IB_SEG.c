@@ -36,12 +36,11 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 int
 pgaspi_dev_register_mem(gaspi_rc_mseg *seg, const gaspi_size_t size)
 {
-  seg->mr =
-    ibv_reg_mr (glb_gaspi_ctx_ib.pd,
-		seg->buf,
-		size,
-		IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
-		IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
+  seg->mr = ibv_reg_mr (glb_gaspi_ctx_ib.pd,
+			seg->buf,
+			size,
+			IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
+			IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
 
   if (seg->mr == NULL) 
     {
@@ -49,8 +48,7 @@ pgaspi_dev_register_mem(gaspi_rc_mseg *seg, const gaspi_size_t size)
       return -1;
     }
 
-  seg->rkey =
-    ((struct ibv_mr *) seg->mr)->rkey;
+  seg->rkey = ((struct ibv_mr *) seg->mr)->rkey;
 
   return 0;
 }

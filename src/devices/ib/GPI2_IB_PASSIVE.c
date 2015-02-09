@@ -40,7 +40,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
     goto checkL;
 
   slist.addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
-		 NOTIFY_OFFSET + offset_local);
+			    NOTIFY_OFFSET + offset_local);
   slist.length = size;
   slist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr)->lkey;
 
@@ -58,9 +58,9 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
       return GASPI_ERROR;
     }
 
-    passive_counter[byte_id] |= bit_cmp;
+  passive_counter[byte_id] |= bit_cmp;
 
-checkL:
+ checkL:
 
   s0 = gaspi_get_cycles ();
 
@@ -97,9 +97,9 @@ checkL:
 
 gaspi_return_t
 pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
-		       const gaspi_offset_t offset_local,
-		       gaspi_rank_t * const rem_rank, const gaspi_size_t size,
-		       const gaspi_timeout_t timeout_ms)
+			    const gaspi_offset_t offset_local,
+			    gaspi_rank_t * const rem_rank, const gaspi_size_t size,
+			    const gaspi_timeout_t timeout_ms)
 {
 
   struct ibv_recv_wr *bad_wr;
@@ -124,7 +124,6 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
 
   if (ibv_post_srq_recv (glb_gaspi_ctx_ib.srqP, &rwr, &bad_wr))
     {
-
       return GASPI_ERROR;
     }
 
