@@ -310,8 +310,7 @@ pgaspi_init_core()
 
   memset(glb_gaspi_ctx.nsrc.buf, 0, size);
   
-  /* TODO: magic numbers */
-  for(i = 0; i < 256; i++)
+  for(i = 0; i < GASPI_MAX_MSEGS; i++)
     {
       glb_gaspi_ctx.rrmd[i] = NULL;
     }
@@ -670,7 +669,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	      return GASPI_ERROR;
 	    }
 	}
-      
+
       //create GASPI_GROUP_ALL
       if(glb_gaspi_group_ctx[GASPI_GROUP_ALL].id == -1)
 	{

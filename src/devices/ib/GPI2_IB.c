@@ -928,7 +928,7 @@ pgaspi_dev_cleanup_core ()
     }
 
 /*  TODO: to remove from here <<< LOOP*/
-  for(i = 0; i < 256; i++)
+  for(i = 0; i < GASPI_MAX_MSEGS; i++)
     {
       if(glb_gaspi_ctx.rrmd[i] != NULL)
 	{

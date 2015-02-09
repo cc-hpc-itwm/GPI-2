@@ -94,7 +94,7 @@ typedef struct
 #endif
 
   gaspi_rc_mseg nsrc;
-  gaspi_rc_mseg *rrmd[256];
+  gaspi_rc_mseg *rrmd[GASPI_MAX_MSEGS];
 
   gaspi_endpoint_conn_t *ep_conn;
 

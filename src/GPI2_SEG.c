@@ -125,9 +125,8 @@ pgaspi_segment_list (const gaspi_number_t num,
     }
 #endif
   
-  //TODO: 256 -> readable
   //TODO: data race to glb_gaspi_ctx.mseg_cnt
-  for (i = 0; i < 256; i++)
+  for (i = 0; i < GASPI_MAX_MSEGS; i++)
     {
       if(glb_gaspi_ctx.rrmd[(gaspi_segment_id_t)i] != NULL)
 	segment_id_list[idx++] = (gaspi_segment_id_t) i;
