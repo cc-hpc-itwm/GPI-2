@@ -161,32 +161,37 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   cdh.op = GASPI_SN_CONNECT;
   cdh.rank = glb_gaspi_ctx.rank;
 
-  ssize_t ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
-  if(ret != sizeof(gaspi_cd_header))
+  /* if we have something to exchange */
+  if(rc_size > 0 )
     {
-      gaspi_print_error("Failed to write to %d", i);
       
-      eret = GASPI_ERROR;
-      goto errL;
+      ssize_t ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
+      if(ret != sizeof(gaspi_cd_header))
+	{
+	  gaspi_print_error("Failed to write to %d", i);
+      
+	  eret = GASPI_ERROR;
+	  goto errL;
+	}
+  
+      ret = write(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
+      if(ret != (ssize_t) rc_size)
+	{
+	  gaspi_print_error("Failed to write to %d", i);
+      
+	  eret = GASPI_ERROR;
+	  goto errL;
+	}
+  
+      ret = read(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_rrcd(i), rc_size);
+      if(ret != (ssize_t) rc_size)
+	{
+	  gaspi_print_error("Failed to read from %d", i);
+	  eret = GASPI_ERROR;
+	  goto errL;
+	}
     }
   
-  ret = write(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
-  if(ret != (ssize_t) rc_size)
-    {
-      gaspi_print_error("Failed to write to %d", i);
-      
-      eret = GASPI_ERROR;
-      goto errL;
-    }
-  
-  ret = read(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_rrcd(i), rc_size);
-  if(ret != (ssize_t) rc_size)
-    {
-      gaspi_print_error("Failed to read from %d", i);
-      eret = GASPI_ERROR;
-      goto errL;
-    }
-
   if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
     {
       eret = GASPI_TIMEOUT;
@@ -245,7 +250,7 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
-  /* Not connected */
+  /* Not connected? */
   /*  TODO: error or success? atm, error */
   if(glb_gaspi_ctx.ep_conn[i].cstat == 0) 
     goto errL;
@@ -744,7 +749,7 @@ pgaspi_cleanup_core()
     {
       return GASPI_ERROR;
     }
-  
+
   if(pgaspi_dev_unregister_mem(&(glb_gaspi_ctx.nsrc)) != 0)
     {
       gaspi_print_error ("Failed to de-register internal memory");
@@ -782,6 +787,7 @@ pgaspi_cleanup_core()
 	  glb_gaspi_group_ctx[i].rrcd = NULL;
 	}
     }
+
 
   /* Device clean-up */
   if(pgaspi_dev_cleanup_core() != GASPI_SUCCESS)
