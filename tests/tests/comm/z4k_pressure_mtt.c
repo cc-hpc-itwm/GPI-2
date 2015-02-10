@@ -92,7 +92,8 @@ static void * thread_function(void * arg)
       {
 	gaspi_printf("THREAD %d:size %d\n",arg_ptr->threadID,size);
 
-
+	ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+	
 	//fill randoms on 1024 first positions
 	for(j=offset_write_init / 4;j < (offset_write_init /4) + RANDNUM  ;j++)
 	  {
@@ -215,7 +216,7 @@ static void * thread_void_function(void * arg)
   while(1)
     {
       ASSERT (gaspi_read(0, offset_void, (myrank + 1) % highestnode, 
-			 0, offset_void, GB, 6, GASPI_BLOCK));
+			 0, offset_void, _2MB, 6, GASPI_BLOCK));
       ASSERT (gaspi_wait(6, GASPI_BLOCK));
       sleep(3);    
     }
@@ -283,8 +284,8 @@ int main(int argc, char *argv[])
       t_check_args[i].threadID = i;
       thread_check[i] = pthread_create(&ptr_check[i],NULL,&thread_function,&t_check_args[i]);
       
-      t_void_args[i].threadID= i; 
-      thread_void[i] = pthread_create(&ptr_void[i],NULL,&thread_void_function,&t_void_args[i]); 
+/*       t_void_args[i].threadID= i;  */
+/*       thread_void[i] = pthread_create(&ptr_void[i],NULL,&thread_void_function,&t_void_args[i]);  */
     }
 
   //wait for threads   
@@ -294,8 +295,8 @@ int main(int argc, char *argv[])
     }
   
   //cancel dummy threads
-  for(i = 0; i < NUMTHREADS; i++) 
-    pthread_cancel(ptr_void[i]); 
+/*   for(i = 0; i < NUMTHREADS; i++)  */
+/*     pthread_cancel(ptr_void[i]);  */
 
   gaspi_printf("Waiting to finish...\n");
 

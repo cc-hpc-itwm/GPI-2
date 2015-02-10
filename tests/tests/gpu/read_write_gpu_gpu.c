@@ -3,11 +3,7 @@
 
 #include <test_utils.h>
 #include <GASPI_GPU.h>
-#define _4GB 4294967296
-#define _2GB 2147483648
-#define _500MB 524288000
-#define _8MB 8388608
-#define _128MB 134217728
+
 int main(int argc, char *argv[])
 {
   gaspi_rank_t numranks, myrank;

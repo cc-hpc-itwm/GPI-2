@@ -3,8 +3,6 @@
 
 #include <test_utils.h>
 
-#define _4GB 4294967296
-#define _2GB 2147483648
 int main(int argc, char *argv[])
 {
   gaspi_rank_t numranks, myrank;
@@ -18,7 +16,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_num(&numranks));
   ASSERT (gaspi_proc_rank(&myrank));
 
-  ASSERT (gaspi_segment_create(0, _2GB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
+  ASSERT (gaspi_segment_create(0, _128MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
   ASSERT( gaspi_segment_size(0, myrank, &segSize));
 
@@ -26,8 +24,8 @@ int main(int argc, char *argv[])
 
   //  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  gaspi_offset_t localOff= 814780664;
-  gaspi_offset_t remOff = 81478246;
+  gaspi_offset_t localOff = 81478066;
+  gaspi_offset_t remOff   = 81478246;
   gaspi_offset_t size = 1800;
   gaspi_number_t queueSize, qmax;
 

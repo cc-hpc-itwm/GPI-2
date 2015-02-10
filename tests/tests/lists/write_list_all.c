@@ -16,8 +16,8 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_rank(&myrank));
 
   //2 segments
-  ASSERT (gaspi_segment_create(0, _2GB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
-  ASSERT (gaspi_segment_create(1, _2GB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
+  ASSERT (gaspi_segment_create(0, _500MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
+  ASSERT (gaspi_segment_create(1, _500MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
   //construct list of n elems
   gaspi_number_t i, n, max;

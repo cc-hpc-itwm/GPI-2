@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_rank(&myrank));
 
 
-  ASSERT (gaspi_segment_create(0, _2GB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
+  ASSERT (gaspi_segment_create(0, _128MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
   //prepare memory segment
   gaspi_pointer_t _vptr;
@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
   int *mem = (int *) _vptr;
 
   int i;
-  const  unsigned long maxInts = _2GB / sizeof(int);
+  const  unsigned long maxInts = _128MB / sizeof(int);
 
   for(i = 0; i < maxInts; i++)
     {

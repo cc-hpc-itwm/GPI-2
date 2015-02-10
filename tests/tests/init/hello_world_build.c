@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
 
   int i;
 
+ 
   gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK);
 
   ASSERT (gaspi_proc_term(GASPI_BLOCK));

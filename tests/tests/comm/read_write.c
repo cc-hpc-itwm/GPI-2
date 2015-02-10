@@ -3,11 +3,6 @@
 
 #include <test_utils.h>
 
-#define _4GB 4294967296
-#define _2GB 2147483648
-#define _500MB 524288000
-#define _8MB 8388608
-
 int main(int argc, char *argv[])
 {
   gaspi_rank_t numranks, myrank;
@@ -18,7 +13,7 @@ int main(int argc, char *argv[])
   const  gaspi_offset_t localOff_w = _2GB / 2 ;
   const gaspi_offset_t remOff_w = _2GB / 2;
   gaspi_number_t queueSize, qmax;
-  const gaspi_size_t commSize = _500MB;
+  const gaspi_size_t commSize = _8MB;
   int i;
 
   TSUITE_INIT(argc, argv);

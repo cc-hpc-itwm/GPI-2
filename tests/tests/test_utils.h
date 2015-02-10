@@ -30,8 +30,11 @@ static gaspi_config_t tsuite_default_config =
 
 #define _4GB 4294967296
 #define _2GB 2147483648
+#define _2MB 2097152
+#define _8MB 8388608
+#define _128MB 134217728  
+#define _500MB 524288000
 
-  
 
 void tsuite_init(int argc, char *argv[]);
 void success_or_exit ( const char* file, const int line, const int ec);

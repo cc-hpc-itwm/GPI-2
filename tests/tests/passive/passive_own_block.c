@@ -5,8 +5,6 @@
 #include <GASPI_Threads.h>
 #include <test_utils.h>
 
-#define _4GB 4294967296
-
 #define RECV_OFF 1024
 
 void * recvThread(void * arg)
@@ -16,6 +14,8 @@ void * recvThread(void * arg)
   int * memArray = (int *) arg;
 
   gaspi_return_t ret = GASPI_ERROR;
+  int tid;
+  ASSERT (gaspi_threads_register(&tid));
 
   do
     {
@@ -29,6 +29,8 @@ void * recvThread(void * arg)
   if( memArray[recvPos] != 11223344 )
     gaspi_printf("Wrong value!\n");
 
+  gaspi_threads_sync();
+  
   return NULL;
 }
 
@@ -41,14 +43,14 @@ int main(int argc, char *argv[])
   ASSERT(gaspi_threads_init_user(2));
 
   int tid;
-  ASSERT(gaspi_threads_get_tid(&tid));
+  ASSERT (gaspi_threads_register(&tid));
 
   gaspi_rank_t P, myrank;
 
   ASSERT (gaspi_proc_num(&P));
   ASSERT (gaspi_proc_rank(&myrank));
 
-  ASSERT (gaspi_segment_create(0, _4GB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
+  ASSERT (gaspi_segment_create(0, _2MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   int * int_GlbMem;
@@ -72,6 +74,7 @@ int main(int argc, char *argv[])
     }
   while (ret != GASPI_SUCCESS);
 
+  gaspi_threads_sync();  
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 

@@ -44,5 +44,3 @@ int main(int argc, char *argv[])
 
   return EXIT_SUCCESS;
 }
-
-  //test where node doesn't add itself

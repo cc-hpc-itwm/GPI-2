@@ -6,8 +6,6 @@
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define GPIQueue1 1
 
-#define _4GB 4294967296
-
 int main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
@@ -22,10 +20,9 @@ int main(int argc, char *argv[])
 
   gaspi_printf("P = %d N = %lu\n", P, N);
   
-  gaspi_printf("Seg size: %lu MB\n",  MAX (_4GB, 2 * ((N/P) * N * 2 * sizeof (double)))/1024/1024);
+  gaspi_printf("Seg size: %lu MB\n",  MAX (_128MB, 2 * ((N/P) * N * 2 * sizeof (double)))/1024/1024);
   
-  if(gaspi_segment_create(0,
-			  MAX (_4GB, 2 * ((N/P) * N * 2 * sizeof (double))),
+  if(gaspi_segment_create(0, MAX (_4GB, 2 * ((N/P) * N * 2 * sizeof (double))),
 			  GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED) != GASPI_SUCCESS){
     gaspi_printf("Failed to create segment\n");
     return -1;

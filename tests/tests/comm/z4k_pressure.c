@@ -62,6 +62,8 @@ int main(int argc, char *argv[])
 #ifdef FLOAT
       srand48((unsigned) time(0));
 #endif
+      ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+
       //clean
       for(j = 0; j < (memSize / 4); j++)
 	mptr[j]= 0;

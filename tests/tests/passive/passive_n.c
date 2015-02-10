@@ -3,7 +3,6 @@
 
 #include <test_utils.h>
 
-#define _4GB 4294967296
 
 int main(int argc, char *argv[])
 {
@@ -16,7 +15,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_num(&P));
   ASSERT (gaspi_proc_rank(&myrank));
 
-  ASSERT(gaspi_segment_create(0,_4GB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
+  ASSERT(gaspi_segment_create(0, _2MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
