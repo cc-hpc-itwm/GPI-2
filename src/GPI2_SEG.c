@@ -125,11 +125,11 @@ pgaspi_segment_list (const gaspi_number_t num,
     }
 #endif
   
-  //TODO: data race to glb_gaspi_ctx.mseg_cnt
   for (i = 0; i < GASPI_MAX_MSEGS; i++)
     {
-      if(glb_gaspi_ctx.rrmd[(gaspi_segment_id_t)i] != NULL)
-	segment_id_list[idx++] = (gaspi_segment_id_t) i;
+      if(glb_gaspi_ctx.rrmd[(gaspi_segment_id_t) i] != NULL )
+	if(glb_gaspi_ctx.rrmd[(gaspi_segment_id_t) i][glb_gaspi_ctx.rank].trans)
+	  segment_id_list[idx++] = (gaspi_segment_id_t) i;
     }
 
   if (idx != glb_gaspi_ctx.mseg_cnt)
@@ -482,6 +482,8 @@ pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
 	  
 	  return GASPI_ERROR;
 	}
+
+      glb_gaspi_ctx.rrmd[segment_id][i].trans = 1;
     }
 
   eret = pgaspi_dev_wait_remote_register(segment_id, group, timeout_ms);
