@@ -24,8 +24,6 @@ int main(int argc, char *argv[])
   gaspi_size_t segSize;
   ASSERT( gaspi_segment_size(0, myrank, &segSize));
 
-  gaspi_printf("seg size %lu \n", segSize);
-
   unsigned char * pGlbMem;
 
   gaspi_pointer_t _vptr;
@@ -49,7 +47,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   unsigned long localOff = 0;
-  unsigned long remOff = size + 1;
+  unsigned long remOff = size;
 
   ASSERT(gaspi_write_notify(0, localOff, rankSend,
 			    0, remOff, size,
@@ -67,8 +65,8 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_wait(1, GASPI_BLOCK));
 
   /* check */
-  for(i = size + 1; i < 2 * size / sizeof(unsigned char); i++)
-    assert(pGlbMem[i] == rankSend);
+  for(i = size; i < 2 * size / sizeof(unsigned char); i++)
+    assert(pGlbMem[i] == rankGet);
   
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   
