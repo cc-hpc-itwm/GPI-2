@@ -6,6 +6,8 @@
 #include <string.h>
 #include <sys/time.h>
 
+#define ITERATIONS 1000
+
 typedef unsigned long mcycles_t;
 
 static inline mcycles_t
@@ -32,6 +34,6 @@ mcycles_compare (const void *aptr, const void *bptr)
   return 0;
 }
 
-mcycles_t stamp[1024], stamp2[1024], delta[1024];
+mcycles_t stamp[ITERATIONS], stamp2[ITERATIONS], delta[ITERATIONS];
 
 #endif //_UTILS_H_

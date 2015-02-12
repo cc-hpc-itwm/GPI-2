@@ -31,21 +31,26 @@ main (int argc, char *argv[])
 
   if (myrank < 2)
     {
+      if(myrank == 0)
+	{
+	  printf("-----------------------------------\n");
+	  printf ("%12s\t%5s\n", "Bytes", "Lat(usecs)");
+	  printf("-----------------------------------\n");
+	}
 
       int bytes = 2;
       volatile char *postBuf = (volatile char *) ptr0;
 
-      for (i = 0; i < 23; i++)
+      for (i = 1; i < 24; i++)
 	{
-
-	  volatile char *pollBuf = (volatile char *) (ptr0 + bytes);
+	  volatile char *pollBuf = (volatile char *) (ptr0 + ( 2 * bytes -1 ));
 	  int rcnt = 0;
 	  int cnt = 0;
+	  gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK);
 
-	  for (j = 0; j < 1000; j++)
+	  for (j = 0; j < ITERATIONS; j++)
 	    {
-
-	      if (rcnt < 1000 && !(cnt < 1 && myrank == 1))
+	      if (rcnt < ITERATIONS && !(cnt < 1 && myrank == 1))
 		{
 		  rcnt++;
 		  while (*pollBuf != (char) rcnt)
@@ -59,30 +64,29 @@ main (int argc, char *argv[])
 		}
 
 	      stamp[j] = get_mcycles ();
-	      *postBuf = (char) ++cnt;
 
-	      gaspi_write (0, 0, myrank ^ 0x1, 0, bytes, bytes, 0,
-			   GASPI_BLOCK);
+	      postBuf[bytes - 1] = (char) ++cnt;
+
+	      gaspi_write (0, 0, myrank ^ 0x1,
+			   0, bytes, bytes,
+			   0, GASPI_BLOCK);
+	      
 	      gaspi_wait (0, GASPI_BLOCK);
 	    }
 
-	  for (t = 0; t < (999); t++)
+	  for (t = 0; t < (ITERATIONS - 1); t++)
 	    delta[t] = stamp[t + 1] - stamp[t];
 
-	  qsort (delta, (999), sizeof *delta, mcycles_compare);
+	  qsort (delta, (ITERATIONS - 1), sizeof *delta, mcycles_compare);
 
 	  const double div = 1.0 / cpu_freq;
-	  const double ts = (double) delta[500] * div * 0.5;
+	  const double ts = (double) delta[ITERATIONS / 2] * div * 0.5;
 
-	  if (bytes < 131072)
-	    printf ("%d \t\t%f\n", bytes, ts);
-	  else
-	    printf ("%d \t\t%f\n", bytes, ts);
+	  if(myrank == 0)
+	    printf ("%12d\t%4.2f\n", bytes, ts);
 
 	  bytes <<= 1;
-
-	}			//for
-
+	}
     }
 
   end_bench ();

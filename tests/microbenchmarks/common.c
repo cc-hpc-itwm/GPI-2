@@ -6,7 +6,7 @@ start_bench (int max_nodes)
 
   gaspi_return_t ret;
 
-  const double dSize = 1024.0f * 1024.0f * 256.0f;
+  const double dSize = 1024.0f * 1024.0f * 32.0f;
   const unsigned long segSize = (unsigned long) dSize;
 
   ret = gaspi_proc_init (GASPI_BLOCK);
@@ -25,9 +25,8 @@ start_bench (int max_nodes)
       exit (-1);
     }
 
-  ret =
-    gaspi_segment_create (0, segSize, GASPI_GROUP_ALL, GASPI_BLOCK,
-			  GASPI_MEM_UNINITIALIZED);
+  ret = gaspi_segment_create (0, segSize, GASPI_GROUP_ALL, GASPI_BLOCK,
+			  GASPI_MEM_INITIALIZED);
   if (ret != GASPI_SUCCESS)
     {
       printf ("Failed to create segment! ret:%d\n", ret);
