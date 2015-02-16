@@ -56,7 +56,6 @@ pgaspi_machine_type (char const machine_type[16])
   return GASPI_SUCCESS;
 }
 
-
 #pragma weak gaspi_set_socket_affinity = pgaspi_set_socket_affinity
 gaspi_return_t
 pgaspi_set_socket_affinity (const gaspi_uchar socket)
@@ -318,12 +317,12 @@ pgaspi_init_core()
   glb_gaspi_ctx.ep_conn = (gaspi_endpoint_conn_t *) malloc(glb_gaspi_ctx.tnc * sizeof(gaspi_endpoint_conn_t));
   if (glb_gaspi_ctx.ep_conn == NULL)
     return -1;
+
   memset(glb_gaspi_ctx.ep_conn, 0, glb_gaspi_ctx.tnc * sizeof(gaspi_endpoint_conn_t));
-  
 
   if(pgaspi_dev_init_core() != 0)
     return -1;
-  
+
   for(i = 0; i < GASPI_MAX_QP + 3; i++)
     {
       glb_gaspi_ctx.qp_state_vec[i] = (unsigned char *) malloc ((size_t) glb_gaspi_ctx.tnc);
@@ -398,7 +397,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   
   if(glb_gaspi_ctx.procType == MASTER_PROC)
     {
-
       if(glb_gaspi_ib_init == 0)
 	{
 	  //check mfile
@@ -510,66 +508,13 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  for(i = 0; i < glb_gaspi_ctx.tnc; i++) 
 	    glb_gaspi_ctx.sockfd[i] = -1;
 	}//glb_gaspi_ib_init
-      
-      for(i = 1; i < glb_gaspi_ctx.tnc; i++)
-	{
-	  //TODO: superficial check?
-	  if(glb_gaspi_ctx.sockfd[i] != -1)
-	    continue;
-
-	  eret = gaspi_connect_to_rank(i, timeout_ms);
-	  if(eret != GASPI_SUCCESS)
-	    {
-	      gaspi_print_error("Failed to connect to %d", i);
-	      goto errL;
-	    }
-
-	  gaspi_cd_header cdh;
-	  cdh.op_len = glb_gaspi_ctx.tnc * 65; //TODO: 65 is magic
-	  cdh.op = GASPI_SN_TOPOLOGY;
-	  cdh.rank = i;
-	  cdh.tnc = glb_gaspi_ctx.tnc;
-
-	  int ret;
-	  if( (ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header))) != sizeof(gaspi_cd_header))
-	    {
-	      gaspi_print_error("Failed to send topology command to %d.", i);
-	      eret = GASPI_ERROR;
-	      goto errL;
-	    }
-		      
-	  if( (ret = write(glb_gaspi_ctx.sockfd[i],glb_gaspi_ctx.hn_poff,glb_gaspi_ctx.tnc*65)) != glb_gaspi_ctx.tnc*65)
-	    {
-	      gaspi_print_error("Failed to send topology info to %d", i);
-	      eret = GASPI_ERROR;
-	      goto errL;
-	    }
-
-	  //close the socket to avoid too many files open
-	  if(gaspi_close( glb_gaspi_ctx.sockfd[i] ) != 0)
-	    {
-	      gaspi_print_error("Failed to close connection to %d", i);
-	      eret = GASPI_ERROR;
-	      goto errL;
-	    }
-
-	  glb_gaspi_ctx.sockfd[i] = -1;
-	}
-
-      if(pgaspi_init_core() != GASPI_SUCCESS)
-	{
-	  eret = GASPI_ERROR;
-	  goto errL;
-	}
-      gaspi_init_collectives();
-
-      
     }//MASTER_PROC
   else if(glb_gaspi_ctx.procType == WORKER_PROC)
     {
-      //wait for topo data
       struct timeb t0,t1;
       ftime(&t0);
+
+      /* wait for topology data */
       while(gaspi_master_topo_data == 0)
 	{
 	  //keep checking if sn is doing well
@@ -591,45 +536,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	      goto errL;
 	    }
 	}
-      
-      if(glb_gaspi_ib_init == 0)//just local stuff
-	{
-
-	  if(pgaspi_init_core() != GASPI_SUCCESS)
-	    {
-	      gaspi_print_error("IB not initialized");
-	      
-	      eret=GASPI_ERROR;
-	      goto errL;
-	      
-	    }
-	  
-	  gaspi_init_collectives();
-	}
-
-      //do connections
-      for(i=0;i<glb_gaspi_ctx.tnc;i++)
-	{
-	  if(glb_gaspi_ctx.sockfd[i] != -1)
-	    continue;
-
-	  eret = gaspi_connect_to_rank((gaspi_rank_t) i, timeout_ms);
-	  if(eret != GASPI_SUCCESS)
-	    {
-	      gaspi_print_error("Failed to connect to %d", i);
-	      goto errL;
-	    }
-
-	  //close the socket to avoid too many files open
-	  if(gaspi_close(glb_gaspi_ctx.sockfd[i]) != 0)
-	    {
-	      eret = GASPI_ERROR;
-	      gaspi_print_error("Failed to close connection to %d", i);
-	      goto errL;
-	    }
-
-	  glb_gaspi_ctx.sockfd[i] = -1;
-	}
     }
   else
     {
@@ -637,32 +543,33 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       eret = GASPI_ERR_ENV;
       goto errL;
     }
-  
-  /* need to wait to make sure everyone is connected */
-  /* avoid problem of connecting to a node which is not yet ready (sn side) */
-  /* TODO:
-     1 - should only be done when building infrastructure?
-     2 - better implementation possible
-  */
 
-  //FIXME
-  while(glb_gaspi_init < glb_gaspi_ctx.tnc - 1 )
+  if(glb_gaspi_ctx.rank < glb_gaspi_ctx.tnc - 1)
     {
-      gaspi_delay();
-      if(gaspi_sn_status != GASPI_SN_STATE_OK)
+      /* Forward topology to next rank */
+      if(gaspi_send_topology_sn(glb_gaspi_ctx.rank + 1, timeout_ms) != 0)
 	{
-	  gaspi_print_error("Detected error in SN initialization");
-	  eret = gaspi_sn_err;
+	  eret = GASPI_ERROR;
 	  goto errL;
 	}
     }
+
+  if(pgaspi_init_core() != GASPI_SUCCESS)
+    {
+      eret = GASPI_ERROR;
+      goto errL;
+    }
+
+  gaspi_init_collectives();
+
+  glb_gaspi_init = 1;
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
   if(glb_gaspi_cfg.build_infrastructure)
     {
-      //connect all ranks
-      for(i = glb_gaspi_ctx.rank; i < glb_gaspi_ctx.tnc; i++)
+      //connect to ranks before me
+      for(i = 0; i <= glb_gaspi_ctx.rank; i++)
 	{
 	  if(gaspi_connect((gaspi_rank_t) i, timeout_ms) != GASPI_SUCCESS)
 	    {
@@ -692,7 +599,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
       //commit GASPI_GROUP_ALL
       const gaspi_group_t g0 = 0;
-
       eret = pgaspi_group_commit(g0, timeout_ms);
 
       if(eret == GASPI_SUCCESS)
@@ -734,7 +640,7 @@ pgaspi_initialized (int *initialized)
 {
   gaspi_verify_null_ptr(initialized);
   
-  *initialized = ( glb_gaspi_init != 0 && glb_gaspi_init >= glb_gaspi_ctx.tnc );
+  *initialized = (glb_gaspi_init != 0);
   
   return GASPI_SUCCESS;
 }

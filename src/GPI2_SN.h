@@ -100,6 +100,9 @@ gaspi_connect2port(const char *hn,const unsigned short port,const unsigned long 
 int
 gaspi_close(int sockfd);
 
+int
+gaspi_send_topology_sn(const int, const gaspi_timeout_t);
+
 gaspi_return_t
 gaspi_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms);
 

@@ -61,6 +61,47 @@ int gaspi_set_non_blocking(int sock)
 }
 
 int
+gaspi_send_topology_sn(const int i, const gaspi_timeout_t timeout_ms)
+{
+
+  gaspi_return_t eret = gaspi_connect_to_rank(i, timeout_ms);
+  if(eret != GASPI_SUCCESS)
+    {
+      gaspi_print_error("Failed to connect to %d", i);
+      return -1;
+    }
+
+  gaspi_cd_header cdh;
+  cdh.op_len = glb_gaspi_ctx.tnc * 65; //TODO: 65 is magic
+  cdh.op = GASPI_SN_TOPOLOGY;
+  cdh.rank = i;
+  cdh.tnc = glb_gaspi_ctx.tnc;
+
+  int ret;
+  if( (ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header))) != sizeof(gaspi_cd_header))
+    {
+      gaspi_print_error("Failed to send topology command to %d.", i);
+      return -1;
+    }
+
+  if( (ret = write(glb_gaspi_ctx.sockfd[i],glb_gaspi_ctx.hn_poff,glb_gaspi_ctx.tnc*65)) != glb_gaspi_ctx.tnc*65)
+    {
+      gaspi_print_error("Failed to send topology info to %d", i);
+      return -1;
+    }
+
+  if(gaspi_close( glb_gaspi_ctx.sockfd[i] ) != 0)
+    {
+      gaspi_print_error("Failed to close connection to %d", i);
+      return -1;
+    }
+
+  glb_gaspi_ctx.sockfd[i] = -1;
+
+  return 0;
+}
+
+int
 gaspi_seg_reg_sn(const gaspi_cd_header snp)
 {
 
@@ -283,15 +324,10 @@ gaspi_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms)
 
 void gaspi_sn_cleanup(int sig)
 {
-  //do cleanup here
+  /*TODO: proper cleanup */
   if(sig == SIGSTKFLT)
     pthread_exit(NULL);
 }
-
-/* extern gaspi_ib_ctx glb_gaspi_ctx_ib; */
-/* extern gaspi_ib_group glb_gaspi_group_ctx[GASPI_MAX_GROUPS]; */
-
-int gaspi_seg_reg_sn(const gaspi_cd_header snp);
 
 void *gaspi_sn_backend(void *arg)
 {
@@ -439,73 +475,60 @@ void *gaspi_sn_backend(void *arg)
 	  else if(mgmt->fd == lsock)
 	    {
   	      /* process all new connections */
-/* 	      while(1) */
-/* 		{ */
-		  struct sockaddr in_addr;
-		  socklen_t in_len=sizeof(in_addr);
-		  int nsock = accept(lsock,&in_addr,&in_len);
+	      /* 	      while(1) */
+	      /* 		{ */
+	      struct sockaddr in_addr;
+	      socklen_t in_len=sizeof(in_addr);
+	      int nsock = accept(lsock,&in_addr,&in_len);
 		  
-		  if(nsock < 0)
+	      if(nsock < 0)
+		{
+		  if((errno==EAGAIN) ||
+		     (errno==EWOULDBLOCK))
 		    {
-		      if((errno==EAGAIN) ||
-			 (errno==EWOULDBLOCK))
+		      /* we have processed all incoming connections */
+		      break;
+		    }
+		  else
+		    {
+		      int errsv = errno;
+
+		      /* at least check/fix open files limit */
+		      if(errsv == EMFILE)
 			{
-			  /* we have processed all incoming connections */
+			  if( 0 == gaspi_check_ofile_limit() )
+			    {
+			      nsock = accept(lsock,&in_addr,&in_len);
+			    }
+			}
+		      if(nsock < 0)
+			{
 			  break;
-			}
-		      else
-			{
-			  int errsv = errno;
-
-			  /* at least check/fix open files limit */
-			  if(errsv == EMFILE)
-			    {
-			      if( 0 == gaspi_check_ofile_limit() )
-				{
-				  nsock = accept(lsock,&in_addr,&in_len);
-				}
-			    }
-			  if(nsock < 0)
-			    {
-			      break;
-			      //TODO: handle error case?
-			    }
+			  //TODO: handle error case?
 			}
 		    }
+		}
     
-		  /* new socket */
-		  gaspi_set_non_blocking(nsock);
+	      /* new socket */
+	      gaspi_set_non_blocking(nsock);
 
-		  /* add nsock */
-		  ev.data.ptr = malloc(sizeof(gaspi_mgmt_header));
-		  ev_mgmt = ev.data.ptr;
-		  ev_mgmt->fd = nsock;
-		  ev_mgmt->blen = sizeof(gaspi_cd_header);//at first we need a header
-		  ev_mgmt->bdone = 0;
-		  ev_mgmt->op = GASPI_SN_HEADER;
-		  ev.events = EPOLLIN ;//read only
+	      /* add nsock */
+	      ev.data.ptr = malloc(sizeof(gaspi_mgmt_header));
+	      ev_mgmt = ev.data.ptr;
+	      ev_mgmt->fd = nsock;
+	      ev_mgmt->blen = sizeof(gaspi_cd_header);//at first we need a header
+	      ev_mgmt->bdone = 0;
+	      ev_mgmt->op = GASPI_SN_HEADER;
+	      ev.events = EPOLLIN ;//read only
 
-		  if(epoll_ctl(esock,EPOLL_CTL_ADD,nsock,&ev)<0)
-		    {
-		      gaspi_sn_print_error("Failed to modify IO event facility");
- 		      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-		      gaspi_sn_err = GASPI_ERROR;
+	      if(epoll_ctl(esock,EPOLL_CTL_ADD,nsock,&ev)<0)
+		{
+		  gaspi_sn_print_error("Failed to modify IO event facility");
+		  gaspi_sn_status = GASPI_SN_STATE_ERROR;
+		  gaspi_sn_err = GASPI_ERROR;
 		      
-		      return NULL;
-		    }
-
-		  /* count number of connections: main thread is waiting for this */
-		  if(__sync_fetch_and_add(&glb_gaspi_init, 1) == -1)
-		    {
-		      gaspi_sn_print_error("Failed to increase no. of connections");
- 		      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-		      gaspi_sn_err = GASPI_ERROR;
-
-		      return NULL;
-		    }
-		  // gaspi_thread_sleep(600000);
-		  // }//while(1) accept
-	      
+		  return NULL;
+		}
 	      continue;
 	    }/* new connection(s) */
 	  else
@@ -674,8 +697,8 @@ void *gaspi_sn_backend(void *arg)
 					      }
 					  }
 					
-				      if(ret > 0)
-					done+=ret;
+					if(ret > 0)
+					  done+=ret;
 				      }
 				    
 				    mgmt->bdone = 0;
@@ -763,14 +786,14 @@ void *gaspi_sn_backend(void *arg)
 				  glb_gaspi_ctx.ep_conn[mgmt->cdh.rank].cstat = 1;
 				  unlock_gaspi(&gaspi_ccontext_lock);
 
-				    int done = 0;
+				  int done = 0;
 				  int len = pgaspi_dev_get_sizeof_rc();
 				  char *ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
 
 				  while(done < len)
 				    {
 				      int ret = write(mgmt->fd, ptr+done,len-done);
-				      
+
 				      if(ret < 0) 
 					{
 					  /* errno==EAGAIN,that means we have written all data */
@@ -786,7 +809,7 @@ void *gaspi_sn_backend(void *arg)
 				      if(ret > 0)
 					done += ret;
 				    }
-                  
+
 				  mgmt->bdone = 0;
 				  mgmt->blen = sizeof(gaspi_cd_header);
 				  mgmt->op = GASPI_SN_HEADER;//next we expect new header
