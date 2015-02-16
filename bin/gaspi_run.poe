@@ -136,7 +136,7 @@ export GASPI_MFILE=$LOADL_HOSTFILE
 export GASPI_SOCKET=0
 if [ $SET_NUMA -eq 1 ]; then
     export GASPI_SET_NUMA_SOCKET=1
-xelse
+else
     export GASPI_SET_NUMA_SOCKET=0
 fi
 
