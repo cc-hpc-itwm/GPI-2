@@ -58,9 +58,11 @@ usage()
 
 clean_exit()
 {
-#assumes the clean-up script is in the same directory as gaspi_run
-    $(dirname $0)/gaspi_cleanup -m $UNIQ_MFILE
-
+    if [ $1 == 1 ]; then
+	if [ -x $(dirname $0)/gaspi_cleanup ]; then
+	    $(dirname $0)/gaspi_cleanup -m $UNIQ_MFILE
+	fi
+    fi
     remove_temp_file
 }
 
@@ -126,6 +128,7 @@ validate_machinefile()
 kill_procs()
 {
     echo "Killing GASPI procs..."
+#    clean_exit 1
     for i in $(cat $UNIQ_MFILE)
     do
 	$GASPI_LAUNCHER $i "nohup killall -9 ${PRG} `</dev/null`" &> /dev/null &
@@ -230,7 +233,7 @@ if [ ! -x ${location}/ssh.spawner ]; then
     echo
     echo "The required spawner is missing (or not executable)"
     echo
-    clean_exit
+    clean_exit 0
     exit 1
 fi
 
@@ -248,7 +251,7 @@ do
 	    echo
 	    echo "Error: incorrect machine file (-m $ORIG_MFILE) (max procs per node: $MAX_NUMA_NODES)"
 	    echo
-	    clean_exit
+	    clean_exit 0
 	    exit 1
 	fi
     else
@@ -308,7 +311,7 @@ if [ "$master_node" != "$HN" ]; then
 	echo
 	echo "Running with debugger only allowed if current node ($HN) is the first node in machinefile"
 	echo
-	clean_exit
+	clean_exit 1
 	exit 1
     fi
     #prepare differently for remote node
@@ -333,7 +336,7 @@ if [ "$master_node" != "$HN" ]; then
    
     if [ $? != 0 ]; then
 	echo "Error: Failed to start $MASTER_PRG on $master_node"
-	clean_exit
+	clean_exit 1
 	exit 1
     fi
 else
@@ -353,12 +356,13 @@ else
 	$MASTER_PRG $PRG_ARGS
     fi
     if [ $? != 0 ]; then
-	clean_exit
+ 	clean_exit 1
 	exit 1
     fi
 fi
 
+wait
 #clean-up and exit
-clean_exit
+clean_exit 0
 
 exit 0
