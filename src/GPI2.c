@@ -26,6 +26,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GASPI.h"
 #include "GPI2.h"
+#include "GPI2_Coll.h"
 #include "GPI2_Env.h"
 #include "GPI2_Dev.h"
 #include "GPI2_SN.h"
@@ -345,7 +346,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   gaspi_return_t eret = GASPI_ERROR;
   int i;
   const int num_queues = (int) glb_gaspi_cfg.queue_num;
-  
+
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
@@ -544,6 +545,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       goto errL;
     }
 
+
   if(glb_gaspi_ctx.rank < glb_gaspi_ctx.tnc - 1)
     {
       /* Forward topology to next rank */
@@ -553,7 +555,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  goto errL;
 	}
     }
-
+  
   if(pgaspi_init_core() != GASPI_SUCCESS)
     {
       eret = GASPI_ERROR;
@@ -568,7 +570,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   if(glb_gaspi_cfg.build_infrastructure)
     {
-      //connect to ranks before me
+      /* connect to ranks before me */
       for(i = 0; i <= glb_gaspi_ctx.rank; i++)
 	{
 	  if(gaspi_connect((gaspi_rank_t) i, timeout_ms) != GASPI_SUCCESS)
@@ -577,7 +579,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	    }
 	}
 
-      //create GASPI_GROUP_ALL
+      /* create GASPI_GROUP_ALL */
       if(glb_gaspi_group_ctx[GASPI_GROUP_ALL].id == -1)
 	{
 	  gaspi_group_t g0;
@@ -597,10 +599,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	    }
 	}
 
-      //commit GASPI_GROUP_ALL
-      const gaspi_group_t g0 = 0;
-      eret = pgaspi_group_commit(g0, timeout_ms);
-
+      eret = pgaspi_group_commit(GASPI_GROUP_ALL, timeout_ms);
       if(eret == GASPI_SUCCESS)
 	{
 	  eret = gaspi_barrier(GASPI_GROUP_ALL, timeout_ms);

@@ -218,7 +218,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     }
   
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].addr =
-    glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf;
+    (unsigned long) glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf;
 
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size = size;
     

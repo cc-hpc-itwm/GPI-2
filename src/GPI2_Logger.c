@@ -195,12 +195,8 @@ pgaspi_printf (const char *fmt, ...)
   /* check required initialization */
   _check_log_init();
 
-  time_t ltime;
-  ltime=time(NULL);
-
   if (strcmp (gaspi_master_log_ptr, hn) == 0 && gaspi_log_socket == 0)
     {
-      //      sprintf (buf, "[%s:%d:%u - %s] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank, asctime(localtime(&ltime)));
       sprintf (buf, "[%s:%d:%u] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank);
       const int sl = strlen (buf);
 
@@ -215,7 +211,6 @@ pgaspi_printf (const char *fmt, ...)
       goto endL;
     }
 
-  //  sprintf (buf, "[%s:%d:%u - %s] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank, asctime(localtime(&ltime)));
   sprintf (buf, "[%s:%d:%u] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank);
   const int sl = strlen (buf);
 

@@ -52,7 +52,7 @@ pgaspi_dev_poll_groups()
 }
 
 int
-pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_addr, int group)
+pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_addr, unsigned char group)
 {
   
   struct ibv_sge slist;

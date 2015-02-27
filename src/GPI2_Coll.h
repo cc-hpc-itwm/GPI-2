@@ -32,18 +32,17 @@ typedef enum
 struct redux_args
 {
   redux_type_t f_type;
+  gaspi_size_t elem_size;
   union
   {
     struct
     {
-      gaspi_size_t elem_size;
       gaspi_operation_t op;
       gaspi_datatype_t type;
     };
 
     struct
     {
-      gaspi_size_t elem_size;
       gaspi_reduce_operation_t user_fct;
       gaspi_state_t rstate;
     } ;
