@@ -46,13 +46,13 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id,
       .source      = glb_gaspi_ctx.rank,
       .target      = rank,
       .local_addr  = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].addr + NOTIFY_OFFSET + offset_local),
-      .remote_addr = 0,
+      .remote_addr = 0UL,
       .length      = size,
       .swap        = 0,
       .opcode      = POST_SEND
     } ;
   
-  if( write(glb_gaspi_ctx_tcp.qs_handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+  if( write(glb_gaspi_ctx_tcp.qpP->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return GASPI_ERROR;
     }
@@ -115,7 +115,7 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
       .source      = glb_gaspi_ctx.rank,
       .target      = 0,
       .local_addr  = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr + NOTIFY_OFFSET + offset_local),
-      .remote_addr = 0,
+      .remote_addr = 0UL,
       .length      = size,
       .swap        = 0,
       .opcode      = POST_RECV

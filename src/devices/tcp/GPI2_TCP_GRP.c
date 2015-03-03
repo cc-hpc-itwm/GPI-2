@@ -40,7 +40,7 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
       .wr_id       = dst
     };
 
-  if( write(glb_gaspi_ctx_tcp.qs_handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+  if( write(glb_gaspi_ctx_tcp.qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return 1;
     }

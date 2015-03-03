@@ -31,6 +31,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 //TODO: not really its place
 extern gaspi_config_t glb_gaspi_cfg;
 
+/* TODO: empty functions smell */
 inline char *
 pgaspi_dev_get_rrcd(int rank)
 {
@@ -46,6 +47,24 @@ pgaspi_dev_get_lrcd(int rank)
 
 inline size_t
 pgaspi_dev_get_sizeof_rc()
+{
+  return 0;
+}
+
+int
+pgaspi_dev_create_endpoint(const int i)
+{
+  return 0;
+}
+
+int
+pgaspi_dev_disconnect_context(const int i)
+{
+  return 0;
+}
+
+int
+pgaspi_dev_connect_context(const int i)
 {
   return 0;
 }
@@ -132,55 +151,9 @@ pgaspi_dev_init_core()
     }
 
   /* Queues (QPs) */
-  glb_gaspi_ctx_tcp.qpGroups = (struct tcp_queue **) malloc(glb_gaspi_ctx.tnc * sizeof(struct tcp_queue));
+  glb_gaspi_ctx_tcp.qpGroups = tcp_dev_create_queue(glb_gaspi_ctx_tcp.scqGroups,
+						    glb_gaspi_ctx_tcp.rcqGroups);
   if(glb_gaspi_ctx_tcp.qpGroups == NULL)
-    {
-      gaspi_dev_print_error("Failed to allocate memory for groups queue\n");
-      return -1;
-    }
-
-  glb_gaspi_ctx_tcp.qpP = (struct tcp_queue **) malloc(glb_gaspi_ctx.tnc * sizeof(struct tcp_queue));
-  if(glb_gaspi_ctx_tcp.qpP == NULL)
-    {
-      gaspi_dev_print_error("Failed to allocate memory for passive queue\n");
-      return -1;
-    }
-
-  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
-    {
-      glb_gaspi_ctx_tcp.qpC[c] = (struct tcp_queue **) malloc(glb_gaspi_ctx.tnc * sizeof(struct tcp_queue));
-      if(glb_gaspi_ctx_tcp.qpC[c] == NULL)
-	{
-	  gaspi_dev_print_error("Failed to allocate memory for IO queues\n");
-	  return -1;
-	}
-    }
-
-  /* reset queues handle (local connection to device) */
-  glb_gaspi_ctx_tcp.qs_handle = -1;
-
-  return 0;
-}
-
-int
-pgaspi_dev_create_endpoint(const int i)
-{
-  int c;
-
-  if(glb_gaspi_ctx_tcp.qs_handle == -1)
-    {
-      glb_gaspi_ctx_tcp.qs_handle = connect2port("localhost", PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
-      
-      if(glb_gaspi_ctx_tcp.qs_handle == -1)
-	return -1;
-
-      // setNonBlocking(glb_gaspi_ctx_tcp.qs_handle);
-    }
-
-  glb_gaspi_ctx_tcp.qpGroups[i] = tcp_dev_create_queue(glb_gaspi_ctx_tcp.qs_handle,
-						       glb_gaspi_ctx_tcp.scqGroups,
-						       glb_gaspi_ctx_tcp.rcqGroups);
-  if(glb_gaspi_ctx_tcp.qpGroups[i] == NULL)
     {
       gaspi_dev_print_error("Failed to create queue for groups.");
       return -1;
@@ -188,106 +161,37 @@ pgaspi_dev_create_endpoint(const int i)
 
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
-      glb_gaspi_ctx_tcp.qpC[c][i] = tcp_dev_create_queue(glb_gaspi_ctx_tcp.qs_handle,
-							 glb_gaspi_ctx_tcp.scqC[c],
-							 glb_gaspi_ctx_tcp.rcqC[c]);
-      if(glb_gaspi_ctx_tcp.qpC[c][i] == NULL)
+      glb_gaspi_ctx_tcp.qpC[c] = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqC[c],
+						       glb_gaspi_ctx_tcp.rcqC[c]);
+      if(glb_gaspi_ctx_tcp.qpC[c] == NULL)
 	{
 	  gaspi_dev_print_error("Failed to create queue %d for IO.", c);
 	  return -1;
 	}
     }
   
-  glb_gaspi_ctx_tcp.qpP[i] = tcp_dev_create_queue(glb_gaspi_ctx_tcp.qs_handle,
-						  glb_gaspi_ctx_tcp.scqP,
-						  glb_gaspi_ctx_tcp.rcqP);
-  if(glb_gaspi_ctx_tcp.qpP[i] == NULL)
+  glb_gaspi_ctx_tcp.qpP = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqP,
+						glb_gaspi_ctx_tcp.rcqP);
+  if(glb_gaspi_ctx_tcp.qpP == NULL)
     {
       gaspi_dev_print_error("Failed to create queue for passive.");
       return -1;
     }
 
-  //TODO: need to set queues numbers??
-  
   return 0;
 }
-
-int
-pgaspi_dev_disconnect_context(const int i)
-{
-  int c;
-
-  if(glb_gaspi_ctx_tcp.qpGroups[i] != NULL)
-    free(glb_gaspi_ctx_tcp.qpGroups[i]);
-
-  if(glb_gaspi_ctx_tcp.qpP[i] != NULL)
-    free(glb_gaspi_ctx_tcp.qpP[i]);
-
-  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
-    {
-      if(glb_gaspi_ctx_tcp.qpC[c][i] != NULL)
-	free(glb_gaspi_ctx_tcp.qpC[c][i]);
-    }
-
-  return 0;
-}
-
-int
-pgaspi_dev_connect_context(const int i)
-{
-  return 0;
-}
-
 
 int
 pgaspi_dev_cleanup_core()
 {
   int i, c;
 
+  tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpGroups);
+  tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpP);
 
-
-  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
-    {
-      if(glb_gaspi_ctx.ep_conn[i].istat == 0)
-	continue;
-
-      free(glb_gaspi_ctx_tcp.qpGroups[i]);
-    }
-
-  if(glb_gaspi_ctx_tcp.qpGroups)
-    {
-      free(glb_gaspi_ctx_tcp.qpGroups);
-    }
-
-  glb_gaspi_ctx_tcp.qpGroups = NULL;
-  
-  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
-    {
-      if(glb_gaspi_ctx.ep_conn[i].istat == 0)
-	continue;
-
-      free(glb_gaspi_ctx_tcp.qpP[i]);
-    }
-  
-  if(glb_gaspi_ctx_tcp.qpP)
-    free(glb_gaspi_ctx_tcp.qpP);
-
-  glb_gaspi_ctx_tcp.qpP = NULL;
-  
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
-      for(i = 0; i < glb_gaspi_ctx.tnc; i++)
-	{
-	  if(glb_gaspi_ctx.ep_conn[i].istat == 0)
-	    continue;
-
-	  free(glb_gaspi_ctx_tcp.qpC[c][i]);
-	}
-
-      if(glb_gaspi_ctx_tcp.qpC[c])
-	free(glb_gaspi_ctx_tcp.qpC[c]);
-
-      glb_gaspi_ctx_tcp.qpC[c] = NULL;
+      tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpC[c]);
     }
 
   if(glb_gaspi_ctx_tcp.srqP)
@@ -332,10 +236,10 @@ pgaspi_dev_cleanup_core()
 	}
     }
   
-/*   if(glb_gaspi_ctx_tcp.channelP) */
-/*     { */
-/*       close passive channel */
-/*     } */
+  if(glb_gaspi_ctx_tcp.channelP)
+    {
+      tcp_dev_destroy_passive_channel(glb_gaspi_ctx_tcp.channelP);
+    }
 
 /*   if(tcp_dev_stop_device(glb_gaspi_ctx_tcp.qs_handle)) */
 /*     { */

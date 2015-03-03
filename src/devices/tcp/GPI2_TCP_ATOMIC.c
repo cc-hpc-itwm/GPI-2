@@ -35,7 +35,6 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
       .cq_handle   = glb_gaspi_ctx_tcp.scqGroups->num,      
       .source      = glb_gaspi_ctx.rank,
       .target       = rank,
-      //      .local_addr  = (uintptr_t) (glb_gaspi_group_ctx[0].buf + NEXT_OFFSET),
       .local_addr  = (uintptr_t) (glb_gaspi_group_ctx[0].rrcd[glb_gaspi_ctx.rank].buf + NEXT_OFFSET),
       .remote_addr = glb_gaspi_ctx.rrmd[segment_id][rank].addr + NOTIFY_OFFSET + offset,
       .length      = sizeof(gaspi_atomic_value_t),
@@ -44,7 +43,7 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
       .opcode      = POST_ATOMIC_FETCH_AND_ADD
     } ;
   
-  if( write(glb_gaspi_ctx_tcp.qs_handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+  if( write(glb_gaspi_ctx_tcp.qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       printf("FAILED TO POST\n");
       
@@ -53,7 +52,6 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
   //REPCODE: repeated code (what changes is the ctx)
   glb_gaspi_ctx.ne_count_grp++; 
-
 
   int ne = 0;
   int i;
@@ -101,7 +99,6 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
       .source      = glb_gaspi_ctx.rank,
       .target       = rank,
       .local_addr  = (uintptr_t) (glb_gaspi_group_ctx[0].rrcd[glb_gaspi_ctx.rank].buf + NEXT_OFFSET),
-      //      .local_addr  = (uintptr_t) (glb_gaspi_group_ctx[0].buf + NEXT_OFFSET),
       .remote_addr = glb_gaspi_ctx.rrmd[segment_id][rank].addr + NOTIFY_OFFSET + offset,
       .length      = sizeof(gaspi_atomic_value_t),
       .swap        = val_new,
@@ -109,7 +106,7 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
       .opcode      = POST_ATOMIC_CMP_AND_SWP
     } ;
   
-  if( write(glb_gaspi_ctx_tcp.qs_handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+  if( write(glb_gaspi_ctx_tcp.qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       printf("FAILED TO POST\n");
       

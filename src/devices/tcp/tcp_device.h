@@ -172,7 +172,7 @@ void
 tcp_dev_destroy_cq(struct tcp_cq *);
 
 struct tcp_queue *
-tcp_dev_create_queue(int, struct tcp_cq *, struct tcp_cq *);
+tcp_dev_create_queue(struct tcp_cq *, struct tcp_cq *);
 
 
 struct tcp_passive_channel *

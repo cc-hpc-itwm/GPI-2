@@ -73,6 +73,18 @@ tcp_dev_create_passive_channel(void)
   return channel;
 }
 
+void
+tcp_dev_destroy_passive_channel(struct tcp_passive_channel *channel)
+{
+  if(channel != NULL)
+    {
+      int ret = close(channel->read);
+      ret = close(channel->write);
+
+      free(channel);
+    }
+}
+
 struct tcp_cq *
 tcp_dev_create_cq(int elems, struct tcp_passive_channel *pchannel)
 {
@@ -143,8 +155,10 @@ tcp_dev_destroy_cq(struct tcp_cq *cq)
 }
 
 struct tcp_queue *
-tcp_dev_create_queue(int handle, struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
+tcp_dev_create_queue(struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
 {
+  int handle = -1;
+  
   if(qs_ref_counter >= QP_MAX_NUM)
     {
       gaspi_dev_print_error("Too many created queues.");
@@ -154,6 +168,11 @@ tcp_dev_create_queue(int handle, struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
   struct tcp_queue *q = (struct tcp_queue *) malloc(sizeof(struct tcp_queue));
   if(q != NULL)
     {
+      handle = connect2port("localhost", PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
+      
+      if(handle == -1)
+	return NULL;
+
       q->handle = handle;
       q->send_cq = send_cq;
       q->recv_cq = recv_cq;
@@ -162,6 +181,19 @@ tcp_dev_create_queue(int handle, struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
 
   return q;
 }
+
+void
+tcp_dev_destroy_queue(struct tcp_queue *q)
+{
+  if(q != NULL)
+    {
+      int ret = close(q->handle);
+      free(q);
+      qs_ref_counter--;
+    }
+}
+
+
 
 /* Allocate memory to maintain socket state for remote ranks */
 static int
@@ -1168,7 +1200,7 @@ tcp_virt_dev(void *args)
 			}
 		      else if(bytesReceived == 0 && bytesRemaining == 0)
 			{
-			  gaspi_dev_print_error("Error rea node %d", event_rank);
+			  //			  gaspi_dev_print_error("Error rea node %d", event_rank);
 			  // Recv WR not present
 			}
 		      else if(bytesReceived <= 0)
