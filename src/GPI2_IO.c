@@ -156,18 +156,20 @@ static int _check_func_params(char *func_name, const gaspi_segment_id_t segment_
       return -1;
     }
   
-  if( offset_local > glb_gaspi_ctx.rrmd[segment_id_local][rank].size
+  if( offset_local > glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].size
     || offset_remote > glb_gaspi_ctx.rrmd[segment_id_remote][rank].size)
     {
-      gaspi_print_error("Invalid offsets: local %lu remote %lu (%s)",
-			offset_local, offset_remote, func_name);
+      gaspi_print_error("Invalid offsets: local %lu (segment %d of size %lu) remote %lu (segment %d of size %lu) (%s)",
+			offset_local, segment_id_local, glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].size,
+			offset_remote, segment_id_remote, glb_gaspi_ctx.rrmd[segment_id_remote][rank].size,
+			func_name);
       return -1;
     }
     
   if( size < 1
       || size > GASPI_MAX_TSIZE_C
       || size > glb_gaspi_ctx.rrmd[segment_id_remote][rank].size
-      || size > glb_gaspi_ctx.rrmd[segment_id_local][rank].size)
+      || size > glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].size)
     {
       gaspi_print_error("Invalid size: %lu (%s)", size,func_name);
       return -1;
