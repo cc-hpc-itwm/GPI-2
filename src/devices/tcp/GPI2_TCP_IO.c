@@ -131,22 +131,22 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
 		   const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 {
 
-  uintptr_t not_addr = (uintptr_t) glb_gaspi_ctx.nsrc.buf + notification_id * 4;
-  *(gaspi_notification_t *) not_addr = notification_value;
-    
+  gaspi_notification_t *not_val_ptr = (gaspi_notification_t *)malloc(sizeof(notification_value));
+  *not_val_ptr = notification_value;
+  
   tcp_dev_wr_t wr =
     {
       .wr_id       = rank,
       .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
       .source      = glb_gaspi_ctx.rank,
       .target      = rank,
-      .local_addr  = (uintptr_t) not_addr,
+      .local_addr  = (uintptr_t) not_val_ptr,
       .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].addr + notification_id * 4),
       .length      = sizeof(notification_value),
       .swap        = 0,
-      .opcode      = POST_RDMA_WRITE
+      .opcode      = POST_RDMA_WRITE_INLINED
     } ;
-  
+
     if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return GASPI_ERROR;
