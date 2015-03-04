@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 	      if(queue_size > queue_max - 1)
 		ASSERT (gaspi_wait(0, GASPI_BLOCK));
 	      
-	      ASSERT (gaspi_notify( seg_id, i, n, 1, 0, GASPI_BLOCK));
+	      ASSERT (gaspi_notify( seg_id, i, n, i, 0, GASPI_BLOCK));
 	    }
 	}
     }
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
 	  gaspi_notification_t notification_val;
 	  ASSERT( gaspi_notify_reset(seg_id, id, &notification_val));
-	  assert(notification_val == 1);
+	  assert(notification_val == rank);
 	  n++;
 	}
       while(n < notif_num);
