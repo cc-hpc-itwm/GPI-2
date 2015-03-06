@@ -49,15 +49,4 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define MAX(a,b)  (((a)<(b)) ? (b) : (a))
 #define MIN(a,b)  (((a)>(b)) ? (b) : (a))
 
-void setNonBlocking(int fd_sock);
-
-int connect2port(const char *hn, const unsigned short port, unsigned int timeout_ms);
-
-uint32_t key(const uint32_t rank, const uint32_t mrID);
-
-uint16_t mrID(const uint32_t key);
-
-uint16_t rank(const uint32_t key);
-
-
 #endif

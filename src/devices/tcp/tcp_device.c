@@ -26,6 +26,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 
 #include "GPI2.h"
+#include "GPI2_SN.h"
 #include "utils.h"
 #include "tcp_device.h"
 #include "list.h"
@@ -168,7 +169,7 @@ tcp_dev_create_queue(struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
   struct tcp_queue *q = (struct tcp_queue *) malloc(sizeof(struct tcp_queue));
   if(q != NULL)
     {
-      handle = connect2port("localhost", PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
+      handle = gaspi_connect2port("localhost", PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
       
       if(handle == -1)
 	return NULL;
@@ -280,9 +281,10 @@ _tcp_dev_connect_all(int epollfd)
 
       /* connect to node/rank */
       /* TODO: use a generic sockets comm framework */
-      int conn_sock = connect2port(gaspi_get_hn(i),
+      int conn_sock = gaspi_connect2port(gaspi_get_hn(i),
 				   PORT + glb_gaspi_ctx.poff[i],
 				   CONN_TIMEOUT);
+
       if(conn_sock == -1)
 	{
 	  gaspi_dev_print_error("Error connecting to rank %i (%s) on port %i\n",
@@ -1073,7 +1075,7 @@ tcp_virt_dev(void *args)
       return NULL;
     }
   
-  setNonBlocking(listen_sock);
+  gaspi_set_non_blocking(listen_sock);
 
   if(listen(listen_sock, SOMAXCONN) < 0)
     {
@@ -1172,7 +1174,7 @@ tcp_virt_dev(void *args)
 		      continue;
 		    }
 
-		  setNonBlocking(conn_sock);
+		  gaspi_set_non_blocking(conn_sock);
 
 		  /* TODO: meaningful number: -1 = UNKNOWN_RANK */
 		  if(_tcp_dev_add_new_conn(-1, conn_sock, epollfd) == NULL)
