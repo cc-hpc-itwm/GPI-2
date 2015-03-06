@@ -733,7 +733,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	  
 	  if(estate->wr_buff.opcode == RESPONSE_ATOMIC_CMP_AND_SWP)
 	    op = TCP_DEV_WC_CMP_SWAP;
-	  else if(estate->wr_buff.opcode == RESPONSE_ATOMIC_FETCH_AND_ADD)
+	  else
 	    op = TCP_DEV_WC_FETCH_ADD;
 
 	  if(_tcp_dev_post_wc(estate->wr_buff.wr_id, TCP_WC_SUCCESS, op, estate->wr_buff.cq_handle))
