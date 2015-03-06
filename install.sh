@@ -9,23 +9,30 @@ WITH_LL=0
 WITH_F90=1
 WITH_CUDA=0
 CUDA_PATH=""
-
+GPI2_DEVICE=IB
 usage()
 {
 cat << EOF
 
 GPI2 Installation:
 
-    Usage: `basename $0` [-p PATH_GPI2_INSTALL] [-o OFED_DIR] <further options>
+    Usage: `basename $0` [-p PATH_GPI2_INSTALL] <further options>
       where
              -p Path where to install GPI-2 (default: ${GPI2_PATH})
-             -o Path to OFED installation
 
     Further options:
              --with-mpi<=path>              Use this option if you aim at mixed mode with MPI.
 	                                    See README for more information.
-             --with-ll                      Use this option if you have Load Leveler as batch system.
+
+	     --with-ll                      Use this option if you have Load Leveler as batch system.
 	                                    This integrates with Load Leveler and uses poe as application launcher.
+
+	     --with-ethernet                Build GPI-2 for Ethernet (only if you don't have Infiniband).
+	                                    See README for more information.
+
+             --with-infiniband<=path>       Build GPI-2 for Infiniband hardware (this is the default).
+                                            You can provide the path to your OFED installation.
+
              --with-fortran=(true,false)    Enable/Disable Fortran bindings (default: enabled).
 
 	     --with-cuda<=path>             Use this option if you aim mixed use with CUDA and GPU support.
@@ -46,7 +53,7 @@ clean_bak_files()
     fi
 }
 
-while getopts ":p:o:-:" opt; do
+while getopts ":hp:-:" opt; do
     case $opt in
 	-)
 	    case "${OPTARG}" in
@@ -84,6 +91,27 @@ while getopts ":p:o:-:" opt; do
 		    echo "With Load Leveler" >&2;
 		    WITH_LL=1
 		    ;;
+		with-ethernet)
+		    echo "With Ethernet support" >&2;
+		    GPI2_DEVICE=TCP
+		    ;;
+		with-infiniband)
+		    val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
+		    echo "With Infiniband support" >&2;
+		    GPI2_DEVICE=IB
+		    ;;
+		with-infiniband=*)
+		val=${OPTARG#*=}
+		if [ "$val" = "" ]; then
+		    echo "Forgot to provide OFED path?"
+		    exit 1
+		fi
+		OFED_PATH=$val
+		OFED=1
+		opt=${OPTARG%=$val}
+		echo "With Infiniband support (${OFED_PATH})" >&2;
+		GPI2_DEVICE=IB
+		;;
 		with-fortran)
 		    WITH_F90=1
 		    ;;
@@ -133,14 +161,13 @@ while getopts ":p:o:-:" opt; do
 		    fi
 		    ;;
 	    esac;;
-	o)
-	    echo "Path to OFED to be used: $OPTARG" >&2
-	    OFED_PATH=$OPTARG
-	    OFED=1
-	    ;;
         p)
             echo "Installation path to be used: $OPTARG" >&2
             GPI2_PATH=$OPTARG
+            ;;
+        h)
+	    usage
+	    exit 1
             ;;
         \?)
             echo "Unknown option: -$OPTARG" >&2
@@ -159,41 +186,48 @@ rm -f install.log
 
 echo "$0 $@" >> install.log
 
+if [ $GPI2_DEVICE = IB ]; then
 #check ofed installation
-if [ $OFED = 0 ]; then
-    echo "Searching OFED installation..." | tee -a install.log
-    INFO=/etc/infiniband/info
-    if [ -x $INFO ]; then
-	
-	OFED_PATH=$(${INFO} | grep -w prefix | cut -d '=' -f 2)
-	echo "Found OFED installation in $OFED_PATH" | tee -a install.log
-    else
-	if [ -r /usr/lib64/libibverbs.so ] && [ -r /usr/include/infiniband/verbs.h ]; then
-	    OFED_PATH=/usr/    
+    if [ $OFED = 0 ]; then
+	echo "Searching OFED installation..." | tee -a install.log
+	INFO=/etc/infiniband/info
+	if [ -x $INFO ]; then
+
+	    OFED_PATH=$(${INFO} | grep -w prefix | cut -d '=' -f 2)
+	    echo "Found OFED installation in $OFED_PATH" | tee -a install.log
 	else
-	    echo "Error: could not find libibverbs."
-	    echo "Run this script with the -o option and provide the path to your OFED installation."
-	    echo
+	    if [ -r /usr/lib64/libibverbs.so ] && [ -r /usr/include/infiniband/verbs.h ]; then
+		OFED_PATH=/usr/
+	    else
+		echo "Error: could not find libibverbs."
+		echo "Run this script with the -o option and provide the path to your OFED installation."
+		echo
+		exit 1
+	    fi
+	fi
+    else
+	if [ ! -d $OFED_PATH ]; then
+	    echo "Error: $OFED_PATH not a directory"
 	    exit 1
 	fi
     fi
-else
-    if [ ! -d $OFED_PATH ]; then
-	echo "Error: $OFED_PATH not a directory"
-	exit 1
-    fi
-fi
 
 #check ibverbs support
-grep IBV_LINK_LAYER_ETHERNET $OFED_PATH/include/infiniband/verbs.h > /dev/null
-if [ $? != 0 ]; then
-    echo "Error: Too old version of libibverbs (need at least v1.1.6)."
-    echo "Please update your OFED stack to a more recent version."
-    exit 1
+    grep IBV_LINK_LAYER_ETHERNET $OFED_PATH/include/infiniband/verbs.h > /dev/null
+    if [ $? != 0 ]; then
+	echo "Error: Too old version of libibverbs (need at least v1.1.6)."
+	echo "Please update your OFED stack to a more recent version."
+	exit 1
+    fi
+
+    sed -i  "s,OFED_PATH = /usr,OFED_PATH = $OFED_PATH,g" src/make.inc
+    sed -i  "s,OFED_PATH = /usr,OFED_PATH = $OFED_PATH,g" tests/make.defines
+
+else
+    cp src/make.inc src/make.inc.bak
+    echo "###### added by install script" >> src/make.inc
+    echo "GPI2_DEVICE = TCP" >> src/make.inc
 fi
-    
-sed -i  "s,OFED_PATH = /usr,OFED_PATH = $OFED_PATH,g" src/make.inc
-sed -i  "s,OFED_PATH = /usr,OFED_PATH = $OFED_PATH,g" tests/make.defines
 
 #MPI mixed mode
 if [ $WITH_MPI = 1 ]; then
@@ -250,7 +284,6 @@ if [ $WITH_MPI = 1 ]; then
     echo "LIB_PATH += -L${MPI_LIB_PATH} ${GPI2_EXTRA_LIBS_PATH}" >> tests/make.defines
     echo "LIBS += -l${MPI_LIB} ${GPI2_EXTRA_LIBS}" >> tests/make.defines
     echo "export" >> tests/make.defines
-    
 fi
 
 #load leveler
@@ -263,9 +296,13 @@ fi
 
 #CUDA/GPU support 
 if [ $WITH_CUDA = 1 ]; then
-
-    #check
-    #check moduel
+    #check device: for now only IB is working
+    if [ $GPI2_DEVICE = TCP ]; then
+	echo "GPU (Cuda) support is only available with Infiniband."
+	echo ""
+	exit 1
+    fi
+    #check module
     if [ `modprobe -l |grep nv_peer_mem` ]; then
       echo "nv_peer_mem module is found, continue"
     else
