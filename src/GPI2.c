@@ -121,22 +121,19 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   const int i = (int) rank;
 
   //TODO: verify the locking needs/problems
-  lock_gaspi_tout(&gaspi_create_lock, GASPI_BLOCK);
+  lock_gaspi_tout(&gaspi_create_lock, timeout_ms);
 
-  if(glb_gaspi_ctx.ep_conn[i].istat)
+  if(!glb_gaspi_ctx.ep_conn[i].istat)
     {
-      unlock_gaspi(&gaspi_create_lock);
-      return GASPI_SUCCESS;
+      if(pgaspi_dev_create_endpoint(i) < 0)
+	{
+	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
+	  unlock_gaspi(&gaspi_create_lock);
+	  return GASPI_ERROR;
+	}
+      glb_gaspi_ctx.ep_conn[i].istat = 1;
     }
 
-  if(pgaspi_dev_create_endpoint(i) < 0)
-    {
-      glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
-      return GASPI_ERROR;
-    }
-
-  glb_gaspi_ctx.ep_conn[i].istat = 1;
-  
   unlock_gaspi(&gaspi_create_lock);
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
@@ -222,11 +219,11 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
       eret = GASPI_ERROR;
       goto errL;
     }
+
   glb_gaspi_ctx.sockfd[i] = -1;
 
  okL:
   unlock_gaspi(&glb_gaspi_ctx_lock);
-
   return GASPI_SUCCESS;
   
  errL:
