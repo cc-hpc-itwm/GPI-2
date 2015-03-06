@@ -358,8 +358,13 @@ fi
 make clean &> /dev/null
 make -C src depend &> /dev/null
 
+NCORES=`grep -c '^processor' /proc/cpuinfo`
+if [ -z $NCORES ]; then
+    NCORES=1
+fi
+
 echo -e -n "\nBuilding GPI..."
-make gpi >> install.log 2>&1
+make -j$NCORES gpi >> install.log 2>&1
 if [ $? != 0 ]; then
     echo "Compilation of GPI-2 failed (see install.log)"
     echo "Aborting..."
@@ -380,7 +385,7 @@ echo " done."
 
 
 echo -e -n "\nBuilding tests..."
-make tests >> install.log 2>&1
+make -j$NCORES tests >> install.log 2>&1
 if [ $? != 0 ]; then
     echo "Compilation of tests failed (see install.log)"
     echo "Aborting..."
