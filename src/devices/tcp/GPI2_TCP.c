@@ -22,6 +22,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GASPI.h"
 #include "GPI2.h"
 #include "GPI2_Dev.h"
+#include "GPI2_SN.h"
 #include "GPI2_TCP.h"
 
 #include "tcp_device.h"

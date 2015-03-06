@@ -79,8 +79,8 @@ tcp_dev_destroy_passive_channel(struct tcp_passive_channel *channel)
 {
   if(channel != NULL)
     {
-      int ret = close(channel->read);
-      ret = close(channel->write);
+      close(channel->read);
+      close(channel->write);
 
       free(channel);
     }
@@ -188,7 +188,7 @@ tcp_dev_destroy_queue(struct tcp_queue *q)
 {
   if(q != NULL)
     {
-      int ret = close(q->handle);
+      close(q->handle);
       free(q);
       qs_ref_counter--;
     }

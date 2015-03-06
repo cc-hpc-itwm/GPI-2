@@ -174,9 +174,14 @@ tcp_dev_destroy_cq(struct tcp_cq *);
 struct tcp_queue *
 tcp_dev_create_queue(struct tcp_cq *, struct tcp_cq *);
 
+void
+tcp_dev_destroy_queue(struct tcp_queue *);
 
 struct tcp_passive_channel *
 tcp_dev_create_passive_channel(void);
+
+void
+tcp_dev_destroy_passive_channel(struct tcp_passive_channel *);
 
 int
 tcp_dev_return_wc(struct tcp_cq *, tcp_dev_wc_t *);
