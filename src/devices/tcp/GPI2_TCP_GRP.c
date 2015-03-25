@@ -66,6 +66,9 @@ pgaspi_dev_poll_groups()
       
       if ((ne < 0) || (wc.status != TCP_WC_SUCCESS))
 	{
+	  if(!tcp_dev_is_valid_state(wc.wr_id))
+	    continue;
+
 	  gaspi_print_error("Rank %u: Failed request to %lu. Collectives queue might be broken",
 			    glb_gaspi_ctx.rank,
 			    wc.wr_id);
