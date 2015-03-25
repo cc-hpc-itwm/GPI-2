@@ -72,6 +72,8 @@ gaspi_send_topology_sn(const int i, const gaspi_timeout_t timeout_ms)
     }
 
   gaspi_cd_header cdh;
+  memset(&cdh, 0, sizeof(gaspi_cd_header));
+
   cdh.op_len = glb_gaspi_ctx.tnc * 65; //TODO: 65 is magic
   cdh.op = GASPI_SN_TOPOLOGY;
   cdh.rank = i;
@@ -627,6 +629,8 @@ void *gaspi_sn_backend(void *arg)
 				  {
 				    /* grp check */
 				    struct{int tnc,cs,ret;} gb;
+				    memset(&gb, 0, sizeof(gb));
+
 				    gb.ret = -1;
 				    gb.cs = 0;
 				    
