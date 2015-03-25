@@ -681,6 +681,11 @@ pgaspi_cleanup_core()
 
 	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf = NULL;
 
+	  if (glb_gaspi_group_ctx[i].rank_grp)
+	    free (glb_gaspi_group_ctx[i].rank_grp);
+
+	  glb_gaspi_group_ctx[i].rank_grp = NULL;
+
 	  if(glb_gaspi_group_ctx[i].rrcd)
 	    {
 	      free (glb_gaspi_group_ctx[i].rrcd);
@@ -689,9 +694,10 @@ pgaspi_cleanup_core()
 	}
     }
 
+
   
   /* Device clean-up */
-  if(pgaspi_dev_cleanup_core() != GASPI_SUCCESS)
+  if(pgaspi_dev_cleanup_core() != 0)
     return GASPI_ERROR;
 
   if(glb_gaspi_ctx.hn_poff)
@@ -734,7 +740,8 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
       for(i = 0;i < glb_gaspi_ctx.tnc; i++)
 	{
 	  shutdown(glb_gaspi_ctx.sockfd[i],2);
-	  close(glb_gaspi_ctx.sockfd[i]);
+	  if(glb_gaspi_ctx.sockfd[i] > 0)
+	    close(glb_gaspi_ctx.sockfd[i]);
 	}
 
       free(glb_gaspi_ctx.sockfd);
