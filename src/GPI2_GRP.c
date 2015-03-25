@@ -304,6 +304,8 @@ pgaspi_group_commit (const gaspi_group_t group,
     }
   
   gaspi_cd_header cdh;
+  memset(&cdh, 0, sizeof(gaspi_cd_header));
+
   cdh.op_len = sizeof (gb);
   cdh.op = GASPI_SN_GRP_CHECK;
   cdh.rank = group;
@@ -391,6 +393,8 @@ pgaspi_group_commit (const gaspi_group_t group,
 		{ 
 		  //connect groups
 		  gaspi_cd_header cdh;
+		  memset(&cdh, 0, sizeof(gaspi_cd_header));
+
 		  cdh.op_len = sizeof(gaspi_rc_mseg);
 		  cdh.op = GASPI_SN_GRP_CONNECT;
 		  cdh.rank = glb_gaspi_ctx.rank;
