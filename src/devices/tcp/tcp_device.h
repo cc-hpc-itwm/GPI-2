@@ -192,4 +192,7 @@ tcp_virt_dev(void *);
 int
 tcp_dev_stop_device(int);
 
+int
+tcp_dev_is_valid_state(gaspi_rank_t);
+
 #endif

@@ -74,6 +74,21 @@ tcp_dev_create_passive_channel(void)
   return channel;
 }
 
+int
+tcp_dev_is_valid_state(gaspi_rank_t i)
+{
+  if(rank_state != NULL
+    {
+      if(rank_state[i] != NULL)
+       return 1;
+    }
+
+    return 0;
+}
+
+
+
+
 void
 tcp_dev_destroy_passive_channel(struct tcp_passive_channel *channel)
 {
@@ -221,7 +236,6 @@ _tcp_dev_alloc_remote_states (int n)
   return 0;
 }
 
-
 static inline tcp_dev_conn_state_t *
 _tcp_dev_add_new_conn(int rank, int conn_sock, int epollfd)
 {
@@ -296,6 +310,8 @@ _tcp_dev_connect_all(int epollfd)
       
       /* prepare work request */
       tcp_dev_wr_t wr;
+      memset(&wr, 0, sizeof(tcp_dev_wr_t));
+
       wr.wr_id       = glb_gaspi_ctx.tnc;
       wr.cq_handle   = CQ_HANDLE_NONE;
       wr.source      = glb_gaspi_ctx.rank;
@@ -1297,8 +1313,8 @@ tcp_virt_dev(void *args)
 		}
 
 	      close(event_fd);
-
-	      free(estate);
+	      if(estate != NULL)
+		free(estate);
 	    } 
 	} /* for all triggered events */
 
