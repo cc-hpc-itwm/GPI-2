@@ -85,9 +85,6 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id,
 
   if ((ne < 0) || (wc.status != TCP_WC_SUCCESS))
     {
-      gaspi_print_error("Failed passive request to %lu.",
-			wc.wr_id);
-
       glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc.wr_id] = 1;
 
       return GASPI_ERROR;
@@ -123,7 +120,6 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
   
   if( write(glb_gaspi_ctx_tcp.srqP, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
-      printf("Failed to post passive receive\n");
       return GASPI_ERROR;
     }
 
@@ -152,9 +148,7 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
     char buf;
     if(read(glb_gaspi_ctx_tcp.channelP->read, &buf, 1) < 0)
       {
-	int errsv = errno;
-	
-	printf("Error reading passive channel %s\n", strerror(errsv));
+	return GASPI_ERROR;
       }
   }
 
@@ -169,9 +163,6 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
 
   if ((ne < 0) || (wc.status != TCP_WC_SUCCESS))
     {
-      gaspi_print_error("Failed passive request to %lu.",
-			wc.wr_id);
-
       glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc.wr_id] = 1;
 
       return GASPI_ERROR;
