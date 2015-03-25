@@ -250,7 +250,12 @@ int main(int argc, char* argv[])
 	
   numprocs_working = numprocs - numprocs_idle;
   numprocs_working_and_idle = numprocs_working + numprocs_idle;
-  gaspi_rank_t *comm_main_ranks = malloc( numprocs_idle * sizeof(gaspi_rank_t));
+  gaspi_rank_t *comm_main_ranks = (gaspi_rank_t *) malloc( numprocs_working * sizeof(gaspi_rank_t));
+  if( comm_main_ranks == NULL)
+    exit(-1);
+  
+  memset(comm_main_ranks, 0, numprocs_working * sizeof(gaspi_rank_t));
+  
   init_array_2(comm_main_ranks, numprocs_working);
 
   /* contains info of all processes:
