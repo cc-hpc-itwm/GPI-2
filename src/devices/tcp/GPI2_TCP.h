@@ -38,7 +38,7 @@ typedef struct
   struct tcp_cq *rcqP;
 
   /* Queues communication */
-  struct tcp_cq *scqC[GASPI_MAX_QP], *rcqC[GASPI_MAX_QP];
+  struct tcp_cq *scqC[GASPI_MAX_QP];
   struct tcp_queue *qpC[GASPI_MAX_QP];
   
 }  gaspi_tcp_ctx;

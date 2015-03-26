@@ -163,7 +163,7 @@ pgaspi_dev_init_core()
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       glb_gaspi_ctx_tcp.qpC[c] = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqC[c],
-						       glb_gaspi_ctx_tcp.rcqC[c]);
+						       NULL);
       if(glb_gaspi_ctx_tcp.qpC[c] == NULL)
 	{
 	  gaspi_dev_print_error("Failed to create queue %d for IO.", c);
@@ -212,7 +212,6 @@ pgaspi_dev_cleanup_core()
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.scqC[c]);
-      tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.rcqC[c]);
     }
   
   for(i = 0; i < GASPI_MAX_MSEGS; i++)
