@@ -59,7 +59,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   glb_gaspi_cfg.logger = nconf.logger;
   glb_gaspi_cfg.port_check = nconf.port_check;
 
-  if (nconf.network == GASPI_IB || nconf.network == GASPI_ETHERNET)
+  if (nconf.network == GASPI_IB || nconf.network == GASPI_ROCE || nconf.network == GASPI_ETHERNET)
     {
       glb_gaspi_cfg.network = nconf.network;
       glb_gaspi_cfg.user_net = 1;

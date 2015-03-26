@@ -276,13 +276,15 @@ pgaspi_dev_init_core ()
       /* user didnt choose something, so we use network type of first active port */
       if(!glb_gaspi_cfg.user_net)
 	{
-	
-	if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_INFINIBAND) glb_gaspi_cfg.network = GASPI_IB;
-	else if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer ==IBV_LINK_LAYER_ETHERNET) glb_gaspi_cfg.network = GASPI_ETHERNET;
-      }
+	  if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer == IBV_LINK_LAYER_INFINIBAND)
+	    glb_gaspi_cfg.network = GASPI_IB;
+
+	  else if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer == IBV_LINK_LAYER_ETHERNET)
+	    glb_gaspi_cfg.network = GASPI_ROCE;
+	}
       
       
-      if(glb_gaspi_cfg.network == GASPI_ETHERNET)
+      if(glb_gaspi_cfg.network == GASPI_ROCE)
 	{
 	  
 	  glb_gaspi_ctx_ib.ib_port = 1;
@@ -339,7 +341,7 @@ pgaspi_dev_init_core ()
     }
 
 
-  if(glb_gaspi_cfg.network == GASPI_ETHERNET)
+  if(glb_gaspi_cfg.network == GASPI_ROCE)
     {
       glb_gaspi_cfg.mtu = 1024;
       if(glb_gaspi_cfg.net_info) gaspi_printf ("\teth. mtu   : %d\n", glb_gaspi_cfg.mtu);
@@ -448,7 +450,7 @@ pgaspi_dev_init_core ()
     }
 
   /* RoCE */
-  if(glb_gaspi_cfg.network == GASPI_ETHERNET)
+  if(glb_gaspi_cfg.network == GASPI_ROCE)
     {
       const int ret = ibv_query_gid (glb_gaspi_ctx_ib.context, glb_gaspi_ctx_ib.ib_port,GASPI_GID_INDEX, &glb_gaspi_ctx_ib.gid);
       if(ret)
@@ -504,7 +506,7 @@ pgaspi_dev_init_core ()
 	    }
 	}
 
-      if(glb_gaspi_cfg.network == GASPI_ETHERNET)
+      if(glb_gaspi_cfg.network == GASPI_ROCE)
 	{
 	  glb_gaspi_ctx_ib.local_info[i].gid = glb_gaspi_ctx_ib.gid;
 	}

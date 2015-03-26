@@ -72,9 +72,10 @@ module GASPI
 
     enum, bind(C) !:: gaspi_network_t
       enumerator :: GASPI_IB=0
-      enumerator :: GASPI_ETHERNET=1
-      enumerator :: GASPI_GEMINI=2
-      enumerator :: GASPI_ARIES=3
+      enumerator :: GASPI_ROCE=1
+      enumerator :: GASPI_ETHERNET=2
+      enumerator :: GASPI_GEMINI=3
+      enumerator :: GASPI_ARIES=4
     end enum 
 
     enum, bind(C) !:: gaspi_operation_t

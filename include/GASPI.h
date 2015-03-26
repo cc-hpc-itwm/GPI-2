@@ -106,10 +106,11 @@ extern "C"
    */
   typedef enum
   {
-    GASPI_IB = 0,	  /**< Infiniband */
-    GASPI_ETHERNET = 1,	  /**< RoCE */
-    GASPI_GEMINI = 2,	  /**< Cray Gemini (not implemented) */
-    GASPI_ARIES = 3	  /**< Cray Aries (not implemented) */
+    GASPI_IB = 0,	  /* Infiniband */
+    GASPI_ROCE = 1,	  /* RoCE */
+    GASPI_ETHERNET = 2,   /* Ethernet (TCP) */
+    GASPI_GEMINI = 3,	  /* Cray Gemini (not implemented) */
+    GASPI_ARIES = 4	  /* Cray Aries (not implemented) */
   } gaspi_network_t;
 
   /**
