@@ -105,7 +105,8 @@ int
 pgaspi_dev_init_core ()
 {
   char boardIDbuf[256];
-  int i, c, p, dev_idx = 0;
+  int i, p, dev_idx = 0;
+  unsigned int c;
 
   memset (&glb_gaspi_ctx_ib, 0, sizeof (gaspi_ib_ctx));
 
@@ -516,7 +517,7 @@ pgaspi_dev_init_core ()
 int
 pgaspi_dev_create_endpoint(const int i)
 {
-  int c;
+  unsigned int c;
 
   /* Set attributes */
   struct ibv_qp_init_attr qpi_attr;
@@ -627,7 +628,7 @@ errL:
 int
 pgaspi_dev_disconnect_context(const int i)
 {
-  int c;
+  unsigned int c;
 
   if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpGroups[i]))
     {
@@ -669,7 +670,7 @@ pgaspi_dev_connect_context(const int i)
 {
 
   struct ibv_qp_attr qp_attr;
-  int c;
+  unsigned int c;
 
   memset(&qp_attr, 0, sizeof (qp_attr));
     
@@ -819,7 +820,8 @@ pgaspi_dev_connect_context(const int i)
 int
 pgaspi_dev_cleanup_core ()
 {
-  int i, c;
+  int i;
+  unsigned int c;
 
   /* TODO: single loop should be enough */
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)

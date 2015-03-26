@@ -27,7 +27,7 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
 		  const gaspi_offset_t offset_local, const gaspi_rank_t rank,
 		  const gaspi_segment_id_t segment_id_remote,
 		  const gaspi_offset_t offset_remote, const gaspi_size_t size,
-		  const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
+		  const gaspi_queue_id_t queue)
 {
   tcp_dev_wr_t wr =
     {
@@ -55,7 +55,7 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
 		 const gaspi_offset_t offset_local, const gaspi_rank_t rank,
 		 const gaspi_segment_id_t segment_id_remote,
 		 const gaspi_offset_t offset_remote, const gaspi_size_t size,
-		 const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
+		 const gaspi_queue_id_t queue)
 {
   tcp_dev_wr_t wr =
     {
@@ -128,7 +128,7 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
 		   const gaspi_rank_t rank,
 		   const gaspi_notification_id_t notification_id,
 		   const gaspi_notification_t notification_value,
-		   const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
+		   const gaspi_queue_id_t queue)
 {
 
   gaspi_notification_t *not_val_ptr = (gaspi_notification_t *)malloc(sizeof(notification_value));
@@ -158,15 +158,14 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
 
 gaspi_return_t
 pgaspi_dev_write_list (const gaspi_number_t num,
-		  gaspi_segment_id_t * const segment_id_local,
-		  gaspi_offset_t * const offset_local,
-		  const gaspi_rank_t rank,
-		  gaspi_segment_id_t * const segment_id_remote,
-		  gaspi_offset_t * const offset_remote,
-		  gaspi_size_t * const size, const gaspi_queue_id_t queue,
-		  const gaspi_timeout_t timeout_ms)
+		       gaspi_segment_id_t * const segment_id_local,
+		       gaspi_offset_t * const offset_local,
+		       const gaspi_rank_t rank,
+		       gaspi_segment_id_t * const segment_id_remote,
+		       gaspi_offset_t * const offset_remote,
+		       gaspi_size_t * const size, const gaspi_queue_id_t queue)
 {
-  int i;
+  gaspi_number_t i;
 
   for (i = 0; i < num; i++)
     {
@@ -198,10 +197,9 @@ pgaspi_dev_read_list (const gaspi_number_t num,
 		      gaspi_offset_t * const offset_local, const gaspi_rank_t rank,
 		      gaspi_segment_id_t * const segment_id_remote,
 		      gaspi_offset_t * const offset_remote,
-		      gaspi_size_t * const size, const gaspi_queue_id_t queue,
-		      const gaspi_timeout_t timeout_ms)
+		      gaspi_size_t * const size, const gaspi_queue_id_t queue)
 {
-  int i;
+  gaspi_number_t i;
 
   for (i = 0; i < num; i++)
     {
@@ -236,18 +234,16 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
 			 const gaspi_size_t size,
 			 const gaspi_notification_id_t notification_id,
 			 const gaspi_notification_t notification_value,
-			 const gaspi_queue_id_t queue,
-			 const gaspi_timeout_t timeout_ms)
-{
+			 const gaspi_queue_id_t queue){
 
   if (pgaspi_dev_write(segment_id_local, offset_local, rank,
 		       segment_id_remote, offset_remote, size,
-		       queue, timeout_ms) != GASPI_SUCCESS)
+		       queue) != GASPI_SUCCESS)
     {
       return GASPI_ERROR;
     }
 
-  return pgaspi_dev_notify(segment_id_remote, rank, notification_id, notification_value, queue, timeout_ms);
+  return pgaspi_dev_notify(segment_id_remote, rank, notification_id, notification_value, queue);
 }
 
 gaspi_return_t
@@ -261,16 +257,15 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
 			      const gaspi_segment_id_t segment_id_notification,
 			      const gaspi_notification_id_t notification_id,
 			      const gaspi_notification_t notification_value,
-			      const gaspi_queue_id_t queue,
-			      const gaspi_timeout_t timeout_ms)
+			      const gaspi_queue_id_t queue)
 {
   //TODO: check different with and without extra function calls
   if (pgaspi_dev_write_list(num, segment_id_local, offset_local, rank,
 			    segment_id_remote, offset_remote, size,
-			    queue, timeout_ms) != GASPI_SUCCESS)
+			    queue) != GASPI_SUCCESS)
     {
       return GASPI_ERROR;
     }
 
-  return pgaspi_dev_notify(segment_id_notification, rank, notification_id, notification_value, queue, timeout_ms);
+  return pgaspi_dev_notify(segment_id_notification, rank, notification_id, notification_value, queue);
 }

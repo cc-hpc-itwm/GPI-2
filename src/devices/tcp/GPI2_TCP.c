@@ -73,7 +73,7 @@ pgaspi_dev_connect_context(const int i)
 int
 pgaspi_dev_init_core()
 {
-  int c;
+  unsigned int c;
   
   memset (&glb_gaspi_ctx_tcp, 0, sizeof (gaspi_tcp_ctx));
   
@@ -185,7 +185,8 @@ pgaspi_dev_init_core()
 int
 pgaspi_dev_cleanup_core()
 {
-  int i, c;
+  int i;
+  unsigned int c;
 
   tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpGroups);
   tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpP);

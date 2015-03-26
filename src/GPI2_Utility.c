@@ -165,7 +165,7 @@ gaspi_get_cpufreq ()
 int
 gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 {
-  int i, j,rc;
+  int i, rc;
   char buf[1024];
   unsigned int m[256];
   char path[256];
@@ -199,7 +199,8 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 
 	  int cpos = 0,found = 0;
 	  size_t length = strlen(bptr);
-
+	  size_t j;
+	  
 	  for(j = 0;j < length - 1; j++)
 	    {
 	      if(bptr[j]==',')

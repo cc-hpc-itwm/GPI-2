@@ -147,16 +147,15 @@ pgaspi_dev_write_list_notify (const gaspi_number_t,
 gaspi_return_t
 pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t,
 			     const gaspi_offset_t, const gaspi_rank_t,
-			     const gaspi_atomic_value_t,
-			     gaspi_atomic_value_t * const);
+			     const gaspi_atomic_value_t);
+
 
 gaspi_return_t
 pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t,
 				const gaspi_offset_t,
 				const gaspi_rank_t,
 				const gaspi_atomic_value_t,
-				const gaspi_atomic_value_t,
-				gaspi_atomic_value_t * const);
+				const gaspi_atomic_value_t);
 
 gaspi_return_t
 pgaspi_dev_passive_send (const gaspi_segment_id_t,

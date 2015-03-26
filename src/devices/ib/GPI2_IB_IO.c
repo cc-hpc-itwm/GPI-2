@@ -217,7 +217,7 @@ pgaspi_dev_write_list (const gaspi_number_t num,
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slist[256];
   struct ibv_send_wr swr[256];
-  int i;
+  gaspi_number_t i;
 
   for (i = 0; i < num; i++)
     {
