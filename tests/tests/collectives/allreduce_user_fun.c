@@ -57,7 +57,9 @@ int main(int argc, char *argv[])
     {
       int i;
       
-      ASSERT(gaspi_allreduce_user(a, b, n, sizeof(double), my_fun, NULL, GASPI_GROUP_ALL, GASPI_BLOCK));
+      ASSERT(gaspi_allreduce_user(a, b, n, sizeof(double),
+				  (gaspi_reduce_operation_t) my_fun, NULL,
+				  GASPI_GROUP_ALL, GASPI_BLOCK));
       for(i = 0; i < n; i++)
 	assert(b[i] == nprocs - 1);
     }

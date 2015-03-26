@@ -11,8 +11,9 @@ int main(int argc, char *argv[])
 {
 
   gaspi_group_t g;
-  gaspi_rank_t gsize, nprocs, myrank;
-
+  gaspi_rank_t nprocs, myrank;
+  gaspi_number_t gsize;
+  
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));

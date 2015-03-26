@@ -11,8 +11,9 @@
 gaspi_return_t
 g_create_group(gaspi_rank_t nprocs, gaspi_group_t *g, gaspi_rank_t avoid)
 {
-  gaspi_rank_t gsize, myrank;
-
+  gaspi_rank_t myrank;
+  gaspi_number_t gsize;
+  
 
   ASSERT(gaspi_proc_rank(&myrank));
   

@@ -411,19 +411,13 @@ int main(int argc, char* argv[])
 		    }
 		}
 	  
-	      gaspi_printf("%d: COMM_MAIN_NEW size is: %hi\n", myrank, gsize);
-
 	      ASSERT(gaspi_group_commit (COMM_MAIN_NEW, GASPI_BLOCK));
 	  
 	      init_array_2(comm_main_ranks, numprocs_working);
 	  
 	      ASSERT(gaspi_group_ranks (COMM_MAIN_NEW, comm_main_ranks));
 
-	      gaspi_printf("printing group_ranks_main: \n");
-	      gaspi_printf_array(comm_main_ranks, numprocs_working);
-
 	      comm_state = WORKING;
-	      gaspi_printf("%d REPAIRING COMM_MAIN_NEW FLAG 2\n", myrank);
 				
 	      if(status_processes[myrank] == WORKING)
 		{
