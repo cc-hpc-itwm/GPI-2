@@ -55,10 +55,10 @@ pgaspi_dev_segment_delete (const gaspi_segment_id_t);
 #endif /* GPI2_CUDA */
 
 int
-pgaspi_dev_init_core();
+pgaspi_dev_init_core(gaspi_config_t *);
 
 int
-pgaspi_dev_cleanup_core();
+pgaspi_dev_cleanup_core(gaspi_config_t *);
 
 int
 pgaspi_dev_register_mem(gaspi_rc_mseg *, const gaspi_size_t);

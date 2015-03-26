@@ -318,7 +318,7 @@ pgaspi_init_core()
 
   memset(glb_gaspi_ctx.ep_conn, 0, glb_gaspi_ctx.tnc * sizeof(gaspi_endpoint_conn_t));
 
-  if(pgaspi_dev_init_core() != 0)
+  if(pgaspi_dev_init_core(&glb_gaspi_cfg) != 0)
     return -1;
 
   for(i = 0; i < GASPI_MAX_QP + 3; i++)
@@ -697,7 +697,7 @@ pgaspi_cleanup_core()
 
   
   /* Device clean-up */
-  if(pgaspi_dev_cleanup_core() != 0)
+  if(pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0)
     return GASPI_ERROR;
 
   if(glb_gaspi_ctx.hn_poff)
