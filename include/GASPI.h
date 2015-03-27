@@ -34,16 +34,14 @@ extern "C"
 {
 #endif
 
+  /* Macro-ed constants */
 #define GASPI_MAJOR_VERSION (1)
 #define GASPI_MINOR_VERSION (1)
 #define GASPI_REVISION (1)
 
-#define GASPI_BLOCK       (0xffffffffffffffff)
-#define GASPI_TEST        (0x0)
 #define GASPI_MAX_NODES   (65536)
 #define GASPI_MAX_GROUPS  (32)
 #define GASPI_MAX_MSEGS   (32)
-#define GASPI_GROUP_ALL   (0)
 #define GASPI_MAX_QP      (16)
 #define GASPI_COLL_QP     (GASPI_MAX_QP)
 #define GASPI_PASSIVE_QP  (GASPI_MAX_QP+1)
@@ -53,6 +51,7 @@ extern "C"
 #define GASPI_MAX_QSIZE   (4096)
 #define GASPI_MAX_NOTIFICATION  (65536)
 
+  /* Types */
   typedef char gaspi_char;
   typedef unsigned char gaspi_uchar;
   typedef short gaspi_short;
@@ -83,7 +82,11 @@ extern "C"
   typedef unsigned int gaspi_notification_t;
   typedef unsigned int gaspi_statistic_counter_t;
   typedef char * gaspi_string_t;
-  
+
+  /* Typed constants */
+  static const gaspi_rank_t GASPI_GROUP_ALL = 0;
+  static const gaspi_timeout_t GASPI_BLOCK = 0xffffffffffffffff;
+  static const gaspi_timeout_t GASPI_TEST = 0x0;
 
   /**
    * Functions return type.
