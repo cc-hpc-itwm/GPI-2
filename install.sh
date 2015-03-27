@@ -117,7 +117,7 @@ while getopts ":hp:-:" opt; do
 		    ;;
 		with-fortran=*)
 		val=${OPTARG#*=}
-		if [ "$val" == "false" ]; then
+		if [ "$val" = "false" ]; then
 		    WITH_F90=0
 		    sed -i "s,fortran,,g" tests/tests/Makefile
 		fi
@@ -355,21 +355,24 @@ fi
 
 
 #build everything
-make clean &> /dev/null
-make -C src depend &> /dev/null
+make clean > /dev/null 2>&1
+which makedepend > /dev/null 2>&1
+if [ $? = 0 ]; then
+    make -C src depend > /dev/null 2>&1
+fi
 
 NCORES=`grep -c '^processor' /proc/cpuinfo`
 if [ -z $NCORES ]; then
     NCORES=1
 fi
 
-echo -e -n "\nBuilding GPI..."
+printf "\nBuilding GPI..."
 make -j$NCORES gpi >> install.log 2>&1
 if [ $? != 0 ]; then
     echo "Compilation of GPI-2 failed (see install.log)"
     echo "Aborting..."
     clean_bak_files
-    exit -1
+    exit 1
 fi
 
 if [ $WITH_F90 = 1 ]; then
@@ -378,23 +381,23 @@ if [ $WITH_F90 = 1 ]; then
 	echo "Creation of GPI-2 Fortran bindings failed (see install.log)"
 	echo "Aborting..."
 	clean_bak_files
-	exit -1
+	exit 1
     fi
 fi
 echo " done."
 
 
-echo -e -n "\nBuilding tests..."
+printf "\nBuilding tests..."
 make -j$NCORES tests >> install.log 2>&1
 if [ $? != 0 ]; then
     echo "Compilation of tests failed (see install.log)"
     echo "Aborting..."
     clean_bak_files
-    exit -1
+    exit 1
 fi
 echo " done."
 
-echo -e -n "\nCreating documentation..."
+printf "\nCreating documentation..."
 make docs >> install.log 2>&1
 if [ $? != 0 ]; then
     echo "Failed to create documentation (see install.log)"
