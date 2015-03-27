@@ -15,8 +15,8 @@ exit_timeout(){
     echo "Stop this program"
     trap - TERM INT QUIT
     $GASPI_CLEAN
-    kill -9 $TPID &> /dev/null
-    killall -9 sleep &> /dev/null
+    kill -9 $TPID > /dev/null 2>&1
+    killall -9 sleep > /dev/null 2>&1
     sleep 1
     trap exit_timeout TERM INT QUIT
 }
@@ -39,8 +39,8 @@ run_test(){
 	fi                                
     fi
 
-    if [ $Results == 0 ] ; then
-	$GASPI_RUN $PWD/bin/$1 &> results/$1-$(date -Idate).dat &
+    if [ $Results = 0 ] ; then
+	$GASPI_RUN $PWD/bin/$1 > results/$1-$(date -Idate).dat 2>&1 &
 	PID=$!
     else
 	echo "=================================== $1 ===================================" >> $LOG_FILE 2>&1 &
@@ -48,27 +48,27 @@ run_test(){
 	PID=$!
     fi
 
-    if [ $Time == 1 ] ; then
+    if [ $Time = 1 ] ; then
 	export PID
 	(sleep 600; kill -9 $PID;) &
 	TPID=$!
    #wait test to finish
        wait $PID
     fi
-    
-    if [ $? == 0 ];  then                                                                                                          
-	TESTS_PASS=$(($TESTS_PASS+1))
-        echo -e '\033[32m'"PASSED"                                                                                                 
-    else                             
-	TESTS_FAIL=$(($TESTS_FAIL+1))                                                                                              
-        echo -e '\033[31m'"FAILED"
+
+    if [ $? = 0 ]; then
+    	TESTS_PASS=$(($TESTS_PASS+1))
+        printf '\033[32m'"PASSED\n"
+    else
+    	TESTS_FAIL=$(($TESTS_FAIL+1))
+	        printf '\033[31m'"FAILED\n"
 	$GASPI_CLEAN
     fi     
 
    #reset terminal to normal
     tput sgr0
     
-    if [ $Time == 1 ] ; then
+    if [ $Time = 1 ] ; then
 	kill $TPID > /dev/null 2>&1
     fi
 }
@@ -78,7 +78,7 @@ trap exit_timeout TERM INT QUIT
 #Script starts here
 while getopts "vt" o ; do  
     case $o in  
-	v ) Results=1;opts_used=$[$opts_used + 1];echo "" > $LOG_FILE ;;
+	v ) Results=1;opts_used=$(($opts_used + 1);echo "" > $LOG_FILE ;;
 	t ) Time=0;;
     esac  
 done
@@ -98,7 +98,7 @@ if [ ! -r machines ]; then
 fi
 #check if tests were compiled (if exist)
 if [ "$TESTS" = "" ]; then
-    echo -e "\nNo tests found. Did you type make before?\n"
+    printf "\nNo tests found. Did you type make before?\n"
     exit 1
 fi
 
@@ -108,13 +108,13 @@ if [ $? = 0 ]; then
     HAS_NUMA=1
 fi
 
-if [ $HAS_NUMA == 1 ]; then
-    GASPI_RUN+=" -N"
+if [ "$HAS_NUMA" = "1" ]; then
+    GASPI_RUN="${GASPI_RUN} -N"
 fi
 #run them
 for i in $TESTS
 do
-    if [ "$i" == "-v" ]; then
+    if [ "$i" = "-v" ]; then
 	continue
     fi
     if [ `find $PWD/bin/ -iname $i ` ]; then 
