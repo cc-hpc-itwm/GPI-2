@@ -58,7 +58,7 @@ usage()
 
 clean_exit()
 {
-    if [ $1 == 1 ]; then
+    if [ $1 = 1 ]; then
 	if [ -x $(dirname $0)/gaspi_cleanup ]; then
 	    $(dirname $0)/gaspi_cleanup -m $UNIQ_MFILE
 	fi
@@ -131,7 +131,7 @@ kill_procs()
 #    clean_exit 1
     for i in $(cat $UNIQ_MFILE)
     do
-	$GASPI_LAUNCHER $i "nohup killall -9 ${PRG} `</dev/null`" &> /dev/null &
+	$GASPI_LAUNCHER $i "nohup killall -9 ${PRG} $(cat /dev/null)" > /dev/null 2>&1 &
     done
     remove_temp_file
     wait
@@ -273,7 +273,7 @@ do
 	fi
 	cmd="$cmd ${PRG} ${PRG_ARGS}"
 
-	$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null`"  &
+	$GASPI_LAUNCHER $previous "nohup $cmd $(cat /dev/null)"  &
 	
 	j=0
     fi
@@ -294,11 +294,11 @@ else
 fi
 cmd="$cmd ${PRG} ${PRG_ARGS}"
 
-$GASPI_LAUNCHER $previous "nohup $cmd `</dev/null` 2>&1" &
+$GASPI_LAUNCHER $previous "nohup $cmd $(cat /dev/null) 2>&1" &
 
 echo $PRG > /tmp/.last_gaspi_prg
 if [ -O /tmp/.last_gaspi_prg ]; then
-    chmod a+rw /tmp/.last_gaspi_prg &> /dev/null
+    chmod a+rw /tmp/.last_gaspi_prg > /dev/null 2>&1
 fi
 
 #start master
@@ -315,10 +315,10 @@ if [ "$master_node" != "$HN" ]; then
 	exit 1
     fi
     #prepare differently for remote node
-    chmod a+r $MFILE &> /dev/null
+    chmod a+r $MFILE > /dev/null 2>&1
     TMP_FILE=`readlink -f $MFILE`
     MFILE=$TMP_FILE
-    scp $MFILE ${master_node}:${MFILE} &> /dev/null
+    scp $MFILE ${master_node}:${MFILE} > /dev/null 2>&1
     if [ $? != 0 ]; then
 	echo "Warning: Failed to copy machinefile to remote host. Program might not start correctly."
     fi
