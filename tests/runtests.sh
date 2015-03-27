@@ -78,7 +78,7 @@ trap exit_timeout TERM INT QUIT
 #Script starts here
 while getopts "vt" o ; do  
     case $o in  
-	v ) Results=1;opts_used=$(($opts_used + 1);echo "" > $LOG_FILE ;;
+	v ) Results=1;opts_used=$(($opts_used + 1));echo "" > $LOG_FILE ;;
 	t ) Time=0;;
     esac  
 done
