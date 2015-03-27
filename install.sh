@@ -225,6 +225,7 @@ if [ $GPI2_DEVICE = IB ]; then
 
 else
     cp src/make.inc src/make.inc.bak
+    sed -i  "s,-libverbs,,g" tests/make.defines
     echo "###### added by install script" >> src/make.inc
     echo "GPI2_DEVICE = TCP" >> src/make.inc
 fi
