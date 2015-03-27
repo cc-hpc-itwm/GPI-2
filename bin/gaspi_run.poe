@@ -124,7 +124,7 @@ else
 fi
 
 #let's rock
-if [[  -z $LOADL_HOSTFILE ]]; then
+if [ -z $LOADL_HOSTFILE ]; then
     print_error_exit "No machine file (LOADL_HOSTFILE)"
 else
     MFILE=$LOADL_HOSTFILE
