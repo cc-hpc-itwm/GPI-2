@@ -2,8 +2,8 @@
 				  GPI-2
 			  http://www.gpi-site.com
 		  
-		  	      Version: 1.1.1
- 	          	  Copyright (C) 2013-2014
+		  	      Version: 1.2.0
+ 	          	  Copyright (C) 2013-2015
 			     Fraunhofer ITWM
 			     
 ******************************************************************************
@@ -29,12 +29,12 @@ Requirements:
 The current version of GPI-2 has the following requirements.
 
 Software:
-- libibverbs v1.1.6 (Verbs library from OFED).
+- libibverbs v1.1.6 (Verbs library from OFED) if running on Infiniband.
 - ssh server running on compute nodes (requiring no password).
-- gawk (GNU Awk)
+- gawk (GNU Awk) and sed utilities.
 
 Hardware:
-- Infiniband or RoCE devices.
+- Infiniband/RoCE device or Ethernet device.
 
 The easiest way to install GPI-2 is by using the install.sh
 script. The default settings install GPI-2 under /opt/GPI2/. This
@@ -46,14 +46,24 @@ For example,
 
 installs GPI-2 under /prog/GPI2 instead of under the default location.
 
+Infiniband support (default)
+----------------------------
+
 GPI-2 requires the libibverbs from the OFED stack. You can pass the
 path of your OFED installation to the install script using the option
-(-o) for that, in case the install script is not able to find it:
+(--with-infiniband) for that, in case the install script is not able to find it:
 
-     ./install.sh -o <full_path_to_ofed>
+     ./install.sh --with-infiniband<=full_path_to_ofed>
 
 You can see the install script usage:
-    ./install -h
+    ./install.sh -h
+
+Ethernet support
+----------------
+
+To install GPI-2 on a system without Infiniband, you can use the
+option --with-ethernet.
+
 
 MPI Interoperability
 --------------------
