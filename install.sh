@@ -40,6 +40,15 @@ GPI2 Installation:
 EOF
 }
 
+check_util_exists()
+{
+    which $1 > /dev/null 2>&1
+    if [ $? != 0 ]; then
+	printf '\nThis version of GPI-2 requires the %s utility.\n\n' "${1}"
+	exit 1
+    fi
+}
+
 clean_bak_files()
 {
     if [ -r src/make.inc.bak ]; then
@@ -52,6 +61,10 @@ clean_bak_files()
 	mv tests/make.defines.bak tests/make.defines
     fi
 }
+
+#check some requirements
+check_util_exists gawk
+check_util_exists sed
 
 while getopts ":hp:-:" opt; do
     case $opt in
@@ -180,7 +193,7 @@ while getopts ":hp:-:" opt; do
             ;;
     esac
 done
- 
+
 #remove (old) log
 rm -f install.log
 
