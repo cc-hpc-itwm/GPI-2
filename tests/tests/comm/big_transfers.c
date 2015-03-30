@@ -5,50 +5,33 @@
 
 #include <test_utils.h>
 
-#define ITERATIONS 10
-#define MAX_MSG_SIZE (1<<30)
-
-
 int main(int argc, char *argv[])
 {
-  int i;
-  gaspi_size_t mem;
+  int i, iterations = 1;
+  gaspi_size_t max_msg_size = (1 << 30);
+  
   const gaspi_offset_t offset = 0;
   gaspi_rank_t P, myrank, rank2send;
 
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
-
   ASSERT (gaspi_proc_num(&P));
   ASSERT (gaspi_proc_rank(&myrank));
+
   rank2send = (myrank + 1) % P;
   assert(rank2send >= 0);
   assert(rank2send < P);
 
-  mem = get_system_mem();
-  if(mem > 0)
-    {
-      mem *= 1024; //to bytes
-      mem *= 40;
-      mem /= 100;
-    }
-  
-  else
-    {
-      gaspi_printf("Failed to get mem (%lu)\n", mem);
-      exit(-1);
-    }
-  
-  gaspi_printf("Segment size %lu MB\n", mem / 1024 / 1024);
+  gaspi_printf("Segment and msg size %lu MB\n", max_msg_size / 1024 / 1024);
 
-  ASSERT( gaspi_segment_create(0, mem, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_UNINITIALIZED));
+  ASSERT( gaspi_segment_create(0, max_msg_size, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_UNINITIALIZED));
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  for(i = 0; i < ITERATIONS; i++)
+  for(i = 0; i < iterations; i++)
     {
-      ASSERT(gaspi_read(0, offset, rank2send, 0, offset, MAX_MSG_SIZE, 0, GASPI_BLOCK));
+      ASSERT(gaspi_read(0, offset, rank2send, 0, offset, max_msg_size, 0, GASPI_BLOCK));
     }
 
   ASSERT (gaspi_wait(0, GASPI_BLOCK));
@@ -58,5 +41,4 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 
   return EXIT_SUCCESS;
-
 }
