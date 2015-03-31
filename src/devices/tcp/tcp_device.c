@@ -184,7 +184,7 @@ tcp_dev_create_queue(struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
   struct tcp_queue *q = (struct tcp_queue *) malloc(sizeof(struct tcp_queue));
   if(q != NULL)
     {
-      handle = gaspi_connect2port("localhost", PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
+      handle = gaspi_connect2port("localhost", TCP_DEV_PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
       
       if(handle == -1)
 	return NULL;
@@ -296,7 +296,7 @@ _tcp_dev_connect_all(int epollfd)
       /* connect to node/rank */
       /* TODO: use a generic sockets comm framework */
       int conn_sock = gaspi_connect2port(gaspi_get_hn(i),
-				   PORT + glb_gaspi_ctx.poff[i],
+				   TCP_DEV_PORT + glb_gaspi_ctx.poff[i],
 				   CONN_TIMEOUT);
 
       if(conn_sock == -1)
@@ -304,7 +304,7 @@ _tcp_dev_connect_all(int epollfd)
 	  gaspi_dev_print_error("Error connecting to rank %i (%s) on port %i\n",
 				i,
 				gaspi_get_hn(i),
-				PORT + glb_gaspi_ctx.poff[i]);
+				TCP_DEV_PORT + glb_gaspi_ctx.poff[i]);
 	  return 1;
 	}
       
@@ -1081,13 +1081,13 @@ tcp_virt_dev(void *args)
   struct sockaddr_in listenAddr =
     {
       .sin_family = AF_INET,
-      .sin_port = htons (PORT + glb_gaspi_ctx.localSocket), /* TODO: glb_gaspi_ctx does not belong here*/
+      .sin_port = htons (TCP_DEV_PORT + glb_gaspi_ctx.localSocket), /* TODO: glb_gaspi_ctx does not belong here*/
       .sin_addr.s_addr = htonl(INADDR_ANY)
     };
 
   if(bind(listen_sock, (struct sockaddr *) (&listenAddr), sizeof(listenAddr)) < 0)
     {
-      gaspi_dev_print_error("Failed to bind to port %d\n", PORT + glb_gaspi_ctx.localSocket); /* TODO: glb_gaspi_ctx does not belong here*/
+      gaspi_dev_print_error("Failed to bind to port %d\n", TCP_DEV_PORT + glb_gaspi_ctx.localSocket); /* TODO: glb_gaspi_ctx does not belong here*/
       return NULL;
     }
   

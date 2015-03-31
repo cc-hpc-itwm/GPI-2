@@ -34,7 +34,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define CQ_HANDLE_NONE (CQ_MAX_NUM)
 #define QP_HANDLE_NONE (QP_MAX_NUM)
 
-#define PORT 19000
+#define TCP_DEV_PORT 19000
 
 /* TODO: minimize sizes */
 typedef struct 

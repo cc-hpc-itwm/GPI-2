@@ -94,7 +94,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
     }
 
   /* Passive channel (SRQ) */
-  glb_gaspi_ctx_tcp.srqP = gaspi_connect2port("localhost", PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
+  glb_gaspi_ctx_tcp.srqP = gaspi_connect2port("localhost", TCP_DEV_PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
   if(glb_gaspi_ctx_tcp.srqP == -1)
     {
       gaspi_dev_print_error("Failed to create passive channel connection");
