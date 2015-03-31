@@ -60,6 +60,10 @@ clean_bak_files()
 	cp tests/make.defines tests/make.defines.install
 	mv tests/make.defines.bak tests/make.defines
     fi
+
+    if [ -r src/Makefile.bak ]; then
+	mv src/Makefile.bak src/Makefile
+    fi
 }
 
 #check some requirements
@@ -197,6 +201,10 @@ done
 #remove (old) log
 rm -f install.log
 
+#save defaults
+cp src/make.inc src/make.inc.bak
+cp tests/make.defines tests/make.defines.bak
+
 echo "$0 $@" >> install.log
 
 if [ $GPI2_DEVICE = IB ]; then
@@ -237,7 +245,6 @@ if [ $GPI2_DEVICE = IB ]; then
     sed -i  "s,OFED_PATH = /usr,OFED_PATH = $OFED_PATH,g" tests/make.defines
 
 else
-    cp src/make.inc src/make.inc.bak
     sed -i  "s,-libverbs,,g" tests/make.defines
     echo "###### added by install script" >> src/make.inc
     echo "GPI2_DEVICE = TCP" >> src/make.inc
@@ -285,14 +292,12 @@ if [ $WITH_MPI = 1 ]; then
 	fi
     fi
     
-    cp src/make.inc src/make.inc.bak
     echo "Using MPI: ${MPI_PATH}" | tee -a install.log
     echo "###### added by install script" >> src/make.inc
     echo "CFLAGS += -DGPI2_WITH_MPI" >> src/make.inc
     echo "DBG_CFLAGS += -DGPI2_WITH_MPI" >> src/make.inc
     echo "INCLUDES += -I${MPI_INC_PATH}" >> src/make.inc
 
-    cp tests/make.defines tests/make.defines.bak
     echo "###### added by install script" >> tests/make.defines
     echo "CFLAGS += -DGPI2_WITH_MPI -I${MPI_INC_PATH} ${GPI2_EXTRA_CFLAGS}" >> tests/make.defines
     echo "LIB_PATH += -L${MPI_LIB_PATH} ${GPI2_EXTRA_LIBS_PATH}" >> tests/make.defines
@@ -347,7 +352,6 @@ if [ $WITH_CUDA = 1 ]; then
 	fi
     fi
    
-    cp src/make.inc src/make.inc.bak
     echo "Using CUDA: ${CUDA_PATH}" | tee -a install.log
     echo "###### added by install script" >> src/make.inc
     echo "SRCS += GPI2_GPU.c" >>src/make.inc
