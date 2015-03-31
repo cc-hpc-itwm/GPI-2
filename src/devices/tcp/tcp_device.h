@@ -35,6 +35,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define QP_HANDLE_NONE (QP_MAX_NUM)
 
 #define TCP_DEV_PORT 19000
+#define CONN_TIMEOUT   10000
 
 /* TODO: minimize sizes */
 typedef struct 
