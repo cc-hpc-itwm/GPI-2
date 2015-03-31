@@ -595,9 +595,6 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
     }
 
   return GASPI_SUCCESS;
-  
-/*   return pgaspi_dev_notify_waitsome(segment_id_local, notification_begin, */
-/* 				    num, first_id, timeout_ms); */
 }
 
 
@@ -640,8 +637,6 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
     *old_notification_val = res;
 
   return GASPI_SUCCESS;
-
-  //  return pgaspi_dev_notify_reset(segment_id_local, notification_id, old_notification_val);
 }
 
 
