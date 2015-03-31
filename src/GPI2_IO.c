@@ -460,7 +460,14 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
     {
       gaspi_print_error("Invalid queue: %d (gaspi_notify)", queue);    
       return GASPI_ERROR;
-    } 
+    }
+
+  if(notification_value == 0)
+    {
+      gaspi_print_error("Invalid notification value: should not be 0");
+      return GASPI_ERROR;
+    }
+
 #endif
   gaspi_return_t eret = GASPI_ERROR;
   
@@ -663,6 +670,12 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 			segment_id_remote, offset_remote, size,
 			queue) < 0)
     return GASPI_ERROR;
+
+  if(notification_value == 0)
+    {
+      gaspi_print_error("Invalid notification value: should not be 0");
+      return GASPI_ERROR;
+    }
 #endif
 
   gaspi_return_t eret = GASPI_ERROR;
@@ -733,6 +746,12 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 			    segment_id_remote[n], offset_remote[n], size[n],
 			    queue) < 0)
 	return GASPI_ERROR;
+    }
+
+  if(notification_value == 0)
+    {
+      gaspi_print_error("Invalid notification value: should not be 0");
+      return GASPI_ERROR;
     }
   
 #endif
