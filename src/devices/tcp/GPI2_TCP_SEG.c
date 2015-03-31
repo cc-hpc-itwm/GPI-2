@@ -16,14 +16,8 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <errno.h>
-#include <sys/mman.h>
-#include <sys/timeb.h>
-#include <unistd.h>
-
 #include "GASPI.h"
-#include "GPI2_SN.h"
-#include "GPI2_TCP.h"
+#include "GPI2_Types.h"
 
 int
 pgaspi_dev_register_mem(gaspi_rc_mseg *seg, const gaspi_size_t size)

@@ -21,6 +21,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GPI2.h"
 
+#include "tcp_device.h"
+
 #define QP_MAX_NUM 4096
 
 typedef struct

@@ -16,12 +16,8 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 #include "GASPI.h"
-#include "GPI2.h"
-#include "GPI2_Coll.h"
 #include "GPI2_TCP.h"
 #include "GPI2_Types.h"
-
-#include "tcp_device.h"
 
 int
 pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_addr, int g)

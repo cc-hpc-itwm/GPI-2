@@ -15,11 +15,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
-#include "GPI2.h"
+
 #include "GASPI.h"
 #include "GPI2_TCP.h"
-
-#include "tcp_device.h"
 
 gaspi_return_t
 pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id,
