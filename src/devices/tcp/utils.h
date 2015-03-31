@@ -42,9 +42,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define gaspi_verify_null_ptr(ptr)
 #endif
 
-#define PORT           19000
 #define CONN_TIMEOUT   10000
-#define NODES_MAX       512
 
 #define MAX(a,b)  (((a)<(b)) ? (b) : (a))
 #define MIN(a,b)  (((a)>(b)) ? (b) : (a))
