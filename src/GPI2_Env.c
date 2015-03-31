@@ -102,29 +102,6 @@ _gaspi_handle_env_mpi(gaspi_context *ctx)
 	}
     }
 
-  //set numa (by default if we're running 2 or less procs/node)
-  if(ranks_node <= 2)
-    {
-      
-      cpu_set_t sock_mask;
-      if(gaspi_get_affinity_mask (ctx->localSocket, &sock_mask) < 0)
-	{
-	  gaspi_print_error ("Failed to get affinity mask");
-	}
-      else
-	{
-	  char mtyp[16];
-	  gaspi_machine_type (mtyp);
-	  if(strncmp (mtyp, "x86_64", 6) == 0){
-	    if(sched_setaffinity (0, sizeof (cpu_set_t), &sock_mask) != 0)
-	      {
-		gaspi_print_error ("Failed to set affinity (NUMA)");
-	      }
-	  }
-	}
-    }
-  
-
   //set mfile
   if( 0 == mpi_rank)
     {
