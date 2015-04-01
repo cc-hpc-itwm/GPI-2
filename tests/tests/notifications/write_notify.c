@@ -21,6 +21,9 @@ int main(int argc, char *argv[])
 
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT (gaspi_proc_rank(&rank));
+
+  if(nprocs < 2 )
+    goto end;
   
   ASSERT (gaspi_segment_create(seg_id, nprocs * sizeof(int), GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_UNINITIALIZED));
 
@@ -69,6 +72,7 @@ int main(int argc, char *argv[])
     }
   while(n < (nprocs - 1));
 
+ end:
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
   

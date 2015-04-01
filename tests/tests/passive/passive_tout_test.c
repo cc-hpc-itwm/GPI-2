@@ -15,33 +15,40 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_num(&P));
   ASSERT (gaspi_proc_rank(&myrank));
 
+  if(P < 2)
+    goto end;
+  
   ASSERT (gaspi_segment_create(0, _2MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   const gaspi_size_t msgSize = 1;
-  if(myrank == 1)
+  if(P > 1)
     {
-      gaspi_rank_t n;
-      for(n = 0; n < P; n++)
+      
+      if(myrank == 1)
 	{
-	  if(n == myrank)
-	    continue;
-	  
-	  gaspi_return_t ret = GASPI_ERROR;
-	  do
+	  gaspi_rank_t n;
+	  for(n = 0; n < P; n++)
 	    {
-	      ret = gaspi_passive_send(0, 0, n, msgSize, GASPI_TEST);
+	      if(n == myrank)
+		continue;
+	  
+	      gaspi_return_t ret = GASPI_ERROR;
+	      do
+		{
+		  ret = gaspi_passive_send(0, 0, n, msgSize, GASPI_TEST);
+		}
+	      while(ret != GASPI_SUCCESS);
 	    }
-	  while(ret != GASPI_SUCCESS);
+	}
+      else
+	{
+	  gaspi_rank_t sender;
+	  ASSERT(gaspi_passive_receive(0, 0, &sender, msgSize, GASPI_BLOCK));
+	  assert(sender == 1);
 	}
     }
-  else
-    {
-      gaspi_rank_t sender;
-      ASSERT(gaspi_passive_receive(0, 0, &sender, msgSize, GASPI_BLOCK));
-      assert(sender == 1);
-    }
-  
+ end:  
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 

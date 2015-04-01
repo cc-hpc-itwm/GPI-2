@@ -20,6 +20,9 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_num(&P));
   ASSERT (gaspi_proc_rank(&myrank));
 
+  if(P < 2 )
+    goto end;
+  
   gaspi_printf("P = %d N = %lu\n", P, N);
   
   gaspi_printf("Seg size: %lu MB\n",  MAX (_4GB, 2 * ((N/P) * N * 2 * sizeof (double)))/1024/1024);
@@ -65,11 +68,10 @@ int main(int argc, char *argv[])
 	}
       ASSERT (gaspi_write(0, 4, rankSend, 0, 6, 32768, 1, GASPI_TEST));
     }
-  
-  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
-  
-  ASSERT (gaspi_proc_term(GASPI_BLOCK));
 
+ end:
+  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+  ASSERT (gaspi_proc_term(GASPI_BLOCK));
 
   return EXIT_SUCCESS;
 }

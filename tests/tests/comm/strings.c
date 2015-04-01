@@ -87,6 +87,9 @@ int main (int argc, char *argv[])
   gaspi_proc_rank(&myRank);
   gaspi_proc_num(&nProc);
 
+  if(nProc < 2)
+    goto end;
+  
   gaspi_number_t queue_size;
   gaspi_number_t queue_max;
   gaspi_queue_size_max(&queue_max);
@@ -184,6 +187,7 @@ int main (int argc, char *argv[])
   gaspi_printf("Rank %d done\n", myRank);
 
   //block and exit
+ end:
   gaspi_barrier(GASPI_GROUP_ALL,GASPI_BLOCK);
   gaspi_proc_term(GASPI_BLOCK);
   return EXIT_SUCCESS;

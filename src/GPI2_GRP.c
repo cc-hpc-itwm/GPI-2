@@ -255,7 +255,7 @@ pgaspi_group_commit (const gaspi_group_t group,
       goto errL;
     }
 
-  if (group_to_commit->tnc < 2)
+  if (group_to_commit->tnc < 2 && glb_gaspi_ctx.tnc != 1)
     {
       gaspi_print_error("Group must have at least 2 ranks to be committed");
       goto errL;

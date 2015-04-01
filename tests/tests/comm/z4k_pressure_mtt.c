@@ -251,6 +251,8 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_proc_rank (&myrank));
   ASSERT (gaspi_proc_num (&highestnode));
+  if(highestnode < 2 )
+    goto exit;
 
   /* if(highestnode > 2){ */
   /*   gpi_printf("This test is for 2 machines only\n"); */
@@ -305,7 +307,8 @@ int main(int argc, char *argv[])
 
   if( error == -1)
     return EXIT_FAILURE;
-  
+
+ exit:
   return EXIT_SUCCESS;
 }
 

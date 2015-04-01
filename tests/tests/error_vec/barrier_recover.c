@@ -245,7 +245,6 @@ int main(int argc, char* argv[])
   if(numprocs < 3)
     return EXIT_SUCCESS;
 
-  
   read_params(argc, argv, &timesteps, &numprocs_idle);
 	
   numprocs_working = numprocs - numprocs_idle;
