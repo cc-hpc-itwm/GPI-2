@@ -288,6 +288,6 @@ gaspi_print_affinity_mask ()
       found++;
     }
 
-  gaspi_printf ("%s\n", buf);
+  pgaspi_printf ("%s\n", buf);
 }
 

@@ -120,7 +120,6 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 
   const int i = (int) rank;
 
-  //TODO: verify the locking needs/problems
   lock_gaspi_tout(&gaspi_create_lock, timeout_ms);
 
   if(!glb_gaspi_ctx.ep_conn[i].istat)
@@ -570,7 +569,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       /* connect to ranks before me */
       for(i = 0; i <= glb_gaspi_ctx.rank; i++)
 	{
-	  if(gaspi_connect((gaspi_rank_t) i, timeout_ms) != GASPI_SUCCESS)
+	  if(pgaspi_connect((gaspi_rank_t) i, timeout_ms) != GASPI_SUCCESS)
 	    {
 	      return GASPI_ERROR;
 	    }
@@ -883,7 +882,7 @@ pgaspi_proc_local_num(gaspi_rank_t * const local_num)
     {
       gaspi_verify_null_ptr(local_num);
 
-      if(gaspi_proc_rank(&rank) != GASPI_SUCCESS)
+      if(pgaspi_proc_rank(&rank) != GASPI_SUCCESS)
 	return GASPI_ERROR;
 
       while(glb_gaspi_ctx.poff[rank + 1] != 0)
