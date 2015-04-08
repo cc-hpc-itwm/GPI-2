@@ -88,7 +88,6 @@ pgaspi_notification_num (gaspi_number_t * const notification_num)
 {
   gaspi_verify_null_ptr(notification_num);
 
-  //TODO:?
   *notification_num = ((1 << 16) - 1);
   return GASPI_SUCCESS;
 }
@@ -306,7 +305,6 @@ pgaspi_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
     return GASPI_TIMEOUT;
 
   eret = pgaspi_dev_wait(queue, &glb_gaspi_ctx.ne_count_c[queue], timeout_ms);
-  //TODO: some meaningful error msg?
 
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
 
@@ -477,8 +475,6 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
   eret = pgaspi_dev_notify(segment_id_remote, rank,
 			   notification_id, notification_value,
 			   queue);
-
-  //TODO: some debug when failure?
 
   glb_gaspi_ctx.ne_count_c[queue]++;
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
