@@ -35,7 +35,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define QP_HANDLE_NONE (QP_MAX_NUM)
 
 #define TCP_DEV_PORT 19000
-#define CONN_TIMEOUT   10000
+#define CONN_TIMEOUT 1000000
 
 /* TODO: minimize sizes */
 typedef struct 
@@ -46,7 +46,6 @@ typedef struct
     {
       REGISTER_MASTER,
       REGISTER_WORKER,
-      STOP_DEVICE,
       
       POST_RDMA_WRITE,
       POST_RDMA_WRITE_INLINED,
@@ -194,6 +193,6 @@ int
 tcp_dev_stop_device(int);
 
 int
-tcp_dev_is_valid_state(gaspi_rank_t);
+tcp_dev_is_valid_state(unsigned short);
 
 #endif
