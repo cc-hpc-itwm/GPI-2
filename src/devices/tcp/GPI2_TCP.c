@@ -237,15 +237,20 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
       tcp_dev_destroy_passive_channel(glb_gaspi_ctx_tcp.channelP);
     }
 
-/*   if(tcp_dev_stop_device(glb_gaspi_ctx_tcp.qs_handle)) */
-/*     { */
-/*       printf("Failed to stop device\n"); */
-/*       return -1; */
-/*     } */
 
-/*   if(pthread_join(tcp_dev_thread, NULL) != 0) */
-/*     return -1; */
-  
+  int s = pthread_cancel(tcp_dev_thread);
+  if (s != 0)
+    {
+      gaspi_print_error("Failed to stop device.");
+    }
+
+  void *res;
+  s = pthread_join(tcp_dev_thread, &res);
+  if (s != 0)
+    {
+      gaspi_print_error("Failed to wait device.");
+    }
+
   return 0;
 }
 
