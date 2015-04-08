@@ -197,7 +197,9 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 	      break;
 	    }
 
-	  int cpos = 0,found = 0;
+	  int found = 0;
+	  unsigned int cpos = 0;
+	  
 	  size_t length = strlen(bptr);
 	  size_t j;
 	  
@@ -239,20 +241,6 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 
   return 0;
 }
-
-
-
-inline int
-gaspi_thread_sleep(int msecs)
-{
-
-  struct timespec sleep_time, rem;
-  sleep_time.tv_sec = msecs / 1000;
-  sleep_time.tv_nsec = 0;// msecs * 1000000;
-
-  return nanosleep(&sleep_time, &rem);
-}
-
 
 char *
 gaspi_get_hn (const unsigned int id)

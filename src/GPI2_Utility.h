@@ -62,7 +62,16 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 ulong gaspi_load_ulong(volatile ulong *ptr);
 float gaspi_get_cpufreq ();
 int gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset);
-inline int gaspi_thread_sleep(int msecs);
+
 char * gaspi_get_hn (const unsigned int id);
+
+static inline int gaspi_thread_sleep(int msecs)
+{
+  struct timespec sleep_time, rem;
+  sleep_time.tv_sec = msecs / 1000;
+  sleep_time.tv_nsec = 0;// msecs * 1000000;
+  
+  return nanosleep(&sleep_time, &rem);
+}
 
 #endif
