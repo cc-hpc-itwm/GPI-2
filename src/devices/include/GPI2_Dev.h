@@ -26,13 +26,13 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 /////////////////// WORK SANDBOX /////////////////////////
 ///TODO: think about these
 
-inline char *
+ char *
 pgaspi_dev_get_rrcd(int);
 
-inline char *
+ char *
 pgaspi_dev_get_lrcd(int);
 
-inline size_t
+ size_t
 pgaspi_dev_get_sizeof_rc();
 
 /* Groups */
