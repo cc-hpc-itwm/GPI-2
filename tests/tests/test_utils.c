@@ -12,10 +12,10 @@ void tsuite_init(int argc, char *argv[])
 	{
 	  if(strcmp(argv[i], "GASPI_ETHERNET") == 0)
 	    tsuite_default_config.network = GASPI_ETHERNET;
-	  else
-            if(strcmp(argv[i], "GASPI_IB") == 0)
-                tsuite_default_config.network = GASPI_IB;
-
+	  if(strcmp(argv[i], "GASPI_IB") == 0)
+	    tsuite_default_config.network = GASPI_IB;
+	  if(strcmp(argv[i], "GASPI_ROCE") == 0)
+	    tsuite_default_config.network = GASPI_ROCE;
 	}
       ASSERT(gaspi_config_set(tsuite_default_config));
     }

@@ -4,7 +4,6 @@
 #include <test_utils.h>
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
-#define GPIQueue1 1
 
 int main(int argc, char *argv[])
 {

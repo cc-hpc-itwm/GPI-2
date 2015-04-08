@@ -4,7 +4,6 @@
 #include <test_utils.h>
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
-#define GPIQueue1 1
 
 #define _1GB 1073741824
 
@@ -14,25 +13,25 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
-  const unsigned long N = (1 << 13);
+  const unsigned long N = (1 << 10);
   gaspi_rank_t P, myrank;
 
   ASSERT (gaspi_proc_num(&P));
   ASSERT (gaspi_proc_rank(&myrank));
 
   if(P < 2 )
-    goto end;
-  
+    {
+      gaspi_printf("Must have more than 1 procs\n");
+      goto end;
+    }
+
   gaspi_printf("P = %d N = %lu\n", P, N);
   
-  gaspi_printf("Seg size: %lu MB\n",  MAX (_4GB, 2 * ((N/P) * N * 2 * sizeof (double)))/1024/1024);
-  
-  if(gaspi_segment_create(0, _1GB,
-			  GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED) != GASPI_SUCCESS){
-    gaspi_printf("Failed to create segment\n");
-    return -1;
-  }
-
+  ASSERT(gaspi_segment_create(0,
+			      _8MB,
+			      GASPI_GROUP_ALL,
+			      GASPI_BLOCK,
+			      GASPI_MEM_INITIALIZED));
 
   gaspi_pointer_t _vptr;
   if(gaspi_segment_ptr(0, &_vptr) != GASPI_SUCCESS)
@@ -40,9 +39,8 @@ int main(int argc, char *argv[])
 
   gaspi_number_t qmax ;
   ASSERT (gaspi_queue_size_max(&qmax));
-
   gaspi_printf("Queue max: %lu\n", qmax);
- 
+
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   int i;
@@ -69,9 +67,14 @@ int main(int argc, char *argv[])
       ASSERT (gaspi_write(0, 4, rankSend, 0, 6, 32768, 1, GASPI_TEST));
     }
 
+  ASSERT(gaspi_wait(1, GASPI_BLOCK));
+
  end:
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
+  printf("Rank %d: Finish\n", myrank);
+  fflush(stdout);
 
   return EXIT_SUCCESS;
 }

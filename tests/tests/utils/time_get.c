@@ -7,7 +7,7 @@
 
 int main(int argc, char *argv[])
 {
-  gaspi_time_t start, end;
+  gaspi_time_t start=0.0f, end=0.0f;
   gaspi_time_t start1, end1;
 
   gaspi_float cpu_freq;
@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
   TSUITE_INIT(argc, argv);
 
   ASSERT(gaspi_time_get(&start));
-  gaspi_thread_sleep(2000);
+  usleep(2000000);
   ASSERT(gaspi_time_get(&end));
 
   gaspi_printf("Time (before init) is %.2f ms %.2f secs\n", end - start, (end-start) /1000);
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
   ASSERT(gaspi_time_get(&start1));
-  gaspi_thread_sleep(2000);
+  sleep(2);
   ASSERT(gaspi_time_get(&end1));
 
   gaspi_printf("Time (after init) is %.2f ms %.2f secs\n", end1 - start1, (end1-start1) /1000);
