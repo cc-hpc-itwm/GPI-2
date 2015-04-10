@@ -20,10 +20,15 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <netinet/tcp.h>
 #include <signal.h>
 #include <sys/epoll.h>
+#include <sys/ioctl.h>o
 #include <sys/socket.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+
+#ifdef __linux__
+#include <linux/sockios.h>
+#endif
 
 #include "GPI2.h"
 #include "GPI2_SN.h"
@@ -1036,7 +1041,24 @@ _tcp_dev_process_delayed(int epollfd)
   
   return 0;
 }
-  
+
+static void
+_tcp_dev_flush_conn(int fd)
+{
+#ifdef __linux__
+  for(;;) 
+    {
+      int outstanding;
+      ioctl(fd, SIOCOUTQ, &outstanding);
+
+      if(!outstanding)
+	break;
+
+      usleep(1000);
+    }
+#endif
+}
+
 static void
 _tcp_dev_cleanup_handler(void *arg)
 {
@@ -1050,6 +1072,7 @@ _tcp_dev_cleanup_handler(void *arg)
       epoll_ctl(epollfd, EPOLL_CTL_DEL, rank_state[k]->fd, &ev);
 
       shutdown(rank_state[k]->fd,2);
+      _tcp_dev_flush_conn(rank_state[k]->fd);
       close(rank_state[k]->fd);
 
       free(rank_state[k]);
@@ -1326,6 +1349,7 @@ tcp_virt_dev(void *args)
 		  rank_state[event_rank] = NULL;
 		}
 
+	      shutdown(event_fd, SHUT_WR);
 	      close(event_fd);
 	      if(estate != NULL)
 		free(estate);
