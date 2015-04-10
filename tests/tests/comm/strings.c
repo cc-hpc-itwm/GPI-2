@@ -20,10 +20,10 @@ void print_char_array_segment(gaspi_char* segment,
   FILE *stream;
   stream = open_memstream (&bp, &size);
 
-  int r = 0, i = 0, offset;
+  gaspi_size_t r = 0, i = 0, offset;
   fprintf(stream, "rank %d:\n", myRank);
   for(r = 0; r < nrReads; r++) {
-    fprintf(stream, "    [%d]: ", r);
+    fprintf(stream, "    [%lu]: ", r);
     offset = r * (readlength + 1);
     for(i = 0; i < readlength; i++)
       fprintf(stream, "%c", segment[offset + i]);
@@ -48,7 +48,7 @@ void print_read( gaspi_char* segment,
   FILE *stream;
   stream = open_memstream (&bp, &size);
 
-  int i = 0, offset;
+  gaspi_size_t i = 0, offset;
   fprintf(stream, "rank %d:\n", myRank);
   fprintf(stream, "    [%d]: ", r);
   offset = r * (readlength + 1);
@@ -68,7 +68,7 @@ void initReads(	gaspi_char* segment,
 		const gaspi_size_t readlength,
 		gaspi_rank_t myRank)
 {
-  int r = 0, i = 0, offset;
+  gaspi_size_t r = 0, i = 0, offset;
   for(r = 0; r < nrReads; r++) {
     offset = r * (readlength + 1);
     for(i = 0; i < readlength; i++) {
@@ -115,7 +115,7 @@ int main (int argc, char *argv[])
   gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK);
 
   //push the reads from the master to the slaves
-  int r = 0;
+  gaspi_size_t r = 0;
   int rawReadSize = RAWREADLENGTH * sizeof(gaspi_char);
   int nrWorkers = nProc - 1;
 

@@ -34,9 +34,7 @@ int main(int argc, char *argv[])
   gaspi_number_t qmax ;
   ASSERT (gaspi_queue_size_max(&qmax));
 
-  int i;
-  gaspi_number_t queueSize;
-
+  unsigned long i;
   unsigned long size = 1800;
 
   for(i = 0; i < size / sizeof(unsigned char); i++)

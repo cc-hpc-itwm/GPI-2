@@ -7,9 +7,6 @@
 
 int main(int argc, char *argv[])
 {
-  gaspi_rank_t rank;
-  gaspi_return_t ret;
-
   TSUITE_INIT(argc, argv);
 
   ASSERT(gaspi_proc_init(GASPI_BLOCK));

@@ -20,7 +20,7 @@ int typeSize [] = {
 #define INIT_CALL(type, v, n, r) INIT_FUN(type)((v), (n), ((r)))
 #define INIT_DECL(type) int INIT_FUN(type)(type *v, gaspi_number_t n, gaspi_rank_t r)
 #define INIT_IMPLEM INIT_DECL(INIT_TYPE) {	    \
-    int i;                                          \
+    gaspi_number_t i;				    \
     for(i = 0; i < n; i++)			    \
       v[i] = (INIT_TYPE) r;			    \
     return 1;					    \
@@ -49,7 +49,7 @@ INIT_IMPLEM
 #define CHECK_CALL(type, v, n, expected) CHECK_FUN(type)((v), (n), (expected))
 #define CHECK_DECL(type) int CHECK_FUN(type)(type *v, gaspi_number_t n, gaspi_operation_t op)
 #define CHECK_IMPLEM CHECK_DECL(CHECK_TYPE) { \
-    int i;						    \
+    gaspi_number_t i;					    \
     CHECK_TYPE expected;				    \
     gaspi_rank_t myrank, nprocs;			    \
     ASSERT(gaspi_proc_rank(&myrank));			    \

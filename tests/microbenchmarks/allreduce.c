@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
   gaspi_config_t gconf;
   gaspi_rank_t grank, gnum;
   gaspi_float cpu_freq;
-  gaspi_cycles_t stamp[1024], stamp2[1024], delta[1024];
+  gaspi_cycles_t stamp[1024], delta[1024];
 
   gaspi_config_get(&gconf);
   gconf.mtu = 4096;

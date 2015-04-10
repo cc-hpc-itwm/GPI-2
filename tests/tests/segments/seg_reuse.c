@@ -6,11 +6,11 @@
 //alloc a segment, delete it and re-create it
 int main(int argc, char *argv[])
 {
+  gaspi_rank_t rank, nprocs;
+  
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
-
-  gaspi_rank_t rank, nprocs, i;
 
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT (gaspi_proc_rank(&rank));

@@ -3,10 +3,6 @@
 
 #include <test_utils.h>
 
-#define MAX(a,b) (((a)>(b))?(a):(b))
-
-#define _1GB 1073741824
-
 int main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
@@ -34,8 +30,7 @@ int main(int argc, char *argv[])
 			      GASPI_MEM_INITIALIZED));
 
   gaspi_pointer_t _vptr;
-  if(gaspi_segment_ptr(0, &_vptr) != GASPI_SUCCESS)
-    printf("gaspi_segment_ptr failed\n");
+  ASSERT(gaspi_segment_ptr(0, &_vptr));
 
   gaspi_number_t qmax ;
   ASSERT (gaspi_queue_size_max(&qmax));
@@ -43,7 +38,7 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  int i;
+  unsigned long i;
   gaspi_number_t queueSize;
   int rankSend = (myrank + 1) % P;
   gaspi_printf("rank to: %d\n", rankSend);

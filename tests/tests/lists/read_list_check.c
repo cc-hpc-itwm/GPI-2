@@ -24,8 +24,8 @@ int main(int argc, char *argv[])
 
   int *mem = (int *) _vptr;
 
-  int i;
-  const  unsigned long maxInts = _128MB / sizeof(int);
+  unsigned long i;
+  const unsigned long maxInts = _128MB / sizeof(int);
 
   for(i = 0; i < maxInts; i++)
     {
@@ -77,15 +77,17 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   //check
+  gaspi_number_t l;
+  
   gaspi_offset_t off2check = 0;//(bytes * nListElems + 64);
   char * chPtr = (char *) _vptr;
   mem = (int *) (chPtr + off2check);
 
-  for(i = 0; i < nListElems; i++)
+  for(l = 0; l < nListElems; l++)
     {
-      if(mem[i] != (int) rank2read)
+      if(mem[l] != (int) rank2read)
 	gaspi_printf("wrong value on %d: %d instead of %d\n",
-		     i, mem[i], rank2read);
+		     l, mem[l], rank2read);
 
     }
 

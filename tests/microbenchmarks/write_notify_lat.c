@@ -43,7 +43,6 @@ main (int argc, char *argv[])
 
       for (i = 1; i < 24; i++)
 	{
-	  volatile char *pollBuf = (volatile char *) (ptr0 + ( 2 * bytes -1 ));
 	  int rcnt = 0;
 	  int cnt = 0;
 	  gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK);

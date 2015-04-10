@@ -32,7 +32,7 @@ void sighandler(int signum, siginfo_t *info, void *ptr)
 {
 
   pid_t ptid =  syscall(__NR_gettid);
-  gaspi_number_t flag;
+/*   gaspi_number_t flag; */
   gaspi_rank_t nodeRank = 0;
 
 /*   if(gaspi_initialized(&flag)) */
@@ -59,7 +59,6 @@ int main(int argc, char *argv[])
 {
   //Debugging
   struct sigaction act;
-  struct rlimit ofiles;
 
   memset(&act, 0, sizeof(act));
   act.sa_sigaction = sighandler;
@@ -90,9 +89,6 @@ int main(int argc, char *argv[])
   printf("Hello from rank %d of %d -> %d\n", 
 	       rank, num, (rank + 1 ) % num );
 
-  int i;
-
- 
   gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK);
 
   ASSERT (gaspi_proc_term(GASPI_BLOCK));

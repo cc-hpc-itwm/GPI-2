@@ -60,8 +60,6 @@ int main(int argc, char *argv[])
   
   if(myrank != culprit)
     {
-      int n;
-
       ASSERT(g_create_group(nprocs, &g, culprit));
       ASSERT(gaspi_barrier(g, GASPI_BLOCK));
       ASSERT(gaspi_group_delete(g));

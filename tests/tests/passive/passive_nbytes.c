@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
   int_GlbMem = ( int *) _vptr;
 
   gaspi_size_t msgSize;
-  int i;
+  gaspi_size_t i;
   for(msgSize = 1; msgSize < 8192; msgSize *=2)
     if(myrank == 0)
       {

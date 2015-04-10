@@ -5,16 +5,14 @@
 
 int main(int argc, char *argv[])
 {
+  gaspi_rank_t rank, nprocs;
+  
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
   //need the barrier to make sn is up
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
-
-  gaspi_rank_t rank, nprocs, i;
-  gaspi_number_t seg_max;
-  gaspi_segment_id_t s;
 
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT (gaspi_proc_rank(&rank));

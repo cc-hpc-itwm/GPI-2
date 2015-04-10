@@ -30,19 +30,13 @@
 int 
 main(int argc,char *argv[])
 {
-
   gaspi_rank_t rank,tnc;
-  gaspi_return_t ret;
   gaspi_float vers;
   gaspi_config_t gconf;
   char mtype[16];
-  int commSize=1,cnt=0;
-  gaspi_number_t queueSize;
-  void *pret;
-  int i,l;
-  mcycles_t t0,t1,dt;
-  mcycles_t stamp[1024], stamp2[1024], delta[1024];
-  int amount_work = 1000;
+  int i;
+  mcycles_t t0, t1;
+  mcycles_t delta[1024];
   gaspi_float cpu_freq;
 
   gaspi_config_get(&gconf);

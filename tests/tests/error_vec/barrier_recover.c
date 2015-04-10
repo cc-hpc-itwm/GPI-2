@@ -26,7 +26,7 @@
   
 gaspi_rank_t myrank, numprocs, numprocs_idle, numprocs_working_and_idle;
 gaspi_return_t ret_val;
-int numprocs_working=0;
+unsigned int numprocs_working=0;
 int rescue_process;
 
 gaspi_queue_id_t queue_id=0;
@@ -197,7 +197,8 @@ init_array_3(int * to_init_array, int num_elem, int val)
 void
 update_status_processes_array(int *status_processes, gaspi_state_vector_t health_vec)
 {
-  int i, j;
+  int i;
+  unsigned int j;
   
   for(i = 0,j = 0;i < numprocs; ++i)
     {

@@ -7,7 +7,7 @@
 
 int main(int argc, char *argv[])
 {
-  int i;
+  gaspi_size_t i;
   int * segInt;
   gaspi_pointer_t segPtr;
   gaspi_rank_t numranks, myrank;

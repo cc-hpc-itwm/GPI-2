@@ -29,11 +29,10 @@ void do_backtrace(int id, int node, FILE * bt_file)
 
 void sighandler(int signum, siginfo_t *info, void *ptr)
 {
-
   pid_t ptid =  syscall(__NR_gettid);
-  gaspi_number_t flag;
   gaspi_rank_t nodeRank = 0;
-
+/*   gaspi_number_t flag; */
+  
 /*   if(gaspi_initialized(&flag)) */
 /*     { */
 /*       gaspi_proc_rank(&nodeRank); */

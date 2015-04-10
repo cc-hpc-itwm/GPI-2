@@ -10,7 +10,6 @@
 int main(int argc, char *argv[])
 {
   gaspi_rank_t nprocs, myrank;
-  gaspi_return_t ret = GASPI_ERROR;;
 
   TSUITE_INIT(argc, argv);
 

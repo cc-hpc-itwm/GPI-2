@@ -16,13 +16,9 @@ int main(int argc, char *argv[])
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   gaspi_rank_t rank, nprocs, i;
-  gaspi_number_t seg_max;
 
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT (gaspi_proc_rank(&rank));
-
-  seg_max = 1;
-  
 
   ASSERT (gaspi_segment_alloc(0, 1024, GASPI_MEM_INITIALIZED));
 

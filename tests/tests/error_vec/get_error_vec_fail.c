@@ -6,7 +6,7 @@
 
 int main(int argc, char *argv[])
 {
-  gaspi_rank_t nprocs, i;
+  gaspi_rank_t nprocs;
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  gaspi_state_vector_t vec;
+  gaspi_state_vector_t vec = NULL;
 
   EXPECT_FAIL(gaspi_state_vec_get(vec));
 

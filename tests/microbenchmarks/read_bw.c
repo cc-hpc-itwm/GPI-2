@@ -5,8 +5,6 @@
 int
 main (int argc, char *argv[])
 {
-  double size;
-  double single_lap = 0.0;
   int i, j, k, t;
   gaspi_rank_t myrank;
 

@@ -3,85 +3,64 @@
 
 #include <test_utils.h>
 
-#define MAX(a,b) (((a)>(b))?(a):(b))
-
 int main(int argc, char *argv[])
 {
+  unsigned long i;
+  gaspi_pointer_t _vptr;
+  gaspi_rank_t P, myrank;
+  gaspi_number_t qmax ;
+  gaspi_number_t queueSize;
+  gaspi_rank_t rankSend;
+  const unsigned long N = (1 << 13);
+
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
-
-  const unsigned long N = (1 << 13);
-  gaspi_rank_t P, myrank;
-
   ASSERT (gaspi_proc_num(&P));
   ASSERT (gaspi_proc_rank(&myrank));
 
-  gaspi_printf("P = %d N = %lu\n", P, N);
-  
-  gaspi_printf("Seg size: %lu MB\n",  MAX (_128MB, 2 * ((N/P) * N * 2 * sizeof (double)))/1024/1024);
-  
-  if(gaspi_segment_create(0, MAX (_4GB, 2 * ((N/P) * N * 2 * sizeof (double))),
-			  GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED) != GASPI_SUCCESS){
-    gaspi_printf("Failed to create segment\n");
-    return -1;
-  }
+  ASSERT(gaspi_segment_create(0,
+			      _128MB,
+			      GASPI_GROUP_ALL,
+			      GASPI_BLOCK,
+			      GASPI_MEM_INITIALIZED));
 
-  unsigned char * pGlbMem;
+  ASSERT(gaspi_segment_ptr(0, &_vptr));
 
-  gaspi_pointer_t _vptr;
-  if(gaspi_segment_ptr(0, &_vptr) != GASPI_SUCCESS)
-    printf("gaspi_segment_ptr failed\n");
-
-  pGlbMem = ( unsigned char *) _vptr;
-
-  gaspi_number_t qmax ;
   ASSERT (gaspi_queue_size_max(&qmax));
 
-  gaspi_printf("Queue max: %lu\n", qmax);
- 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  int i;
-  gaspi_number_t queueSize;
-  int rankSend = (myrank + 1) % P;
-  gaspi_printf("rank to: %d\n", rankSend);
-
+  rankSend = (myrank + 1) % P;
+  if(myrank == 0)
   for (i = 0; i < 2 * N; i ++)
     {
-
       gaspi_queue_size(1, &queueSize);
 
       if (queueSize > qmax - 24)
       	{
-  	  gaspi_printf (" i = %d qsize %u\n", i , queueSize);
   	  ASSERT (gaspi_wait(1, GASPI_BLOCK));
   	}
       
-      
-      if (gaspi_write(0, //seg
-  		      814780664, //local
-  		      rankSend, //rank
-  		      0, //seg rem
-  		      81478246, //remote
-  		      32768, //size
-  		      1, //queue
-  		      GASPI_BLOCK) != GASPI_SUCCESS)
-
-  	{
-  	  gaspi_queue_size(1, &queueSize);
-  	  gaspi_printf (" failed with i = %d queue %u\n", i, queueSize);
-  	  exit(-1);
-	  
-  	}
+      ASSERT( gaspi_write(0,         //seg
+			  81478066, //local off
+			  rankSend,  //rank
+			  0,         //seg rem
+			  81478246,  //remote off
+			  32768,     //size 32KB
+			  1,         //queue
+			  GASPI_BLOCK));
     }
 
   ASSERT (gaspi_wait(1, GASPI_BLOCK));
   
-  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, 5000));
   
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
-
+  //  sleep(4);
+   
+  printf("Rank %d: Finish\n", myrank);
+  fflush(stdout);
 
   return EXIT_SUCCESS;
 }

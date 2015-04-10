@@ -10,8 +10,6 @@ int main(int argc, char *argv[])
   gaspi_size_t segSize;
   const  gaspi_offset_t localOff_r= 0;
   const gaspi_offset_t remOff_r = 0;
-  const  gaspi_offset_t localOff_w = _2GB / 2 ;
-  const gaspi_offset_t remOff_w = _2GB / 2;
   gaspi_number_t queueSize, qmax;
   const gaspi_size_t commSize = _8MB;
   int i;

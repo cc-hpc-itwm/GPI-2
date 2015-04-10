@@ -27,8 +27,9 @@ int highestnode;
 
 int main(int argc, char *argv[])
 {
-  int j,i,k=0;
+  int i,k=0;
   int ret=0;
+  unsigned long j;
 
   const gaspi_size_t size=4096;//4k
 

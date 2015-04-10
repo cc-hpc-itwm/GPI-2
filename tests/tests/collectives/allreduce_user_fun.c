@@ -16,7 +16,7 @@ gaspi_return_t my_fun (double * const a,
 		       const gaspi_size_t elem_size,
 		       const gaspi_timeout_t tout)
 {
-  int i;
+  gaspi_number_t i;
 
   for (i = 0; i < num; i++)
     {

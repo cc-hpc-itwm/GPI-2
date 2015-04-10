@@ -20,7 +20,6 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_rank(&myrank));
 
   rank2send = (myrank + 1) % P;
-  assert(rank2send >= 0);
   assert(rank2send < P);
 
   gaspi_printf("Segment and msg size %lu MB\n", max_msg_size / 1024 / 1024);

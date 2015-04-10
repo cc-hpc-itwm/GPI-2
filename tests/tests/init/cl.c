@@ -50,13 +50,12 @@ float vers;
   gaspi_printf("rank: %d num: %d (vers: %.2f)\n",rank,num,vers);
 
   srand(time(NULL)*(rank+1));
-  const int dst = rand();
 
-  if( gaspi_sn_ping(dst%num,1000) != GASPI_SUCCESS) printf("gaspi_sn_ping failed ! [%s]\n",ret==-1 ? "GASPI_ERROR":"GASPI_TIMEOUT");
+/*   const int dst = rand(); */
+/*   if( gaspi_sn_ping(dst%num,1000) != GASPI_SUCCESS) */
+/*      printf("gaspi_sn_ping failed ! [%s]\n",ret==-1 ? "GASPI_ERROR":"GASPI_TIMEOUT"); */
 
-  //tmp workaround, we have no barrier yet
-
- gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK);
+  gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK);
 
   gaspi_proc_term(GPI2_TOUT);
 

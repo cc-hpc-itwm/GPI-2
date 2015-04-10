@@ -46,9 +46,10 @@ struct thread_args {
 
 static void * thread_function(void * arg)
 {
-  int k =0,j;
+  int k =0;
+  gaspi_offset_t j;
 
-  int size=4096;//4k
+  int size = 4096;//4k
   int counter=0;
     
   struct thread_args * arg_ptr;
@@ -209,29 +210,29 @@ static void * thread_function(void * arg)
 
 
 //dummy threads just transfer garbage between nodes
-static void * thread_void_function(void * arg)
-{
-  unsigned long offset_void = GB;
+/* static void * thread_void_function(void * arg) */
+/* { */
+/*   unsigned long offset_void = GB; */
 
-  while(1)
-    {
-      ASSERT (gaspi_read(0, offset_void, (myrank + 1) % highestnode, 
-			 0, offset_void, _2MB, 6, GASPI_BLOCK));
-      ASSERT (gaspi_wait(6, GASPI_BLOCK));
-      sleep(3);    
-    }
-}
+/*   while(1) */
+/*     { */
+/*       ASSERT (gaspi_read(0, offset_void, (myrank + 1) % highestnode,  */
+/* 			 0, offset_void, _2MB, 6, GASPI_BLOCK)); */
+/*       ASSERT (gaspi_wait(6, GASPI_BLOCK)); */
+/*       sleep(3);     */
+/*     } */
+/* } */
 
 int main(int argc, char *argv[])
 {
-
   int thread_check[NUMTHREADS];
-  int thread_void[NUMTHREADS];
   pthread_t ptr_check[NUMTHREADS];
-  pthread_t ptr_void[NUMTHREADS];
   struct thread_args t_check_args[NUMTHREADS];
-  struct thread_args t_void_args[NUMTHREADS];
-  int j,i;
+  /*   int thread_void[NUMTHREADS]; */
+  /*   pthread_t ptr_void[NUMTHREADS]; */
+  /*   struct thread_args t_void_args[NUMTHREADS]; */
+  unsigned long j;
+  int i;
 
   TSUITE_INIT(argc, argv);
 

@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 
   int *mem = (int *) _vptr;
 
-  int i;
+  unsigned long  i;
   const  unsigned long maxInts = _128MB / sizeof(int);
 
   for(i = 0; i < maxInts; i++)
@@ -78,12 +78,13 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   //check
+  gaspi_number_t l;
   gaspi_offset_t off2check = (bytes * nListElems + 64);
   char * chPtr = (char *) _vptr;
   mem = (int *) (chPtr + off2check);
 
-  for(i = 0; i < nListElems; i++)
-      assert(mem[i] == (int) rank2recv);
+  for(l = 0; l < nListElems; l++)
+      assert(mem[l] == (int) rank2recv);
 
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));

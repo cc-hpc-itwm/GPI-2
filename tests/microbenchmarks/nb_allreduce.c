@@ -19,11 +19,11 @@ mcycles_compare (const void *aptr, const void *bptr)
 
 int main(int argc, char *argv[])
 {
-  int i,t, elems;
+  int i, elems;
   gaspi_config_t gconf;
   gaspi_rank_t grank, gnum;
   gaspi_float cpu_freq;
-  gaspi_cycles_t stamp[1024], stamp2[1024], delta[1024];
+  gaspi_cycles_t delta[1024];
   gaspi_cycles_t t0, t1, dt;
   gaspi_return_t ret;
 

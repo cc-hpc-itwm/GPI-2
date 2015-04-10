@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <GASPI_Threads.h>
+
 #include <test_utils.h>
 
 gaspi_rank_t numranks, myrank;
@@ -45,7 +47,6 @@ main(int argc, char *argv[])
 {
   int i;
   int num_threads = 0;
-  gaspi_int tid;
   gaspi_size_t segSize;
 
   TSUITE_INIT(argc, argv);

@@ -10,7 +10,7 @@
   WITH_SYNC defined => uses notifications
   WITH_SYNC not defined => rely on wait + barrier
 */
-//#define WITH_SYNC 1
+#define WITH_SYNC 1
 
 #define MAX_ITERATIONS 10
 #define SLOT_SIZE _2MB
@@ -18,11 +18,11 @@
 
 int main(int argc, char *argv[])
 {
-  int i, j, iter;
+  int i, iter;
   int ret = 0;
   
   gaspi_rank_t myrank, numranks;
-  gaspi_size_t mem_size = 0UL;
+  gaspi_size_t mem_size = 0UL, j;
 
   TSUITE_INIT(argc, argv);
 
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 	     mem_size,
 	     mem_size * 1.0f / 1024/ 1024,
 	     numranks,
-	     SLOT_SIZE,
+	     (gaspi_size_t) SLOT_SIZE,
 	     MAX_ITERATIONS);
 #ifdef WITH_SYNC
       printf("Using notifications only\n");
@@ -162,13 +162,13 @@ int main(int argc, char *argv[])
 	      /* check correctness */
 	      float *in = (float *) _vptr;
 	      float *out = (float *) ((char *) _vptr + mem_size / 2);
-	      const int total_elems = (cur_slot_size * (numranks - 1) / sizeof(float));
+	      const gaspi_size_t total_elems = (cur_slot_size * (numranks - 1) / sizeof(float));
       
 	      for(j = 0; j < total_elems; j++)
 		{
 		  if(in[j] != out[j])
 		    {
-		      printf("Different values at pos %d: %f %f (iterations %d)\n", j, in[j], out[j], iter);
+		      printf("Different values at pos %lu: %f %f (iterations %d)\n", j, in[j], out[j], iter);
 		      ret = -1;
 		      goto end;
 		  
