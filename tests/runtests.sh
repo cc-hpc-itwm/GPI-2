@@ -76,10 +76,11 @@ run_test(){
 trap exit_timeout TERM INT QUIT
 
 #Script starts here
-while getopts "vt" o ; do  
+while getopts "vtn:" o ; do  
     case $o in  
 	v ) Results=1;opts_used=$(($opts_used + 1));echo "" > $LOG_FILE ;;
 	t ) Time=0;;
+	n ) GASPI_RUN="${GASPI_RUN} -n ${OPTARG}";opts_used=$(($opts_used + 2));;
     esac  
 done
 
