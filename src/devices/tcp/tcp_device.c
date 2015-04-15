@@ -20,7 +20,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <netinet/tcp.h>
 #include <signal.h>
 #include <sys/epoll.h>
-#include <sys/ioctl.h>o
+#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -54,9 +54,11 @@ list recvList =
     .count = 0
   };
 
-/* TODO: to remove? */ 
+
 int cq_ref_counter = 0;
 int qs_ref_counter = 0;
+
+volatile int valid_state = 1;   // flag indicates state
 
 int epollfd;
 
@@ -1042,27 +1044,58 @@ _tcp_dev_process_delayed(int epollfd)
   return 0;
 }
 
-static void
-_tcp_dev_flush_conn(int fd)
+static int
+_tcp_dev_get_outstanding(int fd, int *in, int *out)
 {
-#ifdef __linux__
-  for(;;) 
+
+  int tot_outstanding = 0;
+  int outstanding_in = 0;
+  int outstanding_out = 0;
+
+  if(fd > 0)
     {
-      int outstanding;
-      ioctl(fd, SIOCOUTQ, &outstanding);
+      ioctl(fd, SIOCOUTQ, &outstanding_out);
+      ioctl(fd, SIOCINQ, &outstanding_in);
 
-      if(!outstanding)
-	break;
+      if(outstanding_in > 0)
+	{
+	  tot_outstanding += outstanding_in;
+	  *in = outstanding_in;
+	}
 
-      usleep(1000);
+      if(outstanding_out > 0)
+	{
+	  tot_outstanding += outstanding_out;
+	  *out = outstanding_out;
+	}
     }
-#endif
+
+  return tot_outstanding;
 }
 
 static void
-_tcp_dev_cleanup_handler(void *arg)
+_tcp_dev_wait_outstanding(int fd)
+{
+  for(;;) 
+    {
+      int tot_outstanding = 0;
+      int outstanding_in  = 0;
+      int outstanding_out = 0;
+
+      tot_outstanding = _tcp_dev_get_outstanding(fd, &outstanding_in, &outstanding_out);
+
+      if(!tot_outstanding)
+	  break;
+
+      usleep(1000);
+    }
+}
+
+static void
+_tcp_dev_cleanup_handler(void)
 {
   int k;
+
   for(k = 0; k < glb_gaspi_ctx.tnc; k++)
     {
       if(!rank_state || !rank_state[k])
@@ -1071,8 +1104,29 @@ _tcp_dev_cleanup_handler(void *arg)
       struct epoll_event ev;
       epoll_ctl(epollfd, EPOLL_CTL_DEL, rank_state[k]->fd, &ev);
 
-      shutdown(rank_state[k]->fd,2);
-      _tcp_dev_flush_conn(rank_state[k]->fd);
+      if(shutdown(rank_state[k]->fd, SHUT_RDWR) != 0)
+	{
+	  gaspi_print_error("Rank %u: in shutdown with %d", glb_gaspi_ctx.rank, k);
+	}
+
+      int in = 0, out = 0;
+      int tout = _tcp_dev_get_outstanding(rank_state[k]->fd, &in, &out);
+      if(tout)
+	{
+	  for(;;)
+	    {
+	      char buffer[4];
+	      int res = read(rank_state[k]->fd, buffer, 4);
+	      if(res < 0)
+		{
+		  perror("reading");
+		  fflush(stderr);
+		}
+	      if(!res)
+		break;
+	    }
+	}
+
       close(rank_state[k]->fd);
 
       free(rank_state[k]);
@@ -1090,14 +1144,60 @@ _tcp_dev_cleanup_handler(void *arg)
   close(epollfd);
 }
 
+void
+tcp_dev_stop_device()
+{
+
+  /* finish all operations that are in progress */
+  char ready = 0;
+  volatile int count;
+  volatile int ropcode;
+  volatile int wopcode;
+
+  while(!ready)
+    {
+      ready = 1;
+
+      /* delayed operations */
+      count = delayedList.count;
+      if(count)
+	{
+	  ready = 0;
+	}
+
+      /* read / write to remote ranks */
+      int i;
+      for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+	{
+	  if(!rank_state || !rank_state[i]) continue; 
+
+	  ropcode = rank_state[i]->read.opcode;
+	  if(ropcode != RECV_HEADER)
+	    {
+	      ready = 0;
+	    }
+
+	  wopcode = rank_state[i]->write.opcode;
+	  if(wopcode != SEND_DISABLED)
+	    {
+	      ready = 0;
+	    }
+
+	  _tcp_dev_wait_outstanding(rank_state[i]->fd);
+	}
+
+      if(!ready)
+	gaspi_delay();
+    }
+
+  __sync_sub_and_fetch(&valid_state, 1);
+
+}
 
 /* virtual device thread body */
 void *
 tcp_virt_dev(void *args)
 {
-  volatile int valid_state = 1; /* flag indicates state health */
-
-  pthread_cleanup_push(_tcp_dev_cleanup_handler, NULL);
   
   int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if(listen_sock < 0)
@@ -1265,7 +1365,8 @@ tcp_virt_dev(void *args)
 			}
 		      else if(bytesReceived <= 0)
 			{
-			  gaspi_print_error("Error reading from node %d", event_rank);
+			  gaspi_print_error("Rank %u:Error reading from node %d (%d %p %lu)", glb_gaspi_ctx.rank, event_rank,
+					    estate->fd, (void*) estate->read.addr + estate->read.done, bytesRemaining);
 			  io_err = 1;
 			  break;
 			}
@@ -1349,8 +1450,16 @@ tcp_virt_dev(void *args)
 		  rank_state[event_rank] = NULL;
 		}
 
-	      shutdown(event_fd, SHUT_WR);
-	      close(event_fd);
+	      if(shutdown(event_fd, SHUT_RD) != 0)
+		{
+		  gaspi_print_error("shutdown operation");
+		}
+
+	      if( close(event_fd) != 0)
+		{
+		  gaspi_print_error("close io_err");
+		}
+
 	      if(estate != NULL)
 		free(estate);
 	    } 
@@ -1362,8 +1471,16 @@ tcp_virt_dev(void *args)
 	  gaspi_print_error("Failed to process delayed events.");
 	}
     } /* device event loop */
-  
-  pthread_cleanup_pop(1);
-  
+
+  _tcp_dev_cleanup_handler();
+
+  if(events)
+    {
+      free(events);
+      events = NULL;
+    }
+
+  close(listen_sock);
+
   return NULL;
 }

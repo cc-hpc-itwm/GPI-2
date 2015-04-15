@@ -189,8 +189,8 @@ tcp_dev_return_wc(struct tcp_cq *, tcp_dev_wc_t *);
 void *
 tcp_virt_dev(void *);
 
-int
-tcp_dev_stop_device(int);
+void
+tcp_dev_stop_device(void);
 
 int
 tcp_dev_is_valid_state(unsigned short);

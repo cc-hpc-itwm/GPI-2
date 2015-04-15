@@ -183,6 +183,8 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
   int i;
   unsigned int c;
 
+  tcp_dev_stop_device();
+
   tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpGroups);
   tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpP);
 
@@ -237,13 +239,7 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
       tcp_dev_destroy_passive_channel(glb_gaspi_ctx_tcp.channelP);
     }
 
-
-  int s = pthread_cancel(tcp_dev_thread);
-  if (s != 0)
-    {
-      gaspi_print_error("Failed to stop device.");
-    }
-
+  int s;
   void *res;
   s = pthread_join(tcp_dev_thread, &res);
   if (s != 0)
