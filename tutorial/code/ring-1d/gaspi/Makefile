@@ -33,9 +33,10 @@ endif
 
 CFLAGS += $(addprefix -I,$(INCLUDE_DIR))
 
-LIB += ibverbs
 LIB += GPI2
+LIB += ibverbs
 LIB += m
+LIB += pthread
 
 OBJ += ../data
 OBJ += ../now

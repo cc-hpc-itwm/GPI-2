@@ -19,9 +19,10 @@ LIBRARY_DIR += $(GPI2_HOME)/lib64
 LDFLAGS += $(addprefix -L,$(LIBRARY_DIR))
 CFLAGS += $(addprefix -I,$(INCLUDE_DIR))
 
-LIB += ibverbs
 LIB += GPI2
+LIB += ibverbs
 LIB += m
+LIB += pthread
 
 OBJ += now
 OBJ += queue
