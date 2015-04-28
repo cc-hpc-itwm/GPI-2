@@ -254,7 +254,7 @@ int gaspi_connect2port(const char *hn,const unsigned short port,const unsigned l
 
   while(sockfd == -1)
     {
-      sockfd = gaspi_connect2port_intern(hn,port);
+      sockfd = gaspi_connect2port_intern(hn, port);
       
       ftime(&t1);
       const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
@@ -625,6 +625,13 @@ void *gaspi_sn_backend(void *arg)
 				    mgmt->op = mgmt->cdh.op;
 				    mgmt->cdh.op=GASPI_SN_RESET;
 				  }
+				else if(mgmt->cdh.op == GASPI_SN_PROC_PING)
+				  {
+				    mgmt->bdone = 0;
+				    mgmt->blen = sizeof(gaspi_cd_header);
+				    mgmt->op = GASPI_SN_HEADER;
+				    mgmt->cdh.op = GASPI_SN_RESET;
+				  }
 				else if(mgmt->cdh.op==GASPI_SN_GRP_CHECK)
 				  {
 				    /* grp check */
@@ -642,6 +649,7 @@ void *gaspi_sn_backend(void *arg)
 					if(glb_gaspi_group_ctx[group].tnc == tnc)
 					  {
 					    gb.ret=0;gb.tnc=tnc;
+					    int i;
 					    
 					    for(i = 0;i < tnc; i++)
 					      {
@@ -650,7 +658,7 @@ void *gaspi_sn_backend(void *arg)
 					      }
 					  }
 				      }
-				    
+
 				    /* write back */
 				    int done = 0;
 				    int len = sizeof(gb);
@@ -659,7 +667,7 @@ void *gaspi_sn_backend(void *arg)
 				    while(done < len)
 				      {
 					int ret = write(mgmt->fd,ptr+done,len-done);
-				  
+
 					if(ret < 0)
 					  {
 					    /* errno==EAGAIN,that means we have written all data */
@@ -669,11 +677,11 @@ void *gaspi_sn_backend(void *arg)
 						break;
 					      }
 					  }
-					
-					if(ret > 0) 
+
+					if(ret > 0)
 					  done+=ret;
 				      }
-				    
+
 				    mgmt->bdone = 0;
 				    mgmt->blen = sizeof(gaspi_cd_header);
 				    mgmt->op = GASPI_SN_HEADER;//next we expect new header
@@ -684,18 +692,20 @@ void *gaspi_sn_backend(void *arg)
 				    int done = 0;
 				    int len = sizeof (gaspi_rc_mseg);
 				    char *ptr = (char*)&glb_gaspi_group_ctx[mgmt->cdh.ret].rrcd[glb_gaspi_ctx.rank];
-				    
+
 				    while(done < len)
 				      {
 					int ret = write(mgmt->fd,ptr+done,len-done);
-  
+
 					if(ret < 0)
 					  {
 					    /* errno==EAGAIN,that means we have written all data */
 					    if(errno!=EAGAIN)
 					      {
 						//TODO:exit?
-						gaspi_sn_print_error("Failed to write to rank %d.", mgmt->cdh.rank);
+						gaspi_sn_print_error("Failed to write to rank %d (group %d).",
+								     mgmt->cdh.rank,
+								     mgmt->cdh.ret );
 
 						break;
 					      }
@@ -851,5 +861,6 @@ void *gaspi_sn_backend(void *arg)
 gaspi_return_t
 gaspi_sn_ping(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
+
   return GASPI_SUCCESS;
 }
