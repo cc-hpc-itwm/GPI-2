@@ -15,7 +15,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
-
 #include <netdb.h>
 #include <netinet/tcp.h>
 #include <signal.h>
@@ -39,7 +38,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 tcp_dev_conn_state_t **rank_state = NULL;
 
 /* list of remote operations */
-list delayedList = 
+list delayedList =
   {
     .first = NULL,
     .last = NULL,
@@ -47,18 +46,17 @@ list delayedList =
   };
 
 /* list of recvd WRs */
-list recvList = 
+list recvList =
   {
     .first = NULL,
     .last = NULL,
     .count = 0
   };
 
-
 int cq_ref_counter = 0;
 int qs_ref_counter = 0;
 
-volatile int valid_state = 1;   // flag indicates state
+volatile int valid_state = 1;
 
 int epollfd;
 
@@ -79,7 +77,7 @@ tcp_dev_create_passive_channel(void)
       channel->read = pipefd[0];
       channel->write = pipefd[1];
     }
-  
+
   return channel;
 }
 
@@ -89,7 +87,12 @@ tcp_dev_is_valid_state(gaspi_rank_t i)
   if(rank_state != NULL)
     {
       if(rank_state[i] != NULL)
-	return 1;
+	{
+	  if(rank_state[i]->fd < 0)
+	    return 0;
+	  else
+	    return 1;
+	}
     }
 
   return 0;
@@ -128,7 +131,7 @@ tcp_dev_create_cq(int elems, struct tcp_passive_channel *pchannel)
       printf("Failed to alloc memory for completion queue\n");
       return NULL;
     }
-  
+
   ringbuffer *rb = (ringbuffer *) malloc(sizeof(ringbuffer));
   if(rb == NULL)
     {
@@ -153,9 +156,9 @@ tcp_dev_create_cq(int elems, struct tcp_passive_channel *pchannel)
   cq->rbuf = rb;
   cq->num = cq_ref_counter;
   cq->pchannel = pchannel;
-  
+
   cqs_map[cq_ref_counter++] = cq;
-  
+
   return cq;
 }
 
@@ -164,15 +167,18 @@ tcp_dev_destroy_cq(struct tcp_cq *cq)
 {
   if(cq != NULL)
     {
-      if(cq->rbuf->cells != NULL)
-	{
-	  free(cq->rbuf->cells);
-	  cq->rbuf->cells = NULL;
-	}
       if(cq->rbuf != NULL)
-	free(cq->rbuf);
-
+	{
+	  if(cq->rbuf->cells != NULL)
+	    {
+	      free(cq->rbuf->cells);
+	      cq->rbuf->cells = NULL;
+	    }
+	  free(cq->rbuf);
+	  cq->rbuf = NULL;
+	}
       free(cq);
+      cq = NULL;
     }
 }
 
@@ -180,18 +186,18 @@ struct tcp_queue *
 tcp_dev_create_queue(struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
 {
   int handle = -1;
-  
+
   if(qs_ref_counter >= QP_MAX_NUM)
     {
       gaspi_print_error("Too many created queues.");
       return NULL;
     }
-  
+
   struct tcp_queue *q = (struct tcp_queue *) malloc(sizeof(struct tcp_queue));
   if(q != NULL)
     {
       handle = gaspi_connect2port("localhost", TCP_DEV_PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
-      
+
       if(handle == -1)
 	return NULL;
 
@@ -207,8 +213,10 @@ tcp_dev_create_queue(struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
 void
 tcp_dev_destroy_queue(struct tcp_queue *q)
 {
+  /* TODO: what if queue is not empty */
   if(q != NULL)
     {
+      shutdown(q->handle, SHUT_RDWR);
       close(q->handle);
       free(q);
       qs_ref_counter--;
@@ -220,7 +228,7 @@ static int
 _tcp_dev_alloc_remote_states (int n)
 {
   int j;
-  
+
   /* might already have been allocated */
   if(rank_state != NULL)
     return 0;
@@ -240,6 +248,7 @@ _tcp_dev_alloc_remote_states (int n)
   return 0;
 }
 
+
 static inline tcp_dev_conn_state_t *
 _tcp_dev_add_new_conn(int rank, int conn_sock, int epollfd)
 {
@@ -249,7 +258,7 @@ _tcp_dev_add_new_conn(int rank, int conn_sock, int epollfd)
       close(conn_sock);
       return NULL;
     }
-      
+
   nstate->fd              = conn_sock;
   nstate->rank            = rank;
   nstate->read.wr_id      = 0;
@@ -258,20 +267,20 @@ _tcp_dev_add_new_conn(int rank, int conn_sock, int epollfd)
   nstate->read.addr       = (uintptr_t)&nstate->wr_buff;
   nstate->read.length     = sizeof(tcp_dev_wr_t);
   nstate->read.done       = 0;
-      
+
   nstate->write.wr_id     = 0;
   nstate->write.opcode    = SEND_DISABLED;
   nstate->write.cq_handle = CQ_HANDLE_NONE;
   nstate->write.addr      = (uintptr_t)NULL;
   nstate->write.length    = 0;
   nstate->write.done      = 0;
-      
-  struct epoll_event nev = 
+
+  struct epoll_event nev =
     {
       .data.ptr = nstate,
       .events = EPOLLIN | EPOLLRDHUP
     };
-      
+
   if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_sock, &nev) == -1)
     {
       close(conn_sock);
@@ -298,11 +307,10 @@ _tcp_dev_connect_all(int epollfd)
 	}
 
       /* connect to node/rank */
-      /* TODO: use a generic sockets comm framework */
       int conn_sock = gaspi_connect2port(gaspi_get_hn(i),
 					 TCP_DEV_PORT + glb_gaspi_ctx.poff[i],
 					 CONN_TIMEOUT);
-      
+
       if(conn_sock == -1)
 	{
 	  gaspi_print_error("Error connecting to rank %i (%s) on port %i.",
@@ -311,7 +319,7 @@ _tcp_dev_connect_all(int epollfd)
 			    TCP_DEV_PORT + glb_gaspi_ctx.poff[i]);
 	  return 1;
 	}
-      
+
       /* prepare work request */
       tcp_dev_wr_t wr;
       memset(&wr, 0, sizeof(tcp_dev_wr_t));
@@ -343,16 +351,16 @@ _tcp_dev_connect_all(int epollfd)
       nstate = _tcp_dev_add_new_conn(i, conn_sock, epollfd);
       if( nstate == NULL)
 	{
-	  gaspi_print_error("Failed to add connect to events instance");
+	  gaspi_print_error("Failed to add new connection to events instance");
 	  return 1;
 	}
-      
+
       /* register rank */
       rank_state[i] = nstate;
-    }  
+    }
 
   tcp_dev_connected_to_all = 1;
-  
+
   return 0;
 }
 
@@ -363,10 +371,10 @@ tcp_dev_return_wc(struct tcp_cq *cq, tcp_dev_wc_t *wc)
 
   if(cq->rbuf == NULL)
     {
-      gaspi_print_error("Wrong completion queue\n");
+      gaspi_print_error("Wrong completion queue.");
       return -1;
     }
-  
+
   if(remove_ringbuffer(cq->rbuf, &ret) < 0)
     return 0;
 
@@ -385,7 +393,7 @@ _tcp_dev_post_wc(uint64_t wr_id,
   tcp_dev_wc_t* wc = (tcp_dev_wc_t *) malloc( sizeof(tcp_dev_wc_t) );
   if(wc == NULL)
     {
-      gaspi_print_error("Failed to allocate WC");
+      gaspi_print_error("Failed to allocate WC.");
       return 1;
     }
 
@@ -397,7 +405,7 @@ _tcp_dev_post_wc(uint64_t wr_id,
   while(insert_ringbuffer(cqs_map[cq_handle]->rbuf, wc) < 0)
     {
       printf("completion queue #%i is full.\n", cq_handle);
-      __asm__ ( "pause;" );
+      __asm__ ( "pause;" );/* TODO */
     }
 
   /* acknowledge receiver (if that's the case) */
@@ -405,7 +413,7 @@ _tcp_dev_post_wc(uint64_t wr_id,
     {
       char ping = 1;
       wc->sender = wr_id;
-      
+
       if( write(cqs_map[cq_handle]->pchannel->write, &ping, 1) < 1)
 	{
 	  printf("Failed to write cq notification\n");
@@ -440,23 +448,6 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	{
 	  /* TOPOLOGY OPERATIONS */
 	case REGISTER_MASTER:
-
-	  if(_tcp_dev_alloc_remote_states(glb_gaspi_ctx.tnc) != 0)
-	    {
-	      return 1;
-	    }
-
-	  estate->rank = 0;
-	  rank_state[0] = estate;
-
-	  if(_tcp_dev_connect_all(epollfd) != 0)
-	    {
-	      return 1;
-	    }
-	  
-	  _tcp_dev_set_default_read_conn_state(estate);
-	  
-	  break;
 	case REGISTER_WORKER:
 	  if(_tcp_dev_alloc_remote_states(glb_gaspi_ctx.tnc) != 0)
 	    {
@@ -466,8 +457,14 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	  estate->rank = estate->wr_buff.source;
 	  rank_state[estate->rank] = estate;
 
+	  if(estate->wr_buff.opcode == REGISTER_MASTER)
+	    if(_tcp_dev_connect_all(epollfd) != 0)
+	      {
+		return 1;
+	      }
+
 	  _tcp_dev_set_default_read_conn_state(estate);
-	  
+
 	  break;
 
 	  /* RDMA OPERATIONS */
@@ -479,7 +476,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	    op = TCP_DEV_WC_RDMA_READ;
 	  else
 	    op = TCP_DEV_WC_RDMA_WRITE;
-	  
+
 	  /* local operation: do it right away */
 	  if(estate->wr_buff.target == glb_gaspi_ctx.rank)
 	    {
@@ -495,7 +492,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 		  src =  (void *) estate->wr_buff.local_addr;
 		  dest = (void *) estate->wr_buff.remote_addr;
 		}
-	      
+
 	      memcpy(dest, src, estate->wr_buff.length);
 
 	      if( _tcp_dev_post_wc(estate->wr_buff.wr_id,
@@ -534,17 +531,17 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	      else
 		{
 		  wr.opcode      = NOTIFICATION_RDMA_WRITE;
-		  wr.compare_add = (estate->wr_buff.opcode == POST_RDMA_WRITE) ? 0 : 1; // indicates inlined
+		  wr.compare_add = (estate->wr_buff.opcode == POST_RDMA_WRITE) ? 0 : 1; /* indicates inlined */
 		}
 
-	      //TODO: check retval
+	      /* TODO: check retval */
 	      list_insert(&delayedList, &wr);
 	    }
 
 	  _tcp_dev_set_default_read_conn_state(estate);
 
 	  break;
-	  
+
 	case POST_ATOMIC_CMP_AND_SWP:
 	case POST_ATOMIC_FETCH_AND_ADD:
 
@@ -566,7 +563,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 		  if(*ptr == estate->wr_buff.compare_add)
 		    *ptr = estate->wr_buff.swap;
 		}
-	      
+
 	      else if(estate->wr_buff.opcode == POST_ATOMIC_FETCH_AND_ADD)
 		*ptr += estate->wr_buff.compare_add;
 
@@ -591,7 +588,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 		  .length      = estate->wr_buff.length,
 		  .compare_add = estate->wr_buff.compare_add
 		};
-	      
+
 	      if(op == TCP_DEV_WC_FETCH_ADD)
 		{
 		  wr.swap = 0;
@@ -607,7 +604,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	      list_insert(&delayedList, &wr);
 	    }
 	  _tcp_dev_set_default_read_conn_state(estate);
-	  
+
 	  break;
 	case POST_SEND:
 	case POST_SEND_INLINED:
@@ -626,16 +623,16 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	    };
 
 	  list_insert(&delayedList, &wr);
-	  
+
 	  _tcp_dev_set_default_read_conn_state(estate);
 	  }
-	  
+
 	  break;
 	case POST_RECV:
 	  list_insert(&recvList, &(estate->wr_buff));
-	  
+
 	  _tcp_dev_set_default_read_conn_state(estate);
-	  
+
 	  break;
 	case NOTIFICATION_RDMA_WRITE:
 	  estate->read.wr_id     = estate->wr_buff.wr_id;
@@ -661,14 +658,14 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 		.compare_add = estate->wr_buff.compare_add,
 		.swap        = estate->wr_buff.swap
 	      } ;
-	    
+
 	    list_insert(&delayedList, &wr);
 	  }
 	  _tcp_dev_set_default_read_conn_state(estate);
 
 	  break;
 	case RESPONSE_RDMA_READ:
-	  
+
 	  estate->read.wr_id     = estate->wr_buff.wr_id;
 	  estate->read.cq_handle = estate->wr_buff.cq_handle;
 	  estate->read.opcode    = RECV_RDMA_READ;
@@ -676,7 +673,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	  estate->read.length    = estate->wr_buff.length;
 	  estate->read.done      = 0;
 	  break;
-	  
+
 	case REQUEST_ATOMIC_CMP_AND_SWP:
 	case REQUEST_ATOMIC_FETCH_AND_ADD:
 	  {
@@ -702,7 +699,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 		  {
 		    *ptr = estate->wr_buff.swap;
 		  }
-		wr.compare_add = old; 
+		wr.compare_add = old;
 	      }
 	    else if(estate->wr_buff.opcode == REQUEST_ATOMIC_FETCH_AND_ADD)
 	      {
@@ -717,11 +714,11 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	  break;
 	case RESPONSE_ATOMIC_CMP_AND_SWP:
 	case RESPONSE_ATOMIC_FETCH_AND_ADD:
-	  {/* TODO:???? */
+	  {
 	    uint64_t *ptr = (uint64_t *) estate->wr_buff.remote_addr;
 	    *ptr = estate->wr_buff.compare_add;
 	  }
-	  
+
 	  if(estate->wr_buff.opcode == RESPONSE_ATOMIC_CMP_AND_SWP)
 	    op = TCP_DEV_WC_CMP_SWAP;
 	  else
@@ -734,9 +731,9 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	    {
 	      return 1;
 	    }
-	  
+
 	  _tcp_dev_set_default_read_conn_state(estate);
-	  
+
 	  break;
 	case NOTIFICATION_SEND:
 	  if(recvList.count)
@@ -763,7 +760,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 
 	      list_remove(&recvList, to_remove);
 
-	      tcp_dev_wr_t wr = 
+	      tcp_dev_wr_t wr =
 		{
 		  .wr_id       = swr.wr_id,
 		  .cq_handle   = swr.cq_handle,
@@ -776,7 +773,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 		  .compare_add = swr.compare_add,
 		  .swap        = swr.swap
 		};
-	      
+
 	      list_insert(&delayedList, &wr);
 
 	      estate->read.wr_id     = estate->rank;
@@ -786,7 +783,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	      estate->read.length    = swr.length;
 	      estate->read.done      = 0;
 	    }
-	  
+
 	  break;
 	case RESPONSE_SEND:
 	  if(_tcp_dev_post_wc(estate->wr_buff.wr_id,
@@ -798,7 +795,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	    }
 
 	  _tcp_dev_set_default_read_conn_state(estate);
-	  
+
 	  break;
 	} /* switch opcode */
     } /* if RECV_HEADER*/
@@ -820,7 +817,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 
       _tcp_dev_set_default_read_conn_state(estate);
     }
-  
+
   else if(estate->read.opcode == RECV_SEND)
     {
       if(_tcp_dev_post_wc(estate->read.wr_id,
@@ -830,7 +827,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	{
 	  return 1;
 	}
-      
+
       _tcp_dev_set_default_read_conn_state(estate);
     }
   else
@@ -838,9 +835,10 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
       /* Unknown opcode */
       return 1;
     }
-  
+
   return 0;
 }
+
 
 static int
 _tcp_dev_process_sent_data(int epollfd, tcp_dev_conn_state_t *estate)
@@ -856,7 +854,7 @@ _tcp_dev_process_sent_data(int epollfd, tcp_dev_conn_state_t *estate)
 	}
     }
 
-  struct epoll_event ev = 
+  struct epoll_event ev =
     {
       .data.ptr = estate,
       .events = EPOLLIN | EPOLLRDHUP
@@ -867,14 +865,14 @@ _tcp_dev_process_sent_data(int epollfd, tcp_dev_conn_state_t *estate)
       gaspi_print_error("Failed to modify events instance.");
       return 1;
     }
-  
+
   estate->write.wr_id     = 0;
   estate->write.cq_handle = CQ_HANDLE_NONE;
   estate->write.opcode    = SEND_DISABLED;
   estate->write.addr      = (uintptr_t) NULL;
   estate->write.length    = 0;
   estate->write.done      = 0;
-  
+
   return 0;
 }
 
@@ -895,9 +893,6 @@ _tcp_dev_process_delayed(int epollfd)
 
       if(state == NULL && !(wr.opcode == NOTIFICATION_SEND && wr.target == glb_gaspi_ctx.rank))
 	{
-	  printf("Rank %d: posting error of %d\n", glb_gaspi_ctx.rank, element->wr.target);
-	  fflush(stdout);
-	  
 	  if( _tcp_dev_post_wc(wr.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE, wr.cq_handle) != 0)
 	    {
 	      gaspi_print_error("Failed to post completion error.");
@@ -925,7 +920,7 @@ _tcp_dev_process_delayed(int epollfd)
 	      memcpy(dest, src, wr.length);
 
 	      struct tcp_cq *cq = cqs_map[rwr.cq_handle];
-	      
+
 	      if(_tcp_dev_post_wc(wr.wr_id,
 				  TCP_WC_SUCCESS,
 				  TCP_DEV_WC_SEND,
@@ -950,43 +945,64 @@ _tcp_dev_process_delayed(int epollfd)
 	}
       else if(state->write.opcode == SEND_DISABLED)
 	{
+	  int found_error = 0;
+
 	  size_t done = 0;
+
 	  while(done < sizeof(tcp_dev_wr_t))
 	    {
 	      const int bytes_sent = write(state->fd, (char *) &wr + done, sizeof(tcp_dev_wr_t) - done);
 
 	      if(bytes_sent <= 0 && !(errno == EAGAIN || errno == EWOULDBLOCK))
 		{
-		  //TODO: better handling
-		  close(state->fd);
-		  return 1;
+		  gaspi_print_error("writing to node %d.", wr.target);
+
+		  if( _tcp_dev_post_wc(wr.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE, wr.cq_handle) != 0)
+		    {
+		      gaspi_print_error("Failed to post completion error.");
+		    }
+
+		  found_error = 1;
+
+		  /* TODO: better handling */
+		  break;
 		}
 	      else if( bytes_sent > 0)
 		{
 		  done += bytes_sent;
 		}
 	    }
+
 	  if( (wr.opcode == NOTIFICATION_RDMA_WRITE && wr.compare_add == 1)
-	      || (wr.opcode == NOTIFICATION_SEND && wr.compare_add == 1))
+	      ||
+	      (wr.opcode == NOTIFICATION_SEND && wr.compare_add == 1))
 	    {
 	      ssize_t done = 0;
-	      
+
 	      while(done < element->wr.length)
 		{
 		  const int bytes_sent = write(state->fd, (void *)element->wr.local_addr + done, element->wr.length - done);
-		  
+
 		  if(bytes_sent <= 0 && !(errno == EAGAIN || errno == EWOULDBLOCK))
 		    {
-		      //TODO: better handling
-		      close(state->fd);
-		      return 1;
+		      gaspi_print_error("writing to node %d.", wr.target);
+
+		      if( _tcp_dev_post_wc(wr.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE, wr.cq_handle) != 0)
+			{
+			  gaspi_print_error("Failed to post completion error.");
+			}
+
+		      /* TODO: better handling */
+		      found_error = 1;
+		      break;
+
 		    }
 		  else if( bytes_sent > 0)
 		    {
 		      done += bytes_sent;
 		    }
 		}
-	      
+
 	      enum tcp_dev_wc_opcode op;
 
 	      wr.opcode == NOTIFICATION_RDMA_WRITE ? op = TCP_DEV_WC_RDMA_WRITE : TCP_DEV_WC_SEND;
@@ -995,44 +1011,49 @@ _tcp_dev_process_delayed(int epollfd)
 				  TCP_DEV_WC_RDMA_WRITE,
 				  element->wr.cq_handle) != 0)
 		{
+		  gaspi_print_error("Failed to post completion success.");
 		  return 1;
 		}
-	      
+
 	      free((void *) element->wr.local_addr);
 	    }
-	  else if(   wr.opcode == NOTIFICATION_RDMA_WRITE
-		     || wr.opcode == RESPONSE_RDMA_READ
-		     || wr.opcode == NOTIFICATION_SEND )
+	  else if( wr.opcode == NOTIFICATION_RDMA_WRITE
+		   || wr.opcode == RESPONSE_RDMA_READ
+		   || wr.opcode == NOTIFICATION_SEND )
 	    {
-	      /* enable write notification */
-	      if(wr.opcode == NOTIFICATION_RDMA_WRITE)
-		state->write.opcode = SEND_RDMA_WRITE;
-	      else if(wr.opcode == RESPONSE_RDMA_READ)
-		state->write.opcode = SEND_RDMA_READ;
-	      else
-		state->write.opcode = SEND_SEND;
-	      
-	      state->write.wr_id     = wr.wr_id;
-	      state->write.cq_handle = wr.cq_handle;
-	      state->write.addr      = wr.local_addr; 
-	      state->write.length    = wr.length;
-	      state->write.done      = 0;
-	      
-	      struct epoll_event ev = {
-		.data.ptr = state,
-		.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP
-	      };
-
-	      if (epoll_ctl(epollfd, EPOLL_CTL_MOD, state->fd, &ev) < 0)
+	      if(!found_error)
 		{
-		  gaspi_print_error("Failed to modify events instance.");
-		  close(state->fd);
-		  exit(EXIT_FAILURE);
+		  /* enable write notification */
+		  if(wr.opcode == NOTIFICATION_RDMA_WRITE)
+		    state->write.opcode = SEND_RDMA_WRITE;
+		  else if(wr.opcode == RESPONSE_RDMA_READ)
+		    state->write.opcode = SEND_RDMA_READ;
+		  else
+		    state->write.opcode = SEND_SEND;
+
+		  state->write.wr_id     = wr.wr_id;
+		  state->write.cq_handle = wr.cq_handle;
+		  state->write.addr      = wr.local_addr;
+		  state->write.length    = wr.length;
+		  state->write.done      = 0;
+
+		  struct epoll_event ev = {
+		    .data.ptr = state,
+		    .events = EPOLLIN | EPOLLOUT | EPOLLRDHUP
+		  };
+
+		  if (epoll_ctl(epollfd, EPOLL_CTL_MOD, state->fd, &ev) < 0)
+		    {
+		      gaspi_print_error("Failed to modify events instance for %d fd %d.", state->rank, state->fd);
+		      close(state->fd);
+		      exit(EXIT_FAILURE);
+		    }
 		}
 	    }
+
 	  delete = element;
 	}
-      
+
       element = element->next;
       if(delete)
 	{
@@ -1040,7 +1061,7 @@ _tcp_dev_process_delayed(int epollfd)
 	  delete = NULL;
 	}
     }
-  
+
   return 0;
 }
 
@@ -1076,7 +1097,7 @@ _tcp_dev_get_outstanding(int fd, int *in, int *out)
 static void
 _tcp_dev_wait_outstanding(int fd)
 {
-  for(;;) 
+  for(;;)
     {
       int tot_outstanding = 0;
       int outstanding_in  = 0;
@@ -1092,13 +1113,13 @@ _tcp_dev_wait_outstanding(int fd)
 }
 
 static void
-_tcp_dev_cleanup_handler(void)
+_tcp_dev_cleanup_connections(int epollfd)
 {
   int k;
 
   for(k = 0; k < glb_gaspi_ctx.tnc; k++)
     {
-      if(!rank_state || !rank_state[k])
+      if(rank_state == NULL || rank_state[k] == NULL || rank_state[k]->fd < 0)
 	continue;
 
       struct epoll_event ev;
@@ -1106,28 +1127,15 @@ _tcp_dev_cleanup_handler(void)
 
       if(shutdown(rank_state[k]->fd, SHUT_RDWR) != 0)
 	{
-	  gaspi_print_error("Rank %u: in shutdown with %d", glb_gaspi_ctx.rank, k);
+	  gaspi_print_error("Rank %u: in shutdown with %d (%d)", glb_gaspi_ctx.rank, k, rank_state[k]->fd);
 	}
 
-      int in = 0, out = 0;
-      int tout = _tcp_dev_get_outstanding(rank_state[k]->fd, &in, &out);
-      if(tout)
+      _tcp_dev_wait_outstanding(rank_state[k]->fd);
+
+      if(close(rank_state[k]->fd) != 0)
 	{
-	  for(;;)
-	    {
-	      char buffer[4];
-	      int res = read(rank_state[k]->fd, buffer, 4);
-	      if(res < 0)
-		{
-		  perror("reading");
-		  fflush(stderr);
-		}
-	      if(!res)
-		break;
-	    }
+	  gaspi_print_error("Rank %u: in close with %d", glb_gaspi_ctx.rank, k);
 	}
-
-      close(rank_state[k]->fd);
 
       free(rank_state[k]);
       rank_state[k] = NULL;
@@ -1139,9 +1147,14 @@ _tcp_dev_cleanup_handler(void)
       rank_state = NULL;
     }
 
+  if(delayedList.count > 0)
+    {
+      fprintf(stderr, "Warning: Still delayed wrs %d.\n", delayedList.count);
+      fflush(stderr);
+    }
+
   list_clear(&delayedList);
 
-  close(epollfd);
 }
 
 void
@@ -1169,7 +1182,7 @@ tcp_dev_stop_device()
       int i;
       for(i = 0; i < glb_gaspi_ctx.tnc; i++)
 	{
-	  if(!rank_state || !rank_state[i]) continue; 
+	  if(!rank_state || !rank_state[i]) continue;
 
 	  ropcode = rank_state[i]->read.opcode;
 	  if(ropcode != RECV_HEADER)
@@ -1191,34 +1204,33 @@ tcp_dev_stop_device()
     }
 
   __sync_sub_and_fetch(&valid_state, 1);
-
 }
 
 /* virtual device thread body */
 void *
 tcp_virt_dev(void *args)
 {
-  
+
   int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if(listen_sock < 0)
     {
-      gaspi_print_error("Failed to create socket");
+      gaspi_print_error("Failed to create socket.");
       return NULL;
     }
 
   int opt = 1;
   if(setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) <  0)
     {
-      gaspi_print_error("Failed to modify socket");
+      gaspi_print_error("Failed to modify socket.");
       return NULL;
     }
 
   if(setsockopt(listen_sock, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)) < 0)
     {
-      gaspi_print_error("Failed to modify socket");
+      gaspi_print_error("Failed to modify socket.");
       return NULL;
     }
-  
+
   signal(SIGPIPE, SIG_IGN);
 
   struct sockaddr_in listenAddr =
@@ -1233,7 +1245,7 @@ tcp_virt_dev(void *args)
       gaspi_print_error("Failed to bind to port %d\n", TCP_DEV_PORT + glb_gaspi_ctx.localSocket); /* TODO: glb_gaspi_ctx does not belong here*/
       return NULL;
     }
-  
+
   gaspi_set_non_blocking(listen_sock);
 
   if(listen(listen_sock, SOMAXCONN) < 0)
@@ -1241,7 +1253,7 @@ tcp_virt_dev(void *args)
       gaspi_print_error("Failed to listen on socket");
       return NULL;
     }
-    
+
   epollfd = epoll_create(MAX_EVENTS);
   if(epollfd == -1)
     {
@@ -1264,7 +1276,7 @@ tcp_virt_dev(void *args)
       .data.ptr = lstate,
       .events = EPOLLIN | EPOLLRDHUP
     };
-  
+
   if(epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_sock, &lev) < 0)
     {
       gaspi_print_error("Failed to add socket to event instance.");
@@ -1295,15 +1307,21 @@ tcp_virt_dev(void *args)
 
   while(valid_state)
     {
+      /* TODO: if thread is in epoll_wait, all events were processed */
+      /* (io, closes,...)  but the main thread hasn't yet set the */
+      /* valid_state to false, the program will hang in epoll_wait */
+      /* while the main thread will wait in pthread_join */
+
       int nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
       if(nfds < 0)
 	{
-	  gaspi_print_error("Failed to wait event. Device is unstable");
-	  //exit?
+	  /* is time to stop */
+	  if(!valid_state)
+	    break;
 	}
 
       int n;
-      for(n = 0; valid_state && (n < nfds); ++n)
+      for(n = 0; n < nfds; ++n)
 	{
 	  tcp_dev_conn_state_t *estate = (tcp_dev_conn_state_t *)events[n].data.ptr;
 	  const int event_fd = estate->fd;
@@ -1314,7 +1332,7 @@ tcp_virt_dev(void *args)
 	    {
 	      io_err = 1;
 	    }
-	  
+
 	  /* new incoming connection */
 	  else if(event_fd == listen_sock)
 	    {
@@ -1327,15 +1345,14 @@ tcp_virt_dev(void *args)
 		  if(conn_sock < 0)
 		    {
 		      if(errno == EAGAIN || errno == EWOULDBLOCK)
-			break; 
+			break;
 
-		      gaspi_print_error("Failed to accept connection");
+		      gaspi_print_error("Failed to accept connection.");
 		      continue;
 		    }
 
 		  gaspi_set_non_blocking(conn_sock);
 
-		  /* TODO: meaningful number: -1 = UNKNOWN_RANK */
 		  if(_tcp_dev_add_new_conn(-1, conn_sock, epollfd) == NULL)
 		    {
 		      gaspi_print_error("Failed to add to events instance");
@@ -1348,12 +1365,12 @@ tcp_virt_dev(void *args)
 	      if(events[n].events & EPOLLIN)
 		{
 		  /* read until would block */
-		  while(1) 
-		    {		      
-		      // TODO: catch NULL-ptr
+		  while(1)
+		    {
+		      /* TODO: catch NULL-ptr */
 		      const int bytesRemaining = estate->read.length - estate->read.done;
 		      const int bytesReceived  = read(estate->fd, (void*) estate->read.addr + estate->read.done, bytesRemaining);
-		      
+
 		      /* would block */
 		      if(bytesReceived < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
 			{
@@ -1361,29 +1378,33 @@ tcp_virt_dev(void *args)
 			}
 		      else if(bytesReceived == 0 && bytesRemaining == 0)
 			{
-			  // Recv WR not present
+			  /* Recv WR not present */
 			}
 		      else if(bytesReceived <= 0)
 			{
-			  gaspi_print_error("Rank %u:Error reading from node %d (%d %p %lu)", glb_gaspi_ctx.rank, event_rank,
-					    estate->fd, (void*) estate->read.addr + estate->read.done, bytesRemaining);
+			  gaspi_print_error("reading from node %d  (fd %d addr %p done %u remain %d recvd%d",
+					    event_rank,
+					    estate->fd,
+					    (void*) estate->read.addr, estate->read.done,
+					    bytesRemaining,
+					    bytesReceived);
 			  io_err = 1;
 			  break;
 			}
-		      // success
+		      /* success */
 		      else
 			{
 			  estate->read.done += bytesReceived;
 			}
-		      
+
 		      if(estate->read.done == estate->read.length)
 			{
 			  int ret = _tcp_dev_process_recv_data(estate, epollfd);
-			  
+
 			  if( ret != 0)
 			    {
 			      gaspi_print_error("Failed to process received data.");
-			      //TODO: better error? exit?
+			      /* TODO: better error? exit? */
 			    }
 			  break;
 			}
@@ -1395,17 +1416,19 @@ tcp_virt_dev(void *args)
 		  /* write until would block */
 		  while(1)
 		    {
-		      // TODO: catch NULL-ptr
+		      /* TODO: catch NULL-ptr */
 		      const int bytesRemaining = estate->write.length - estate->write.done;
 		      const int bytesSent      = write(estate->fd, (void*)estate->write.addr + estate->write.done, bytesRemaining);
 
-		      // would block
+		      /* would block */
 		      if(bytesSent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
 			{
 			  break;
 			}
 		      else if(bytesSent <= 0)
 			{
+			  gaspi_print_error("writing to node %d", event_rank);
+
 			  io_err = 1;
 			  break;
 			}
@@ -1420,7 +1443,7 @@ tcp_virt_dev(void *args)
 			  if(_tcp_dev_process_sent_data(epollfd, estate) != 0)
 			    {
 			      gaspi_print_error("Failed to process sent data.");
-			      //TODO: better error handling?
+			      /* TODO: better error handling? */
 			    }
 			  break;
 			}
@@ -1433,26 +1456,64 @@ tcp_virt_dev(void *args)
 	    {
 	      /* remove socket from epoll instance */
 	      struct epoll_event ev;
-	      epoll_ctl(epollfd, EPOLL_CTL_DEL, event_fd, &ev);
+	      int r = epoll_ctl(epollfd, EPOLL_CTL_DEL, event_fd, &ev);
+	      if( r != 0)
+		{
+		  gaspi_print_error("Failed to remove from events instance.");
+		}
 
-	      /* actual error on a fd */
-	      if( !(events[n].events & EPOLLRDHUP) )
+	      /* a socket error (not hangup) */
+	      if(!((events[n].events & EPOLLRDHUP) || (events[n].events & EPOLLHUP)))
 		{
 		  int error = 0;
 		  socklen_t errlen = sizeof(error);
 		  getsockopt(event_fd, SOL_SOCKET, SO_ERROR, (void *)&error, &errlen);
+
+		  gaspi_print_error("with rank %d, socket error %d (%s)",
+				    event_rank, error,strerror(error));
 		}
 
-	      /* remote peer closed connection */
-	      else if(event_rank >= 0)
+	      /* still had something to write => generate error wc */
+	      if(estate->write.opcode != SEND_DISABLED)
 		{
-		  // TODO: post WC for all open WRs (for those in delayed list will be done in processdelayed())
-		  rank_state[event_rank] = NULL;
+		  if( _tcp_dev_post_wc(estate->write.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE, estate->write.cq_handle) != 0)
+		    {
+		      gaspi_print_error("Failed to post completion error.");
+		    }
+
+		    estate->write.wr_id     = 0;
+		    estate->write.cq_handle = CQ_HANDLE_NONE;
+		    estate->write.opcode    = SEND_DISABLED;
+		    estate->write.addr      = (uintptr_t) NULL;
+		    estate->write.length    = 0;
+		    estate->write.done      = 0;
 		}
 
-	      if(shutdown(event_fd, SHUT_RD) != 0)
+	      /* or in the middle of something to read */
+	      if(estate->read.opcode != RECV_HEADER)
 		{
-		  gaspi_print_error("shutdown operation");
+		  if( (estate->read.opcode == RECV_RDMA_READ) )
+		    {
+		      if( _tcp_dev_post_wc(estate->read.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_READ, estate->read.cq_handle) != 0)
+			{
+			  gaspi_print_error("Failed to post completion error.");
+			}
+		    }
+
+		  if( (estate->read.opcode == RECV_SEND))
+		    if( _tcp_dev_post_wc(estate->read.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RECV, estate->read.cq_handle) != 0)
+		      {
+			gaspi_print_error("Failed to post completion error.");
+		      }
+		}
+
+	      if(shutdown(event_fd, SHUT_RDWR) != 0)
+		{
+		  int errsv = errno;
+		  if(errsv != ENOTCONN)
+		    {
+		      gaspi_print_error("shutdown operation");
+		    }
 		}
 
 	      if( close(event_fd) != 0)
@@ -1460,19 +1521,21 @@ tcp_virt_dev(void *args)
 		  gaspi_print_error("close io_err");
 		}
 
-	      if(estate != NULL)
-		free(estate);
-	    } 
+	      if(event_rank >= 0)
+		rank_state[event_rank]->fd = -2; /* just invalidate fd */
+	      /* rank_state[event_rank] = NULL; */
+	    }
 	} /* for all triggered events */
 
       /* handle delayed operations */
       if(_tcp_dev_process_delayed(epollfd) > 0)
 	{
-	  gaspi_print_error("Failed to process delayed events.");
+	  /* gaspi_print_error("Failed to process delayed events."); */
+	  /* valid_state = 0; */
 	}
     } /* device event loop */
 
-  _tcp_dev_cleanup_handler();
+  _tcp_dev_cleanup_connections(epollfd);
 
   if(events)
     {
@@ -1481,6 +1544,8 @@ tcp_virt_dev(void *args)
     }
 
   close(listen_sock);
+
+  close(epollfd);
 
   return NULL;
 }
