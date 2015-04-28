@@ -1,5 +1,5 @@
 BIN =  get_error_vec.bin get_error_vec_fail.bin one_dies.bin \
-	barrier_recover.bin
+	barrier_recover.bin barrier_recover_ping.bin
 
 CFLAGS+=-I../
 

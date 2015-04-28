@@ -595,7 +595,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	    }
 	}
 
-      eret = pgaspi_group_commit(GASPI_GROUP_ALL, timeout_ms);
+      eret = gaspi_group_commit(GASPI_GROUP_ALL, timeout_ms);
       if(eret == GASPI_SUCCESS)
 	{
 	  eret = gaspi_barrier(GASPI_GROUP_ALL, timeout_ms);
@@ -765,6 +765,64 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
  errL:
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_ERROR;
+}
+
+#pragma weak gaspi_proc_ping = pgaspi_proc_ping
+gaspi_return_t
+pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
+{
+  if(!glb_gaspi_init)
+    {
+      gaspi_print_error("Invalid function before gaspi_proc_init");
+      return GASPI_ERROR;
+    }
+
+  if(rank >= glb_gaspi_ctx.tnc)
+    {
+      gaspi_print_error("Invalid rank to ping.");
+      return GASPI_ERROR;
+    }
+
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
+
+  gaspi_cd_header cdh;
+  memset(&cdh, 0, sizeof(gaspi_cd_header));
+
+  cdh.op_len = 1;
+  cdh.op = GASPI_SN_PROC_PING;
+  cdh.rank = rank;
+  cdh.tnc = glb_gaspi_ctx.tnc;
+
+  gaspi_return_t eret = gaspi_connect_to_rank(rank, timeout_ms);
+  if(eret != GASPI_SUCCESS)
+    {
+      gaspi_print_error("Failed to connect to %u  (%d %p %lu)",
+			rank,
+			glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
+
+      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
+      eret = GASPI_ERROR;
+      goto errL;
+    }
+
+  ssize_t ret;
+  ret = write(glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
+  if(ret != sizeof(gaspi_cd_header))
+    {
+      gaspi_print_error("Failed to write to %u  (%d %p %lu)",
+			rank,
+			glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
+      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
+      eret = GASPI_ERROR;
+      goto errL;
+
+    }
+
+ errL:
+  unlock_gaspi (&glb_gaspi_ctx_lock);
+  return eret;
+
 }
 
 #pragma weak gaspi_proc_kill = pgaspi_proc_kill
