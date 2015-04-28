@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 #include <unistd.h>
+#include <signal.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -79,13 +80,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-  /* make sure all device threads are connected */
-  while(!tcp_dev_connected_to_all)
-    {
-      __asm__ ( "pause;" );
-    }
-
-  //TODO: more info (IP, hostname...)?
+  /* TODO: more info (IP, hostname...)? */
   if (gaspi_cfg->net_info)
     {
       gaspi_printf ("<<<<<<<<<<<<<<<< TCP-info >>>>>>>>>>>>>>>>>>>\n");
@@ -174,17 +169,25 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
+  /* make sure all device threads are connected */
+  while(!tcp_dev_connected_to_all)
+    {
+      gaspi_delay();
+    }
+
   return 0;
 }
 
 int
 pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
 {
-  int i;
+  int i, s;
+  void *res;
   unsigned int c;
 
   tcp_dev_stop_device();
 
+  /* Destroy posting queues and associated channels */
   tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpGroups);
   tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpP);
 
@@ -201,6 +204,18 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
 	}
     }
   
+  if(glb_gaspi_ctx_tcp.channelP)
+    {
+      tcp_dev_destroy_passive_channel(glb_gaspi_ctx_tcp.channelP);
+    }
+
+  s = pthread_join(tcp_dev_thread, &res);
+  if (s != 0)
+    {
+      gaspi_print_error("Failed to wait device.");
+    }
+
+  /* Now we can destroy the resources for completion and incoming data */
   tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.scqGroups);
   tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.rcqGroups);
   tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.scqP);
@@ -233,20 +248,6 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
 	  glb_gaspi_ctx.rrmd[i] = NULL;
 	}
     }
-  
-  if(glb_gaspi_ctx_tcp.channelP)
-    {
-      tcp_dev_destroy_passive_channel(glb_gaspi_ctx_tcp.channelP);
-    }
-
-  int s;
-  void *res;
-  s = pthread_join(tcp_dev_thread, &res);
-  if (s != 0)
-    {
-      gaspi_print_error("Failed to wait device.");
-    }
 
   return 0;
 }
-
