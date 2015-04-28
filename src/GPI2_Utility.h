@@ -28,13 +28,17 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <xmmintrin.h>
 
 #ifdef DEBUG
+#include "GPI2.h"
 #define gaspi_print_error(msg, ...)					\
   int errsv = errno;							\
   if( errsv != 0 )							\
-    fprintf(stderr,"Error %d (%s) at (%s:%d):" msg "\n",errsv, (char *) strerror(errsv), __FILE__, __LINE__, ##__VA_ARGS__); \
-      else								\
-      fprintf(stderr,"Error at (%s:%d):" msg "\n", __FILE__, __LINE__, ##__VA_ARGS__) 
-	
+    fprintf(stderr,"[Rank %4u]: Error %d (%s) at (%s:%d):" msg "\n",glb_gaspi_ctx.rank, errsv, (char *) strerror(errsv), __FILE__, __LINE__, ##__VA_ARGS__); \
+  else									\
+    fprintf(stderr,"[Rank %4u]: Error at (%s:%d):" msg "\n",glb_gaspi_ctx.rank, __FILE__, __LINE__, ##__VA_ARGS__)
+
+#define gaspi_print_warning(msg, ...)					\
+  fprintf(stderr,"[Rank %4u]: Warning:" msg "\n",glb_gaspi_ctx.rank, ##__VA_ARGS__)
+
 #define gaspi_verify_null_ptr(ptr)				\
   if(ptr == NULL)						\
     {								\
@@ -45,13 +49,14 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #else
 #define gaspi_print_error(msg, ...)
+#define gaspi_print_warning(msg, ...)
 #define gaspi_verify_null_ptr(ptr)
 #endif
 
 #ifdef MIC
-#define gaspi_delay()   _mm_delay_32(32)
+#define gaspi_delay() _mm_delay_32(32)
 #else
-#define gaspi_delay()   _mm_pause()
+#define gaspi_delay() _mm_pause()
 #endif
 
 
