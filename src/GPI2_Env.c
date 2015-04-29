@@ -271,7 +271,7 @@ gaspi_handle_env(gaspi_context *ctx)
   else
     {
 #ifndef GPI2_WITH_MPI      
-      gaspi_print_error ("No amchine file defined (GASPI_MFILE)");
+      gaspi_print_error ("No machine file defined (GASPI_MFILE)");
 #endif      
       env_miss = 1;
     }
