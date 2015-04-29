@@ -1381,12 +1381,8 @@ tcp_virt_dev(void *args)
 			}
 		      else if(bytesReceived <= 0)
 			{
-			  gaspi_print_error("reading from node %d  (fd %d addr %p done %u remain %d recvd%d",
-					    event_rank,
-					    estate->fd,
-					    (void*) estate->read.addr, estate->read.done,
-					    bytesRemaining,
-					    bytesReceived);
+			  gaspi_print_error("reading from node %d.",
+					    event_rank);
 			  io_err = 1;
 			  break;
 			}
