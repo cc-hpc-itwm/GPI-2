@@ -358,7 +358,7 @@ _tcp_dev_connect_all(int epollfd)
       rank_state[i] = nstate;
     }
 
-  tcp_dev_connected_to_all = 1;
+  __sync_fetch_and_add(&tcp_dev_connected_to_all, 1);
 
   return 0;
 }
