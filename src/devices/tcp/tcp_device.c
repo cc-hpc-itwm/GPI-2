@@ -298,11 +298,10 @@ _tcp_dev_connect_all(int epollfd)
   int i;
 
   /* TODO: glb_gaspi_ctx does not belong here */
-  for(i = glb_gaspi_ctx.rank + 1; i < glb_gaspi_ctx.tnc; i++)
+  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
       if((rank_state[i] != NULL))
 	{
-	  printf("TCP dev Rank %d: already connected to %d\n", glb_gaspi_ctx.rank, i);
 	  continue;
 	}
 
