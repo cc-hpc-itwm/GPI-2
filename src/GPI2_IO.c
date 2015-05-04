@@ -515,7 +515,9 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
     volatile unsigned char *segPtr;
   int loop = 1;
   gaspi_notification_id_t n;
-  
+
+  if(num == 0)
+    return GASPI_SUCCESS;
 
 #ifdef GPI2_CUDA
   if(glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].cudaDevId >=0 )
