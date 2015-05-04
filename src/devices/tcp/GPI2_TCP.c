@@ -170,10 +170,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
     }
 
   /* make sure all device threads are connected */
-  while(!tcp_dev_connected_to_all)
-    {
-      gaspi_delay();
-    }
+  tcp_dev_wait_all_connections();
 
   return 0;
 }
