@@ -291,6 +291,29 @@ _tcp_dev_add_new_conn(int rank, int conn_sock, int epollfd)
   return nstate;
 }
 
+int tcp_dev_wait_all_connections()
+{
+  int i;
+  int counter = 0;
+
+  while(!tcp_dev_connected_to_all)
+    {
+      gaspi_delay();
+    }
+
+  while(counter != glb_gaspi_ctx.tnc - 1)
+    {
+      counter = 0;
+      for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+	{
+	  if((rank_state[i] != NULL))
+	    {
+	      counter++;
+	    }
+	}
+    }
+}
+
 /* make connection to all other nodes */
 static int
 _tcp_dev_connect_all(int epollfd)
@@ -298,7 +321,7 @@ _tcp_dev_connect_all(int epollfd)
   int i;
 
   /* TODO: glb_gaspi_ctx does not belong here */
-  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+  for(i = glb_gaspi_ctx.rank + 1; i < glb_gaspi_ctx.tnc; i++)
     {
       if((rank_state[i] != NULL))
 	{
