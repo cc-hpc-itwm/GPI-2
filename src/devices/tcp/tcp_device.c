@@ -346,8 +346,6 @@ tcp_dev_connect_to(int i)
   /* register rank */
   rank_state[i] = nstate;
 
-  /* set connected (ugly) */
-  glb_gaspi_ctx.ep_conn[i].cstat = 1;
   return 0;
 }
 
@@ -437,6 +435,11 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
 	case REGISTER_PEER:
 	  estate->rank = estate->wr_buff.source;
 	  rank_state[estate->rank] = estate;
+
+	  /* set connected */
+	  /* TODO: (ugly) */
+	  glb_gaspi_ctx.ep_conn[estate->rank].cstat = 1;
+  
 
 	  _tcp_dev_set_default_read_conn_state(estate);
 
