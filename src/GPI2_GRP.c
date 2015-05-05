@@ -328,8 +328,8 @@ pgaspi_group_commit (const gaspi_group_t group,
 	  if(group_to_commit->rank_grp[i] == glb_gaspi_ctx.rank)
 	    continue;
 
-/* 	  if(!glb_gaspi_ctx.ep_conn[group_to_commit->rank_grp[i]].cstat) */
-/* 	    continue; */
+	  if(!glb_gaspi_ctx.ep_conn[group_to_commit->rank_grp[i]].cstat)
+	    continue;
 
 	  conn_counter++;
 
