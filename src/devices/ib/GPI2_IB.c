@@ -982,7 +982,26 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 	}
     }
   /*>>> LOOP */
-  
+
+  /* Unregister memory */
+  if(pgaspi_dev_unregister_mem(&(glb_gaspi_ctx.nsrc)) != 0)
+    {
+      gaspi_print_error ("Failed to de-register internal memory");
+      return -1;
+    }
+
+  for(i = 0; i < GASPI_MAX_GROUPS; i++)
+    {
+      if(glb_gaspi_group_ctx[i].id >= 0)
+	{
+	  if(pgaspi_dev_unregister_mem(&(glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank])) != 0)
+	    {
+	      gaspi_print_error ("Failed to de-register group memory");
+	      return -1;
+	    }
+	}
+    }
+
   if(ibv_dealloc_pd (glb_gaspi_ctx_ib.pd))
     {
       gaspi_print_error("Failed to de-allocate protection domain (libibverbs)");

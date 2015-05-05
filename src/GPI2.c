@@ -650,29 +650,21 @@ pgaspi_cleanup_core()
       return GASPI_ERROR;
     }
 
-  if(pgaspi_dev_unregister_mem(&(glb_gaspi_ctx.nsrc)) != 0)
-    {
-      gaspi_print_error ("Failed to de-register internal memory");
-      return -1;
-    }
+  /* Device clean-up */
+  if(pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0)
+    return GASPI_ERROR;
 
   if(glb_gaspi_ctx.nsrc.buf)
     {
       free(glb_gaspi_ctx.nsrc.buf);
     }
-  
+
   glb_gaspi_ctx.nsrc.buf = NULL;
 
   for(i = 0; i < GASPI_MAX_GROUPS; i++)
     {
       if(glb_gaspi_group_ctx[i].id >= 0)
 	{
-	  if(pgaspi_dev_unregister_mem(&(glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank])) != 0)
-	    {
-	      gaspi_print_error ("Failed to de-register group memory");
-	      return -1;
-	    }
-
 	  if(glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf)
 	    {
 	      free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf);
@@ -692,12 +684,6 @@ pgaspi_cleanup_core()
 	  glb_gaspi_group_ctx[i].rrcd = NULL;
 	}
     }
-
-
-  
-  /* Device clean-up */
-  if(pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0)
-    return GASPI_ERROR;
 
   if(glb_gaspi_ctx.hn_poff)
     free (glb_gaspi_ctx.hn_poff);
