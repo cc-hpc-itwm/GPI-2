@@ -463,9 +463,7 @@ pgaspi_group_num (gaspi_number_t * const group_num)
   if (glb_gaspi_init)
     {
 
-#ifdef DEBUG
       gaspi_verify_null_ptr(group_num);
-#endif
       
       *group_num = glb_gaspi_ctx.group_cnt;
 
@@ -484,9 +482,7 @@ pgaspi_group_size (const gaspi_group_t group,
 
   if (glb_gaspi_init && group < glb_gaspi_ctx.group_cnt)
     {
-#ifdef DEBUG      
       gaspi_verify_null_ptr(group_size);
-#endif
       
       *group_size = glb_gaspi_group_ctx[group].tnc;
       return GASPI_SUCCESS;
@@ -516,9 +512,7 @@ pgaspi_group_ranks (const gaspi_group_t group,
 gaspi_return_t
 pgaspi_group_max (gaspi_number_t * const group_max)
 {
-#ifdef DEBUG      
   gaspi_verify_null_ptr(group_max);
-#endif
 
   *group_max = GASPI_MAX_GROUPS;
   return GASPI_SUCCESS;
@@ -528,9 +522,7 @@ pgaspi_group_max (gaspi_number_t * const group_max)
 gaspi_return_t
 pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
 {
-#ifdef DEBUG      
   gaspi_verify_null_ptr(buf_size);
-#endif
   
   *buf_size = NEXT_OFFSET;
   return GASPI_SUCCESS;
@@ -540,9 +532,7 @@ pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
 gaspi_return_t
 pgaspi_allreduce_elem_max (gaspi_number_t * const elem_max)
 {
-#ifdef DEBUG        
   gaspi_verify_null_ptr(elem_max);
-#endif
   
   *elem_max = ((1 << 8) - 1);
   return GASPI_SUCCESS;

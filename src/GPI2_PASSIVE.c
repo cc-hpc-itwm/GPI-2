@@ -55,9 +55,7 @@ gaspi_return_t
 pgaspi_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max)
 {
 
-#ifdef DEBUG
   gaspi_verify_null_ptr(passive_transfer_size_max);
-#endif  
 
   *passive_transfer_size_max = GASPI_MAX_TSIZE_P;
 

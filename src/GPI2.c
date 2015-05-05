@@ -65,9 +65,8 @@ pgaspi_set_socket_affinity (const gaspi_uchar socket)
 
   if (socket >= 4)
     {
-#ifdef DEBUG
       gaspi_print_error("Debug: GPI-2 only allows up to a maximum of 4 NUMA sockets");
-#endif
+
       return GASPI_ERROR;
     }
   
