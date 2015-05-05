@@ -63,7 +63,7 @@ pgaspi_dev_disconnect_context(const int i)
 int
 pgaspi_dev_connect_context(const int i)
 {
-  return 0;
+  return tcp_dev_connect_to(i);
 }
 
 int
@@ -168,9 +168,6 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
       gaspi_print_error("Failed to create queue for passive.");
       return -1;
     }
-
-  /* make sure all device threads are connected */
-  tcp_dev_wait_all_connections();
 
   return 0;
 }

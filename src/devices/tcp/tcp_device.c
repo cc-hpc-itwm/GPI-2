@@ -291,98 +291,63 @@ _tcp_dev_add_new_conn(int rank, int conn_sock, int epollfd)
   return nstate;
 }
 
-int tcp_dev_wait_all_connections()
+int
+tcp_dev_connect_to(int i)
 {
-  int i;
-  int counter = 0;
-
-  while(!tcp_dev_connected_to_all)
+  if((rank_state[i] != NULL))
     {
-      gaspi_delay();
+      return 0;
     }
 
-  while(counter != glb_gaspi_ctx.tnc - 1)
+  /* connect to node/rank */
+  int conn_sock = gaspi_connect2port(gaspi_get_hn(i),
+				     TCP_DEV_PORT + glb_gaspi_ctx.poff[i],
+				     CONN_TIMEOUT);
+
+  if(conn_sock == -1)
     {
-      counter = 0;
-      for(i = 0; i < glb_gaspi_ctx.tnc; i++)
-	{
-	  if((rank_state[i] != NULL))
-	    {
-	      counter++;
-	    }
-	}
-    }
-}
-
-/* make connection to all other nodes */
-static int
-_tcp_dev_connect_all(int epollfd)
-{
-  int i;
-
-  /* TODO: glb_gaspi_ctx does not belong here */
-  for(i = glb_gaspi_ctx.rank + 1; i < glb_gaspi_ctx.tnc; i++)
-    {
-      if((rank_state[i] != NULL))
-	{
-	  continue;
-	}
-
-      /* connect to node/rank */
-      int conn_sock = gaspi_connect2port(gaspi_get_hn(i),
-					 TCP_DEV_PORT + glb_gaspi_ctx.poff[i],
-					 CONN_TIMEOUT);
-
-      if(conn_sock == -1)
-	{
-	  gaspi_print_error("Error connecting to rank %i (%s) on port %i.",
-			    i,
-			    gaspi_get_hn(i),
-			    TCP_DEV_PORT + glb_gaspi_ctx.poff[i]);
-	  return 1;
-	}
-
-      /* prepare work request */
-      tcp_dev_wr_t wr;
-      memset(&wr, 0, sizeof(tcp_dev_wr_t));
-
-      wr.wr_id       = glb_gaspi_ctx.tnc;
-      wr.cq_handle   = CQ_HANDLE_NONE;
-      wr.source      = glb_gaspi_ctx.rank;
-      wr.local_addr  = (uintptr_t) NULL;
-      wr.target      = i;
-      wr.remote_addr = (uintptr_t) NULL;
-      wr.length      = sizeof(tcp_dev_wr_t);
-
-      /* TODO: glb_gaspi_ctx doesn't belong here*/
-      if(glb_gaspi_ctx.rank == 0)
-	wr.opcode = REGISTER_MASTER;
-      else
-	wr.opcode = REGISTER_WORKER;
-
-      if(write(conn_sock, &wr, sizeof(tcp_dev_wr_t)) < 0)
-	{
-	  gaspi_print_error("Failed to send registration request to rank %i (%s)\n",
-			    i, gaspi_get_hn(i));
-	  close(conn_sock);
-	  return 1;
-	}
-
-      /* add new socket to epoll instance */
-      tcp_dev_conn_state_t *nstate;
-      nstate = _tcp_dev_add_new_conn(i, conn_sock, epollfd);
-      if( nstate == NULL)
-	{
-	  gaspi_print_error("Failed to add new connection to events instance");
-	  return 1;
-	}
-
-      /* register rank */
-      rank_state[i] = nstate;
+      gaspi_print_error("Error connecting to rank %i (%s) on port %i.",
+			i,
+			gaspi_get_hn(i),
+			TCP_DEV_PORT + glb_gaspi_ctx.poff[i]);
+      return 1;
     }
 
-  __sync_fetch_and_add(&tcp_dev_connected_to_all, 1);
+  /* prepare work request */
+  tcp_dev_wr_t wr;
+  memset(&wr, 0, sizeof(tcp_dev_wr_t));
 
+  wr.wr_id       = glb_gaspi_ctx.tnc;
+  wr.cq_handle   = CQ_HANDLE_NONE;
+  wr.source      = glb_gaspi_ctx.rank;
+  wr.local_addr  = (uintptr_t) NULL;
+  wr.target      = i;
+  wr.remote_addr = (uintptr_t) NULL;
+  wr.length      = sizeof(tcp_dev_wr_t);
+  wr.opcode      = REGISTER_PEER;
+
+  if(write(conn_sock, &wr, sizeof(tcp_dev_wr_t)) < 0)
+    {
+      gaspi_print_error("Failed to send registration request to rank %i (%s)\n",
+			i, gaspi_get_hn(i));
+      close(conn_sock);
+      return 1;
+    }
+
+  /* add new socket to epoll instance */
+  tcp_dev_conn_state_t *nstate;
+  nstate = _tcp_dev_add_new_conn(i, conn_sock, epollfd);
+  if( nstate == NULL)
+    {
+      gaspi_print_error("Failed to add new connection to events instance");
+      return 1;
+    }
+
+  /* register rank */
+  rank_state[i] = nstate;
+
+  /* set connected (ugly) */
+  glb_gaspi_ctx.ep_conn[i].cstat = 1;
   return 0;
 }
 
@@ -469,21 +434,9 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
       switch(estate->wr_buff.opcode)
 	{
 	  /* TOPOLOGY OPERATIONS */
-	case REGISTER_MASTER:
-	case REGISTER_WORKER:
-	  if(_tcp_dev_alloc_remote_states(glb_gaspi_ctx.tnc) != 0)
-	    {
-	      return 1;
-	    }
-
+	case REGISTER_PEER:
 	  estate->rank = estate->wr_buff.source;
 	  rank_state[estate->rank] = estate;
-
-	  if(estate->wr_buff.opcode == REGISTER_MASTER)
-	    if(_tcp_dev_connect_all(epollfd) != 0)
-	      {
-		return 1;
-	      }
 
 	  _tcp_dev_set_default_read_conn_state(estate);
 
@@ -1305,18 +1258,9 @@ tcp_virt_dev(void *args)
       return NULL;
     }
 
-  /* TODO: gaspi_ctx has nothing to do here */
-  if(glb_gaspi_ctx.rank == 0)
+  if( _tcp_dev_alloc_remote_states (glb_gaspi_ctx.tnc) != 0)
     {
-      if( _tcp_dev_alloc_remote_states (glb_gaspi_ctx.tnc) != 0)
-	{
-	  return NULL;
-	}
-
-      if(_tcp_dev_connect_all(epollfd) != 0)
-	{
-	  return NULL;
-	}
+      return NULL;
     }
 
   /* events loop */

@@ -44,9 +44,8 @@ typedef struct
   uint32_t cq_handle; // specifies remote CQ
   enum 
     {
-      REGISTER_MASTER,
-      REGISTER_WORKER,
-      
+      REGISTER_PEER,
+
       POST_RDMA_WRITE,
       POST_RDMA_WRITE_INLINED,
       POST_RDMA_READ,
