@@ -100,7 +100,7 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
   else
     {
       int sockL = socket (AF_INET, SOCK_DGRAM, 0);
-      if( socket < 0 )
+      if( sockL < 0 )
 	  goto endL;
 
       client.sin_family = AF_INET;
