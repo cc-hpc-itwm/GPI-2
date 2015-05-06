@@ -81,17 +81,21 @@ tcp_dev_create_passive_channel(void)
   return channel;
 }
 
+/* TODO: rename function */
 int
 tcp_dev_is_valid_state(gaspi_rank_t i)
 {
-  if(rank_state != NULL)
+  if(i >= 0  && i < glb_gaspi_ctx.tnc)
     {
-      if(rank_state[i] != NULL)
+      if(rank_state != NULL)
 	{
-	  if(rank_state[i]->fd < 0)
-	    return 0;
-	  else
-	    return 1;
+	  if(rank_state[i] != NULL)
+	    {
+	      if(rank_state[i]->fd < 0)
+		return 0;
+	      else
+		return 1;
+	    }
 	}
     }
 
