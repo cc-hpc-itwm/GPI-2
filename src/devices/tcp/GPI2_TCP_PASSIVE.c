@@ -169,8 +169,6 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
     }
   
   /* set sender rank */
-  *rem_rank = 0xffff;
-
   *rem_rank = (gaspi_rank_t) wc.sender;
 	 
   return GASPI_SUCCESS;
