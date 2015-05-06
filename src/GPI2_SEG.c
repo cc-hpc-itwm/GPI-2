@@ -240,7 +240,7 @@ gaspi_return_t
 pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 {
 
-  if(!glb_gaspi_ib_init)
+  if(!glb_gaspi_dev_init)
     {
       return GASPI_ERROR;
     }
@@ -378,7 +378,7 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 {
 
 #ifdef DEBUG  
-  if(!glb_gaspi_ib_init)
+  if(!glb_gaspi_dev_init)
     return GASPI_ERROR;
 
   if(rank >= glb_gaspi_ctx.tnc || rank == glb_gaspi_ctx.rank)
@@ -500,7 +500,7 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 		      const gaspi_alloc_t alloc_policy)
 {
 #ifdef DEBUG  
-  if(!glb_gaspi_ib_init)
+  if(!glb_gaspi_dev_init)
     {
       gaspi_print_error("Invalid function before gaspi_proc_init");
       return GASPI_ERROR;

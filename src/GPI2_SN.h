@@ -84,7 +84,7 @@ typedef struct
 } gaspi_rank_data;
 
 extern volatile int glb_gaspi_init;
-extern volatile int glb_gaspi_ib_init;
+extern volatile int glb_gaspi_dev_init;
 extern volatile int gaspi_master_topo_data;
 
 extern volatile enum gaspi_sn_status gaspi_sn_status;

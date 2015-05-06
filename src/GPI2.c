@@ -114,7 +114,7 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 {
   gaspi_return_t eret = GASPI_ERROR;
 
-  if(!glb_gaspi_ib_init)
+  if(!glb_gaspi_dev_init)
     return GASPI_ERROR;
 
   const int i = (int) rank;
@@ -237,7 +237,7 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 
   gaspi_return_t eret = GASPI_ERROR;
   
-  if(!glb_gaspi_ib_init)
+  if(!glb_gaspi_dev_init)
     return GASPI_ERROR;
   
   const int i = rank;
@@ -270,7 +270,7 @@ pgaspi_init_core()
 {
   int i;
 
-  if (glb_gaspi_ib_init)
+  if (glb_gaspi_dev_init)
     return -1;
   
   memset (&glb_gaspi_group_ctx, 0, GASPI_MAX_GROUPS * sizeof (gaspi_group_ctx));
@@ -329,7 +329,7 @@ pgaspi_init_core()
       memset (glb_gaspi_ctx.qp_state_vec[i], 0, glb_gaspi_ctx.tnc);
     }
 
-  glb_gaspi_ib_init = 1;
+  glb_gaspi_dev_init = 1;
 
   return 0;
 }
@@ -393,7 +393,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   
   if(glb_gaspi_ctx.procType == MASTER_PROC)
     {
-      if(glb_gaspi_ib_init == 0)
+      if(glb_gaspi_dev_init == 0)
 	{
 	  //check mfile
 	  if(glb_gaspi_ctx.mfile == NULL)
@@ -503,7 +503,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  
 	  for(i = 0; i < glb_gaspi_ctx.tnc; i++) 
 	    glb_gaspi_ctx.sockfd[i] = -1;
-	}//glb_gaspi_ib_init
+	}//glb_gaspi_dev_init
     }//MASTER_PROC
   else if(glb_gaspi_ctx.procType == WORKER_PROC)
     {
@@ -644,7 +644,7 @@ pgaspi_cleanup_core()
 {
   int i;
   
-  if(!glb_gaspi_ib_init)
+  if(!glb_gaspi_dev_init)
     {
       return GASPI_ERROR;
     }
@@ -1043,7 +1043,7 @@ pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
 {
   int i, j;
 
-  if (!glb_gaspi_ib_init || state_vector == NULL)
+  if (!glb_gaspi_dev_init || state_vector == NULL)
     return GASPI_ERROR;
 
   memset (state_vector, 0, (size_t) glb_gaspi_ctx.tnc);
