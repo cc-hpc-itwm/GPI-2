@@ -36,6 +36,7 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
       .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].addr + NOTIFY_OFFSET + offset_remote),
       .length      = size,
       .swap        = 0,
+      .compare_add = 0,
       .opcode      = POST_RDMA_WRITE
     } ;
   
@@ -64,6 +65,7 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
       .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].addr + NOTIFY_OFFSET + offset_remote),
       .length      = size,
       .swap        = 0,
+      .compare_add = 0,
       .opcode      = POST_RDMA_READ
     } ;
   
@@ -176,6 +178,7 @@ pgaspi_dev_write_list (const gaspi_number_t num,
 	  .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].addr + NOTIFY_OFFSET + offset_remote[i]),
 	  .length      = size[i],
 	  .swap        = 0,
+	  .compare_add = 0,
 	  .opcode      = POST_RDMA_WRITE
 	} ;
       
@@ -210,6 +213,7 @@ pgaspi_dev_read_list (const gaspi_number_t num,
 	  .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].addr + NOTIFY_OFFSET + offset_remote[i]),
 	  .length      = size[i],
 	  .swap        = 0,
+	  .compare_add = 0,
 	  .opcode      = POST_RDMA_READ
 	} ;
 
