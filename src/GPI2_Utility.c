@@ -216,7 +216,10 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 	  if(!found)
 	    {
 	      if((cpos+1) > strlen(bptr))
-		return -1;
+		{
+		  fclose(f);
+		  return -1;
+		}
 	    }
 
 	  bptr += (cpos+1);
