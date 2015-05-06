@@ -107,7 +107,7 @@ int
 gaspi_seg_reg_sn(const gaspi_cd_header snp)
 {
 
-  if(!glb_gaspi_ib_init) 
+  if(!glb_gaspi_dev_init) 
     return GASPI_ERROR;
 
   //TODO: include timeout?
