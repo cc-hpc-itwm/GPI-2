@@ -413,7 +413,7 @@ void *gaspi_sn_backend(void *arg)
       gaspi_sn_print_error("Failed to create IO event facility");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
       gaspi_sn_err = GASPI_ERROR;
-      
+      close(lsock);
       return NULL;
     }
   
@@ -424,7 +424,7 @@ void *gaspi_sn_backend(void *arg)
       gaspi_sn_print_error("Failed to allocate memory");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
       gaspi_sn_err = GASPI_ERROR;
-      
+      close(lsock);
       return NULL;
     }
 
@@ -437,7 +437,7 @@ void *gaspi_sn_backend(void *arg)
       gaspi_sn_print_error("Failed to modify IO event facility");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
       gaspi_sn_err = GASPI_ERROR;
-      
+      close(lsock);
       return NULL;
     }
 
@@ -447,7 +447,7 @@ void *gaspi_sn_backend(void *arg)
       gaspi_sn_print_error("Failed to allocate memory");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
       gaspi_sn_err = GASPI_ERROR;
-      
+      close(lsock);
       return NULL;
     }
 
