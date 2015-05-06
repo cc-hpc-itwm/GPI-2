@@ -8,6 +8,9 @@ int main(int argc, char *argv[])
 {
   gaspi_rank_t nproc, rank;
 
+  gaspi_printf_to(0, "Before proc_init printf_to 0\n", rank);
+  gaspi_printf("before proc_init printf\n", rank);
+
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
