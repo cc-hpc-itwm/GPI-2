@@ -47,6 +47,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id,
       .remote_addr = 0UL,
       .length      = size,
       .swap        = 0,
+      .compare_add = 0,
       .opcode      = POST_SEND
     } ;
   
@@ -113,6 +114,7 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
       .remote_addr = 0UL,
       .length      = size,
       .swap        = 0,
+      .compare_add = 0,
       .opcode      = POST_RECV
     } ;
   

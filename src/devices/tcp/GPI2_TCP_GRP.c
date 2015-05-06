@@ -30,6 +30,7 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
       .local_addr  = (uintptr_t) local_addr,
       .length      = length,
       .swap        = 0,
+      .compare_add = 0,
       .opcode      = POST_RDMA_WRITE,
       .target      = dst,
       .remote_addr = (uintptr_t) remote_addr,
