@@ -395,14 +395,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
     {
       if(glb_gaspi_dev_init == 0)
 	{
-	  //check mfile
-	  if(glb_gaspi_ctx.mfile == NULL)
-	    {
-	      gaspi_print_error("No machinefile provided (env var: GASPI_MFILE)");
-	      eret = GASPI_ERR_ENV;
-	      goto errL;
-	    }
-	  
 	  if(access (glb_gaspi_ctx.mfile, R_OK) == -1)
 	    {
 	      gaspi_print_error ("Incorrect permissions of machinefile");
