@@ -357,7 +357,7 @@ void *gaspi_sn_backend(void *arg)
       gaspi_sn_print_error("Failed to modify socket");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
       gaspi_sn_err = GASPI_ERROR;
- 
+      close(lsock);
       return NULL;
     }
 
@@ -366,7 +366,7 @@ void *gaspi_sn_backend(void *arg)
       gaspi_sn_print_error("Failed to modify socket");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
       gaspi_sn_err = GASPI_ERROR;
-      
+      close(lsock);
       return NULL;
     }
 
@@ -384,7 +384,7 @@ void *gaspi_sn_backend(void *arg)
       
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
       gaspi_sn_err = GASPI_ERR_SN_PORT;
-
+      close(lsock);
       return NULL;
     }
   
@@ -393,7 +393,7 @@ void *gaspi_sn_backend(void *arg)
       gaspi_sn_print_error("Failed to set socket");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
       gaspi_sn_err = GASPI_ERROR;
-      
+      close(lsock);
       return NULL;
     }
 
@@ -402,7 +402,7 @@ void *gaspi_sn_backend(void *arg)
       gaspi_sn_print_error("Failed to listen on socket");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
       gaspi_sn_err = GASPI_ERROR;
-      
+      close(lsock);
       return NULL;
     }
   
