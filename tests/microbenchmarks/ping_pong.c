@@ -75,19 +75,14 @@ main (int argc, char *argv[])
 		  const mcycles_t s1 = get_mcycles ();
 		  delta[l] = s1 - s0;
 		}
-
+	      
 	      double avg = 0.0;
 	      for (l = skip; l < 1000; l++)
 		avg += (double) delta[l] * cycles_to_msecs;
 
-	      if (bytes < 131072)
-		printf ("%d \t\t%.2f\n", bytes,
-			(avg / (double) (1000 - skip) * 0.5) * 1000.0);
-	      else
-		printf ("%d \t\t%.2f\n", bytes,
-			(avg / (double) (1000 - skip) * 0.5) * 1000.0);
+	      printf ("%d \t\t%.2f\n", bytes, (avg / (double) (1000 - skip) * 0.5) * 1000.0);
 	    }
-
+	  
 	  gaspi_wait (0, GASPI_BLOCK);
 	  bytes <<= 1;
 	}
