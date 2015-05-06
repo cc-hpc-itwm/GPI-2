@@ -31,120 +31,59 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2.h"
 #include "GPI2_Utility.h"
 
-#define PORT_LOGGER 17825
+#define GPI2_PORT_LOGGER 17825
 
 static pthread_mutex_t gaspi_logger_lock = PTHREAD_MUTEX_INITIALIZER;
-//TODO: 128? or 255?
-static char gaspi_master_log_ptr[128];
-static int gaspi_master_log_init = 0;
-static int gaspi_log_socket = 0;
+
 
 extern gaspi_config_t glb_gaspi_cfg;
-
-static inline void
-_check_log_init(void)
-{
-  if (gaspi_master_log_init == 0)
-    {
-      gaspi_master_log_init = 1;
-
-#ifdef GPI2_WITH_MPI
-      if(glb_gaspi_ctx.hn_poff == NULL)
-	printf("gaspi_printf in MPI mixed mode is not possible before gaspi_proc_init\n");
-      
-      memset (gaspi_master_log_ptr, 0, 128);
-      snprintf (gaspi_master_log_ptr, 64, "%s", glb_gaspi_ctx.hn_poff);
-      gaspi_log_socket = glb_gaspi_ctx.localSocket;
-      
-#else
-      char * ptr = getenv ("GASPI_MASTER");
-      if (ptr != NULL)
-	{
-	  memset (gaspi_master_log_ptr, 0, 128);
-	  snprintf (gaspi_master_log_ptr, 128, "%s", ptr);
-	}
-
-      char *ptr2 = getenv ("GASPI_SOCKET");
-      if (ptr2 != NULL)
-	{
-	  gaspi_log_socket = atoi (ptr2);
-	}
-#endif
-      
-    }
-}
-
-static inline int
-_set_local_log_conn(int *sockL, struct sockaddr_in * client)
-{
-
-  if ((*sockL = socket (AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
-      return -1;
-    }
-
-  client->sin_family = AF_INET;
-  client->sin_addr.s_addr = htonl (INADDR_ANY);
-  client->sin_port = htons (0);
-
-  int rc = bind (*sockL, (struct sockaddr *) client, sizeof (*client));
-  if (rc < 0)
-    {
-      printf ("Setting connection to logger (local bind) failed\n");
-      return -1;
-    }
-
-  return 0;
-}
-
-static inline int
-_send_to_log(struct sockaddr_in *serverL, 
-	     struct hostent *server_dataL,
-	     int sockL,
-	     char *buf)
-{
-
-  memcpy (&(serverL->sin_addr), server_dataL->h_addr, server_dataL->h_length);
-  serverL->sin_family = AF_INET;
-  serverL->sin_port = htons (PORT_LOGGER);
-
-  connect (sockL, (struct sockaddr *) serverL, sizeof (*serverL));
-  sendto (sockL, buf, strlen (buf), 0, (struct sockaddr *) serverL,
-	  sizeof (*serverL));
-
-  return 0;
-}
 
 #pragma weak gaspi_printf_to = pgaspi_printf_to
 void
 pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
 {
   char buf[1024];
-  char hn[128]; //TODO: 128? or 255?
+  char hn[255];
   struct sockaddr_in serverL, client;
   struct hostent *server_dataL;
 
+  int gaspi_log_socket = -1;
+  int gaspi_log_rank = -1;
+
+  /* Logger disabled? */
   if (!glb_gaspi_cfg.logger)
     return;
 
   pthread_mutex_lock (&gaspi_logger_lock);
 
-  memset (buf, 0, 1024);
-  memset (hn, 0, 128);
-  gethostname (hn, 128);
+  memset (buf, 0, sizeof(buf));
+  memset (hn, 0, sizeof(hn));
 
-#ifdef GPI2_WITH_MPI
-  gaspi_log_socket = glb_gaspi_ctx.localSocket;
-#else
-  char *ptr2 = getenv ("GASPI_SOCKET");
-  if (ptr2)
+  if(gethostname (hn, 255) < 0)
     {
-      gaspi_log_socket = atoi (ptr2);
+      pthread_mutex_unlock (&gaspi_logger_lock);
+      return;
     }
+
+  if( glb_gaspi_init )
+    {
+      gaspi_log_socket = glb_gaspi_ctx.localSocket;
+      gaspi_log_rank = glb_gaspi_ctx.rank;
+    }
+  else
+    {
+#ifdef GPI2_WITH_MPI
+      gaspi_log_socket = glb_gaspi_ctx.localSocket;
+#else
+      char *socket_num_str = getenv ("GASPI_SOCKET");
+      if (socket_num_str != NULL)
+	{
+	  gaspi_log_socket = atoi (socket_num_str);
+	}
 #endif
-  
- 
-  sprintf (buf, "[%s:%d:%u] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank);
+    }
+
+  sprintf (buf, "[%s:%4d:%d] ", hn, gaspi_log_rank, gaspi_log_socket);
   const int sl = strlen (buf);
 
   va_list ap;
@@ -152,25 +91,53 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
   vsnprintf (buf + sl, 1024 - sl, fmt, ap);
   va_end (ap);
 
-  int sockL;
-  if(_set_local_log_conn(&sockL, &client) < 0)
+  if( ! glb_gaspi_init )
     {
+      fprintf(stdout, buf);
+      fflush (stdout);
       goto endL;
     }
-
-  if ((server_dataL = gethostbyname (gaspi_get_hn(log_rank))) == 0)
+  else
     {
-      goto endL;
+      int sockL = socket (AF_INET, SOCK_DGRAM, 0);
+      if( socket < 0 )
+	  goto endL;
+
+      client.sin_family = AF_INET;
+      client.sin_addr.s_addr = htonl (INADDR_ANY);
+      client.sin_port = htons (0);
+
+      if (bind (sockL, (struct sockaddr *) &client, sizeof (client)) < 0)
+	{
+	  close(sockL);
+	  goto endL;
+	}
+
+      char * target_logger = gaspi_get_hn(log_rank);
+      if(target_logger != NULL)
+	{
+	  if ((server_dataL = gethostbyname (target_logger)) == 0)
+	    {
+	      close(sockL);
+	      goto endL;
+	    }
+
+	  memcpy (&(serverL.sin_addr), server_dataL->h_addr, server_dataL->h_length);
+	  serverL.sin_family = AF_INET;
+	  serverL.sin_port = htons (GPI2_PORT_LOGGER);
+
+	  if(connect (sockL, (struct sockaddr *) &serverL, sizeof (serverL)) == 0)
+	    {
+	      sendto (sockL, buf, strlen(buf), 0, (struct sockaddr *) &serverL,
+		      sizeof (serverL));
+	    }
+	}
+      close (sockL);
     }
 
-  _send_to_log(&serverL, server_dataL, sockL, buf);
-
-  close (sockL);
-  
  endL:
   pthread_mutex_unlock (&gaspi_logger_lock);
   return;
-  
 }
 
 #pragma weak gaspi_printf = pgaspi_printf
@@ -179,65 +146,12 @@ pgaspi_printf (const char *fmt, ...)
 {
 
   char buf[1024];
-  char hn[128];
-  struct sockaddr_in serverL, client;
-  struct hostent *server_dataL;
-
-  if (!glb_gaspi_cfg.logger)
-    return;
-
-  pthread_mutex_lock (&gaspi_logger_lock);
-
-  memset (buf, 0, 1024);
-  memset (hn, 0, 128);
-  gethostname (hn, 128);
-
-  /* check required initialization */
-  _check_log_init();
-
-  if (strcmp (gaspi_master_log_ptr, hn) == 0 && gaspi_log_socket == 0)
-    {
-      sprintf (buf, "[%s:%d:%u] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank);
-      const int sl = strlen (buf);
-
-      va_list ap;
-      va_start (ap, fmt);
-      vsnprintf (buf + sl, 1024 - sl, fmt, ap);
-      va_end (ap);
-
-      fprintf (stdout, buf);
-      fflush (stdout);
-
-      goto endL;
-    }
-
-  sprintf (buf, "[%s:%d:%u] ", hn, gaspi_log_socket, glb_gaspi_ctx.rank);
-  const int sl = strlen (buf);
-
   va_list ap;
   va_start (ap, fmt);
-  vsnprintf (buf + sl, 1024 - sl, fmt, ap);
+  vsnprintf (buf, sizeof(buf), fmt, ap);
   va_end (ap);
 
-  /* call the logger */
-  int sockL;
-  if(_set_local_log_conn(&sockL, &client) < 0)
-    {
-      goto endL;
-    }
-
-  if ((server_dataL = gethostbyname (gaspi_master_log_ptr)) == 0)
-    {
-      goto endL;
-    }
-
-  _send_to_log(&serverL, server_dataL, sockL, buf);
-
-  close (sockL);
-
- endL:
-  pthread_mutex_unlock (&gaspi_logger_lock);
-  return;
+  return pgaspi_printf_to(0, buf);
 }
 
 void
@@ -290,4 +204,3 @@ gaspi_print_affinity_mask ()
 
   pgaspi_printf ("%s\n", buf);
 }
-
