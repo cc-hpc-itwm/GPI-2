@@ -430,7 +430,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
     }
 
   /* Allocate space for QPs */
-  glb_gaspi_ctx_ib.qpGroups = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
+  glb_gaspi_ctx_ib.qpGroups = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp *));
   if(!glb_gaspi_ctx_ib.qpGroups)
     {
       return -1;
@@ -438,12 +438,12 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 
   for(c = 0; c < gaspi_cfg->queue_num; c++)
     {
-      glb_gaspi_ctx_ib.qpC[c] = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc *sizeof (struct ibv_qp));
+      glb_gaspi_ctx_ib.qpC[c] = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp *));
       if(!glb_gaspi_ctx_ib.qpC[c])
 	return -1;
     }
   
-  glb_gaspi_ctx_ib.qpP = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp));
+  glb_gaspi_ctx_ib.qpP = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp *));
   if(!glb_gaspi_ctx_ib.qpP)
     {
       return -1;
