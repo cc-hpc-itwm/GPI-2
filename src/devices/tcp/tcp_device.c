@@ -123,7 +123,7 @@ tcp_dev_create_cq(int elems, struct tcp_passive_channel *pchannel)
       return NULL;
     }
 
-  if(cq_ref_counter > CQ_MAX_NUM)
+  if(cq_ref_counter >= CQ_MAX_NUM)
     {
       gaspi_print_error("Reached max number of CQs.");
       return NULL;
@@ -161,7 +161,8 @@ tcp_dev_create_cq(int elems, struct tcp_passive_channel *pchannel)
   cq->num = cq_ref_counter;
   cq->pchannel = pchannel;
 
-  cqs_map[cq_ref_counter++] = cq;
+  cqs_map[cq_ref_counter] = cq;
+  cq_ref_counter++;
 
   return cq;
 }
@@ -203,7 +204,10 @@ tcp_dev_create_queue(struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
       handle = gaspi_connect2port("localhost", TCP_DEV_PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
 
       if(handle == -1)
-	return NULL;
+	{
+	  free(q);
+	  return NULL;
+	}
 
       q->handle = handle;
       q->send_cq = send_cq;
@@ -901,8 +905,6 @@ _tcp_dev_process_delayed(int epollfd)
 
 	      memcpy(dest, src, wr.length);
 
-	      struct tcp_cq *cq = cqs_map[rwr.cq_handle];
-
 	      if(_tcp_dev_post_wc(wr.wr_id,
 				  TCP_WC_SUCCESS,
 				  TCP_DEV_WC_SEND,
@@ -910,12 +912,21 @@ _tcp_dev_process_delayed(int epollfd)
 		{
 		  return 1;
 		}
-	      if(_tcp_dev_post_wc(rwr.wr_id,
-				  TCP_WC_SUCCESS,
-				  TCP_DEV_WC_RECV,
-				  (cq != NULL) ? cq->num : CQ_HANDLE_NONE) != 0)
+
+	      struct tcp_cq *cq = cqs_map[rwr.cq_handle];
+	      if(cq != NULL)
 		{
-		  return 1;
+		  if(_tcp_dev_post_wc(rwr.wr_id,
+				      TCP_WC_SUCCESS,
+				      TCP_DEV_WC_RECV,
+				      cq->num) != 0)
+		    {
+		      return 1;
+		    }
+		}
+	      else
+		{
+		  gaspi_print_error("invalid CQ for recv request.");
 		}
 
 	      /* release memory of inlined writes */
@@ -1232,6 +1243,7 @@ tcp_virt_dev(void *args)
 
   if(listen(listen_sock, SOMAXCONN) < 0)
     {
+      close(listen_sock);
       gaspi_print_error("Failed to listen on socket");
       return NULL;
     }
