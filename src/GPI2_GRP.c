@@ -68,6 +68,12 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   page_size = sysconf (_SC_PAGESIZE);
 
+  if(page_size < 0)
+    {
+      gaspi_print_error ("Failed to get system's page size.");
+      goto errL;
+    }
+
   glb_gaspi_group_ctx[id].rrcd = (gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
   if(glb_gaspi_group_ctx[id].rrcd == NULL)
     goto errL;
