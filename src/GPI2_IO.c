@@ -546,8 +546,6 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 
 	  gaspi_delay ();
 	}
-
-      return GASPI_SUCCESS;
     }
   else if (timeout_ms == GASPI_TEST)
     {
