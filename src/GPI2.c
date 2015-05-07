@@ -487,7 +487,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  
 	  //master
 	  glb_gaspi_ctx.rank = 0;
-	  glb_gaspi_ctx.tnc = glb_gaspi_ctx.tnc;
 	  
 	  if(glb_gaspi_ctx.sockfd)
 	    free(glb_gaspi_ctx.sockfd);
