@@ -294,7 +294,7 @@ pgaspi_init_core()
 
   /* Create internal memory space */
   const unsigned int size = NOTIFY_OFFSET;
-  const unsigned int page_size = sysconf (_SC_PAGESIZE);
+  const long page_size = sysconf (_SC_PAGESIZE);
 
   if(page_size < 0)
     {

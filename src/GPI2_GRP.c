@@ -35,7 +35,8 @@ pgaspi_group_create (gaspi_group_t * const group)
 {
 
   int i, id = GASPI_MAX_GROUPS;
-  unsigned int size, page_size;
+  unsigned int size;
+  long page_size;
 
   if (!glb_gaspi_init)
     {
