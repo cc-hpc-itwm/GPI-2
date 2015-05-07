@@ -95,11 +95,16 @@ CHECK_IMPLEM
 gaspi_return_t testOP(gaspi_operation_t op, gaspi_datatype_t type, gaspi_number_t elems, gaspi_group_t group)
 {
   void * send_bf = malloc(elems * typeSize[type]);
-  void * recv_bf = malloc(elems * typeSize[type]);
-
-  if (send_bf == NULL || recv_bf == NULL)
+  if (send_bf == NULL)
     return GASPI_ERROR;
-
+  
+  void * recv_bf = malloc(elems * typeSize[type]);
+  if(recv_bf == NULL)
+    {
+      free(send_bf);
+      return GASPI_ERROR;
+    }
+  
   gaspi_rank_t myrank, nprocs;
   ASSERT(gaspi_proc_rank(&myrank));
   ASSERT(gaspi_proc_num(&nprocs));
