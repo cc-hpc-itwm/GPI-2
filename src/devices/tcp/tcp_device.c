@@ -1251,6 +1251,7 @@ tcp_virt_dev(void *args)
   epollfd = epoll_create(MAX_EVENTS);
   if(epollfd == -1)
     {
+      close(listen_sock);
       gaspi_print_error("Failed to create events instance.");
       return NULL;
     }
@@ -1258,6 +1259,8 @@ tcp_virt_dev(void *args)
   tcp_dev_conn_state_t *lstate = malloc(sizeof(tcp_dev_conn_state_t));
   if( lstate == NULL)
     {
+      close(listen_sock);
+      close(epollfd);
       gaspi_print_error("Failed to allocate memory.");
       return NULL;
     }
