@@ -1236,6 +1236,7 @@ tcp_virt_dev(void *args)
   if(bind(listen_sock, (struct sockaddr *) (&listenAddr), sizeof(listenAddr)) < 0)
     {
       gaspi_print_error("Failed to bind to port %d\n", TCP_DEV_PORT + glb_gaspi_ctx.localSocket); /* TODO: glb_gaspi_ctx does not belong here*/
+      close(listen_sock);
       return NULL;
     }
 
