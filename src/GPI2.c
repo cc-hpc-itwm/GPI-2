@@ -119,7 +119,8 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 
   const int i = (int) rank;
 
-  lock_gaspi_tout(&gaspi_create_lock, timeout_ms);
+  if(lock_gaspi_tout(&gaspi_create_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
   if(!glb_gaspi_ctx.ep_conn[i].istat)
     {
