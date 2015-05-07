@@ -512,7 +512,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
   
 #endif
 
-    volatile unsigned char *segPtr;
+  volatile unsigned char *segPtr;
   int loop = 1;
   gaspi_notification_id_t n;
 
@@ -540,7 +540,6 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 	      if (p[n])
 		{
 		  *first_id = n;
-		  loop = 0;
 		  return GASPI_SUCCESS;
 		}
 	    }
@@ -558,7 +557,6 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 	  if (p[n])
 	    {
 	      *first_id = n;
-	      loop = 0;
 	      return GASPI_SUCCESS;
 	    }
 	}
@@ -576,7 +574,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 	    {
 	      *first_id = n;
 	      loop = 0;
-	      return GASPI_SUCCESS;
+	      break;
 	    }
 	}
 
