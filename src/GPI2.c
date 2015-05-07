@@ -296,6 +296,12 @@ pgaspi_init_core()
   const unsigned int size = NOTIFY_OFFSET;
   const unsigned int page_size = sysconf (_SC_PAGESIZE);
 
+  if(page_size < 0)
+    {
+      gaspi_print_error ("Failed to get system's page size.");
+      return -1;
+    }
+
   glb_gaspi_ctx.nsrc.size = size;
   
   if(posix_memalign ((void **) &glb_gaspi_ctx.nsrc.ptr, page_size, size)!= 0)
