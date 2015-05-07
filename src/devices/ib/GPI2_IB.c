@@ -162,6 +162,9 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 	}
     }
 
+  if (!glb_gaspi_ctx_ib.ib_dev)
+    return -1;
+
   if (glb_gaspi_ctx_ib.ib_dev->transport_type != IBV_TRANSPORT_IB)
     {
       gaspi_print_error ("Device does not support IB transport");
