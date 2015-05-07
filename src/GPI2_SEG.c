@@ -194,8 +194,13 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       goto endL;
     }
 
-  /* TODO: error check on page_size */
   page_size = sysconf (_SC_PAGESIZE);
+
+  if(page_size < 0)
+    {
+      gaspi_print_error ("Failed to get system's page size.");
+      goto endL;
+    }
 
   if (posix_memalign ((void **) &glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].ptr,
 		      page_size,
