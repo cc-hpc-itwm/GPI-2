@@ -21,6 +21,16 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GASPI.h"
 
+/********************************************************************************************
+ *
+ *
+ *                                  GASPI Extensions
+ *
+ *          Functionality that is not (yet) present in the GASPI specification.
+ *
+ *
+ ********************************************************************************************/
+
 #ifdef __cplusplus
 extern "C"
 {
