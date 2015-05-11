@@ -40,17 +40,50 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
   fprintf(stderr,"[Rank %4u]: Warning:" msg "\n",glb_gaspi_ctx.rank, ##__VA_ARGS__)
 
 #define gaspi_verify_null_ptr(ptr)				\
+  {								\
   if(ptr == NULL)						\
     {								\
       gaspi_print_error ("Passed argument is a NULL pointer");	\
       return GASPI_ERR_NULLPTR;					\
-    } 
+    }								\
+  }
+
+#define gaspi_verify_rank(rank)						\
+  {									\
+    if(rank >= glb_gaspi_ctx.tnc)					\
+      return GASPI_ERR_INV_RANK;					\
+  }
+
+#define gaspi_verify_segment(seg_id)					\
+  {									\
+    if( seg_id >= GASPI_MAX_MSEGS)					\
+      return GASPI_ERR_INV_SEG;						\
+  }
+
+#define gaspi_verify_segment_size(size)			\
+  {							\
+    if(0 == size)					\
+      {							\
+	return GASPI_ERR_INV_SEGSIZE;			\
+      }							\
+  }
+
+
+#define gaspi_verify_group(group)					\
+  {									\
+    if(group >= GASPI_MAX_GROUPS || glb_gaspi_group_ctx[group].id < 0)	\
+      return GASPI_ERR_INV_GROUP;					\
+  }
 
 
 #else
 #define gaspi_print_error(msg, ...)
 #define gaspi_print_warning(msg, ...)
 #define gaspi_verify_null_ptr(ptr)
+#define gaspi_verify_rank(rank)
+#define gaspi_verify_segment(seg_id)
+#define gaspi_verify_segment_size(size)
+#define gaspi_verify_group(group)
 #endif
 
 #ifdef MIC
