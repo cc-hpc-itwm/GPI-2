@@ -55,8 +55,7 @@ pgaspi_config_get (gaspi_config_t * const config)
 gaspi_return_t
 pgaspi_config_set (const gaspi_config_t nconf)
 {
-  if (glb_gaspi_init)
-    return GASPI_ERROR;
+  gaspi_verify_setup("gaspi_config_set");
   
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.build_infrastructure = nconf.build_infrastructure;

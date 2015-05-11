@@ -38,10 +38,7 @@ pgaspi_group_create (gaspi_group_t * const group)
   unsigned int size;
   long page_size;
 
-  if (!glb_gaspi_init)
-    {
-      return GASPI_ERROR;
-    }
+  gaspi_verify_init("gaspi_group_create");
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
@@ -141,11 +138,7 @@ gaspi_return_t
 pgaspi_group_delete (const gaspi_group_t group)
 {
 
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
+  gaspi_verify_init("gaspi_group_delete");
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
@@ -201,11 +194,7 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
 {
   int i;
 
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
+  gaspi_verify_init("gaspi_group_add");
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
@@ -250,8 +239,7 @@ pgaspi_group_commit (const gaspi_group_t group,
   gaspi_return_t eret = GASPI_ERROR;
   gaspi_group_ctx *group_to_commit = &(glb_gaspi_group_ctx[group]);
 
-  if (!glb_gaspi_init)
-    return GASPI_ERROR;
+  gaspi_verify_init("gaspi_group_commit");
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
@@ -466,19 +454,12 @@ pgaspi_group_commit (const gaspi_group_t group,
 gaspi_return_t
 pgaspi_group_num (gaspi_number_t * const group_num)
 {
+  gaspi_verify_init("gaspi_group_num");
+  gaspi_verify_null_ptr(group_num);
 
-  if (glb_gaspi_init)
-    {
+  *group_num = glb_gaspi_ctx.group_cnt;
 
-      gaspi_verify_null_ptr(group_num);
-      
-      *group_num = glb_gaspi_ctx.group_cnt;
-
-      return GASPI_SUCCESS;
-    }
-
-  gaspi_print_error("Invalid function before gaspi_proc_init");
-  return GASPI_ERROR;
+  return GASPI_SUCCESS;
 }
 
 #pragma weak gaspi_group_size = pgaspi_group_size
@@ -487,15 +468,19 @@ pgaspi_group_size (const gaspi_group_t group,
 		  gaspi_number_t * const group_size)
 {
 
-  if (glb_gaspi_init && group < glb_gaspi_ctx.group_cnt)
+  gaspi_verify_init("gaspi_group_size");
+
+  if (group < glb_gaspi_ctx.group_cnt)
     {
       gaspi_verify_null_ptr(group_size);
       
       *group_size = glb_gaspi_group_ctx[group].tnc;
+
       return GASPI_SUCCESS;
     }
 
-  gaspi_print_error("Invalid function before gaspi_proc_init or invalid group parameter");
+  gaspi_print_error("Invalid group parameter");
+
   return GASPI_ERROR;
 }
 
@@ -504,14 +489,18 @@ gaspi_return_t
 pgaspi_group_ranks (const gaspi_group_t group,
 		   gaspi_rank_t * const group_ranks)
 {
-  int i;
-  if (glb_gaspi_init && group < glb_gaspi_ctx.group_cnt)
+  gaspi_verify_init("gaspi_group_ranks");
+  
+  if (group < glb_gaspi_ctx.group_cnt)
     {
+      int i;
       for (i = 0; i < glb_gaspi_group_ctx[group].tnc; i++)
 	group_ranks[i] = glb_gaspi_group_ctx[group].rank_grp[i];
+
       return GASPI_SUCCESS;
     }
-  gaspi_print_error("Invalid function before gaspi_proc_init or invalid group parameter");
+  gaspi_print_error("Invalid group parameter");
+  
   return GASPI_ERROR;
 }
 
@@ -552,12 +541,8 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 {
   
 #ifdef DEBUG
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("called gaspi_barrier but GPI-2 is not initialized");
-      return GASPI_ERROR;
-    }
-  
+  gaspi_verify_init("gaspi_barrier");
+
   if (g >= GASPI_MAX_GROUPS || glb_gaspi_group_ctx[g].id < 0 )
     {
       gaspi_print_error("Invalid group %u (gaspi_barrier)", g);
@@ -1018,11 +1003,7 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
 {
 
 #ifdef DEBUG
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("called gaspi_allreduce but GPI-2 is not initialized");
-      return GASPI_ERROR;
-    }
+  gaspi_verify_init("gaspi_allreduce");
 
   if(_gaspi_check_allreduce_args(buf_send, buf_recv, elem_cnt, op,
 				 type, g) < 0)
@@ -1075,12 +1056,8 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
 {
 
 #ifdef DEBUG
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Called gaspi_allreduce_user but GPI-2 is not initialized");
-      return GASPI_ERROR;
-    }
-  
+  gaspi_verify_init("gaspi_allreduce_user");
+
   /* Check with fake OP and TYPE  */
   if(_gaspi_check_allreduce_args(buf_send, buf_recv, elem_cnt,
 				 GASPI_TYPE_INT, GASPI_OP_SUM, g) < 0)

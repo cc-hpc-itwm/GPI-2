@@ -41,28 +41,17 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 		     gaspi_size_t * const size)
 {
   gaspi_size_t seg_size = glb_gaspi_ctx.rrmd[segment_id][rank].size;
-  
+
+  gaspi_verify_init("gaspi_segment_size");
+  gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
+  gaspi_verify_null_ptr(size);
+
 #ifdef DEBUG
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
-
-  if (glb_gaspi_ctx.rrmd[segment_id] == NULL)
-    {
-      gaspi_print_error("Invalid segment id");
-      return GASPI_ERROR;
-    }
-
   if (0 == seg_size)
     {
       gaspi_print_error("Invalid segment (size = 0)");
       return GASPI_ERROR;
     }
-
-  gaspi_verify_null_ptr(size);
-
 #endif
   
   *size = seg_size;
@@ -74,20 +63,11 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 {
+  gaspi_verify_init("gaspi_segment_ptr");
+  gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
 
+  /* TODO: remove debug */
 #ifdef DEBUG  
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
-
-  if (glb_gaspi_ctx.rrmd[segment_id] == NULL)
-    {
-      gaspi_print_error("Invalid segment id");
-      return GASPI_ERROR;
-    }
-
   if (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
     {
       gaspi_print_error("Invalid segment (size = 0)");
@@ -98,11 +78,9 @@ pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 #endif
 
 #ifdef GPI2_CUDA
-  
   if(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId >= 0)
     *ptr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf;
   else
-    
 #endif
     
     *ptr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf + NOTIFY_OFFSET;
@@ -117,13 +95,7 @@ pgaspi_segment_list (const gaspi_number_t num,
 {
   int i, idx = 0;
 
-#ifdef DEBUG    
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
-#endif
+  gaspi_verify_init("gaspi_segment_list");
   
   for (i = 0; i < GASPI_MAX_MSEGS; i++)
     {
@@ -144,14 +116,11 @@ pgaspi_segment_list (const gaspi_number_t num,
 gaspi_return_t
 pgaspi_segment_num (gaspi_number_t * const segment_num)
 {
-  if (glb_gaspi_init)
-    {
-      *segment_num = (gaspi_number_t) glb_gaspi_ctx.mseg_cnt;
-      return GASPI_SUCCESS;
-    }
+  gaspi_verify_init("gaspi_segment_num");
+  gaspi_verify_null_ptr(segment_num);
 
-  gaspi_print_error("Invalid function before gaspi_proc_init");
-  return GASPI_ERROR;
+  *segment_num = (gaspi_number_t) glb_gaspi_ctx.mseg_cnt;
+  return GASPI_SUCCESS;
 }
 
 #pragma weak gaspi_segment_alloc = pgaspi_segment_alloc
@@ -161,14 +130,10 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 		      const gaspi_alloc_t alloc_policy)
 {
 
-  if (!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
+  gaspi_verify_init("gaspi_segment_alloc");
 
   if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS || size == 0)
-    return GASPI_ERROR;
+    return GASPI_ERROR; /* TODO: proper error code */
 
   lock_gaspi_tout (&gaspi_mseg_lock, GASPI_BLOCK);
 
@@ -244,26 +209,17 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 {
-
-  if(!glb_gaspi_dev_init)
-    {
-      return GASPI_ERROR;
-    }
-
-#ifdef DEBUG  
-  if (glb_gaspi_ctx.rrmd[segment_id] == NULL)
-    {
-      gaspi_print_error("Invalid segment to delete");
-      return GASPI_ERROR;
-    }
+  gaspi_verify_init("gaspi_segment_delete");
+  gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
   
+#ifdef DEBUG
   if (0 == glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size)
     {
       gaspi_print_error("Invalid segment to delete");
       return GASPI_ERROR;
     }
-  
 #endif
+
   gaspi_return_t eret = GASPI_ERROR;
   
   lock_gaspi_tout(&gaspi_mseg_lock,GASPI_BLOCK);
@@ -382,16 +338,13 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 			const gaspi_timeout_t timeout_ms)
 {
 
+  gaspi_verify_init("gaspi_segment_register");
+  gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
+  
 #ifdef DEBUG  
-  if(!glb_gaspi_dev_init)
-    return GASPI_ERROR;
-
   if(rank >= glb_gaspi_ctx.tnc || rank == glb_gaspi_ctx.rank)
     return GASPI_ERROR;
 
-  if(glb_gaspi_ctx.rrmd[segment_id] == NULL)
-    return GASPI_ERROR;
-  
   if(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
     return GASPI_ERROR;
 #endif
@@ -504,13 +457,9 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 		      const gaspi_timeout_t timeout_ms,
 		      const gaspi_alloc_t alloc_policy)
 {
-#ifdef DEBUG  
-  if(!glb_gaspi_dev_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
+  gaspi_verify_init("gaspi_segment_create");
 
+#ifdef DEBUG
   if(group >= GASPI_MAX_GROUPS || glb_gaspi_group_ctx[group].id < 0)
     {
       gaspi_print_error("Invalid group ( > GASPI_MAX_GROUPS || < 0)");
@@ -519,7 +468,7 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 #endif
 
   gaspi_return_t eret = GASPI_ERROR;
-  
+
   if(pgaspi_segment_alloc (segment_id, size, alloc_policy) != GASPI_SUCCESS)
     {
       gaspi_print_error("Segment allocation failed");
@@ -535,7 +484,6 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
   eret = pgaspi_segment_register_group(segment_id, group, timeout_ms);
 
  endL:
-  
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return eret;
 }    

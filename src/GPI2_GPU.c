@@ -165,11 +165,7 @@ gaspi_return_t gaspi_init_GPUs()
 
 gaspi_return_t gaspi_number_of_GPUs(gaspi_gpu_num* gpus)
 {
-  if (!glb_gaspi_init)
-  {
-    gaspi_print_error("Invalid function before gaspi_proc_init");
-    return GASPI_ERROR;
-  }
+  gaspi_verify_init("gaspi_number_of_GPUs");
 
   if (glb_gaspi_ctx.use_gpus == 0)
   {
@@ -184,11 +180,7 @@ gaspi_return_t gaspi_number_of_GPUs(gaspi_gpu_num* gpus)
 
 gaspi_return_t gaspi_GPU_ids(gaspi_gpu_t* gpuIds)
 {
-  if (!glb_gaspi_init)
-  {
-    gaspi_print_error("Invalid function before gaspi_proc_init");
-    return GASPI_ERROR;
-  }
+  gaspi_verify_init("gaspi_GPU_ids");
 
   if (glb_gaspi_ctx.use_gpus == 0)
   {

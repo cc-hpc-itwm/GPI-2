@@ -100,7 +100,10 @@ extern "C"
     GASPI_ERR_EMFILE = 2,
     GASPI_ERR_ENV = 3,
     GASPI_ERR_SN_PORT = 4,
-    GASPI_ERR_CONFIG = 5
+    GASPI_ERR_CONFIG = 5,
+    GASPI_ERR_NOINIT = 6,
+    GASPI_ERR_INITED = 7,
+    GASPI_ERR_NULLPTR = 8
   } gaspi_return_t;
 
   /**

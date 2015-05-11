@@ -43,7 +43,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
   if(ptr == NULL)						\
     {								\
       gaspi_print_error ("Passed argument is a NULL pointer");	\
-      return GASPI_ERROR;					\
+      return GASPI_ERR_NULLPTR;					\
     } 
 
 
@@ -63,6 +63,25 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define MAX(a,b)  (((a)<(b)) ? (b) : (a))
 #define MIN(a,b)  (((a)>(b)) ? (b) : (a))
 
+#define gaspi_verify_init(funcname)					\
+  {									\
+    if(!glb_gaspi_init)							\
+      {									\
+	gaspi_print_error("Error: Invalid function (%s) before initialization", \
+			  funcname);					\
+	  return GASPI_ERR_NOINIT;					\
+      }									\
+  }
+
+#define gaspi_verify_setup(funcname)					\
+  {									\
+    if(glb_gaspi_init)							\
+      {									\
+	gaspi_print_error("Error: Invalid function (%s) after initialization", \
+		funcname);						\
+	return GASPI_ERR_INITED;					\
+      }									\
+  }
 
 ulong gaspi_load_ulong(volatile ulong *ptr);
 float gaspi_get_cpufreq ();

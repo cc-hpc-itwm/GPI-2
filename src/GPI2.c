@@ -68,7 +68,6 @@ pgaspi_set_socket_affinity (const gaspi_uchar socket)
   if (socket >= 4)
     {
       gaspi_print_error("Debug: GPI-2 only allows up to a maximum of 4 NUMA sockets");
-
       return GASPI_ERROR;
     }
   
@@ -116,8 +115,7 @@ pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 {
   gaspi_return_t eret = GASPI_ERROR;
 
-  if(!glb_gaspi_dev_init)
-    return GASPI_ERROR;
+  gaspi_verify_init("gaspi_connect");
 
   const int i = (int) rank;
 
@@ -239,9 +237,8 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
 
   gaspi_return_t eret = GASPI_ERROR;
-  
-  if(!glb_gaspi_dev_init)
-    return GASPI_ERROR;
+
+  gaspi_verify_init("gaspi_disconnect");
   
   const int i = rank;
   
@@ -503,6 +500,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  
 	  for(i = 0; i < glb_gaspi_ctx.tnc; i++) 
 	    glb_gaspi_ctx.sockfd[i] = -1;
+
 	}//glb_gaspi_dev_init
     }//MASTER_PROC
   else if(glb_gaspi_ctx.procType == WORKER_PROC)
@@ -708,14 +706,11 @@ gaspi_return_t
 pgaspi_proc_term (const gaspi_timeout_t timeout)
 {
   int i;
+
+  gaspi_verify_init("gaspi_proc_term");
+
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout))
     return GASPI_TIMEOUT;
-
-  if(glb_gaspi_init == 0)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      goto errL;
-    }
 
   pthread_kill(glb_gaspi_ctx.snt, SIGSTKFLT);
 
@@ -756,11 +751,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
 gaspi_return_t
 pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
-  if(!glb_gaspi_init)
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
+  gaspi_verify_init("gaspi_proc_ping");
 
   if(rank >= glb_gaspi_ctx.tnc)
     {
@@ -814,11 +805,7 @@ pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 gaspi_return_t
 pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 {
-  if(!glb_gaspi_init) 
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
+  gaspi_verify_init("gaspi_proc_kill");
 
   if((rank==glb_gaspi_ctx.rank) || (rank>=glb_gaspi_ctx.tnc))
     {
@@ -865,54 +852,38 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 gaspi_return_t
 pgaspi_proc_rank (gaspi_rank_t * const rank)
 {
-  if (glb_gaspi_init)
-    {
-      gaspi_verify_null_ptr(rank);
+  gaspi_verify_init("gaspi_proc_rank");
 
-      *rank = (gaspi_rank_t) glb_gaspi_ctx.rank;
-      return GASPI_SUCCESS;
-    }
-  else
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
+  gaspi_verify_null_ptr(rank);
+
+  *rank = (gaspi_rank_t) glb_gaspi_ctx.rank;
+
+  return GASPI_SUCCESS;
 }
 
-#pragma weak gaspi_proc_num     = pgaspi_proc_num
+#pragma weak gaspi_proc_num = pgaspi_proc_num
 gaspi_return_t
 pgaspi_proc_num (gaspi_rank_t * const proc_num)
 {
-  if (glb_gaspi_init)
-    {
-      gaspi_verify_null_ptr(proc_num);
+  gaspi_verify_init("gaspi_proc_num");
 
-      *proc_num = (gaspi_rank_t) glb_gaspi_ctx.tnc;
-      return GASPI_SUCCESS;
-    }
-  else
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
+  gaspi_verify_null_ptr(proc_num);
+
+  *proc_num = (gaspi_rank_t) glb_gaspi_ctx.tnc;
+
+  return GASPI_SUCCESS;
 }
 
 #pragma weak gaspi_proc_local_rank = pgaspi_proc_local_rank
 gaspi_return_t
 pgaspi_proc_local_rank(gaspi_rank_t * const local_rank)
 {
-  if (glb_gaspi_init)
-    {
-      gaspi_verify_null_ptr(local_rank);
+  gaspi_verify_init("gaspi_proc_local_rank");
+  gaspi_verify_null_ptr(local_rank);
 
-      *local_rank = (gaspi_rank_t) glb_gaspi_ctx.localSocket;
-      return GASPI_SUCCESS;
-    }
-  else
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
+  *local_rank = (gaspi_rank_t) glb_gaspi_ctx.localSocket;
+
+  return GASPI_SUCCESS;
 }
 
 #pragma weak gaspi_proc_local_num = pgaspi_proc_local_num
@@ -920,34 +891,24 @@ gaspi_return_t
 pgaspi_proc_local_num(gaspi_rank_t * const local_num)
 {
   gaspi_rank_t rank;
-  
-  if (glb_gaspi_init)
-    {
-      gaspi_verify_null_ptr(local_num);
+  gaspi_verify_init("gaspi_proc_local_num");
+  gaspi_verify_null_ptr(local_num);
 
-      if(pgaspi_proc_rank(&rank) != GASPI_SUCCESS)
-	return GASPI_ERROR;
+  if(pgaspi_proc_rank(&rank) != GASPI_SUCCESS)
+    return GASPI_ERROR;
 
-      while(glb_gaspi_ctx.poff[rank + 1] != 0)
-	rank++;
-	    
-      *local_num  = (gaspi_rank_t) ( glb_gaspi_ctx.poff[rank] + 1);
-      
-      
-      return GASPI_SUCCESS;
-    }
-  else
-    {
-      gaspi_print_error("Invalid function before gaspi_proc_init");
-      return GASPI_ERROR;
-    }
+  while(glb_gaspi_ctx.poff[rank + 1] != 0)
+    rank++;
+
+  *local_num  = (gaspi_rank_t) ( glb_gaspi_ctx.poff[rank] + 1);
+
+  return GASPI_SUCCESS;
 }
 
 #pragma weak gaspi_network_type = pgaspi_network_type
 gaspi_return_t
 pgaspi_network_type (gaspi_network_t * const network_type)
 {
-  
   gaspi_verify_null_ptr(network_type);
 
   *network_type = glb_gaspi_cfg.network;
@@ -968,7 +929,6 @@ pgaspi_time_ticks (gaspi_cycles_t * const ticks)
 gaspi_return_t
 pgaspi_time_get (gaspi_time_t * const wtime)
 {
-
   gaspi_verify_null_ptr(wtime);
 
   float cycles_to_msecs;
@@ -993,7 +953,6 @@ pgaspi_time_get (gaspi_time_t * const wtime)
 gaspi_return_t
 pgaspi_cpu_frequency (gaspi_float * const cpu_mhz)
 {
-
   gaspi_verify_null_ptr(cpu_mhz);
 
   if (!glb_gaspi_init)
@@ -1025,13 +984,16 @@ pgaspi_error_str(gaspi_return_t error_code)
       [GASPI_ERR_EMFILE] = "too many open files",
       [GASPI_ERR_ENV] = "incorrect environment vars",
       [GASPI_ERR_SN_PORT] = "Invalid/In use internal port",
-      [GASPI_ERR_CONFIG] = "Invalid parameter in configuration (gaspi_config_t)"
+      [GASPI_ERR_CONFIG] = "Invalid parameter in configuration (gaspi_config_t)", 
+      [GASPI_ERR_NOINIT] = "Invalid function before initialization",
+      [GASPI_ERR_INITED] = "Invalid function after initialization",
+      [GASPI_ERR_NULLPTR] = "NULL pointer reference"
     };
 
   if(error_code == GASPI_ERROR)
     return "general error";
 
-  if(error_code < GASPI_ERROR || error_code > GASPI_ERR_CONFIG)
+  if(error_code < GASPI_ERROR || error_code > GASPI_ERR_NULLPTR)
     return "unknown";
 
   return (gaspi_string_t) gaspi_return_str[error_code];
@@ -1043,8 +1005,8 @@ pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
 {
   int i, j;
 
-  if (!glb_gaspi_dev_init || state_vector == NULL)
-    return GASPI_ERROR;
+  gaspi_verify_null_ptr(state_vector);
+  gaspi_verify_init("gaspi_state_vec_get");
 
   memset (state_vector, 0, (size_t) glb_gaspi_ctx.tnc);
 
