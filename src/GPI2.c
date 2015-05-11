@@ -987,13 +987,20 @@ pgaspi_error_str(gaspi_return_t error_code)
       [GASPI_ERR_CONFIG] = "Invalid parameter in configuration (gaspi_config_t)", 
       [GASPI_ERR_NOINIT] = "Invalid function before initialization",
       [GASPI_ERR_INITED] = "Invalid function after initialization",
-      [GASPI_ERR_NULLPTR] = "NULL pointer reference"
+      [GASPI_ERR_NULLPTR] = "NULL pointer reference",
+      [GASPI_ERR_INV_SEGSIZE] = "Invalid segment size",
+      [GASPI_ERR_INV_SEG] = "Invalid segment",
+      [GASPI_ERR_INV_GROUP] = "Invalid group",
+      [GASPI_ERR_INV_RANK] = "Invalid rank",
+      [GASPI_ERR_INV_QUEUE] = "Invalid queue",
+      [GASPI_ERR_MANY_SEG] = "Too many segments",
+      [GASPI_ERR_MEMALLOC] = "Memory allocation failed"
     };
 
   if(error_code == GASPI_ERROR)
     return "general error";
 
-  if(error_code < GASPI_ERROR || error_code > GASPI_ERR_NULLPTR)
+  if(error_code < GASPI_ERROR || error_code > GASPI_ERR_MEMALLOC)
     return "unknown";
 
   return (gaspi_string_t) gaspi_return_str[error_code];
