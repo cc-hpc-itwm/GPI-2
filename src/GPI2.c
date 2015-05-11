@@ -41,6 +41,8 @@ extern gaspi_config_t glb_gaspi_cfg;
 gaspi_return_t
 pgaspi_version (float *const version)
 {
+  gaspi_verify_null_ptr(version);
+
   *version = GASPI_VERSION;
   return GASPI_SUCCESS;
 }
