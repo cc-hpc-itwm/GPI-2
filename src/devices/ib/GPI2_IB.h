@@ -66,8 +66,6 @@ typedef struct
 
   struct ib_ctx_info *local_info;
   struct ib_ctx_info *remote_info;
-  
-  //  unsigned char ne_count_p[8192];
 
 } gaspi_ib_ctx;
 
