@@ -62,8 +62,12 @@ Ethernet support
 ----------------
 
 To install GPI-2 on a system without Infiniband, you can use the
-option --with-ethernet.
+option --with-ethernet. With this option standard TCP sockets are
+used.
 
+Such support is primarily targetted at the development of GPI-2
+applications without the need to access a system with Infiniband, with
+less focus on performance.
 
 MPI Interoperability
 --------------------
@@ -114,7 +118,7 @@ gaspi_GPU_ids returns the device Ids of the supported GPUs.
 3. BUILDING GPI-2
 =================
 
-You can build GPI2 on your own. There are the following make targets:
+You can build GPI-2 on your own. There are the following make targets:
 
 all	  - Build everything
 gpi	  - Build the GPI-2 library (including debug version)
@@ -336,7 +340,6 @@ For example:
 GPI-2 is on-going work and more features are still to come. Here are
 some that are in our roadmap:
 
-- support for Ethernet (TCP/IP)
 - support to add spare nodes (fault tolerance)
 - better debugging possibilities
 
