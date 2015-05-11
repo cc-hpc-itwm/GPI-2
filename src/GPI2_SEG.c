@@ -40,11 +40,11 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 		     const gaspi_rank_t rank,
 		     gaspi_size_t * const size)
 {
-  gaspi_size_t seg_size = glb_gaspi_ctx.rrmd[segment_id][rank].size;
-
   gaspi_verify_init("gaspi_segment_size");
   gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
   gaspi_verify_null_ptr(size);
+
+  gaspi_size_t seg_size = glb_gaspi_ctx.rrmd[segment_id][rank].size;
 
 #ifdef DEBUG
   if (0 == seg_size)
