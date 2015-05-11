@@ -31,6 +31,7 @@ pgaspi_segment_max (gaspi_number_t * const segment_max)
   gaspi_verify_null_ptr(segment_max);
 
   *segment_max = GASPI_MAX_MSEGS;
+
   return GASPI_SUCCESS;
 }
 
@@ -41,19 +42,14 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 		     gaspi_size_t * const size)
 {
   gaspi_verify_init("gaspi_segment_size");
+  gaspi_verify_segment(segment_id);
   gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
   gaspi_verify_null_ptr(size);
 
   gaspi_size_t seg_size = glb_gaspi_ctx.rrmd[segment_id][rank].size;
 
-#ifdef DEBUG
-  if (0 == seg_size)
-    {
-      gaspi_print_error("Invalid segment (size = 0)");
-      return GASPI_ERROR;
-    }
-#endif
-  
+  gaspi_verify_segment_size(seg_size);
+
   *size = seg_size;
 
   return GASPI_SUCCESS;
@@ -64,18 +60,11 @@ gaspi_return_t
 pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 {
   gaspi_verify_init("gaspi_segment_ptr");
+  gaspi_verify_segment(segment_id);
   gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
-
-  /* TODO: remove debug */
-#ifdef DEBUG  
-  if (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
-    {
-      gaspi_print_error("Invalid segment (size = 0)");
-      return GASPI_ERROR;
-    }
-
   gaspi_verify_null_ptr(ptr);
-#endif
+  
+  gaspi_verify_segment_size(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size);
 
 #ifdef GPI2_CUDA
   if(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId >= 0)
@@ -131,9 +120,11 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 {
 
   gaspi_verify_init("gaspi_segment_alloc");
+  gaspi_verify_segment_size(size);
+  gaspi_verify_segment(segment_id);
 
-  if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS || size == 0)
-    return GASPI_ERROR; /* TODO: proper error code */
+  if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS)
+    return GASPI_ERR_MANY_SEG;
 
   lock_gaspi_tout (&gaspi_mseg_lock, GASPI_BLOCK);
 
@@ -148,7 +139,10 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       glb_gaspi_ctx.rrmd[segment_id] = (gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
       
       if(!glb_gaspi_ctx.rrmd[segment_id])
+	{
+	  eret = GASPI_ERR_MEMALLOC;
 	  goto endL;
+	}
 
       memset (glb_gaspi_ctx.rrmd[segment_id], 0,glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
     }
@@ -172,9 +166,10 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 		      size + NOTIFY_OFFSET) != 0)
     {
       gaspi_print_error ("Memory allocation (posix_memalign) failed");
+      eret = GASPI_ERR_MEMALLOC;
       goto endL;
     }
-  
+
   memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].ptr, 0,
 	  NOTIFY_OFFSET);
   
@@ -210,19 +205,14 @@ gaspi_return_t
 pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 {
   gaspi_verify_init("gaspi_segment_delete");
+  gaspi_verify_segment(segment_id);
   gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
-  
-#ifdef DEBUG
-  if (0 == glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size)
-    {
-      gaspi_print_error("Invalid segment to delete");
-      return GASPI_ERROR;
-    }
-#endif
+
+  gaspi_verify_segment_size(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size);
 
   gaspi_return_t eret = GASPI_ERROR;
   
-  lock_gaspi_tout(&gaspi_mseg_lock,GASPI_BLOCK);
+  lock_gaspi_tout(&gaspi_mseg_lock, GASPI_BLOCK);
 
   /*  TODO: for now like this but we need a better solution */
 #ifdef GPI2_CUDA  
@@ -339,24 +329,21 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 {
 
   gaspi_verify_init("gaspi_segment_register");
+  gaspi_verify_segment(segment_id);
   gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
+  gaspi_verify_rank(rank);
   
-#ifdef DEBUG  
-  if(rank >= glb_gaspi_ctx.tnc || rank == glb_gaspi_ctx.rank)
-    return GASPI_ERROR;
+  gaspi_verify_segment_size(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size);
 
-  if(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size == 0)
-    return GASPI_ERROR;
-#endif
-
-  gaspi_return_t eret = GASPI_ERROR;
+  if( rank == glb_gaspi_ctx.rank)
+    return GASPI_SUCCESS;
 
   if(lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms))
     {
       return GASPI_TIMEOUT;
     }
 
-  eret = _pgaspi_segment_register(segment_id, rank, timeout_ms);
+  gaspi_return_t eret = _pgaspi_segment_register(segment_id, rank, timeout_ms);
 
   unlock_gaspi(&glb_gaspi_ctx_lock);
 
@@ -380,7 +367,6 @@ pgaspi_dev_wait_remote_register(const gaspi_segment_id_t segment_id,
 	{
 	  int i = glb_gaspi_group_ctx[group].rank_grp[r];
 
-	  //TODO: only here is ctx_ib needed
 	  ulong s = gaspi_load_ulong(&glb_gaspi_ctx.rrmd[segment_id][i].size);
 	  if(s > 0) 
 	    cnt++;
@@ -435,10 +421,7 @@ pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
       eret = _pgaspi_segment_register(segment_id, glb_gaspi_group_ctx[group].rank_grp[i], timeout_ms);
       if(eret != GASPI_SUCCESS)
 	{
-	  gaspi_print_error("Failed segment registration with %d\n",
-			    glb_gaspi_group_ctx[group].rank_grp[i]);
-	  
-	  return GASPI_ERROR;
+	  return eret;
 	}
 
       glb_gaspi_ctx.rrmd[segment_id][i].trans = 1;
@@ -458,22 +441,13 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 		      const gaspi_alloc_t alloc_policy)
 {
   gaspi_verify_init("gaspi_segment_create");
+  gaspi_verify_group(group);
 
-#ifdef DEBUG
-  if(group >= GASPI_MAX_GROUPS || glb_gaspi_group_ctx[group].id < 0)
+  gaspi_return_t eret = pgaspi_segment_alloc (segment_id, size, alloc_policy);
+
+  if(eret != GASPI_SUCCESS)
     {
-      gaspi_print_error("Invalid group ( > GASPI_MAX_GROUPS || < 0)");
-      return GASPI_ERROR;
-    }
-#endif
-
-  gaspi_return_t eret = GASPI_ERROR;
-
-  if(pgaspi_segment_alloc (segment_id, size, alloc_policy) != GASPI_SUCCESS)
-    {
-      gaspi_print_error("Segment allocation failed");
-      eret = GASPI_ERROR;
-      goto endL;
+      return eret;
     }
 
   if(lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms))
@@ -483,7 +457,7 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 
   eret = pgaspi_segment_register_group(segment_id, group, timeout_ms);
 
- endL:
   unlock_gaspi (&glb_gaspi_ctx_lock);
+
   return eret;
 }    
