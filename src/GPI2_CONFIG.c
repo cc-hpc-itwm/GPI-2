@@ -39,13 +39,15 @@ gaspi_config_t glb_gaspi_cfg = {
   GASPI_MAX_TSIZE_P,		//passive_transfer_size_max;
   NEXT_OFFSET,			//allreduce_buf_size;
   255,				//allreduce_elem_max;
-  1				//build_infrastructure;  
+  1				//build_infrastructure;
 };
 
 #pragma weak gaspi_config_get = pgaspi_config_get
 gaspi_return_t
 pgaspi_config_get (gaspi_config_t * const config)
 {
+  gaspi_verify_null_ptr(config);
+
   memcpy (config, &glb_gaspi_cfg, sizeof (gaspi_config_t));
 
   return GASPI_SUCCESS;
