@@ -20,41 +20,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Dev.h"
 #include "GPI2_Utility.h"
 
-#ifdef DEBUG  
-static int
-_check_func_params(const gaspi_segment_id_t segment_id_local,
-		   const gaspi_offset_t offset_local,
-		   const gaspi_size_t size)
-{
-  
-  if (glb_gaspi_ctx.rrmd[segment_id_local] == NULL)
-    {
-      gaspi_print_error("Invalid local segment (gaspi_passive_receive)");    
-      return -1;
-    }
-  
-  if( offset_local > glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].size)
-    {
-      gaspi_print_error("Invalid offsets (gaspi_passive_receive)");    
-      return -1;
-    }
-    
-  if( size < 1 || size > GASPI_MAX_TSIZE_P )
-    {
-      gaspi_print_error("Invalid size (gaspi_passive_receive)");    
-      return -1;
-    }
-
-  return 0;
-}
-
-#endif //DEBUG
-
 #pragma weak gaspi_passive_transfer_size_max = pgaspi_passive_transfer_size_max
 gaspi_return_t
 pgaspi_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max)
 {
-
   gaspi_verify_null_ptr(passive_transfer_size_max);
 
   *passive_transfer_size_max = GASPI_MAX_TSIZE_P;
@@ -65,20 +34,18 @@ pgaspi_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max
 #pragma weak gaspi_passive_send     = pgaspi_passive_send
 gaspi_return_t
 pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
-		    const gaspi_offset_t offset_local,
-		    const gaspi_rank_t rank, const gaspi_size_t size,
-		    const gaspi_timeout_t timeout_ms)
+		     const gaspi_offset_t offset_local,
+		     const gaspi_rank_t rank,
+		     const gaspi_size_t size,
+		     const gaspi_timeout_t timeout_ms)
 {
- 
-#ifdef DEBUG
-  if(_check_func_params(segment_id_local, offset_local, size) < 0)
-    {
-      return GASPI_ERROR;
-    }
-#endif
+  gaspi_verify_init("gaspi_passive_send");
+  gaspi_verify_local_off(offset_local, segment_id_local);
+  gaspi_verify_comm_size(size, segment_id_local, segment_id_local, rank, GASPI_MAX_TSIZE_P);
+  gaspi_verify_rank(rank);
 
   gaspi_return_t eret = GASPI_ERROR;
-  
+
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockPS, timeout_ms))
     return GASPI_TIMEOUT;
 
@@ -93,20 +60,17 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 #pragma weak gaspi_passive_receive  = pgaspi_passive_receive
 gaspi_return_t
 pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
-		       const gaspi_offset_t offset_local,
-		       gaspi_rank_t * const rem_rank, const gaspi_size_t size,
-		       const gaspi_timeout_t timeout_ms)
+			const gaspi_offset_t offset_local,
+			gaspi_rank_t * const rem_rank,
+			const gaspi_size_t size,
+			const gaspi_timeout_t timeout_ms)
 {
-  
-#ifdef DEBUG
-  if(_check_func_params(segment_id_local, offset_local, size) < 0)
-    {
-      return GASPI_ERROR;
-    }
-#endif
+  gaspi_verify_init("gaspi_passive_receive");
+  gaspi_verify_local_off(offset_local, segment_id_local);
+  gaspi_verify_comm_size(size, segment_id_local, segment_id_local, glb_gaspi_ctx.rank, GASPI_MAX_TSIZE_P);
 
   gaspi_return_t eret = GASPI_ERROR;
-  
+
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockPR, timeout_ms))
     return GASPI_TIMEOUT;
 
