@@ -129,14 +129,23 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
+  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+    {
+      eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
+      if ( eret != GASPI_SUCCESS)
+	{
+	  goto endL;
+	}
+    }
+
   eret = pgaspi_dev_write(segment_id_local, offset_local, rank,
 			  segment_id_remote,offset_remote, (unsigned int) size,
 			  queue);
 
   glb_gaspi_ctx.ne_count_c[queue]++;
 
+ endL:
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
-
   return eret;
 }
 
@@ -162,14 +171,23 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
+  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+    {
+      eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
+      if ( eret != GASPI_SUCCESS)
+	{
+	  goto endL;
+	}
+    }
+
   eret = pgaspi_dev_read(segment_id_local, offset_local, rank,
 			 segment_id_remote,offset_remote, (unsigned int) size,
 			 queue);
 
   glb_gaspi_ctx.ne_count_c[queue]++;
 
+ endL:
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
-
   return eret;
 }
 
@@ -227,6 +245,15 @@ pgaspi_write_list (const gaspi_number_t num,
 
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
+  
+  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+    {
+      eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
+      if ( eret != GASPI_SUCCESS)
+	{
+	  goto endL;
+	}
+    }
 
   eret = pgaspi_dev_write_list(num, segment_id_local, offset_local, rank,
 			       segment_id_remote, offset_remote, size,
@@ -234,8 +261,8 @@ pgaspi_write_list (const gaspi_number_t num,
 
   glb_gaspi_ctx.ne_count_c[queue] +=  num;
 
+ endL:
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
-
   return eret;
 }
 
@@ -273,14 +300,23 @@ pgaspi_read_list (const gaspi_number_t num,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
+  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+    {
+      eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
+      if ( eret != GASPI_SUCCESS)
+	{
+	  goto endL;
+	}
+    }
+
   eret = pgaspi_dev_read_list(num, segment_id_local, offset_local, rank,
 			      segment_id_remote, offset_remote, size,
 			      queue);
 
   glb_gaspi_ctx.ne_count_c[queue] += num;
 
+ endL:
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
-
   return eret;
 }
 
@@ -307,14 +343,23 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
+  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+    {
+      eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
+      if ( eret != GASPI_SUCCESS)
+	{
+	  goto endL;
+	}
+    }
+
   eret = pgaspi_dev_notify(segment_id_remote, rank,
 			   notification_id, notification_value,
 			   queue);
 
   glb_gaspi_ctx.ne_count_c[queue]++;
 
+ endL:  
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
-
   return eret;
 }
 
@@ -481,6 +526,15 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
+  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+    {
+      eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
+      if ( eret != GASPI_SUCCESS)
+	{
+	  goto endL;
+	}
+    }
+
   eret = pgaspi_dev_write_notify(segment_id_local, offset_local, rank,
 				 segment_id_remote, offset_remote, size,
 				 notification_id, notification_value,
@@ -488,8 +542,8 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 
   glb_gaspi_ctx.ne_count_c[queue] += 2;
 
+ endL:
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
-
   return eret;
 }
 
@@ -534,6 +588,15 @@ pgaspi_write_list_notify (const gaspi_number_t num,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
+  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+    {
+      eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
+      if ( eret != GASPI_SUCCESS)
+	{
+	  goto endL;
+	}
+    }
+
   eret = pgaspi_dev_write_list_notify(num,
 				      segment_id_local, offset_local, rank,
 				      segment_id_remote, offset_remote, (unsigned int *)size,
@@ -542,7 +605,7 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 
   glb_gaspi_ctx.ne_count_c[queue] += (int) (num + 1);
 
+ endL:
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
-
   return eret;
 }

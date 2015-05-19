@@ -19,8 +19,15 @@ int main(int argc, char *argv[])
 
   gaspi_atomic_value_t val;
   for(n = 0; n < numranks; n++)
-    ASSERT(gaspi_atomic_fetch_add(0, 0, n, 1, &val, GASPI_TEST));
-
+    {
+      gaspi_return_t ret;
+      do
+	{
+	  ret = gaspi_atomic_fetch_add(0, 0, n, 1, &val, GASPI_TEST);
+	}
+      while(ret == GASPI_TIMEOUT);
+    }
+  
   gaspi_pointer_t _vptr;
   ASSERT (gaspi_segment_ptr(0, &_vptr));
 

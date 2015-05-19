@@ -49,11 +49,20 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockPS, timeout_ms))
     return GASPI_TIMEOUT;
 
+  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+    {
+      eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
+      if ( eret != GASPI_SUCCESS)
+	{
+	  goto endL;
+	}
+    }
+  
   eret = pgaspi_dev_passive_send(segment_id_local, offset_local, rank,
 				 size, glb_gaspi_ctx.ne_count_p, timeout_ms);
 
+ endL:
   unlock_gaspi (&glb_gaspi_ctx.lockPS);
-
   return eret;
 }
 
