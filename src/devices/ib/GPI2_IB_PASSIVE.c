@@ -178,14 +178,21 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
     }
 
   *rem_rank = 0xffff;
-  for (i = 0; i < glb_gaspi_ctx.tnc; i++)
+  do
     {
-      if (glb_gaspi_ctx_ib.qpP[i]->qp_num == wc_recv.qp_num)
+      for (i = 0; i < glb_gaspi_ctx.tnc; i++)
 	{
-	  *rem_rank = i;
-	  break;
+	  /* we need to make sure the QP was already created and valid */
+	  if(glb_gaspi_ctx_ib.qpP != NULL)
+	    if(glb_gaspi_ctx_ib.qpP[i] != NULL)
+	      if (glb_gaspi_ctx_ib.qpP[i]->qp_num == wc_recv.qp_num)
+		{
+		  *rem_rank = i;
+		  break;
+		}
 	}
     }
-
+  while(*rem_rank == 0xffff);
+  
   return GASPI_SUCCESS;
 }
