@@ -15,7 +15,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
-
+#include "PGASPI.h"
 #include "GPI2.h"
 #include "GPI2_Dev.h"
 #include "GPI2_Utility.h"
@@ -31,7 +31,7 @@ pgaspi_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max
   return GASPI_SUCCESS;
 }
 
-#pragma weak gaspi_passive_send     = pgaspi_passive_send
+#pragma weak gaspi_passive_send = pgaspi_passive_send
 gaspi_return_t
 pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 		     const gaspi_offset_t offset_local,
@@ -41,7 +41,8 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_verify_init("gaspi_passive_send");
   gaspi_verify_local_off(offset_local, segment_id_local);
-  gaspi_verify_comm_size(size, segment_id_local, segment_id_local, rank, GASPI_MAX_TSIZE_P);
+  gaspi_verify_comm_size(size, segment_id_local,
+			 segment_id_local, rank, GASPI_MAX_TSIZE_P);
   gaspi_verify_rank(rank);
 
   gaspi_return_t eret = GASPI_ERROR;
@@ -66,7 +67,7 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
   return eret;
 }
 
-#pragma weak gaspi_passive_receive  = pgaspi_passive_receive
+#pragma weak gaspi_passive_receive = pgaspi_passive_receive
 gaspi_return_t
 pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 			const gaspi_offset_t offset_local,
@@ -76,7 +77,8 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_verify_init("gaspi_passive_receive");
   gaspi_verify_local_off(offset_local, segment_id_local);
-  gaspi_verify_comm_size(size, segment_id_local, segment_id_local, glb_gaspi_ctx.rank, GASPI_MAX_TSIZE_P);
+  gaspi_verify_comm_size(size, segment_id_local,
+			 segment_id_local, glb_gaspi_ctx.rank, GASPI_MAX_TSIZE_P);
 
   gaspi_return_t eret = GASPI_ERROR;
 

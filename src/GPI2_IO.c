@@ -16,7 +16,7 @@
   along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "GASPI.h"
+#include "PGASPI.h"
 #include "GPI2.h"
 #include "GPI2_Dev.h"
 #include "GPI2_Utility.h"
