@@ -287,7 +287,8 @@ pgaspi_init_core()
   /* change/override num of queues at large scale */
   if (glb_gaspi_ctx.tnc > 1000 && glb_gaspi_cfg.queue_num > 1)
     {
-      gaspi_printf("Warning: setting number of queues to 1\n");
+      if(glb_gaspi_ctx.rank == 0)
+	gaspi_printf("Warning: setting number of queues to 1\n");
       glb_gaspi_cfg.queue_num = 1;
     }
 
