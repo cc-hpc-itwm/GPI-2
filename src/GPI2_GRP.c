@@ -468,9 +468,6 @@ pgaspi_group_commit (const gaspi_group_t group,
       if(group_to_commit->rank_grp[i] == glb_gaspi_ctx.rank)
 	continue;
 
-      if(!glb_gaspi_ctx.ep_conn[group_to_commit->rank_grp[i]].cstat)
-	continue;
-
       eret = gaspi_connect_to_rank(group_to_commit->rank_grp[i], timeout_ms);
       if(eret != GASPI_SUCCESS)
 	{
@@ -491,15 +488,11 @@ pgaspi_group_commit (const gaspi_group_t group,
 	      goto errL;
 	    }
 
-	  ret = read(glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]],
-		     &group_to_commit->rrcd[group_to_commit->rank_grp[i]],
-		     sizeof(gaspi_rc_mseg));
-
-	  if(ret != sizeof(gaspi_rc_mseg))
+	  ret = read(glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]],&rem_gb,sizeof(rem_gb));
+	  if(ret != sizeof(rem_gb))
 	    {
 	      gaspi_print_error("Failed to read (%d %p %lu)",
 				glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]],&rem_gb,sizeof(rem_gb));
-
 	      eret = GASPI_ERROR;
 	      goto errL;
 	    }
@@ -552,8 +545,6 @@ pgaspi_group_commit (const gaspi_group_t group,
 
       glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]] = -1;
     }
-
-  glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]] = -1;
 
   group_to_commit->committed_rank[i] = 1;
 
