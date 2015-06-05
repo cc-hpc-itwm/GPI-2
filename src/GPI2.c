@@ -564,7 +564,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   if(glb_gaspi_cfg.build_infrastructure)
     {
       /* connect to ranks before me */
-      for(i = 0; i <= glb_gaspi_ctx.rank; i++)
+      for(i = glb_gaspi_ctx.rank; i >= 0; i--)
 	{
 	  if(pgaspi_connect((gaspi_rank_t) i, timeout_ms) != GASPI_SUCCESS)
 	    {
