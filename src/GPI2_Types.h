@@ -120,11 +120,12 @@ typedef struct
   volatile unsigned char togle;
   gaspi_async_coll_t coll_op;
   int lastmask;
-  int level,tmprank,dsize,bid;
+  int level, tmprank, dsize, bid;
   int rank, tnc;
   int next_pof2;
   int pof2_exp;
   int *rank_grp;
+  int *committed_rank;
   gaspi_rc_mseg *rrcd;
 } gaspi_group_ctx;
 

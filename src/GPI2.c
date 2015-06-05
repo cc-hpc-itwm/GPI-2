@@ -111,7 +111,7 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
 
 #pragma weak gaspi_connect = pgaspi_connect
 gaspi_return_t
-pgaspi_connect (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
+pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -563,36 +563,8 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   if(glb_gaspi_cfg.build_infrastructure)
     {
-      /* connect to ranks before me */
-      for(i = glb_gaspi_ctx.rank; i >= 0; i--)
-	{
-	  if(pgaspi_connect((gaspi_rank_t) i, timeout_ms) != GASPI_SUCCESS)
-	    {
-	      return GASPI_ERROR;
-	    }
-	}
+      eret = pgaspi_group_all_local_create(timeout_ms);
 
-      /* create GASPI_GROUP_ALL */
-      if(glb_gaspi_group_ctx[GASPI_GROUP_ALL].id == -1)
-	{
-	  gaspi_group_t g0;
-	  if(gaspi_group_create(&g0) != GASPI_SUCCESS)
-	    {
-	      gaspi_print_error("Failed to create group (GASPI_GROUP_ALL)");
-	      return GASPI_ERROR;
-	    }
-	  
-	  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
-	    {
-	      if(gaspi_group_add(g0, (gaspi_rank_t) i) != GASPI_SUCCESS)
-		{
-		  gaspi_print_error("Addition of rank to GASPI_GROUP_ALL failed");
-		  return GASPI_ERROR;
-		}
-	    }
-	}
-
-      eret = gaspi_group_commit(GASPI_GROUP_ALL, timeout_ms);
       if(eret == GASPI_SUCCESS)
 	{
 	  eret = gaspi_barrier(GASPI_GROUP_ALL, timeout_ms);
