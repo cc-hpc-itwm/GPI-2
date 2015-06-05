@@ -19,25 +19,11 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef _GPI2_SN_H_
 #define _GPI2_SN_H_ 1
 
-#include <stdio.h>
-
 #include "GASPI.h"
 #include "GPI2_Types.h"
 
 #define GASPI_EPOLL_CREATE  (256)
 #define GASPI_EPOLL_MAX_EVENTS  (2048)
-
-#ifdef DEBUG
-#define gaspi_sn_print_error(msg, ...)					\
-  int errsv = errno;							\
-  if(errsv != 0)							\
-    fprintf(stderr,"Rank %d: Error %d (%s) at (%s:%d):" msg "\n", glb_gaspi_ctx.rank,errsv, (char *) strerror(errsv), __FILE__, __LINE__, ##__VA_ARGS__); \
-  else									\
-    fprintf(stderr,"Rank %d: Error at (%s:%d):" msg "\n",glb_gaspi_ctx.rank, __FILE__, __LINE__, ##__VA_ARGS__) 
-
-#else
-#define gaspi_sn_print_error(msg, ...)
-#endif
 
 enum gaspi_sn_ops 
 {
@@ -58,7 +44,6 @@ enum gaspi_sn_status
   GASPI_SN_STATE_ERROR = 1
 };
 
-  
 typedef struct
 {
   int op,op_len,rank,tnc;
@@ -90,14 +75,14 @@ extern volatile int gaspi_master_topo_data;
 extern volatile enum gaspi_sn_status gaspi_sn_status;
 extern volatile gaspi_return_t gaspi_sn_err;
 
-
 extern gaspi_context glb_gaspi_ctx;
 
 int
 gaspi_set_non_blocking(int sock);
 
 int
-gaspi_connect2port(const char *hn,const unsigned short port,const unsigned long timeout_ms);
+gaspi_connect2port(const char *hn, const unsigned short port,const unsigned long timeout_ms);
+
 int
 gaspi_close(int sockfd);
 
