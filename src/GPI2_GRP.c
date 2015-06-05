@@ -253,9 +253,15 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
 static int
 _pgaspi_group_commit_to(const gaspi_group_t group,
 			const gaspi_rank_t i,
-			const gaspi_timeout_t timeout_ms)
+			const gaspi_timeout_t timeout_ms,
+			const int connect )
 {
-  gaspi_return_t  eret = gaspi_connect_to_rank(i, timeout_ms);
+
+  gaspi_return_t  eret = GASPI_SUCCESS;
+
+  if( connect )
+    eret = gaspi_connect_to_rank(i, timeout_ms);
+
   if(eret == GASPI_SUCCESS)
     {
       gaspi_group_ctx *group_to_commit = &(glb_gaspi_group_ctx[group]);
@@ -297,13 +303,16 @@ _pgaspi_group_commit_to(const gaspi_group_t group,
 	  return -1;
 	}
 
-      if(gaspi_close(glb_gaspi_ctx.sockfd[i]) != 0)
+      if( connect )
 	{
-	  gaspi_print_error("Failed to close socket to %d", i);
-	  return -1;
-	}
+	  if(gaspi_close(glb_gaspi_ctx.sockfd[i]) != 0)
+	    {
+	      gaspi_print_error("Failed to close socket to %d", i);
+	      return -1;
+	    }
 
-      glb_gaspi_ctx.sockfd[i] = -1;
+	  glb_gaspi_ctx.sockfd[i] = -1;
+	}
 
       group_to_commit->committed_rank[i] = 1;
     }
@@ -364,7 +373,7 @@ pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms)
       if(group_to_commit->rank_grp[i] == glb_gaspi_ctx.rank)
 	continue;
 
-      if(_pgaspi_group_commit_to(GASPI_GROUP_ALL, i, timeout_ms) != 0)
+      if(_pgaspi_group_commit_to(GASPI_GROUP_ALL, i, timeout_ms, 1) != 0)
 	{
 	  eret = GASPI_ERROR;
 	  goto errL;
@@ -523,41 +532,9 @@ pgaspi_group_commit (const gaspi_group_t group,
 	    }
 	  else
 	    {
-	      //connect groups
-	      gaspi_cd_header cdh;
-	      memset(&cdh, 0, sizeof(gaspi_cd_header));
-
-	      cdh.op_len = sizeof(gaspi_rc_mseg);
-	      cdh.op = GASPI_SN_GRP_CONNECT;
-	      cdh.rank = glb_gaspi_ctx.rank;
-	      cdh.ret = group;
-
-	      int ret;
-	      ret = write(glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]],&cdh,sizeof(gaspi_cd_header));
-	      if(ret !=sizeof(gaspi_cd_header))
+	      if(_pgaspi_group_commit_to(group, group_to_commit->rank_grp[i], timeout_ms, 0) != 0)
 		{
-		  gaspi_print_error("Failed to write (%d %p %lu)",
-				    glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]],
-				    &cdh,
-				    sizeof(gaspi_cd_header));
-
-		  glb_gaspi_ctx.qp_state_vec[GASPI_SN][group_to_commit->rank_grp[i]] = 1;
-		  eret = GASPI_ERROR;
-		  goto errL;
-		}
-
-	      ret=read(glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]],
-		       &group_to_commit->rrcd[group_to_commit->rank_grp[i]],
-		       sizeof(gaspi_rc_mseg));
-
-	      if(ret != sizeof(gaspi_rc_mseg))
-		{
-		  gaspi_print_error("Failed to read (%d %p %lu)",
-				    glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]],
-				    &group_to_commit->rrcd[group_to_commit->rank_grp[i]],
-				    sizeof(gaspi_rc_mseg));
-
-		  glb_gaspi_ctx.qp_state_vec[GASPI_SN][group_to_commit->rank_grp[i]] = 1;
+		  gaspi_print_error("Failed to commit to %d", group_to_commit->rank_grp[i]);
 		  eret = GASPI_ERROR;
 		  goto errL;
 		}
@@ -735,7 +712,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
       if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
 	{
-	  if(_pgaspi_group_commit_to(g, dst, timeout_ms) != 0)
+	  if(_pgaspi_group_commit_to(g, dst, timeout_ms, 1) != 0)
 	    {
 	      gaspi_print_error("Failed to commit to rank %u", dst);
 	      unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
