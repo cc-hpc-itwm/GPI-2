@@ -98,11 +98,11 @@ gaspi_send_topology_sn(const int i, const gaspi_timeout_t timeout_ms)
 
  endL:
   if(gaspi_close( sockfd ) != 0)
-      retval = -1;
+    retval = -1;
 
   glb_gaspi_ctx.sockfd[i] = -1;
 
-  return 0;
+  return retval;
 }
 
 /* TODO: rename to gaspi_sn_* */
