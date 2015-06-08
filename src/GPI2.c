@@ -226,7 +226,7 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   return GASPI_SUCCESS;
   
  errL:
-  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
+  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return eret;
 }
