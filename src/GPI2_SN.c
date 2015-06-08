@@ -53,6 +53,27 @@ int gaspi_set_non_blocking(int sock)
 
   return 0;
 }
+int
+gaspi_sn_set_default_opts(int sockfd)
+{
+  int opt = 1;
+  if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+    {
+      gaspi_print_error("Failed to set options on socket");
+      close(sockfd);
+      return -1;
+    }
+
+  if(setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)) < 0)
+    {
+      gaspi_print_error("Failed to set options on socket");
+      close(sockfd);
+      return -1;
+    }
+
+  return 0;
+}
+
 /* TODO: rename to gaspi_sn_* */
 int
 gaspi_send_topology_sn(const int i, const gaspi_timeout_t timeout_ms)
@@ -209,22 +230,17 @@ static int gaspi_connect2port_intern(const char *hn,const unsigned short port)
 
   memcpy(&Host.sin_addr, serverData->h_addr, serverData->h_length);
 
+  /* TODO: we need to be able to distinguish between an initialization
+     connection attemp and a connection attempt during run-time where
+     the remote node is gone (FT) */
   ret = connect( sockfd, (struct sockaddr *) &Host, sizeof(Host) );
   if(ret != 0)
     {
       close( sockfd );
       return -1;
     }
-
-  int opt = 1;
-  if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-    {
-      gaspi_print_error("Failed to set options on socket");
-      close(sockfd);
-      return -1;
-    }
   
-  if(setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)) < 0)
+  if( 0 != gaspi_sn_set_default_opts(sockfd) )
     {
       gaspi_print_error("Failed to set options on socket");
       close(sockfd);
@@ -369,18 +385,7 @@ void *gaspi_sn_backend(void *arg)
       return NULL;
     }
 
-  /* TODO:repeated code */
-  int opt = 1;
-  if(setsockopt(lsock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) <  0)
-    {
-      gaspi_print_error("Failed to modify socket");
-      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      gaspi_sn_err = GASPI_ERROR;
-      close(lsock);
-      return NULL;
-    }
-
-  if(setsockopt(lsock, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)) < 0)
+  if( 0 != gaspi_sn_set_default_opts(lsock) )
     {
       gaspi_print_error("Failed to modify socket");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
