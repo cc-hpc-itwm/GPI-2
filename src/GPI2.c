@@ -190,8 +190,8 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   
   if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
     {
-      eret = GASPI_TIMEOUT;
-      goto errL;
+      unlock_gaspi(&glb_gaspi_ctx_lock);
+      return GASPI_TIMEOUT;
     }
 
   if(glb_gaspi_ctx.ep_conn[i].cstat)
