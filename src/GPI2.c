@@ -160,12 +160,10 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   /* if we have something to exchange */
   if(rc_size > 0 )
     {
-      
       ssize_t ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
       if(ret != sizeof(gaspi_cd_header))
 	{
 	  gaspi_print_error("Failed to write to %d", i);
-      
 	  eret = GASPI_ERROR;
 	  goto errL;
 	}
@@ -174,7 +172,6 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
       if(ret != (ssize_t) rc_size)
 	{
 	  gaspi_print_error("Failed to write to %d", i);
-      
 	  eret = GASPI_ERROR;
 	  goto errL;
 	}
