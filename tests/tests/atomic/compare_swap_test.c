@@ -21,7 +21,15 @@ int main(int argc, char *argv[])
   gaspi_atomic_value_t compare = 0;
   if(myrank == 0)
     for(n = 0; n < numranks; n++)
-      ASSERT(gaspi_atomic_compare_swap(0, 0, n, compare, (gaspi_atomic_value_t) 42, &val, GASPI_TEST));
+      {
+	gaspi_return_t r = GASPI_ERROR;
+	do
+	  {
+	    r = gaspi_atomic_compare_swap(0, 0, n, compare, (gaspi_atomic_value_t) 42, &val, GASPI_TEST);
+	  }
+	while(r == GASPI_TIMEOUT);
+	ASSERT(r);
+      }
 
   gaspi_pointer_t _vptr;
   ASSERT (gaspi_segment_ptr(0, &_vptr));
