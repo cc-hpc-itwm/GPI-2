@@ -78,25 +78,22 @@ extern volatile gaspi_return_t gaspi_sn_err;
 extern gaspi_context glb_gaspi_ctx;
 
 int
-gaspi_set_non_blocking(int sock);
+gaspi_sn_set_non_blocking(int sock);
 
 int
-gaspi_connect2port(const char *hn, const unsigned short port,const unsigned long timeout_ms);
+gaspi_sn_close(int sockfd);
 
 int
-gaspi_close(int sockfd);
-
-int
-gaspi_send_topology_sn(const int, const gaspi_timeout_t);
+gaspi_sn_send_topology(const int, const gaspi_timeout_t);
 
 gaspi_return_t
-gaspi_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms);
+gaspi_sn_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms);
 
 void
 gaspi_sn_cleanup(int sig);
 
 int
-gaspi_seg_reg_sn(const gaspi_cd_header snp);
+gaspi_sn_segment_register(const gaspi_cd_header snp);
 
 void *
 gaspi_sn_backend(void *arg);

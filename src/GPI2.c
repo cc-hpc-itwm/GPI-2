@@ -145,7 +145,7 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
       return GASPI_SUCCESS;
     }
 
-  eret = gaspi_connect_to_rank(rank, timeout_ms);
+  eret = gaspi_sn_connect_to_rank(rank, timeout_ms);
   if(eret != GASPI_SUCCESS)
     {
       goto errL;
@@ -212,7 +212,7 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   
   unlock_gaspi(&gaspi_ccontext_lock);
 
-  if(gaspi_close(glb_gaspi_ctx.sockfd[i]) != 0)
+  if(gaspi_sn_close(glb_gaspi_ctx.sockfd[i]) != 0)
     {
       gaspi_print_error("Failed to close socket to %d", i);
       eret = GASPI_ERROR;
@@ -543,7 +543,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   if(glb_gaspi_ctx.rank < glb_gaspi_ctx.tnc - 1)
     {
       /* Forward topology to next rank */
-      if(gaspi_send_topology_sn(glb_gaspi_ctx.rank + 1, timeout_ms) != 0)
+      if(gaspi_sn_send_topology(glb_gaspi_ctx.rank + 1, timeout_ms) != 0)
 	{
 	  eret = GASPI_ERROR;
 	  goto errL;
@@ -743,7 +743,7 @@ pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   cdh.rank = rank;
   cdh.tnc = glb_gaspi_ctx.tnc;
 
-  gaspi_return_t eret = gaspi_connect_to_rank(rank, timeout_ms);
+  gaspi_return_t eret = gaspi_sn_connect_to_rank(rank, timeout_ms);
   if(eret != GASPI_SUCCESS)
     {
       gaspi_print_error("Failed to connect to %u  (%d %p %lu)",
@@ -789,7 +789,7 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   if(lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
-  gaspi_return_t eret = gaspi_connect_to_rank(rank, timeout_ms);
+  gaspi_return_t eret = gaspi_sn_connect_to_rank(rank, timeout_ms);
   if(eret != GASPI_SUCCESS)
     {
       gaspi_print_error("Failed to connect to %d", rank);
@@ -808,7 +808,7 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
       eret = GASPI_ERROR;
     }
 
-  if(gaspi_close(glb_gaspi_ctx.sockfd[rank]) != 0)
+  if(gaspi_sn_close(glb_gaspi_ctx.sockfd[rank]) != 0)
     {
       gaspi_print_error("Failed to close connection to %d", rank);
       eret = GASPI_ERROR;

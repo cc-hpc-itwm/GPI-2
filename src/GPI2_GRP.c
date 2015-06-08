@@ -260,7 +260,7 @@ _pgaspi_group_commit_to(const gaspi_group_t group,
   gaspi_return_t  eret = GASPI_SUCCESS;
 
   if( connect )
-    eret = gaspi_connect_to_rank(i, timeout_ms);
+    eret = gaspi_sn_connect_to_rank(i, timeout_ms);
 
   if(eret == GASPI_SUCCESS)
     {
@@ -305,7 +305,7 @@ _pgaspi_group_commit_to(const gaspi_group_t group,
 
       if( connect )
 	{
-	  if(gaspi_close(glb_gaspi_ctx.sockfd[i]) != 0)
+	  if(gaspi_sn_close(glb_gaspi_ctx.sockfd[i]) != 0)
 	    {
 	      gaspi_print_error("Failed to close socket to %d", i);
 	      return -1;
@@ -468,7 +468,7 @@ pgaspi_group_commit (const gaspi_group_t group,
       if(group_to_commit->rank_grp[i] == glb_gaspi_ctx.rank)
 	continue;
 
-      eret = gaspi_connect_to_rank(group_to_commit->rank_grp[i], timeout_ms);
+      eret = gaspi_sn_connect_to_rank(group_to_commit->rank_grp[i], timeout_ms);
       if(eret != GASPI_SUCCESS)
 	{
 	  goto errL;
@@ -536,7 +536,7 @@ pgaspi_group_commit (const gaspi_group_t group,
 	    }
 	}while(1);
 
-      if(gaspi_close(glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]]) != 0)
+      if(gaspi_sn_close(glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]]) != 0)
 	{
 	  gaspi_print_error("Failed to close socket to %d", group_to_commit->rank_grp[i]);
 	  eret = GASPI_ERROR;

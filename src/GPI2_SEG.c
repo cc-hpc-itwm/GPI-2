@@ -280,7 +280,7 @@ _pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 			 const gaspi_timeout_t timeout_ms)
   
 {
-  gaspi_return_t eret = gaspi_connect_to_rank(rank, timeout_ms);
+  gaspi_return_t eret = gaspi_sn_connect_to_rank(rank, timeout_ms);
   if(eret != GASPI_SUCCESS)
     {
       return eret;
@@ -307,7 +307,7 @@ _pgaspi_segment_register(const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
     
-  if(gaspi_close(glb_gaspi_ctx.sockfd[rank]) != 0)
+  if(gaspi_sn_close(glb_gaspi_ctx.sockfd[rank]) != 0)
     {
       gaspi_print_error("Failed to close connection to %d", rank);
 
