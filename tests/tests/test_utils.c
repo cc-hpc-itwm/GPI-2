@@ -1,11 +1,79 @@
+#include <execinfo.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 #include <test_utils.h>
+
+#define BACKTRACE_SIZE 256
+
+void tsuite_do_backtrace(int id, gaspi_rank_t node, FILE * bt_file)
+{
+  void    *array[BACKTRACE_SIZE];
+  size_t   size, i;
+  char   **strings;
+
+  size = backtrace(array, BACKTRACE_SIZE);
+  strings = backtrace_symbols(array, size);
+
+  fprintf(bt_file, "************* BACKTRACE: Pid %d, Rank %d  *************** \n",
+	  id, node);
+
+  for (i = 0; i < size; i++)
+    fprintf(bt_file, "%s\n", strings[i]);
+
+  free(strings); /*  malloced by backtrace_symbols */
+}
+
+void tsuite_sighandler(int signum, siginfo_t *info, void *ptr)
+{
+  FILE * bt_file;
+  pid_t ptid =  syscall(__NR_gettid);
+  int initialized;
+  gaspi_rank_t nodeRank = 0;
+
+  gaspi_initialized(&initialized);
+  if(initialized)
+    {
+      gaspi_proc_rank(&nodeRank);
+    }
+
+  /* Use stdout for now */
+  bt_file = stdout;
+
+  fprintf(bt_file, "Pid signal: pid %u\n",  ptid);
+  fprintf(bt_file, "Signal %d originates from process %lu (rank %d)\n",
+	  info->si_signo,
+	  (unsigned long)info->si_pid,
+	  nodeRank);
+
+  tsuite_do_backtrace(ptid, nodeRank, bt_file);
+
+  exit(-1);
+}
 
 void tsuite_init(int argc, char *argv[])
 {
   int i;
+
+  /* Backtracing for debugging */
+  struct sigaction act;
+
+  memset(&act, 0, sizeof(act));
+  act.sa_sigaction = tsuite_sighandler;
+  act.sa_flags = SA_SIGINFO;
+
+  sigaction(SIGABRT, &act, NULL);
+  sigaction(SIGTERM, &act, NULL);
+  sigaction(SIGFPE, &act, NULL);
+  sigaction(SIGBUS, &act, NULL);
+  sigaction(SIGSEGV, &act, NULL);
+  sigaction(SIGIO, &act, NULL);
+  sigaction(SIGHUP, &act, NULL);
+
   if(argc > 1)
     {
       for(i = 1; i < argc; i++)
@@ -19,15 +87,13 @@ void tsuite_init(int argc, char *argv[])
 	}
       ASSERT(gaspi_config_set(tsuite_default_config));
     }
-  
 }
 
 void success_or_exit ( const char* file, const int line, const int ec)
 {
   if (ec != GASPI_SUCCESS)
     {
-      gaspi_printf ("Assertion failed in %s[%i]:%d\n", file, line, ec);
-      
+      gaspi_printf ("Assertion failed in %s[%i]: Return %d: %s\n", file, line, ec, gaspi_error_str(ec));
       exit (EXIT_FAILURE);
     }
 }
