@@ -34,6 +34,12 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_SN.h"
 #include "GPI2_Utility.h"
 
+#define GASPI_SN_RESET_EVENT(mgmt, len, ev)  \
+  mgmt->bdone = 0;			     \
+  mgmt->blen = len;			     \
+  mgmt->op = ev;			     \
+  mgmt->cdh.op = GASPI_SN_RESET;
+
 /* Status and return value of SN thread: mostly for error detection */
 volatile enum gaspi_sn_status gaspi_sn_status = GASPI_SN_STATE_OK;
 volatile gaspi_return_t gaspi_sn_err = GASPI_SUCCESS;
@@ -320,12 +326,6 @@ gaspi_sn_writen(int sockfd, const void * data_ptr, size_t n)
   
   return n;
 }
-
-#define GASPI_SN_RESET_EVENT(mgmt, len, ev)  \
-  mgmt->bdone = 0;			     \
-  mgmt->blen = len;			     \
-  mgmt->op = ev;			     \
-  mgmt->cdh.op = GASPI_SN_RESET;
 
 /* TODO: rename to gaspi_sn_* */
 gaspi_return_t
