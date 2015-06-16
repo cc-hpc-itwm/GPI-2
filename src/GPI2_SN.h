@@ -98,7 +98,4 @@ gaspi_sn_segment_register(const gaspi_cd_header snp);
 void *
 gaspi_sn_backend(void *arg);
 
-gaspi_return_t
-gaspi_sn_ping(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms);
-
 #endif

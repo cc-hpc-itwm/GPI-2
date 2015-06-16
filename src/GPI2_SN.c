@@ -58,6 +58,7 @@ int gaspi_sn_set_non_blocking(int sock)
 
   return 0;
 }
+
 int
 gaspi_sn_set_default_opts(int sockfd)
 {
@@ -65,14 +66,12 @@ gaspi_sn_set_default_opts(int sockfd)
   if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
     {
       gaspi_print_error("Failed to set options on socket");
-      close(sockfd);
       return -1;
     }
 
   if(setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)) < 0)
     {
       gaspi_print_error("Failed to set options on socket");
-      close(sockfd);
       return -1;
     }
 
@@ -134,27 +133,28 @@ int
 gaspi_sn_segment_register(const gaspi_cd_header snp)
 {
   if(!glb_gaspi_dev_init) 
-    return GASPI_ERROR;
+    return -1;
+
+  if( snp.seg_id < 0 && snp.seg_id >= GASPI_MAX_MSEGS)
+    return -1;
 
   lock_gaspi_tout(&gaspi_mseg_lock, GASPI_BLOCK);
 
   if(glb_gaspi_ctx.rrmd[snp.seg_id] == NULL)
     {
       glb_gaspi_ctx.rrmd[snp.seg_id] =
-	(gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+	(gaspi_rc_mseg *) calloc (glb_gaspi_ctx.tnc, sizeof (gaspi_rc_mseg));
 
-      if( !glb_gaspi_ctx.rrmd[snp.seg_id] ) 
+      if( glb_gaspi_ctx.rrmd[snp.seg_id] == NULL )
 	{
 	  unlock_gaspi(&gaspi_mseg_lock);
 	  return -1;
 	}
-      
-      memset(glb_gaspi_ctx.rrmd[snp.seg_id], 0, glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
     }
 
-  //TODO: don't allow re-registration
-  //for now we allow re-registration
-  //if(glb_gaspi_ctx.rrmd[snp.seg_id][snp.rem_rank].size) -> re-registration error case
+  /* TODO: don't allow re-registration? */
+  /* for now we allow re-registration */
+  /* if(glb_gaspi_ctx.rrmd[snp.seg_id][snp.rem_rank].size) -> re-registration error case */
 
   glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey = snp.rkey;
   glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].addr = snp.addr;
@@ -175,7 +175,8 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
 }
 
 /* check open files limit and try to increase */
-static int _gaspi_check_ofile_limit()
+static int
+_gaspi_check_ofile_limit()
 {
   struct rlimit ofiles;
   
@@ -194,7 +195,8 @@ static int _gaspi_check_ofile_limit()
   return 0;
 }
 
-static int gaspi_sn_connect2port_intern(const char *hn,const unsigned short port)
+static int
+gaspi_sn_connect2port_intern(const char *hn, const unsigned short port)
 {
   int ret; 
   int sockfd = -1;
@@ -203,7 +205,7 @@ static int gaspi_sn_connect2port_intern(const char *hn,const unsigned short port
   struct hostent *serverData;
 
   sockfd = socket ( AF_INET, SOCK_STREAM, 0);
-  if(sockfd == -1)
+  if( -1 == sockfd )
     {
       /* at least deal with open files limit */
       int errsv = errno;
@@ -237,7 +239,7 @@ static int gaspi_sn_connect2port_intern(const char *hn,const unsigned short port
      connection attemp and a connection attempt during run-time where
      the remote node is gone (FT) */
   ret = connect( sockfd, (struct sockaddr *) &Host, sizeof(Host) );
-  if(ret != 0)
+  if( 0 != ret )
     {
       close( sockfd );
       return -1;
@@ -253,30 +255,31 @@ static int gaspi_sn_connect2port_intern(const char *hn,const unsigned short port
   return sockfd;
 }
 
-int gaspi_sn_connect2port(const char *hn, const unsigned short port, const unsigned long timeout_ms)
+int
+gaspi_sn_connect2port(const char *hn, const unsigned short port, const unsigned long timeout_ms)
 {
   int sockfd = -1;
   struct timeb t0, t1;
 
   ftime(&t0);
 
-  while(sockfd == -1)
+  while( -1 == sockfd )
     {
       sockfd = gaspi_sn_connect2port_intern(hn, port);
       
       ftime(&t1);
-      const unsigned int delta_ms = (t1.time-t0.time)*1000+(t1.millitm-t0.millitm);
+      const unsigned int delta_ms = (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
       
       if(delta_ms > timeout_ms)
 	{
-	  if(sockfd != -1)
+	  if( -1 != sockfd )
 	    {
 	      shutdown( sockfd, SHUT_RDWR );
 	      close(sockfd);
 	    }
 	  return -1;
 	}
-      //gaspi_delay();
+      gaspi_delay();
     }
 
   signal(SIGPIPE, SIG_IGN);
@@ -288,10 +291,10 @@ int
 gaspi_sn_close(int sockfd)
 {
   int ret = 0;
-  if(shutdown(sockfd, SHUT_RDWR) != 0)
+  if( shutdown(sockfd, SHUT_RDWR) != 0 )
     ret = 1;
 
-  if(close(sockfd) != 0)
+  if(close(sockfd) != 0 )
     ret = 1;
 
   return ret;
@@ -338,10 +341,10 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms)
 			   glb_gaspi_cfg.sn_port + glb_gaspi_ctx.poff[rank],
 			   timeout_ms);
 
-      if(glb_gaspi_ctx.sockfd[rank] == -2)
+      if( -2 == glb_gaspi_ctx.sockfd[rank] )
 	return GASPI_ERR_EMFILE;
       
-      if(glb_gaspi_ctx.sockfd[rank] == -1)
+      if( -1 == glb_gaspi_ctx.sockfd[rank] )
 	{
 	  ftime(&t1);
 	  const unsigned int delta_ms = (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
@@ -354,19 +357,20 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms)
   return GASPI_SUCCESS;
 }
 
-void gaspi_sn_cleanup(int sig)
+void
+gaspi_sn_cleanup(int sig)
 {
-  /*TODO: proper cleanup */
+  /* TODO: proper cleanup */
   if(sig == SIGSTKFLT)
     pthread_exit(NULL);
 }
 
 void *gaspi_sn_backend(void *arg)
 {
-  int esock,lsock,n,i;
+  int esock, lsock, n, i;
   struct epoll_event ev;
   struct epoll_event *ret_ev;
-  gaspi_mgmt_header *ev_mgmt,*mgmt;
+  gaspi_mgmt_header *ev_mgmt, *mgmt;
   
   signal(SIGSTKFLT, gaspi_sn_cleanup);
   signal(SIGPIPE, SIG_IGN);
@@ -377,7 +381,6 @@ void *gaspi_sn_backend(void *arg)
       gaspi_print_error("Failed to create socket");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
       gaspi_sn_err = GASPI_ERROR;
-      
       return NULL;
     }
 
@@ -408,7 +411,7 @@ void *gaspi_sn_backend(void *arg)
       return NULL;
     }
   
-  if (gaspi_sn_set_non_blocking(lsock) != 0)
+  if ( 0 != gaspi_sn_set_non_blocking(lsock) )
     {
       gaspi_print_error("Failed to set socket");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
@@ -484,6 +487,7 @@ void *gaspi_sn_backend(void *arg)
 	      !((ret_ev[i].events & EPOLLIN) || (ret_ev[i].events & EPOLLOUT )) )
 	    {
 	      /* an error has occured on this fd. close it => removed from event list. */
+	      gaspi_print_error( "Erroneous event." );
 	      shutdown(mgmt->fd, SHUT_RDWR);
 	      close(mgmt->fd);
 	      free(mgmt);
@@ -528,9 +532,16 @@ void *gaspi_sn_backend(void *arg)
 		}
     
 	      /* new socket */
-	      gaspi_sn_set_non_blocking( nsock );
+	      if( 0 != gaspi_sn_set_non_blocking( nsock )
+		{
+		  gaspi_print_error( "Failed to set socket options." );
+		  gaspi_sn_status = GASPI_SN_STATE_ERROR;
+		  gaspi_sn_err = GASPI_ERROR;
+		  close(nsock);
+		  return NULL;
+		}
 
-	      /* add nsock */
+		/* add nsock */
 	      ev.data.ptr = malloc( sizeof(gaspi_mgmt_header) );
 	      if(ev.data.ptr == NULL)
 		{
@@ -564,28 +575,29 @@ void *gaspi_sn_backend(void *arg)
 	      
 	      if( ret_ev[i].events & EPOLLIN )
 		{
-
-		  while(1)
+		  while( 1 )
 		    {  
 		      int rcount = 0;
 		      int rsize = mgmt->blen - mgmt->bdone;
 		      char *ptr = NULL;
 		      
-		      if(mgmt->op == GASPI_SN_HEADER) 
+		      if( mgmt->op == GASPI_SN_HEADER )
 			{
+			  /* TODO: is it valid? */
 			  ptr = (char *) &mgmt->cdh;
 			  rcount = read( mgmt->fd, ptr + mgmt->bdone, rsize );
 			}
-		      else if(mgmt->op == GASPI_SN_TOPOLOGY)
+		      else if( mgmt->op == GASPI_SN_TOPOLOGY )
 			{
+			  /* TODO: is it valid? */
 			  ptr = (char*) glb_gaspi_ctx.hn_poff;
 			  rcount = read( mgmt->fd, ptr + mgmt->bdone, rsize);
 			}
-		      else if(mgmt->op == GASPI_SN_CONNECT)
+		      else if( mgmt->op == GASPI_SN_CONNECT )
 			{
 			  while( !glb_gaspi_dev_init )
 			    gaspi_delay();
-			  
+
 			  ptr = pgaspi_dev_get_rrcd(mgmt->cdh.rank);
 			  rcount = read( mgmt->fd, ptr + mgmt->bdone, rsize );		  
 			}
@@ -596,17 +608,17 @@ void *gaspi_sn_backend(void *arg)
 			{
 			  if (errsv == ECONNRESET || errsv == ENOTCONN)
 			    {
-			      gaspi_print_error(" Failed to read.");
+			      gaspi_print_error(" Failed to read (op %d)", mgmt->op);
 			    }
 			  
 			  if(errsv != EAGAIN || errsv != EWOULDBLOCK)
 			    {
-			      gaspi_print_error(" Failed to read.");
+			      gaspi_print_error(" Failed to read (op %d).", mgmt->op);
 			      io_err = 1;
 			    }
 			  break;
 			}
-		      else if(rcount == 0) //the remote side has closed the connection
+		      else if(rcount == 0) /* the remote side has closed the connection */
 			{
 			  io_err = 1;
 			  break;
@@ -614,7 +626,8 @@ void *gaspi_sn_backend(void *arg)
 		      else
 			{
 			  mgmt->bdone += rcount;
-			  /* read all data */
+
+			  /* read all data? */
 			  if(mgmt->bdone == mgmt->blen) 
 			    {
 			      /* we got header, what do we have to do ? */
@@ -637,9 +650,9 @@ void *gaspi_sn_backend(void *arg)
 					  gaspi_sn_err = GASPI_ERROR;
 					  return NULL;
 					}
-				      
+
 				      glb_gaspi_ctx.poff = glb_gaspi_ctx.hn_poff + glb_gaspi_ctx.tnc * 64;
-				      
+
 				      glb_gaspi_ctx.sockfd = (int *) malloc( glb_gaspi_ctx.tnc * sizeof(int) );
 				      if( glb_gaspi_ctx.sockfd == NULL)
 					{
@@ -648,6 +661,7 @@ void *gaspi_sn_backend(void *arg)
 					  gaspi_sn_err = GASPI_ERROR;
 					  return NULL;
 					}
+
 				      for(i = 0; i < glb_gaspi_ctx.tnc; i++)
 					glb_gaspi_ctx.sockfd[i] = -1;
 				      
@@ -663,7 +677,7 @@ void *gaspi_sn_backend(void *arg)
 				    }
 				  else if(mgmt->cdh.op == GASPI_SN_GRP_CHECK)
 				    {
-				      struct{int tnc,cs,ret;} gb;
+				      struct{int tnc, cs, ret;} gb;
 				      memset(&gb, 0, sizeof(gb));
 
 				      gb.ret = -1;
@@ -714,15 +728,11 @@ void *gaspi_sn_backend(void *arg)
 					}
 
 				      GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
-
 				    }
 				  else if(mgmt->cdh.op == GASPI_SN_SEG_REGISTER)
 				    {
 				      int rret = gaspi_sn_segment_register(mgmt->cdh);
-				      /* TODO: */
-				      /* if(rret != 0) */
-				      /*   ERROR */
-				    
+
 				      if(gaspi_sn_writen( mgmt->fd, &rret, sizeof(int) ) < sizeof(int) )
 					{
 					  gaspi_print_error("Failed response to segment register.");
@@ -743,6 +753,7 @@ void *gaspi_sn_backend(void *arg)
 				      gaspi_sn_err = GASPI_ERROR;			      
 				      return NULL;
 				    }
+
 				  /* Wait until main thread
 				     initializes GPI-2 properly */
 				  while( !glb_gaspi_dev_init && !glb_gaspi_init)
@@ -779,13 +790,14 @@ void *gaspi_sn_backend(void *arg)
 					
 					return NULL;
 				      }
+
 				  glb_gaspi_ctx.ep_conn[mgmt->cdh.rank].cstat = 1;
 				  unlock_gaspi(&gaspi_ccontext_lock);
 
 				  size_t len = pgaspi_dev_get_sizeof_rc();
 				  char *ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
 
-				  /* TODO: if pointer and len valid? */ 
+				  /* TODO: pointer and len valid? */
 				  if(gaspi_sn_writen( mgmt->fd, ptr, len ) < sizeof(len) )
 				    {
 				      gaspi_print_error("Failed response to connection request.");
@@ -797,7 +809,7 @@ void *gaspi_sn_backend(void *arg)
 				}
 			      else 
 				{
-				  gaspi_print_error("Received SN operation");
+				  gaspi_print_error("Received unknown SN operation");
 				  GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
 				}
 
@@ -818,11 +830,4 @@ void *gaspi_sn_backend(void *arg)
     }/* event loop while(1) */
 
   return NULL;
-}
-
-gaspi_return_t
-gaspi_sn_ping(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
-{
-
-  return GASPI_SUCCESS;
 }
