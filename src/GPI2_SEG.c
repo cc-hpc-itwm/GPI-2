@@ -307,9 +307,7 @@ _pgaspi_segment_register(const gaspi_segment_id_t segment_id,
   if(gaspi_sn_close(glb_gaspi_ctx.sockfd[rank]) != 0)
     {
       gaspi_print_error("Failed to close connection to %d", rank);
-
-      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
-      
+      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
