@@ -251,27 +251,24 @@ _gaspi_dev_exch_cdh(gaspi_cd_header *cdh,
   int ret = write(glb_gaspi_ctx.sockfd[rank], cdh, sizeof(gaspi_cd_header));
   if(ret != sizeof(gaspi_cd_header))
     {
-      gaspi_print_error("Failed to write (%d %p %lu)",
+      gaspi_print_error("Failed to write to rank %u (args: %d %p %lu)",
+			rank,
 			glb_gaspi_ctx.sockfd[rank], cdh, sizeof(gaspi_cd_header));
 
       return -1;
     }
 
-  int rret;
+  int rret = -1;
   ret = read(glb_gaspi_ctx.sockfd[rank], &rret, sizeof(int));
   if(ret != sizeof(int))
     {
-      gaspi_print_error("Failed to read from rank %d", rank);
-      return -1;
-    }
-  
-  if(rret < 0)
-    {
-      gaspi_print_error("Read (unexpectedly) 0 bytes from %d\n", rank);
+      gaspi_print_error("Failed to read from rank %d (args: %d %p %lu)",
+			rank,
+			glb_gaspi_ctx.sockfd[rank], &rret, sizeof(int));
       return -1;
     }
 
-  return 0;
+  return rret;
 }
 
 gaspi_return_t
@@ -288,7 +285,7 @@ _pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 
   gaspi_cd_header cdh;
 
-  cdh.op_len = 0;// in place
+  cdh.op_len = 0; /* in-place */
   cdh.op = GASPI_SN_SEG_REGISTER;
   cdh.rank = glb_gaspi_ctx.rank;
   cdh.seg_id = segment_id;
@@ -303,7 +300,7 @@ _pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 
   if(_gaspi_dev_exch_cdh(&cdh, rank) != 0)
     {
-      gaspi_print_error("Failed to exch cdh with %d", rank);
+      gaspi_print_error("Failed remote registration with rank %d\n", rank);
       return GASPI_ERROR;
     }
     
