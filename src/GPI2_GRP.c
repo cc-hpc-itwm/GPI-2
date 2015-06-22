@@ -257,7 +257,7 @@ _pgaspi_group_commit_to(const gaspi_group_t group,
 			const int connect )
 {
 
-  gaspi_return_t  eret = GASPI_SUCCESS;
+  gaspi_return_t  eret = GASPI_ERROR;
 
   if( connect )
     eret = gaspi_sn_connect_to_rank(i, timeout_ms);
