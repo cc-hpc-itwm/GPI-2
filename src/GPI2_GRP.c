@@ -277,7 +277,9 @@ _pgaspi_group_commit_to(const gaspi_group_t group,
       ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
       if(ret != sizeof(gaspi_cd_header))
 	{
-	  gaspi_print_error("Failed to write (%d %p %lu)",
+	  gaspi_print_error("Failed to write to %u (%d %d %p %lu)",
+			    i,
+			    ret,
 			    glb_gaspi_ctx.sockfd[i],
 			    &cdh,
 			    sizeof(gaspi_cd_header));
