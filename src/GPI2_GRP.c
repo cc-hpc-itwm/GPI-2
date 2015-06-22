@@ -350,9 +350,6 @@ pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms)
 
   glb_gaspi_group_ctx[GASPI_GROUP_ALL].tnc = glb_gaspi_ctx.tnc;
 
-  /* Commit it */
-  int r;
-  gaspi_return_t eret = GASPI_ERROR;
   gaspi_group_ctx *group_to_commit = &(glb_gaspi_group_ctx[GASPI_GROUP_ALL]);
 
   group_to_commit->rank = glb_gaspi_ctx.rank;
@@ -366,25 +363,8 @@ pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms)
   group_to_commit->next_pof2 >>= 1;
   group_to_commit->pof2_exp = (__builtin_clz (group_to_commit->next_pof2) ^ 31U);
 
-  for(r = 1; r <= glb_gaspi_ctx.tnc; r++)
-    {
-      int i = (group_to_commit->rank + r) % glb_gaspi_ctx.tnc;
-
-      if(group_to_commit->rank_grp[i] == glb_gaspi_ctx.rank)
-	continue;
-
-      if(_pgaspi_group_commit_to(GASPI_GROUP_ALL, i, timeout_ms, 1) != 0)
-	{
-	  eret = GASPI_ERROR;
-	  goto errL;
-	}
-    }
-
-  eret = GASPI_SUCCESS;
-
- errL:
   unlock_gaspi (&glb_gaspi_ctx_lock);
-  return eret;
+  return GASPI_SUCCESS;
 }
 
 #pragma weak gaspi_group_commit = pgaspi_group_commit
