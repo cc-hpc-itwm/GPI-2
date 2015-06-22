@@ -377,7 +377,7 @@ pgaspi_group_commit (const gaspi_group_t group,
   gaspi_group_ctx *group_to_commit = &(glb_gaspi_group_ctx[group]);
 
   gaspi_verify_init("gaspi_group_commit");
-  //  gaspi_verify_group(group);
+  gaspi_verify_group(group);
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
