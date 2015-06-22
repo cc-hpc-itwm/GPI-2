@@ -780,7 +780,7 @@ void *gaspi_sn_backend(void *arg)
 		}
     
 	      /* new socket */
-	      if( 0 != gaspi_sn_set_non_blocking( nsock )
+	      if( 0 != gaspi_sn_set_non_blocking( nsock ) )
 		{
 		  gaspi_print_error( "Failed to set socket options." );
 		  gaspi_sn_status = GASPI_SN_STATE_ERROR;
