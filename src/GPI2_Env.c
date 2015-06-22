@@ -225,13 +225,25 @@ gaspi_handle_env(gaspi_context *ctx)
   if(typePtr)
     {
 #ifdef LOADLEVELER
+      if(setenv("GASPI_RANK", typePtr, 0) != 0)
+	{
+	  gaspi_print_error("Failed set GASPI_RANK");
+	  return -1;
+	}
+
+      char *nRanks = getenv("GASPI_NRANKS");
+      if( !nRanks )
+	{
+	  gaspi_print_error("Env var GASPI_NRANKS not found");
+	  return -1;
+	}
+
       int _proc_number = atoi(typePtr);
 
       if(_proc_number == 0)
 	{
 	  ctx->procType = MASTER_PROC;
 	}
-      
       else if (_proc_number > 0)
 	{
 	  ctx->procType = WORKER_PROC;
