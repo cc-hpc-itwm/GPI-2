@@ -16,6 +16,12 @@ int main(int argc, char *argv[])
       printf("Failed proc_init\n");
       return EXIT_FAILURE;
     }
+  if(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK) != GASPI_SUCCESS)
+    {
+      printf("Failed barrier\n");
+      return EXIT_FAILURE;
+    }
+
   gettimeofday(&end_time, NULL);
   gaspi_proc_rank(&proc_num);
 
