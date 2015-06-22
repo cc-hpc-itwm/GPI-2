@@ -244,7 +244,8 @@ t0=$(date +%s)
 master_node=`head -n 1 $MFILE`
 previous="$master_node"
 j=0
-
+node=-1
+rank=0
 for LINE in $(tail -n +2 $MFILE)
 do
     if [ "$LINE" = "$previous" ]; then
@@ -262,12 +263,16 @@ do
 	    cmd="${location}/ssh.spawner ${master_node} 0 $(readlink -f $MFILE) $j "
 	else
 	    if [ $j -eq 0 ]; then
+		node=$((node+1))
 	        previous="$LINE"
 		continue;
 	    else
 	    cmd="${location}/ssh.spawner ${master_node} 1 $(readlink -f $MFILE) $j "
 	    fi
 	fi
+	rank=$j
+	node=$((node+1))
+	cmd="$cmd $node $rank $NNODES"
 	if [ $SET_NUMA -eq 1 ]; then
      	    cmd="$cmd 1"
 	else
@@ -276,19 +281,22 @@ do
 	cmd="$cmd ${PRG} ${PRG_ARGS}"
 
 	$GASPI_LAUNCHER $previous "nohup $cmd $(cat /dev/null)"  &
-	
+
 	j=0
     fi
-    
+
     previous="$LINE"
 done
 
+node=$((node+1))
 location=$(readlink -f `dirname $0`)
 if [ "$previous" != "$master_node" ]; then
     cmd="${location}/ssh.spawner ${master_node} 0 $(readlink -f $MFILE) $j"
 else
     cmd="${location}/ssh.spawner ${master_node} 1 $(readlink -f $MFILE) $j"
 fi
+
+cmd="$cmd $node $rank $NNODES"
 if [ $SET_NUMA -eq 1 ]; then
     cmd="$cmd 1"
 else
@@ -350,7 +358,8 @@ else
     export GASPI_SOCKET=0
     export GASPI_TYPE=GASPI_MASTER
     export GASPI_MFILE=$MFILE
-
+    export GASPI_RANK=0
+    export GASPI_NRANKS=$NNODES
 
     if [ $DEBUG != 0 ]; then
 	gdb --args $MASTER_PRG $PRG_ARGS

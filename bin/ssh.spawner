@@ -21,21 +21,25 @@
 # 2: local number to start
 # 3: machine file location
 # 4: total number of procs to start
-# 5: set numa?
-# 6 and beyond: programs <args>
+# 5: node number
+# 6: previous ranks started
+# 7: total nodes
+# 8: set numa?
+# 9 and beyond: programs <args>
 
-if [ $# -lt 5 ]; then
+#set -x
+if [ $# -lt 6 ]; then
     echo "Missing args (need at least 5, have $#)"
     exit 1
 fi
 
-PROG=$6
+PROG=$9
 ARGS=""
 
 count=1
 for i in $@
 do
-    if [ $count -gt 6 ]; then
+    if [ $count -gt 8 ]; then
 	ARGS="$ARGS ${i}"
     fi
     count=$((count+1))
@@ -48,7 +52,9 @@ do
     cmd="$cmd; export GASPI_SOCKET=$i"
     cmd="$cmd; export GASPI_TYPE=GASPI_WORKER"
     cmd="$cmd; export GASPI_MFILE=$3"
-    if [ $5 -eq 1 ]; then
+    cmd="$cmd; export GASPI_RANK=$(($5 * ($6 + 1) + $i));export GASPI_NRANKS=$7"
+
+   if [ $8 -eq 1 ]; then
         cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
     fi
 
