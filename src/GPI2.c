@@ -445,7 +445,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	      goto errL;
 	    }
 	  
-	  glb_gaspi_ctx.poff = glb_gaspi_ctx.hn_poff+glb_gaspi_ctx.tnc*64;
+	  glb_gaspi_ctx.poff = glb_gaspi_ctx.hn_poff + glb_gaspi_ctx.tnc * 64;
         
 	  int id = 0;
 	  while((read = getline (&line, &len, fp)) != -1)
