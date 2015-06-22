@@ -578,6 +578,11 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms)
   struct timeb t0, t1;
   ftime(&t0);
 
+#ifdef DEBUG
+  if( strcmp(gaspi_get_hn(rank), "") == 0 )
+    return GASPI_ERROR;
+#endif
+
   /* TODO: introduce backoff delay? */
   while(glb_gaspi_ctx.sockfd[rank] == -1)
     {
