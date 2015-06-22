@@ -704,12 +704,7 @@ gaspi_return_t
 pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
   gaspi_verify_init("gaspi_proc_ping");
-
-  if(rank >= glb_gaspi_ctx.tnc)
-    {
-      gaspi_print_error("Invalid rank to ping.");
-      return GASPI_ERROR;
-    }
+  gaspi_verify_rank(rank);
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
