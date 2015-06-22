@@ -531,8 +531,20 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   if(glb_gaspi_cfg.build_infrastructure)
     {
-      eret = pgaspi_group_all_local_create(timeout_ms);
+      /* configuration tells us to pre-connect */
+      if( 2 == glb_gaspi_cfg.build_infrastructure )
+	{
+	  for(i = glb_gaspi_ctx.rank; i >= 0; i--)
+	    {
+	      if(pgaspi_connect((gaspi_rank_t) i, timeout_ms) != GASPI_SUCCESS)
+		{
+		  eret = GASPI_ERROR;
+		  goto errL;
+		}
+	    }
+	}
 
+      eret = pgaspi_group_all_local_create(timeout_ms);
       if(eret == GASPI_SUCCESS)
 	{
 	  eret = gaspi_barrier(GASPI_GROUP_ALL, timeout_ms);
@@ -543,9 +555,9 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  return GASPI_ERROR;
 	}
     }
-  else //dont build_infrastructure
+  else /* dont build_infrastructure */
     {
-      //just reserve GASPI_GROUP_ALL
+      /* just reserve GASPI_GROUP_ALL */
       glb_gaspi_ctx.group_cnt = 1;
       glb_gaspi_group_ctx[GASPI_GROUP_ALL].id = -2;//disable
       eret = GASPI_SUCCESS;
