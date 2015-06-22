@@ -84,7 +84,7 @@ int
 gaspi_sn_close(int sockfd);
 
 int
-gaspi_sn_send_topology(const int, const gaspi_timeout_t);
+gaspi_sn_broadcast_topology(const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
 gaspi_sn_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms);

@@ -501,50 +501,17 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
 	}//glb_gaspi_dev_init
     }//MASTER_PROC
-  else if(glb_gaspi_ctx.procType == WORKER_PROC)
-    {
-      struct timeb t0,t1;
-      ftime(&t0);
-
-      /* wait for topology data */
-      while(gaspi_master_topo_data == 0)
-	{
-	  //keep checking if sn is doing well
-	  if(gaspi_sn_status != GASPI_SN_STATE_OK)
-	    {
-	      gaspi_print_error("Detected error in SN initialization");
-	      eret = gaspi_sn_err;
-
-	      goto errL;
-	    }
-
-	  gaspi_delay();
-	  
-	  ftime(&t1);
-	  const unsigned int delta_ms = (t1.time-t0.time) * 1000 + (t1.millitm - t0.millitm);
-	  if(delta_ms > timeout_ms)
-	    {
-	      eret = GASPI_TIMEOUT;
-	      goto errL;
-	    }
-	}
-    }
-  else
+  else if(glb_gaspi_ctx.procType != WORKER_PROC)
     {
       gaspi_print_error ("Invalid node type (GASPI_TYPE)");
       eret = GASPI_ERR_ENV;
       goto errL;
     }
 
-
-  if(glb_gaspi_ctx.rank < glb_gaspi_ctx.tnc - 1)
+  if( 0 != gaspi_sn_broadcast_topology(GASPI_BLOCK) )
     {
-      /* Forward topology to next rank */
-      if(gaspi_sn_send_topology(glb_gaspi_ctx.rank + 1, timeout_ms) != 0)
-	{
-	  eret = GASPI_ERROR;
-	  goto errL;
-	}
+      gaspi_print_error("Failed topology broadcast");
+      goto errL;
     }
   
   if(pgaspi_init_core() != GASPI_SUCCESS)
@@ -552,6 +519,9 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       eret = GASPI_ERROR;
       goto errL;
     }
+
+  /* Unleash SN thread */
+  __sync_fetch_and_add( &gaspi_master_topo_data, 1);
 
   gaspi_init_collectives();
 
