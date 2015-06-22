@@ -67,7 +67,7 @@ pgaspi_set_socket_affinity (const gaspi_uchar socket)
 
   if (socket >= 4)
     {
-      gaspi_print_error("Debug: GPI-2 only allows up to a maximum of 4 NUMA sockets");
+      gaspi_print_error("GPI-2 only allows up to a maximum of 4 NUMA sockets");
       return GASPI_ERROR;
     }
   
@@ -103,7 +103,7 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
 	}
     }
 
-  gaspi_print_error("Debug: NUMA was not enabled (-N option of gaspi_run)");
+  gaspi_print_error("NUMA was not enabled (-N option of gaspi_run)");
   
   return GASPI_ERROR;
 }
@@ -569,7 +569,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	}
       else
 	{
-	  gaspi_print_error("Rank %d: Group commit has failed (GASPI_GROUP_ALL)\n", glb_gaspi_ctx.rank);
+	  gaspi_print_error("GASPI_GROUP_ALL creation has failed (GASPI_GROUP_ALL)\n");
 	  return GASPI_ERROR;
 	}
     }
