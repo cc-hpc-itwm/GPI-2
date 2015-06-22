@@ -108,7 +108,7 @@ gaspi_sn_connect2port_intern(const char *hn, const unsigned short port)
   struct sockaddr_in Host;
   struct hostent *serverData;
 
-  sockfd = socket ( AF_INET, SOCK_STREAM, 0);
+  sockfd = socket ( AF_INET, SOCK_STREAM, 0 );
   if( -1 == sockfd )
     {
       /* at least deal with open files limit */
@@ -583,8 +583,8 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms)
     {
       glb_gaspi_ctx.sockfd[rank] =
 	gaspi_sn_connect2port(gaspi_get_hn(rank),
-			   glb_gaspi_cfg.sn_port + glb_gaspi_ctx.poff[rank],
-			   timeout_ms);
+			      glb_gaspi_cfg.sn_port + glb_gaspi_ctx.poff[rank],
+			      timeout_ms);
 
       if( -2 == glb_gaspi_ctx.sockfd[rank] )
 	return GASPI_ERR_EMFILE;
@@ -789,7 +789,7 @@ void *gaspi_sn_backend(void *arg)
 		  return NULL;
 		}
 
-		/* add nsock */
+	      /* add nsock */
 	      ev.data.ptr = malloc( sizeof(gaspi_mgmt_header) );
 	      if(ev.data.ptr == NULL)
 		{
