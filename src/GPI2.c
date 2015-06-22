@@ -738,14 +738,11 @@ pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 			glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
       glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
       eret = GASPI_ERROR;
-      goto errL;
-
     }
 
  errL:
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return eret;
-
 }
 
 #pragma weak gaspi_proc_kill = pgaspi_proc_kill
