@@ -819,6 +819,16 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 		return GASPI_ERROR;
 	      }
 
+	  if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
+	    {
+	      if(_pgaspi_group_commit_to(g, dst, timeout_ms, 1) != 0)
+		{
+		  gaspi_print_error("Failed to commit to rank %u", dst);
+		  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
+		  return GASPI_ERROR;
+		}
+	    }
+
 	  if(pgaspi_dev_post_group_write(send_ptr,
 					 dsize,
 					 dst,
@@ -924,6 +934,16 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 		return GASPI_ERROR;
 	      }
 
+	  if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
+	    {
+	      if(_pgaspi_group_commit_to(g, dst, timeout_ms, 1) != 0)
+		{
+		  gaspi_print_error("Failed to commit to rank %u", dst);
+	      unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
+	      return GASPI_ERROR;
+		}
+	    }
+
 	  if(pgaspi_dev_post_group_write(send_ptr, dsize, dst,
 					 (void *)(glb_gaspi_group_ctx[g].rrcd[dst].addr + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048)),
 					 g) != 0)
@@ -993,6 +1013,23 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
       if (rank % 2){
 
 	dst = glb_gaspi_group_ctx[g].rank_grp[rank - 1];
+
+	if(!glb_gaspi_ctx.ep_conn[dst].cstat)
+	  if(pgaspi_connect((gaspi_rank_t) dst, timeout_ms) != GASPI_SUCCESS)
+	    {
+	      gaspi_print_error("Failed to connect to rank %u", dst);
+	      return GASPI_ERROR;
+	    }
+
+	if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
+	  {
+	    if(_pgaspi_group_commit_to(g, dst, timeout_ms, 1) != 0)
+	      {
+		gaspi_print_error("Failed to commit to rank %u", dst);
+		unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
+		return GASPI_ERROR;
+	      }
+	  }
 
 	if(pgaspi_dev_post_group_write(send_ptr, dsize, dst,
 				       (void *)(glb_gaspi_group_ctx[g].rrcd[dst].addr + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048)),
