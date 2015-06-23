@@ -29,12 +29,7 @@ gaspi_return_t
 pgaspi_queue_size (const gaspi_queue_id_t queue,
 		   gaspi_number_t * const queue_size)
 {
-  if (queue >= glb_gaspi_cfg.queue_num)
-    {
-      gaspi_print_error("Invalid queue id provided");
-      return GASPI_ERROR;
-    }
-
+  gaspi_verify_queue(queue);
   gaspi_verify_null_ptr(queue_size);
 
   *queue_size = (gaspi_number_t) glb_gaspi_ctx.ne_count_c[queue];
