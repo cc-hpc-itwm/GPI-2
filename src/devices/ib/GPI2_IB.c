@@ -518,13 +518,12 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
   return 0;
 }
 
-/* TODO: match return values */
-int
-pgaspi_dev_create_endpoint(const int i)
+static struct ibv_qp *
+_pgaspi_dev_create_qp(struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv_srq *srq)
 {
-  unsigned int c;
+  struct ibv_qp *qp;
 
-  /* Set attributes */
+  /* Set initial attributes */
   struct ibv_qp_init_attr qpi_attr;
   memset (&qpi_attr, 0, sizeof (struct ibv_qp_init_attr));
   qpi_attr.cap.max_send_wr = glb_gaspi_cfg.queue_depth;
@@ -533,43 +532,18 @@ pgaspi_dev_create_endpoint(const int i)
   qpi_attr.cap.max_recv_sge = 1;
   qpi_attr.cap.max_inline_data = MAX_INLINE_BYTES;
   qpi_attr.qp_type = IBV_QPT_RC;
-  qpi_attr.send_cq = glb_gaspi_ctx_ib.scqGroups;
-  qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqGroups;
 
-  /* Groups QP*/
-  glb_gaspi_ctx_ib.qpGroups[i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
-  if(!glb_gaspi_ctx_ib.qpGroups[i])
+  qpi_attr.send_cq = send_cq;
+  qpi_attr.recv_cq = recv_cq;
+  qpi_attr.srq = srq;
+
+  qp = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
+  if( qp == NULL)
     {
       gaspi_print_error ("Failed to create QP (libibverbs)");
-      goto errL;
+      return NULL;
     }
 
-  /* IO QPs*/
-  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
-    {
-      qpi_attr.send_cq = glb_gaspi_ctx_ib.scqC[c];
-      qpi_attr.recv_cq = glb_gaspi_ctx_ib.scqC[c];
-      
-      glb_gaspi_ctx_ib.qpC[c][i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
-      if(!glb_gaspi_ctx_ib.qpC[c][i])
-	{
-	  gaspi_print_error ("Failed to create QP (libibverbs)");
-	  goto errL;
-	}
-    }
-
-  /* Passive QP */
-  qpi_attr.send_cq = glb_gaspi_ctx_ib.scqP;
-  qpi_attr.recv_cq = glb_gaspi_ctx_ib.rcqP;
-  qpi_attr.srq = glb_gaspi_ctx_ib.srqP;
-
-  glb_gaspi_ctx_ib.qpP[i] = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
-  if( !glb_gaspi_ctx_ib.qpP[i] )
-    {
-      gaspi_print_error ("Failed to create QP (libibverbs)");
-      goto errL;
-    }
-  
   /* Set to init */
   struct ibv_qp_attr qp_attr;
   memset (&qp_attr, 0, sizeof (struct ibv_qp_attr));
@@ -579,56 +553,60 @@ pgaspi_dev_create_endpoint(const int i)
   qp_attr.port_num = glb_gaspi_ctx_ib.ib_port;
   qp_attr.qp_access_flags = IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE |IBV_ACCESS_REMOTE_ATOMIC;
 
-
-  if(ibv_modify_qp(glb_gaspi_ctx_ib.qpGroups[i], &qp_attr,
+  if(ibv_modify_qp(qp, &qp_attr,
 		   IBV_QP_STATE  
 		   | IBV_QP_PKEY_INDEX
 		   | IBV_QP_PORT
 		   | IBV_QP_ACCESS_FLAGS))
     {
       gaspi_print_error ("Failed to modify QP (libibverbs)");
-      goto errL;
-    }
-  
-  
-  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
-    {
-      if(ibv_modify_qp(glb_gaspi_ctx_ib.qpC[c][i], &qp_attr,
-		       IBV_QP_STATE
-		       | IBV_QP_PKEY_INDEX
-		       |IBV_QP_PORT
-		       | IBV_QP_ACCESS_FLAGS))
+      if( ibv_destroy_qp(qp) )
 	{
-	  gaspi_print_error ("Failed to modify QP (libibverbs)");
-	  goto errL;
+	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
 	}
-    }
-  
-  
-  if(ibv_modify_qp (glb_gaspi_ctx_ib.qpP[i], &qp_attr,
-		    IBV_QP_STATE 
-		    | IBV_QP_PKEY_INDEX
-		    | IBV_QP_PORT
-		    | IBV_QP_ACCESS_FLAGS))
-    {
-      gaspi_print_error ("Failed to modify QP (libibverbs)");
-      goto errL;
+      return NULL;
     }
 
+  return qp;
+}
+
+int
+pgaspi_dev_create_endpoint(const int i)
+{
+  unsigned int c;
+
+  /* Groups QP*/
+  glb_gaspi_ctx_ib.qpGroups[i] =
+    _pgaspi_dev_create_qp(glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL);
+
+  if (glb_gaspi_ctx_ib.qpGroups[i] == NULL)
+    return -1;
+
   glb_gaspi_ctx_ib.local_info[i].qpnGroup = glb_gaspi_ctx_ib.qpGroups[i]->qp_num;
-  glb_gaspi_ctx_ib.local_info[i].qpnP = glb_gaspi_ctx_ib.qpP[i]->qp_num;
-  
+
+  /* IO QPs*/
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
+      glb_gaspi_ctx_ib.qpC[c][i] =
+	_pgaspi_dev_create_qp(glb_gaspi_ctx_ib.scqC[c], glb_gaspi_ctx_ib.scqC[c], NULL);
+
+      if( glb_gaspi_ctx_ib.qpC[c][i] == NULL )
+	return -1;
+
       glb_gaspi_ctx_ib.local_info[i].qpnC[c] = glb_gaspi_ctx_ib.qpC[c][i]->qp_num;
     }
 
-  return GASPI_SUCCESS;
+  /* Passive QP */
+  glb_gaspi_ctx_ib.qpP[i] =
+    _pgaspi_dev_create_qp(glb_gaspi_ctx_ib.scqP, glb_gaspi_ctx_ib.rcqP, glb_gaspi_ctx_ib.srqP);
 
-errL:
-  return GASPI_ERROR;
+  if( glb_gaspi_ctx_ib.qpP[i] == NULL )
+    return -1;
+
+  glb_gaspi_ctx_ib.local_info[i].qpnP = glb_gaspi_ctx_ib.qpP[i]->qp_num;
+
+  return 0;
 }
-
 
 int
 pgaspi_dev_disconnect_context(const int i)
@@ -638,7 +616,7 @@ pgaspi_dev_disconnect_context(const int i)
   if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpGroups[i]))
     {
       gaspi_print_error ("Failed to destroy QP (libibverbs)");
-      goto errL;
+      return -1;
     }
 
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
@@ -646,14 +624,14 @@ pgaspi_dev_disconnect_context(const int i)
       if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpC[c][i]))
 	{
 	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
-	  goto errL;
+	  return -1;
 	}
     }
     
   if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpP[i]))
     {
       gaspi_print_error ("Failed to destroy QP (libibverbs)");
-      goto errL;
+      return -1;
     }
   
   glb_gaspi_ctx_ib.local_info[i].qpnGroup = 0;
@@ -664,22 +642,18 @@ pgaspi_dev_disconnect_context(const int i)
       glb_gaspi_ctx_ib.local_info[i].qpnC[c] = 0;
     }
   
-  return GASPI_SUCCESS;
-
-errL:
-  return GASPI_ERROR;
+  return 0;
 }
 
-int 
-pgaspi_dev_connect_context(const int i)
+static int
+_pgaspi_dev_qp_set_ready(struct ibv_qp *qp, int target, int target_qp)
 {
-
   struct ibv_qp_attr qp_attr;
-  unsigned int c;
 
   memset(&qp_attr, 0, sizeof (qp_attr));
-    
-  switch(glb_gaspi_cfg.mtu){
+
+  switch(glb_gaspi_cfg.mtu)
+    {
     case 1024:
       qp_attr.path_mtu = IBV_MTU_1024;
       break;
@@ -690,26 +664,28 @@ pgaspi_dev_connect_context(const int i)
       qp_attr.path_mtu = IBV_MTU_4096;
       break;
     default:
-      printf("unexpected MTU:%d\n",glb_gaspi_cfg.mtu);
-      goto errL;
+      {
+	gaspi_print_error("Invalid MTU in configuration (%d)", glb_gaspi_cfg.mtu);
+	return -1;
+      }
   };
-  
+
   /* ready2recv */
   qp_attr.qp_state = IBV_QPS_RTR;
-  qp_attr.dest_qp_num = glb_gaspi_ctx_ib.remote_info[i].qpnGroup; 
-  qp_attr.rq_psn = glb_gaspi_ctx_ib.remote_info[i].psn;
+  qp_attr.dest_qp_num = target_qp;
+  qp_attr.rq_psn = glb_gaspi_ctx_ib.remote_info[target].psn;
   qp_attr.max_dest_rd_atomic = glb_gaspi_ctx_ib.max_rd_atomic;
   qp_attr.min_rnr_timer = 12;
 
   if(glb_gaspi_cfg.network == GASPI_IB)
     {
       qp_attr.ah_attr.is_global = 0;
-      qp_attr.ah_attr.dlid = (unsigned short) glb_gaspi_ctx_ib.remote_info[i].lid;
+      qp_attr.ah_attr.dlid = (unsigned short) glb_gaspi_ctx_ib.remote_info[target].lid;
     }
   else
     {
       qp_attr.ah_attr.is_global = 1;
-      qp_attr.ah_attr.grh.dgid = glb_gaspi_ctx_ib.remote_info[i].gid;
+      qp_attr.ah_attr.grh.dgid = glb_gaspi_ctx_ib.remote_info[target].gid;
       qp_attr.ah_attr.grh.hop_limit = 1;
     }
 
@@ -717,109 +693,75 @@ pgaspi_dev_connect_context(const int i)
   qp_attr.ah_attr.src_path_bits = 0;
   qp_attr.ah_attr.port_num = glb_gaspi_ctx_ib.ib_port;
 
-  if(ibv_modify_qp(glb_gaspi_ctx_ib.qpGroups[i], &qp_attr,
-		   IBV_QP_STATE
-		   | IBV_QP_AV
-		   | IBV_QP_PATH_MTU
-		   | IBV_QP_DEST_QPN
-		   | IBV_QP_RQ_PSN
-		   | IBV_QP_MIN_RNR_TIMER
-		   | IBV_QP_MAX_DEST_RD_ATOMIC))
+  if(ibv_modify_qp( qp, &qp_attr,
+		    IBV_QP_STATE
+		    | IBV_QP_AV
+		    | IBV_QP_PATH_MTU
+		    | IBV_QP_DEST_QPN
+		    | IBV_QP_RQ_PSN
+		    | IBV_QP_MIN_RNR_TIMER
+		    | IBV_QP_MAX_DEST_RD_ATOMIC) )
     {
       gaspi_print_error ("Failed to modify QP (libibverbs)");
-      goto errL;
+      return -1;
     }
 
-  
-  for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
-    {
-      qp_attr.dest_qp_num = glb_gaspi_ctx_ib.remote_info[i].qpnC[c];
-      
-      if(ibv_modify_qp(glb_gaspi_ctx_ib.qpC[c][i], &qp_attr,
-		       IBV_QP_STATE
-		       | IBV_QP_AV
-		       | IBV_QP_PATH_MTU
-		       | IBV_QP_DEST_QPN
-		       | IBV_QP_RQ_PSN
-		       | IBV_QP_MIN_RNR_TIMER
-		       | IBV_QP_MAX_DEST_RD_ATOMIC))
-	{
-	  gaspi_print_error ("Failed to modify QP (libibverbs)");
-	  goto errL;
-	}
-    }
-  
-  
-  qp_attr.dest_qp_num = glb_gaspi_ctx_ib.remote_info[i].qpnP;
-
-  if(ibv_modify_qp(glb_gaspi_ctx_ib.qpP[i], &qp_attr,
-		   IBV_QP_STATE
-		   | IBV_QP_AV
-		   | IBV_QP_PATH_MTU
-		   | IBV_QP_DEST_QPN
-		   | IBV_QP_RQ_PSN
-		   | IBV_QP_MIN_RNR_TIMER
-		   | IBV_QP_MAX_DEST_RD_ATOMIC))
-    {
-      gaspi_print_error ("Failed to modify QP (libibverbs)");
-      goto errL;
-    }
-  
   /* ready2send */
   qp_attr.timeout = GASPI_QP_TIMEOUT;
   qp_attr.retry_cnt = GASPI_QP_RETRY;
   qp_attr.rnr_retry = GASPI_QP_RETRY;
   qp_attr.qp_state = IBV_QPS_RTS;
-  qp_attr.sq_psn = glb_gaspi_ctx_ib.local_info[i].psn;
+  qp_attr.sq_psn = glb_gaspi_ctx_ib.local_info[target].psn;
   qp_attr.max_rd_atomic = glb_gaspi_ctx_ib.max_rd_atomic;
 
-  if(ibv_modify_qp(glb_gaspi_ctx_ib.qpGroups[i], &qp_attr,
-		   IBV_QP_STATE
-		   | IBV_QP_SQ_PSN
-		   | IBV_QP_TIMEOUT
-		   | IBV_QP_RETRY_CNT
-		   | IBV_QP_RNR_RETRY
-		   | IBV_QP_MAX_QP_RD_ATOMIC))
+  if(ibv_modify_qp( qp, &qp_attr,
+		    IBV_QP_STATE
+		    | IBV_QP_SQ_PSN
+		    | IBV_QP_TIMEOUT
+		    | IBV_QP_RETRY_CNT
+		    | IBV_QP_RNR_RETRY
+		    | IBV_QP_MAX_QP_RD_ATOMIC) )
     {
       gaspi_print_error ("Failed to modify QP (libibverbs)");
+      return -1;
+    }
+
+  return 0;
+}
+
+int
+pgaspi_dev_connect_context(const int i)
+{
+  unsigned int c;
+  if( 0 != _pgaspi_dev_qp_set_ready(glb_gaspi_ctx_ib.qpGroups[i],
+				    i,
+				    glb_gaspi_ctx_ib.remote_info[i].qpnGroup) )
+    {
       goto errL;
     }
-  
+
+  if( 0 != _pgaspi_dev_qp_set_ready(glb_gaspi_ctx_ib.qpP[i],
+				    i,
+				    glb_gaspi_ctx_ib.remote_info[i].qpnP) )
+    {
+      goto errL;
+    }
 
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
-      
-      if(ibv_modify_qp(glb_gaspi_ctx_ib.qpC[c][i], &qp_attr,
-		       IBV_QP_STATE
-		       | IBV_QP_SQ_PSN
-		       | IBV_QP_TIMEOUT
-		       | IBV_QP_RETRY_CNT
-		       | IBV_QP_RNR_RETRY
-		       | IBV_QP_MAX_QP_RD_ATOMIC))
+      if( 0 != _pgaspi_dev_qp_set_ready(glb_gaspi_ctx_ib.qpC[c][i],
+					i,
+					glb_gaspi_ctx_ib.remote_info[i].qpnC[c]) )
 	{
-	  gaspi_print_error ("Failed to modify QP (libibverbs)"); 
-      goto errL;
+	  goto errL;
 	}
     }
-  
-  
-  if(ibv_modify_qp(glb_gaspi_ctx_ib.qpP[i], &qp_attr,
-		   IBV_QP_STATE
-		   | IBV_QP_SQ_PSN
-		   | IBV_QP_TIMEOUT
-		   | IBV_QP_RETRY_CNT
-		   | IBV_QP_RNR_RETRY
-		   | IBV_QP_MAX_QP_RD_ATOMIC))
-    {
-      gaspi_print_error ("Failed to modify QP (libibverbs)");
-      goto errL;
-    }
 
-  return GASPI_SUCCESS;
-  
+  return 0;
+
  errL:
   glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
-  return GASPI_ERROR;
+  return -1;
 }
 
 int
