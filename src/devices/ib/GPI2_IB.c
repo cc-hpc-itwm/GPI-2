@@ -358,7 +358,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
     }
 
   glb_gaspi_ctx.nsrc.mr = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
-				     (struct ibv_mr *) glb_gaspi_ctx.nsrc.buf,
+				     glb_gaspi_ctx.nsrc.ptr,
 				     glb_gaspi_ctx.nsrc.size,
 				     IBV_ACCESS_REMOTE_WRITE
 				     | IBV_ACCESS_LOCAL_WRITE
