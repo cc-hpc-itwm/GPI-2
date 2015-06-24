@@ -859,6 +859,7 @@ gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gasp
       return eret;
     }
 
+  eret = GASPI_ERROR;
   switch(op)
     {
     case GASPI_SN_CONNECT:
