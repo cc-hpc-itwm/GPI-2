@@ -108,17 +108,11 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
   return GASPI_ERROR;
 }
 
-#pragma weak gaspi_connect = pgaspi_connect
 gaspi_return_t
-pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
+pgaspi_create_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
-  gaspi_return_t eret = GASPI_ERROR;
-
-  gaspi_verify_init("gaspi_connect");
-
   const int i = (int) rank;
 
-  /* 1- Create endpoint */
   if(lock_gaspi_tout(&gaspi_create_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
@@ -126,7 +120,6 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
     {
       if(pgaspi_dev_create_endpoint(i) < 0)
 	{
-	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
 	  unlock_gaspi(&gaspi_create_lock);
 	  return GASPI_ERROR;
 	}
@@ -135,30 +128,15 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 
   unlock_gaspi(&gaspi_create_lock);
 
-  /* 2 - Connect to remote endpoint */
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
-    return GASPI_TIMEOUT;
+  return GASPI_SUCCESS;
+}
 
-  if(glb_gaspi_ctx.ep_conn[i].cstat == 1)
-    {
-      /* already connected */
-      unlock_gaspi(&glb_gaspi_ctx_lock);
-      return GASPI_SUCCESS;
-    }
+gaspi_return_t
+pgaspi_connect_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
+{
+  const int i = (int) rank;
+  gaspi_return_t eret = GASPI_ERROR;
 
-  eret = gaspi_sn_command(GASPI_SN_CONNECT, rank, timeout_ms, NULL);
-  if(eret != GASPI_SUCCESS)
-    {
-      if( GASPI_ERROR == eret)
-	{
-	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
-	}
-
-      unlock_gaspi(&glb_gaspi_ctx_lock);
-      return eret;
-    }
-
-  /* 3 - Connect context */
   if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
     {
       unlock_gaspi(&glb_gaspi_ctx_lock);
@@ -182,10 +160,53 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 	  eret = GASPI_SUCCESS;
 	}
     }
-  
+
   unlock_gaspi(&gaspi_ccontext_lock);
 
-  /* Done */
+  return GASPI_SUCCESS;
+}
+
+#pragma weak gaspi_connect = pgaspi_connect
+gaspi_return_t
+pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
+{
+  gaspi_return_t eret = GASPI_ERROR;
+
+  gaspi_verify_init("gaspi_connect");
+
+  const int i = (int) rank;
+
+  eret = pgaspi_create_endpoint_to(rank, timeout_ms);
+  if( eret != GASPI_SUCCESS)
+    {
+      return eret;
+    }
+
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
+
+  if(glb_gaspi_ctx.ep_conn[i].cstat == 1)
+    {
+      /* already connected */
+      unlock_gaspi(&glb_gaspi_ctx_lock);
+      return GASPI_SUCCESS;
+    }
+
+  eret = gaspi_sn_command(GASPI_SN_CONNECT, rank, timeout_ms, NULL);
+  if(eret != GASPI_SUCCESS)
+    {
+      if( GASPI_ERROR == eret)
+	{
+	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
+	}
+
+      gaspi_print_error("filed");
+      unlock_gaspi(&glb_gaspi_ctx_lock);
+      return eret;
+    }
+
+  eret = pgaspi_connect_endpoint_to(rank, timeout_ms);
+
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return eret;
 }

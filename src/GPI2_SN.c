@@ -1265,46 +1265,38 @@ void *gaspi_sn_backend(void *arg)
 				}/* !header */
 			      else if(mgmt->op == GASPI_SN_CONNECT)
 				{
+				  /* TODO: to remove */
 				  while( !glb_gaspi_dev_init )
 				    gaspi_delay();
 
-				  lock_gaspi_tout(&gaspi_create_lock, GASPI_BLOCK);
-				  if(!glb_gaspi_ctx.ep_conn[mgmt->cdh.rank].istat)
-				    if(pgaspi_dev_create_endpoint(mgmt->cdh.rank) !=0 )
-				      {
-					gaspi_print_error("Failed to create endpoint");
-					gaspi_sn_status = GASPI_SN_STATE_ERROR;
-					gaspi_sn_err = GASPI_ERROR;
-					unlock_gaspi(&gaspi_create_lock);
-					return NULL;
-				      }
-				  glb_gaspi_ctx.ep_conn[mgmt->cdh.rank].istat = 1;
-				  unlock_gaspi(&gaspi_create_lock);
+				  const size_t len = pgaspi_dev_get_sizeof_rc();
+				  char *ptr = NULL;
 
-				  /* TODO: have to be here? */
-				  lock_gaspi_tout(&gaspi_ccontext_lock, GASPI_BLOCK);
-				  if(!glb_gaspi_ctx.ep_conn[mgmt->cdh.rank].cstat)
-				    if(pgaspi_dev_connect_context(mgmt->cdh.rank) != 0)
-				      {
-					gaspi_print_error("Failed to connect context");
-					gaspi_sn_status = GASPI_SN_STATE_ERROR;
-					gaspi_sn_err = GASPI_ERROR;
-
-					return NULL;
-				      }
-
-				  glb_gaspi_ctx.ep_conn[mgmt->cdh.rank].cstat = 1;
-				  unlock_gaspi(&gaspi_ccontext_lock);
-
-				  size_t len = pgaspi_dev_get_sizeof_rc();
-				  char *ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
-
-				  /* TODO: pointer and len valid? */
-				  if(gaspi_sn_writen( mgmt->fd, ptr, len ) < sizeof(len) )
+				  gaspi_return_t eret = pgaspi_create_endpoint_to(mgmt->cdh.rank, GASPI_BLOCK);
+				  if( eret == GASPI_SUCCESS )
 				    {
-				      gaspi_print_error("Failed response to connection request.");
+				      eret = pgaspi_connect_endpoint_to(mgmt->cdh.rank, GASPI_BLOCK);
+				      if( eret == GASPI_SUCCESS)
+					{
+					  ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
+					}
+				    }
+
+				  if( eret != GASPI_SUCCESS )
+				    {
+				      /* We set io_err, connection is closed and remote peer reads EOF */
 				      io_err = 1;
-				      break;
+				    }
+				  else
+				    {
+				      if( NULL != ptr )
+					{
+					  if( gaspi_sn_writen( mgmt->fd, ptr, len ) < sizeof(len) )
+					    {
+					      gaspi_print_error("Failed response to connection request.");
+					      io_err = 1;
+					    }
+					}
 				    }
 
 				  GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
