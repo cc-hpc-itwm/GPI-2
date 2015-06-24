@@ -108,7 +108,6 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
   return GASPI_ERROR;
 }
 
-
 #pragma weak gaspi_connect = pgaspi_connect
 gaspi_return_t
 pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
@@ -119,6 +118,7 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 
   const int i = (int) rank;
 
+  /* 1- Create endpoint */
   if(lock_gaspi_tout(&gaspi_create_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
@@ -135,9 +135,10 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 
   unlock_gaspi(&gaspi_create_lock);
 
+  /* 2 - Connect to remote endpoint */
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
-  
+
   if(glb_gaspi_ctx.ep_conn[i].cstat == 1)
     {
       /* already connected */
@@ -145,85 +146,46 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
       return GASPI_SUCCESS;
     }
 
-  eret = gaspi_sn_connect_to_rank(rank, timeout_ms);
+  eret = gaspi_sn_command(GASPI_SN_CONNECT, rank, timeout_ms, NULL);
   if(eret != GASPI_SUCCESS)
     {
-      goto errL;
+      if( GASPI_ERROR == eret)
+	{
+	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
+	}
+
+      unlock_gaspi(&glb_gaspi_ctx_lock);
+      return eret;
     }
 
-  gaspi_cd_header cdh;
-  const size_t rc_size = pgaspi_dev_get_sizeof_rc();
-  cdh.op_len = (int) rc_size;
-  cdh.op = GASPI_SN_CONNECT;
-  cdh.rank = glb_gaspi_ctx.rank;
-
-  /* if we have something to exchange */
-  if(rc_size > 0 )
-    {
-      ssize_t ret = write(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
-      if(ret != sizeof(gaspi_cd_header))
-	{
-	  gaspi_print_error("Failed to write to %d", i);
-	  eret = GASPI_ERROR;
-	  goto errL;
-	}
-  
-      ret = write(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
-      if(ret != (ssize_t) rc_size)
-	{
-	  gaspi_print_error("Failed to write to %d", i);
-	  eret = GASPI_ERROR;
-	  goto errL;
-	}
-  
-      ret = read(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_rrcd(i), rc_size);
-      if(ret != (ssize_t) rc_size)
-	{
-	  gaspi_print_error("Failed to read from %d", i);
-	  eret = GASPI_ERROR;
-	  goto errL;
-	}
-    }
-  
+  /* 3 - Connect context */
   if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
     {
       unlock_gaspi(&glb_gaspi_ctx_lock);
       return GASPI_TIMEOUT;
     }
 
+  /* already connected? */
   if(glb_gaspi_ctx.ep_conn[i].cstat)
     {
-      unlock_gaspi(&gaspi_ccontext_lock);
-      goto okL;
+      eret = GASPI_SUCCESS;
     }
-
-  if(pgaspi_dev_connect_context(i) != GASPI_SUCCESS)
+  else
     {
-      gaspi_print_error("Failed to connect context");
-      unlock_gaspi(&gaspi_ccontext_lock);      
-      eret = GASPI_ERROR;
-      goto errL;
+      if(pgaspi_dev_connect_context(i) != 0)
+	{
+	  eret = GASPI_ERR_DEVICE;
+	}
+      else
+	{
+	  glb_gaspi_ctx.ep_conn[i].cstat = 1;
+	  eret = GASPI_SUCCESS;
+	}
     }
-
-  glb_gaspi_ctx.ep_conn[i].cstat = 1;
   
   unlock_gaspi(&gaspi_ccontext_lock);
 
-  if(gaspi_sn_close(glb_gaspi_ctx.sockfd[i]) != 0)
-    {
-      gaspi_print_error("Failed to close socket to %d", i);
-      eret = GASPI_ERROR;
-      goto errL;
-    }
-
-  glb_gaspi_ctx.sockfd[i] = -1;
-
- okL:
-  unlock_gaspi(&glb_gaspi_ctx_lock);
-  return GASPI_SUCCESS;
-  
- errL:
-  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
+  /* Done */
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return eret;
 }
@@ -703,44 +665,16 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
 gaspi_return_t
 pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
+  gaspi_return_t eret = GASPI_ERROR;
+
   gaspi_verify_init("gaspi_proc_ping");
   gaspi_verify_rank(rank);
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
-  gaspi_cd_header cdh;
-  memset(&cdh, 0, sizeof(gaspi_cd_header));
+  eret = gaspi_sn_command(GASPI_SN_PROC_PING, rank, timeout_ms, NULL);
 
-  cdh.op_len = 1;
-  cdh.op = GASPI_SN_PROC_PING;
-  cdh.rank = rank;
-  cdh.tnc = glb_gaspi_ctx.tnc;
-
-  gaspi_return_t eret = gaspi_sn_connect_to_rank(rank, timeout_ms);
-  if(eret != GASPI_SUCCESS)
-    {
-      gaspi_print_error("Failed to connect to %u  (%d %p %lu)",
-			rank,
-			glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
-
-      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
-      eret = GASPI_ERROR;
-      goto errL;
-    }
-
-  ssize_t ret;
-  ret = write(glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
-  if(ret != sizeof(gaspi_cd_header))
-    {
-      gaspi_print_error("Failed to write to %u  (%d %p %lu)",
-			rank,
-			glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
-      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = 1;
-      eret = GASPI_ERROR;
-    }
-
- errL:
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return eret;
 }
@@ -749,6 +683,8 @@ pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 gaspi_return_t
 pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 {
+  gaspi_return_t eret = GASPI_ERROR;
+
   gaspi_verify_init("gaspi_proc_kill");
 
   if((rank==glb_gaspi_ctx.rank) || (rank>=glb_gaspi_ctx.tnc))
@@ -760,34 +696,8 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   if(lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
-  gaspi_return_t eret = gaspi_sn_connect_to_rank(rank, timeout_ms);
-  if(eret != GASPI_SUCCESS)
-    {
-      gaspi_print_error("Failed to connect to %d", rank);
-      goto endL;
-    }
+  eret = gaspi_sn_command(GASPI_SN_PROC_KILL, rank, timeout_ms, NULL);
 
-  gaspi_cd_header cdh;
-  cdh.op_len = 0;
-  cdh.op = GASPI_SN_PROC_KILL;
-  cdh.rank = glb_gaspi_ctx.rank;
-
-  int ret = write(glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
-  if(ret != sizeof(gaspi_cd_header))
-    {
-      gaspi_print_error("Failed to send kill command to %d.", rank);
-      eret = GASPI_ERROR;
-    }
-
-  if(gaspi_sn_close(glb_gaspi_ctx.sockfd[rank]) != 0)
-    {
-      gaspi_print_error("Failed to close connection to %d", rank);
-      eret = GASPI_ERROR;
-    }
-
-  glb_gaspi_ctx.sockfd[rank] = -1;
-
- endL:
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return eret;
 }

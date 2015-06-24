@@ -231,7 +231,6 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   memset(glb_gaspi_ctx.rrmd[segment_id], 0, glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
 
   free(glb_gaspi_ctx.rrmd[segment_id]);
-
   glb_gaspi_ctx.rrmd[segment_id] = NULL;
 
   eret = GASPI_SUCCESS;
@@ -242,78 +241,6 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   unlock_gaspi (&gaspi_mseg_lock);
 
   return eret;
-}
-
-static int
-_gaspi_dev_exch_cdh(gaspi_cd_header *cdh,
-		    gaspi_rank_t rank)
-{
-  int ret = write(glb_gaspi_ctx.sockfd[rank], cdh, sizeof(gaspi_cd_header));
-  if(ret != sizeof(gaspi_cd_header))
-    {
-      gaspi_print_error("Failed to write to rank %u (args: %d %p %lu)",
-			rank,
-			glb_gaspi_ctx.sockfd[rank], cdh, sizeof(gaspi_cd_header));
-
-      return -1;
-    }
-
-  int rret = -1;
-  ret = read(glb_gaspi_ctx.sockfd[rank], &rret, sizeof(int));
-  if(ret != sizeof(int))
-    {
-      gaspi_print_error("Failed to read from rank %d (args: %d %p %lu)",
-			rank,
-			glb_gaspi_ctx.sockfd[rank], &rret, sizeof(int));
-      return -1;
-    }
-
-  return rret;
-}
-
-gaspi_return_t
-_pgaspi_segment_register(const gaspi_segment_id_t segment_id,
-			 const gaspi_rank_t rank,
-			 const gaspi_timeout_t timeout_ms)
-  
-{
-  gaspi_return_t eret = gaspi_sn_connect_to_rank(rank, timeout_ms);
-  if(eret != GASPI_SUCCESS)
-    {
-      return eret;
-    }
-
-  gaspi_cd_header cdh;
-
-  cdh.op_len = 0; /* in-place */
-  cdh.op = GASPI_SN_SEG_REGISTER;
-  cdh.rank = glb_gaspi_ctx.rank;
-  cdh.seg_id = segment_id;
-  cdh.rkey = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey;
-  cdh.addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].addr;
-  cdh.size = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size;
-
-#ifdef GPI2_CUDA
-  cdh.host_rkey = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_rkey;
-  cdh.host_addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_addr;
-#endif
-
-  if(_gaspi_dev_exch_cdh(&cdh, rank) != 0)
-    {
-      gaspi_print_error("Failed remote registration with rank %d\n", rank);
-      return GASPI_ERROR;
-    }
-    
-  if(gaspi_sn_close(glb_gaspi_ctx.sockfd[rank]) != 0)
-    {
-      gaspi_print_error("Failed to close connection to %d", rank);
-      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
-      return GASPI_ERROR;
-    }
-
-  glb_gaspi_ctx.sockfd[rank] = -1;
-
-  return GASPI_SUCCESS;
 }
 
 #pragma weak gaspi_segment_register = pgaspi_segment_register
@@ -338,7 +265,7 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
       return GASPI_TIMEOUT;
     }
 
-  gaspi_return_t eret = _pgaspi_segment_register(segment_id, rank, timeout_ms);
+  gaspi_return_t eret = gaspi_sn_command(GASPI_SN_SEG_REGISTER, rank, timeout_ms, (void *) &segment_id);
 
   unlock_gaspi(&glb_gaspi_ctx_lock);
 
@@ -413,7 +340,7 @@ pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
       if(glb_gaspi_ctx.rrmd[segment_id][i].trans)
 	continue;
 
-      eret = _pgaspi_segment_register(segment_id, glb_gaspi_group_ctx[group].rank_grp[i], timeout_ms);
+      eret = gaspi_sn_command(GASPI_SN_SEG_REGISTER, glb_gaspi_group_ctx[group].rank_grp[i], timeout_ms, (void *) &segment_id);
       if(eret != GASPI_SUCCESS)
 	{
 	  return eret;
@@ -423,7 +350,7 @@ pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
     }
 
   eret = pgaspi_dev_wait_remote_register(segment_id, group, timeout_ms);
-  
+
   return eret;
 }
 

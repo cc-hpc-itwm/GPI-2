@@ -22,9 +22,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GASPI.h"
 #include "GPI2_Types.h"
 
-#define GASPI_EPOLL_CREATE  (256)
-#define GASPI_EPOLL_MAX_EVENTS  (2048)
-
 enum gaspi_sn_ops 
 {
   GASPI_SN_RESET = 0,
@@ -46,9 +43,9 @@ enum gaspi_sn_status
 
 typedef struct
 {
-  int op,op_len,rank,tnc;
-  int ret,rkey,seg_id;
-  unsigned long addr,size;
+  int op, op_len, rank, tnc;
+  int ret, rkey, seg_id;
+  unsigned long addr, size;
 
 #ifdef GPI2_CUDA
   int host_rkey;
@@ -58,13 +55,13 @@ typedef struct
 
 typedef struct
 {
-  int fd,op,rank,blen,bdone;
+  int fd, op, rank, blen, bdone;
   gaspi_cd_header cdh;
 } gaspi_mgmt_header;
 
 typedef struct
 {
-  int fd,busy;
+  int fd, busy;
   gaspi_mgmt_header *mgmt;
 } gaspi_rank_data;
 
@@ -78,22 +75,13 @@ extern volatile gaspi_return_t gaspi_sn_err;
 extern gaspi_context glb_gaspi_ctx;
 
 int
-gaspi_sn_set_non_blocking(int sock);
-
-int
-gaspi_sn_close(int sockfd);
-
-int
 gaspi_sn_broadcast_topology(const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
-gaspi_sn_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms);
+gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, gaspi_timeout_t timeout_ms, void *arg);
 
 void
 gaspi_sn_cleanup(int sig);
-
-int
-gaspi_sn_segment_register(const gaspi_cd_header snp);
 
 void *
 gaspi_sn_backend(void *arg);
