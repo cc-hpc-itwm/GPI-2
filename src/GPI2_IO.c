@@ -21,6 +21,8 @@
 #include "GPI2_Dev.h"
 #include "GPI2_Utility.h"
 
+#include "GPI2_SN.h"
+
 extern gaspi_config_t glb_gaspi_cfg;
 
 /* Queue utilities and IO limits */
