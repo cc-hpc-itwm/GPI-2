@@ -737,14 +737,14 @@ pgaspi_dev_connect_context(const int i)
 				    i,
 				    glb_gaspi_ctx_ib.remote_info[i].qpnGroup) )
     {
-      goto errL;
+      return -1;
     }
 
   if( 0 != _pgaspi_dev_qp_set_ready(glb_gaspi_ctx_ib.qpP[i],
 				    i,
 				    glb_gaspi_ctx_ib.remote_info[i].qpnP) )
     {
-      goto errL;
+      return -1;
     }
 
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
@@ -753,15 +753,11 @@ pgaspi_dev_connect_context(const int i)
 					i,
 					glb_gaspi_ctx_ib.remote_info[i].qpnC[c]) )
 	{
-	  goto errL;
+	  return -1;
 	}
     }
 
   return 0;
-
- errL:
-  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = 1;
-  return -1;
 }
 
 int
