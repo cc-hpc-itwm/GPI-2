@@ -248,6 +248,25 @@ pgaspi_queue_delete(const gaspi_queue_id_t queue_id)
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_queue_purge = pgaspi_queue_purge
+gaspi_return_t
+pgaspi_queue_purge(const gaspi_queue_id_t queue, gaspi_timeout_t timeout_ms)
+{
+  gaspi_verify_init("gaspi_purge");
+  gaspi_verify_queue(queue);
+
+  gaspi_return_t eret = GASPI_ERROR;
+
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
+    return GASPI_TIMEOUT;
+
+  eret = pgaspi_dev_purge(queue, &glb_gaspi_ctx.ne_count_c[queue], timeout_ms);
+
+  unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
+
+  return eret;
+}
+
 /* Communication routines */
 /* Parameter checking is done _ONLY_ when in debug mode (gaspi_verify_*) */
 /* as well as printing function arguments in case of error with device

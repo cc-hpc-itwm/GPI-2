@@ -146,6 +146,51 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
 }
 
 gaspi_return_t
+pgaspi_dev_purge (const gaspi_queue_id_t queue,
+		  int * counter,
+		  const gaspi_timeout_t timeout_ms)
+{
+  int ne = 0, i;
+  struct ibv_wc wc;
+
+  const int nr = *counter;
+  const gaspi_cycles_t s0 = gaspi_get_cycles ();
+
+  for (i = 0; i < nr; i++)
+    {
+      do
+	{
+	  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqC[queue], 1, &wc);
+	  *counter -= ne;
+
+	  if (ne == 0)
+	    {
+	      const gaspi_cycles_t s1 = gaspi_get_cycles ();
+	      const gaspi_cycles_t tdelta = s1 - s0;
+
+	      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+	      if (ms > timeout_ms)
+		{
+		  return GASPI_TIMEOUT;
+		}
+	    }
+	}
+      while (ne == 0);
+    }
+
+#ifdef GPI2_CUDA
+  int j, k;
+  for(k = 0;k < glb_gaspi_ctx.gpu_count; k++)
+    {
+      for(j = 0; j < GASPI_CUDA_EVENTS; j++)
+	gpus[k].events[queue][j].ib_use = 0;
+    }
+#endif
+
+  return GASPI_SUCCESS;
+}
+
+gaspi_return_t
 pgaspi_dev_wait (const gaspi_queue_id_t queue,
 		 int * counter,
 		 const gaspi_timeout_t timeout_ms)
