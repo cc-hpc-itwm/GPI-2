@@ -139,7 +139,6 @@ pgaspi_connect_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeou
 
   if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
     {
-      unlock_gaspi(&glb_gaspi_ctx_lock);
       return GASPI_TIMEOUT;
     }
 
