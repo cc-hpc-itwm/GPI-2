@@ -1294,7 +1294,7 @@ void *gaspi_sn_backend(void *arg)
 					{
 					  if( gaspi_sn_writen( mgmt->fd, ptr, len ) < sizeof(len) )
 					    {
-					      gaspi_print_error("Failed response to connection request.");
+					      gaspi_print_error("Failed response to connection request from %u.", mgmt->cdh.rank);
 					      io_err = 1;
 					    }
 					}
