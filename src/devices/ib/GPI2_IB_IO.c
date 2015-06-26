@@ -154,7 +154,7 @@ pgaspi_dev_wait (const gaspi_queue_id_t queue,
   int ne = 0, i;
   struct ibv_wc wc;
 
-  const int nr = *counter;//glb_gaspi_ctx_ib.ne_count_c[queue];
+  const int nr = *counter;
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
 
   for (i = 0; i < nr; i++)
@@ -162,7 +162,6 @@ pgaspi_dev_wait (const gaspi_queue_id_t queue,
       do
 	{
 	  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqC[queue], 1, &wc);
-	  //	  glb_gaspi_ctx_ib.ne_count_c[queue] -= ne;
 	  *counter -= ne;
 	  
 	  if (ne == 0)
