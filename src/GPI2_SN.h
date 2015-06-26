@@ -32,7 +32,8 @@ enum gaspi_sn_ops
   GASPI_SN_GRP_CHECK= 16,
   GASPI_SN_GRP_CONNECT= 18,
   GASPI_SN_SEG_REGISTER = 20,
-  GASPI_SN_PROC_PING = 22
+  GASPI_SN_PROC_PING = 22,
+  GASPI_SN_QUEUE_CREATE = 23
 };
 
 enum gaspi_sn_status

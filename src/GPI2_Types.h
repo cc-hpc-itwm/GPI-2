@@ -52,6 +52,7 @@ typedef struct
   gaspi_rank_t rank; /* to whom */
   volatile gaspi_endpoint_creation_status_t istat;
   volatile gaspi_endpoint_conn_status_t cstat;
+  unsigned char queue_state[GASPI_MAX_QP]; /* queues connection state*/
 } gaspi_endpoint_conn_t;
 
 typedef struct
@@ -110,6 +111,9 @@ typedef struct
   gaspi_rc_mseg *rrmd[GASPI_MAX_MSEGS];
 
   gaspi_endpoint_conn_t *ep_conn;
+
+  /* Number of "created" communication queues */
+  gaspi_number_t num_queues;
 
   /* Comm counters  */
   int ne_count_grp;

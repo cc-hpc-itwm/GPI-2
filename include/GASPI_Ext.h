@@ -47,5 +47,14 @@ extern "C"
    */
   gaspi_return_t gaspi_proc_ping (const gaspi_rank_t rank, gaspi_timeout_t tout);
 
+  /** Create a new communication queue.
+   *
+   *
+   *
+   * @param queue Output parameter with id of created queue.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_queue_create(gaspi_queue_id_t *queue, gaspi_timeout_t timeout_ms);
 
 #endif //GPI2_EXT_H  

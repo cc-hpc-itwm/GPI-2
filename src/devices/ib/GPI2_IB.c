@@ -445,12 +445,15 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       if(!glb_gaspi_ctx_ib.qpC[c])
 	return -1;
     }
-  
+
   glb_gaspi_ctx_ib.qpP = (struct ibv_qp **) calloc (glb_gaspi_ctx.tnc , sizeof (struct ibv_qp *));
   if(!glb_gaspi_ctx_ib.qpP)
     {
       return -1;
     }
+
+  /* Zero-fy QP creation state */
+  memset(&(glb_gaspi_ctx_ib.qpC_cstat), 0, GASPI_MAX_QP);
 
   /* RoCE */
   if(gaspi_cfg->network == GASPI_ROCE)
@@ -568,6 +571,90 @@ _pgaspi_dev_create_qp(struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv
     }
 
   return qp;
+}
+
+int
+pgaspi_dev_comm_queue_delete(const unsigned int id)
+{
+  int i;
+
+  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+    {
+      if(glb_gaspi_ctx.ep_conn[i].istat == 0)
+	{
+	  continue;
+	}
+
+      if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpC[id][i]))
+	{
+	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
+	  return -1;
+	}
+    }
+
+  if(glb_gaspi_ctx_ib.qpC[id])
+    {
+      free (glb_gaspi_ctx_ib.qpC[id]);
+    }
+
+  glb_gaspi_ctx_ib.qpC[id] = NULL;
+
+  if( 1 == glb_gaspi_ctx_ib.qpC_cstat[id] )
+    {
+
+      if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqC[id]))
+	{
+	  gaspi_print_error ("Failed to destroy CQ (libibverbs)");
+	  return -1;
+	}
+      glb_gaspi_ctx_ib.scqC[id] = NULL;
+
+      glb_gaspi_ctx_ib.qpC_cstat[id] = 0;
+    }
+
+  return 0;
+}
+
+int
+pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_node)
+{
+  if( 0 == glb_gaspi_ctx_ib.qpC_cstat[id] )
+    {
+      /* Completion queue */
+      glb_gaspi_ctx_ib.scqC[id] = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL, NULL, 0);
+      if(!glb_gaspi_ctx_ib.scqC[id])
+	{
+	  gaspi_print_error ("Failed to create CQ (libibverbs)");
+	  return -1;
+	}
+
+      /* Queue Pair */
+      glb_gaspi_ctx_ib.qpC[id] = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp *));
+      if( glb_gaspi_ctx_ib.qpC[id] == NULL)
+	{
+	  gaspi_print_error ("Failed to memory allocation");
+	  return -1;
+	}
+      
+      glb_gaspi_ctx_ib.qpC_cstat[id] = 1;
+    }
+
+  if( glb_gaspi_ctx_ib.qpC[id] == NULL)
+    {
+      gaspi_print_error ("Failed to memory allocation");
+      return -1;
+    }
+  
+  glb_gaspi_ctx_ib.qpC[id][remote_node] = _pgaspi_dev_create_qp(glb_gaspi_ctx_ib.scqC[id], glb_gaspi_ctx_ib.scqC[id], NULL);
+  if( glb_gaspi_ctx_ib.qpC[id][remote_node] == NULL )
+    {
+      gaspi_print_error ("Failed to create QP (libibverbs)");
+      return -1;
+    }
+
+  glb_gaspi_ctx_ib.local_info[remote_node].qpnC[id] = glb_gaspi_ctx_ib.qpC[id][remote_node]->qp_num;
+  
+  return 0;
 }
 
 int
@@ -729,6 +816,15 @@ _pgaspi_dev_qp_set_ready(struct ibv_qp *qp, int target, int target_qp)
   return 0;
 }
 
+int
+pgaspi_dev_comm_queue_connect(const unsigned short q, const int i)
+{
+  return _pgaspi_dev_qp_set_ready(glb_gaspi_ctx_ib.qpC[q][i],
+				  i,
+				  glb_gaspi_ctx_ib.remote_info[i].qpnC[q]);
+}
+
+/* TODO: rename to endpoint */
 int
 pgaspi_dev_connect_context(const int i)
 {

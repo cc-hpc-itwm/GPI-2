@@ -627,6 +627,56 @@ _gaspi_sn_connect_command(const gaspi_rank_t rank)
 
   return 0;
 }
+static inline int
+_gaspi_sn_queue_create_command(const gaspi_rank_t rank, void *arg)
+{
+  const int i = (int) rank;
+
+  gaspi_cd_header cdh;
+  memset(&cdh, 0, sizeof(gaspi_cd_header));
+
+  const size_t rc_size = pgaspi_dev_get_sizeof_rc();
+  cdh.op_len = (int) rc_size;
+  cdh.op = GASPI_SN_QUEUE_CREATE;
+  cdh.rank = glb_gaspi_ctx.rank;
+  cdh.tnc = *((int *) arg);
+
+  /* if we have something to exchange */
+  if(rc_size > 0 )
+    {
+      ssize_t ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
+      if(ret != sizeof(gaspi_cd_header))
+	{
+	  gaspi_print_error("Failed to write to %d", i);
+	  return -1;
+	}
+
+      ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
+      if(ret != (ssize_t) rc_size)
+	{
+	  gaspi_print_error("Failed to write to %d", i);
+	  return -1;
+	}
+
+      char *remote_info = pgaspi_dev_get_rrcd(i);
+
+      do
+	{
+	  ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], remote_info, rc_size);
+	  if( rret != (ssize_t) rc_size )
+	    {
+	      gaspi_print_error("Failed to read from %d %s %ld", i, gaspi_get_hn(i),rret);
+	      return -1;
+	    }
+	  else
+	    break;
+	}
+      while(1);
+    }
+
+  return 0;
+}
+
 
 static inline int
 _gaspi_sn_single_command(const gaspi_rank_t rank, const enum gaspi_sn_ops op)
@@ -868,6 +918,12 @@ gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gasp
 	ret = _gaspi_sn_group_connect(rank, arg);
 	break;
       }
+    case GASPI_SN_QUEUE_CREATE:
+      {
+	ret = _gaspi_sn_queue_create_command(rank, arg);
+	break;
+      }
+
     default:
       {
 	gaspi_print_error("Unknown SN op");
@@ -1131,6 +1187,14 @@ void *gaspi_sn_backend(void *arg)
 			  ptr = pgaspi_dev_get_rrcd(mgmt->cdh.rank);
 			  rcount = read( mgmt->fd, ptr + mgmt->bdone, rsize );
 			}
+		      else if( mgmt->op == GASPI_SN_QUEUE_CREATE )
+			{
+			  while( !glb_gaspi_dev_init )
+			    gaspi_delay();
+
+			  ptr = pgaspi_dev_get_rrcd(mgmt->cdh.rank);
+			  rcount = read( mgmt->fd, ptr + mgmt->bdone, rsize );
+			}
 
 		      /* errno==EAGAIN => we have read all data */
 		      int errsv = errno;
@@ -1245,6 +1309,10 @@ void *gaspi_sn_backend(void *arg)
 
 				      GASPI_SN_RESET_EVENT(mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
 				    }
+				  else if(mgmt->cdh.op == GASPI_SN_QUEUE_CREATE)
+				    {
+				      GASPI_SN_RESET_EVENT( mgmt, mgmt->cdh.op_len, mgmt->cdh.op );
+				    }
 				}/* !header */
 			      else if(mgmt->op == GASPI_SN_CONNECT)
 				{
@@ -1280,6 +1348,56 @@ void *gaspi_sn_backend(void *arg)
 					      io_err = 1;
 					    }
 					}
+				    }
+
+				  GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
+				}
+			      else if( mgmt->op == GASPI_SN_QUEUE_CREATE )
+				{
+				  /* TODO: to remove */
+				  while( !glb_gaspi_dev_init )
+				    {
+				      gaspi_delay();
+				    }
+
+				  const size_t len = pgaspi_dev_get_sizeof_rc();
+				  char *ptr = NULL;
+
+				  gaspi_number_t next_avail_q = mgmt->cdh.tnc;
+
+				  if( GASPI_MAX_QP == next_avail_q )
+				    {
+				      gaspi_print_error("Cannot create queue: maximum exceeded.");
+				      /* We've exausted the number of queues */
+				      io_err = 1;
+				    }
+				  else
+				    {
+				      gaspi_return_t eret = pgaspi_queue_create_i(next_avail_q, mgmt->cdh.rank);
+				      if( eret == GASPI_SUCCESS )
+					{
+					  eret = pgaspi_queue_connect(next_avail_q, mgmt->cdh.rank);
+					  if( eret == GASPI_SUCCESS )
+					    {
+					      ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
+					    }
+					}
+
+				      if( eret != GASPI_SUCCESS )
+					{
+					  gaspi_print_error("Failed to create requested queue (%d)", next_avail_q);
+					  /* We set io_err, connection is closed and remote peer reads EOF */
+					  io_err = 1;
+					}
+				      else
+					if( NULL != ptr )
+					  {
+					    if( gaspi_sn_writen( mgmt->fd, ptr, len ) < sizeof(len) )
+					      {
+						gaspi_print_error("Failed response to queue creation request from %u.", mgmt->cdh.rank);
+						io_err = 1;
+					      }
+					  }
 				    }
 
 				  GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );

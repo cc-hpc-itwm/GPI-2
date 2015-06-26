@@ -60,7 +60,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define gaspi_verify_queue(queue)					\
   {									\
-    if(queue > glb_gaspi_cfg.queue_num - 1)				\
+    if(queue > glb_gaspi_ctx.num_queues - 1)				\
       return GASPI_ERR_INV_QUEUE;					\
   }
 

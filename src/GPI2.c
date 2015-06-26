@@ -136,6 +136,9 @@ pgaspi_init_core()
       glb_gaspi_cfg.queue_num = 1;
     }
 
+  /* Set number of "created" communication queues */
+  glb_gaspi_ctx.num_queues = glb_gaspi_cfg.queue_num;
+
   /* Create internal memory space */
   const unsigned int size = NOTIFY_OFFSET + sizeof(gaspi_atomic_value_t);
   const long page_size = sysconf (_SC_PAGESIZE);
