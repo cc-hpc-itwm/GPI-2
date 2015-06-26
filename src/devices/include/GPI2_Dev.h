@@ -89,6 +89,11 @@ int
 pgaspi_dev_queue_size(const gaspi_queue_id_t);
 
 gaspi_return_t
+pgaspi_dev_purge (const gaspi_queue_id_t queue,
+		  int * counter,
+		  const gaspi_timeout_t timeout_ms);
+
+gaspi_return_t
 pgaspi_dev_write (const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_rank_t,
 		  const gaspi_segment_id_t, const gaspi_offset_t, const unsigned int,
 		  const gaspi_queue_id_t);

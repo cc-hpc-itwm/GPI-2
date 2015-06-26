@@ -961,6 +961,19 @@ extern "C"
 
   /// \name Utilities and informations
 //@{
+  /** Purge queue.
+   *
+   *
+   * @param queue The queue to purge.
+   * @param timeout_ms Timeout for operation.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
+   * error or GASPI_TIMEOUT in case time has expired.
+   */
+  gaspi_return_t
+  pgaspi_queue_purge(const gaspi_queue_id_t queue,
+		     gaspi_timeout_t timeout_ms);
+
   /** Get the current number of elements on a given queue.
    * 
    * 
