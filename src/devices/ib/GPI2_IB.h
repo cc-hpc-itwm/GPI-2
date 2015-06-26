@@ -45,6 +45,8 @@ typedef struct
   int num_dev;
   int max_rd_atomic;
   int ib_port;
+  int num_queues;
+
   struct ibv_device **dev_list;
   struct ibv_device *ib_dev;
   struct ibv_context *context;
@@ -66,6 +68,8 @@ typedef struct
 
   struct ib_ctx_info *local_info;
   struct ib_ctx_info *remote_info;
+
+  int qpC_cstat[GASPI_MAX_QP];
 
 } gaspi_ib_ctx;
 

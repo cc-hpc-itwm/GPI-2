@@ -75,6 +75,15 @@ pgaspi_dev_disconnect_context(const int);
 int
 pgaspi_dev_create_endpoint(const int);
 
+int
+pgaspi_dev_comm_queue_delete(const unsigned int id);
+
+int
+pgaspi_dev_comm_queue_create(const unsigned int, const unsigned short);
+
+int
+pgaspi_dev_comm_queue_connect(const unsigned short q, const int i);
+
 /* Device interface (GASPI routines) */
 int
 pgaspi_dev_queue_size(const gaspi_queue_id_t);
