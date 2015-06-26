@@ -72,7 +72,6 @@ link_layer_str (uint8_t link_layer)
     }
 }
 
-
 static int
 pgaspi_null_gid (union ibv_gid *gid)
 {
@@ -80,7 +79,6 @@ pgaspi_null_gid (union ibv_gid *gid)
 	   raw[11] | gid->raw[12] | gid->raw[13] | gid->raw[14] | gid->
 	   raw[15]);
 }
-
 
 /* Utilities */
 inline char *
@@ -304,11 +302,10 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 	      gaspi_print_error ("No active Ethernet (RoCE) port found");
 	      return -1;
 	    }
-	    
+
 	    glb_gaspi_ctx_ib.ib_port = 2;
 	  }
 	}
-      
     }/* if(gaspi_cfg->port_check) */
   else
     {
@@ -317,7 +314,6 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
   
   if(gaspi_cfg->net_info)
     gaspi_printf ("\tusing port : %d\n", glb_gaspi_ctx_ib.ib_port);
-  
 
   if (gaspi_cfg->network == GASPI_IB)
     {
@@ -383,7 +379,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-  /* Create completion queues */
+  /* Create default completion queues */
   /* Groups */
   glb_gaspi_ctx_ib.scqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_depth, NULL,NULL, 0);
   if(!glb_gaspi_ctx_ib.scqGroups)
@@ -464,7 +460,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 	  gaspi_print_error ("Failed to query gid (RoCE - libiverbs)");
 	  return -1;
 	}
-      
+
       if (!pgaspi_null_gid (&glb_gaspi_ctx_ib.gid))
 	{
 	  if (gaspi_cfg->net_info)
@@ -488,7 +484,6 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
     }
 
   glb_gaspi_ctx_ib.remote_info = (struct ib_ctx_info *) calloc (glb_gaspi_ctx.tnc, sizeof(struct ib_ctx_info));
-
   if(!glb_gaspi_ctx_ib.remote_info)
     {
       return -1;
@@ -695,6 +690,7 @@ pgaspi_dev_create_endpoint(const int i)
   return 0;
 }
 
+/* TODO: rename to endpoint */
 int
 pgaspi_dev_disconnect_context(const int i)
 {
@@ -938,7 +934,7 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-/*  TODO: to remove from here <<< LOOP*/
+  /*  TODO: to remove from here <<< LOOP*/
   for(i = 0; i < GASPI_MAX_MSEGS; i++)
     {
       if(glb_gaspi_ctx.rrmd[i] != NULL)
