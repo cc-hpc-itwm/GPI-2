@@ -582,7 +582,10 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms)
 
 #ifdef DEBUG
   if( strcmp(gaspi_get_hn(rank), "") == 0 )
-    return GASPI_ERROR;
+    {
+      gaspi_print_error("Failed to obtain hostname for rank %u", rank);
+      return GASPI_ERROR;
+    }
 #endif
 
   /* TODO: introduce backoff delay? */
