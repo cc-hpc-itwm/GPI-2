@@ -57,4 +57,14 @@ extern "C"
    */
   gaspi_return_t gaspi_queue_create(gaspi_queue_id_t *queue, gaspi_timeout_t timeout_ms);
 
+  /** Delete a new communication queue.
+   *
+   *
+   *
+   * @param queue The queue ID to delete.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_queue_delete(gaspi_queue_id_t queue);
+
 #endif //GPI2_EXT_H  
