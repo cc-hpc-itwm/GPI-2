@@ -199,7 +199,6 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
 	}
 
-      gaspi_print_error("filed");
       unlock_gaspi(&glb_gaspi_ctx_lock);
       return eret;
     }
