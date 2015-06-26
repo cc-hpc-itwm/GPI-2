@@ -889,13 +889,14 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 	}
     }
 
+
   free (glb_gaspi_ctx_ib.qpGroups);
   glb_gaspi_ctx_ib.qpGroups = NULL;
 
   free (glb_gaspi_ctx_ib.qpP);
   glb_gaspi_ctx_ib.qpP = NULL;
 
-  for(c = 0; c < gaspi_cfg->queue_num; c++)
+  for(c = 0; c < glb_gaspi_ctx.num_queues; c++)
     {
       free (glb_gaspi_ctx_ib.qpC[c]);
       glb_gaspi_ctx_ib.qpC[c] = NULL;
@@ -929,15 +930,6 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
     {
       gaspi_print_error ("Failed to destroy SRQ (libibverbs)");
       return -1;
-    }
-  
-  for(c = 0; c < gaspi_cfg->queue_num; c++)
-    {
-      if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqC[c]))
-	{
-	  gaspi_print_error ("Failed to destroy CQ (libibverbs)");
-	  return -1;
-	}
     }
 
   /*  TODO: to remove from here <<< LOOP*/
