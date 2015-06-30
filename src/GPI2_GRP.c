@@ -108,14 +108,12 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   /* TODO: dynamic space (re-)allocation to avoid reservation for all nodes */
   /* or maybe gaspi_group_create should have the number of ranks as input ? */
-  glb_gaspi_group_ctx[id].rrcd = (gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+  glb_gaspi_group_ctx[id].rrcd = (gaspi_rc_mseg *) calloc (glb_gaspi_ctx.tnc, sizeof (gaspi_rc_mseg));
   if(glb_gaspi_group_ctx[id].rrcd == NULL)
     {
       eret = GASPI_ERR_MEMALLOC;
       goto errL;
     }
-
-  memset (glb_gaspi_group_ctx[id].rrcd, 0, glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
 
   if (posix_memalign ((void **) &glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].ptr, page_size, size)
       != 0)
@@ -161,7 +159,7 @@ pgaspi_group_create (gaspi_group_t * const group)
       goto errL;
     }
 
-  glb_gaspi_group_ctx[id].committed_rank = (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
+  glb_gaspi_group_ctx[id].committed_rank = (int *) calloc (glb_gaspi_ctx.tnc, sizeof (int));
   if(!glb_gaspi_group_ctx[id].committed_rank)
     {
       eret = GASPI_ERR_MEMALLOC;
@@ -171,7 +169,6 @@ pgaspi_group_create (gaspi_group_t * const group)
   for (i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
       glb_gaspi_group_ctx[id].rank_grp[i] = -1;
-      glb_gaspi_group_ctx[id].committed_rank[i] = 0;
     }
 
   glb_gaspi_ctx.group_cnt++;

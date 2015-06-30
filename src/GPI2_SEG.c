@@ -137,15 +137,13 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     
   if (glb_gaspi_ctx.rrmd[segment_id] == NULL)
     {
-      glb_gaspi_ctx.rrmd[segment_id] = (gaspi_rc_mseg *) malloc (glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
+      glb_gaspi_ctx.rrmd[segment_id] = (gaspi_rc_mseg *) calloc (glb_gaspi_ctx.tnc, sizeof (gaspi_rc_mseg));
       
       if(!glb_gaspi_ctx.rrmd[segment_id])
 	{
 	  eret = GASPI_ERR_MEMALLOC;
 	  goto endL;
 	}
-
-      memset (glb_gaspi_ctx.rrmd[segment_id], 0,glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
     }
 
   if (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size)

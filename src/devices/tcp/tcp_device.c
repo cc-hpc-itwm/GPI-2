@@ -241,16 +241,11 @@ _tcp_dev_alloc_remote_states (int n)
   if(rank_state != NULL)
     return 0;
 
-  rank_state = (tcp_dev_conn_state_t **) malloc(n * sizeof(tcp_dev_conn_state_t *));
+  rank_state = (tcp_dev_conn_state_t **) calloc(n, sizeof(tcp_dev_conn_state_t *));
   if(rank_state == NULL)
    {
       gaspi_print_error("Failed to allocate memory");
       return 1;
-    }
-
-  for(j = 0; j < n; j++)
-    {
-      rank_state[j] = NULL;
     }
 
   return 0;
