@@ -252,7 +252,7 @@ pgaspi_queue_delete(const gaspi_queue_id_t queue_id)
 gaspi_return_t
 pgaspi_queue_purge(const gaspi_queue_id_t queue, gaspi_timeout_t timeout_ms)
 {
-  gaspi_verify_init("gaspi_purge");
+  gaspi_verify_init("gaspi_queue_purge");
   gaspi_verify_queue(queue);
 
   gaspi_return_t eret = GASPI_ERROR;
