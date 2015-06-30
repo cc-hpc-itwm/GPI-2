@@ -235,8 +235,6 @@ tcp_dev_destroy_queue(struct tcp_queue *q)
 static int
 _tcp_dev_alloc_remote_states (int n)
 {
-  int j;
-
   /* might already have been allocated */
   if(rank_state != NULL)
     return 0;
