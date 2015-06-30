@@ -201,7 +201,7 @@ tcp_dev_create_queue(struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
   struct tcp_queue *q = (struct tcp_queue *) malloc(sizeof(struct tcp_queue));
   if(q != NULL)
     {
-      handle = gaspi_connect2port("localhost", TCP_DEV_PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
+      handle = gaspi_sn_connect2port("localhost", TCP_DEV_PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
 
       if(handle == -1)
 	{
@@ -308,7 +308,7 @@ tcp_dev_connect_to(int i)
     }
 
   /* connect to node/rank */
-  int conn_sock = gaspi_connect2port(gaspi_get_hn(i),
+  int conn_sock = gaspi_sn_connect2port(gaspi_get_hn(i),
 				     TCP_DEV_PORT + glb_gaspi_ctx.poff[i],
 				     CONN_TIMEOUT);
 
@@ -1240,7 +1240,7 @@ tcp_virt_dev(void *args)
       return NULL;
     }
 
-  gaspi_set_non_blocking(listen_sock);
+  gaspi_sn_set_non_blocking(listen_sock);
 
   if(listen(listen_sock, SOMAXCONN) < 0)
     {
@@ -1340,7 +1340,7 @@ tcp_virt_dev(void *args)
 		      continue;
 		    }
 
-		  gaspi_set_non_blocking(conn_sock);
+		  gaspi_sn_set_non_blocking(conn_sock);
 
 		  if(_tcp_dev_add_new_conn(-1, conn_sock, epollfd) == NULL)
 		    {
