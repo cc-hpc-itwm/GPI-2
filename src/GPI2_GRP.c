@@ -367,7 +367,7 @@ pgaspi_group_commit (const gaspi_group_t group,
   {
     gaspi_group_t group;
     int tnc, cs, ret;
-  } gb, rem_gb;
+  } gb;
 
   gb.group = group;
   gb.cs = 0;
@@ -378,9 +378,6 @@ pgaspi_group_commit (const gaspi_group_t group,
       gb.cs ^= group_to_commit->rank_grp[i];
     }
   gaspi_timeout_t delta_tout = timeout_ms;
-
-  struct timeb t0, t1;
-  ftime(&t0);
 
   for(r = 1; r <= gb.tnc; r++)
     {
