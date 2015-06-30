@@ -702,7 +702,9 @@ _gaspi_sn_segment_register_command(const gaspi_rank_t rank, void * arg)
     {
       gaspi_print_error("Failed to write to rank %u (args: %d %p %lu)",
 			rank,
-			glb_gaspi_ctx.sockfd[rank], cdh, sizeof(gaspi_cd_header));
+			glb_gaspi_ctx.sockfd[rank],
+			&cdh,
+			sizeof(gaspi_cd_header));
 
       return -1;
     }
@@ -711,9 +713,11 @@ _gaspi_sn_segment_register_command(const gaspi_rank_t rank, void * arg)
   ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[rank], &result, sizeof(int));
   if( rret != sizeof(int) )
     {
-      gaspi_print_error("Failed to read from rank %d (args: %d %p %lu)",
+      gaspi_print_error("Failed to read from rank %u (args: %d %p %lu)",
 			rank,
-			glb_gaspi_ctx.sockfd[rank], &rret, sizeof(int));
+			glb_gaspi_ctx.sockfd[rank],
+			&rret,
+			sizeof(int));
       return -1;
     }
 
@@ -822,7 +826,7 @@ _gaspi_sn_group_connect(const gaspi_rank_t rank, void *arg)
   ssize_t ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
   if( ret != sizeof(gaspi_cd_header) )
     {
-      gaspi_print_error("Failed to write to %u (%d %d %p %lu)",
+      gaspi_print_error("Failed to write to %u (%ld %d %p %lu)",
 			i,
 			ret,
 			glb_gaspi_ctx.sockfd[i],
@@ -834,7 +838,7 @@ _gaspi_sn_group_connect(const gaspi_rank_t rank, void *arg)
   ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], &group_to_commit->rrcd[i], sizeof(gaspi_rc_mseg));
   if( rret != sizeof(gaspi_rc_mseg) )
     {
-      gaspi_print_error("Failed to read from %d (%d %d %p %lu)",
+      gaspi_print_error("Failed to read from %d (%ld %d %p %lu)",
 			i,
 			ret,
 			glb_gaspi_ctx.sockfd[i],
