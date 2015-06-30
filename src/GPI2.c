@@ -162,7 +162,7 @@ pgaspi_connect_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeou
 
   unlock_gaspi(&gaspi_ccontext_lock);
 
-  return GASPI_SUCCESS;
+  return eret;
 }
 
 #pragma weak gaspi_connect = pgaspi_connect
