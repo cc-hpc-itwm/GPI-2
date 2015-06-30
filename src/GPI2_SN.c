@@ -738,8 +738,6 @@ _gaspi_sn_group_check(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms, void 
 
   int i = (int) rank;
 
-  gaspi_group_ctx *group_to_commit = &(glb_gaspi_group_ctx[gb->group]);
-
   struct timeb t0, t1;
   ftime(&t0);
 
@@ -756,19 +754,19 @@ _gaspi_sn_group_check(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms, void 
     {
       memset(&rem_gb, 0, sizeof(rem_gb));
 
-      ssize_t ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]], &cdh, sizeof(gaspi_cd_header));
+      ssize_t ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
       if(ret != sizeof(gaspi_cd_header) )
 	{
 	  gaspi_print_error("Failed to write (%d %p %lu)",
-			    glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]], &cdh, sizeof(gaspi_cd_header));
+			    glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
 	  return -1;
 	}
 
-      ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]], &rem_gb, sizeof(rem_gb));
+      ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], &rem_gb, sizeof(rem_gb));
       if( rret != sizeof(rem_gb) )
 	{
 	  gaspi_print_error("Failed to read (%d %p %lu)",
-			    glb_gaspi_ctx.sockfd[group_to_commit->rank_grp[i]],&rem_gb,sizeof(rem_gb));
+			    glb_gaspi_ctx.sockfd[i],&rem_gb,sizeof(rem_gb));
 	  return -1;
 	}
 
