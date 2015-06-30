@@ -229,6 +229,9 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf = NULL;
 
+  /* TODO: we're getting rid of the remote descriptors but what if we
+     still what to something with then e.g. gaspi_notify (does not
+     need local segment) */
   memset(glb_gaspi_ctx.rrmd[segment_id], 0, glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
 
   free(glb_gaspi_ctx.rrmd[segment_id]);
