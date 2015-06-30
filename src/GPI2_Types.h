@@ -48,10 +48,11 @@ typedef struct
   {
     unsigned char *buf;
     void *ptr;
+    unsigned long addr;
   };
   void *mr;
   unsigned int rkey;
-  unsigned long addr, size;
+  unsigned long size;
   int trans; /* info transmitted */
   
 #ifdef GPI2_CUDA

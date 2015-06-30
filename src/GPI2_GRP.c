@@ -122,9 +122,6 @@ pgaspi_group_create (gaspi_group_t * const group)
       goto errL;
     }
 
-  glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].addr =
-    (uintptr_t) glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].buf;
-
   memset (glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].buf, 0, size);
 
   /* TODO: check that all fields are initialized */
