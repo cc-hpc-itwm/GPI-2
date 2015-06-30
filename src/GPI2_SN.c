@@ -248,19 +248,30 @@ gaspi_sn_readn(int sockfd, const void * data_ptr, size_t n)
 
   while( left > 0 )
     {
-      if( (ndone = read( sockfd, ptr, left) ) <= 0 )
+/*       if( (ndone = read( sockfd, ptr, left) ) <= 0 ) */
+/* 	{ */
+/* 	  if(ndone < 0 && errno == EAGAIN) */
+/* 	    ndone = 0; */
+/* 	  else */
+/* 	    { */
+/* 	      return (-1); */
+/* 	    } */
+/* 	} */
+      if( (ndone = read( sockfd, ptr, left) ) < 0 )
 	{
 	  if(ndone < 0 && errno == EAGAIN)
 	    ndone = 0;
 	  else
 	    return (-1);
 	}
+      else if ( 0 == ndone )
+	break; /* EOF */
 
       left -= ndone;
       ptr += ndone;
     }
 
-  return n;
+  return (n - left);
 }
 
 int
@@ -465,6 +476,7 @@ gaspi_sn_send_topology(gaspi_context *ctx, const int i, const gaspi_timeout_t ti
 }
 
 /* TODO: deal with timeout */
+/* TODO: remove stuff with env vars */
 int
 gaspi_sn_broadcast_topology(gaspi_context *ctx, const gaspi_timeout_t timeout_ms)
 {
@@ -627,7 +639,9 @@ _gaspi_sn_connect_command(const gaspi_rank_t rank)
 	  return -1;
 	}
 
-      ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_rrcd(i), rc_size);
+      char *remote_info = pgaspi_dev_get_rrcd(i);
+
+      ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], remote_info, rc_size);
       if( rret != (ssize_t) rc_size )
 	{
 	  gaspi_print_error("Failed to read from %d", i);
