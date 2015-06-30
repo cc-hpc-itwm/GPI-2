@@ -85,7 +85,8 @@ pgaspi_segment_list (const gaspi_number_t num,
   int i, idx = 0;
 
   gaspi_verify_init("gaspi_segment_list");
-  
+  gaspi_verify_null_ptr(segment_id_list);
+
   for (i = 0; i < GASPI_MAX_MSEGS; i++)
     {
       if(glb_gaspi_ctx.rrmd[(gaspi_segment_id_t) i] != NULL )
