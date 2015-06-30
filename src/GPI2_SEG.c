@@ -356,9 +356,6 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 		      const gaspi_timeout_t timeout_ms,
 		      const gaspi_alloc_t alloc_policy)
 {
-  gaspi_verify_init("gaspi_segment_create");
-  gaspi_verify_group(group);
-
   gaspi_return_t eret = pgaspi_segment_alloc (segment_id, size, alloc_policy);
 
   if(eret != GASPI_SUCCESS)
