@@ -283,7 +283,7 @@ extern "C"
 
   gaspi_return_t pgaspi_network_type (gaspi_network_t * const network_type);
 
-  gaspi_return_t pgaspi_time_ticks (gaspi_time_t * const ticks);
+  gaspi_return_t pgaspi_time_ticks (gaspi_cycles_t * const ticks);
 
 
   gaspi_return_t pgaspi_cpu_frequency (gaspi_float * const cpu_mhz);
