@@ -224,9 +224,11 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
     return GASPI_TIMEOUT;
 
   /* Not connected? */
-  /*  TODO: error or success? atm, error */
-  if(glb_gaspi_ctx.ep_conn[i].cstat == 0) 
-    goto errL;
+  if( 0 == glb_gaspi_ctx.ep_conn[i].cstat )
+    {
+      eret = GASPI_SUCCESS;
+      goto errL;
+    }
   
   eret = pgaspi_dev_disconnect_context(i);
   if(eret != GASPI_SUCCESS)
