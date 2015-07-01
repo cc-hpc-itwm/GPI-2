@@ -24,7 +24,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <sys/utsname.h>
 #include <unistd.h>
 
-#include "GASPI.h"
+#include "PGASPI.h"
 #include "GPI2.h"
 #include "GPI2_Coll.h"
 #include "GPI2_Env.h"
@@ -108,142 +108,6 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
   return GASPI_ERROR;
 }
 
-gaspi_return_t
-pgaspi_create_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
-{
-  const int i = (int) rank;
-
-  if(lock_gaspi_tout(&gaspi_create_lock, timeout_ms))
-    return GASPI_TIMEOUT;
-
-  if(!glb_gaspi_ctx.ep_conn[i].istat)
-    {
-      if(pgaspi_dev_create_endpoint(i) < 0)
-	{
-	  unlock_gaspi(&gaspi_create_lock);
-	  return GASPI_ERROR;
-	}
-      glb_gaspi_ctx.ep_conn[i].istat = 1;
-    }
-
-  unlock_gaspi(&gaspi_create_lock);
-
-  return GASPI_SUCCESS;
-}
-
-gaspi_return_t
-pgaspi_connect_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
-{
-  const int i = (int) rank;
-  gaspi_return_t eret = GASPI_ERROR;
-
-  if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
-    {
-      return GASPI_TIMEOUT;
-    }
-
-  /* already connected? */
-  if(glb_gaspi_ctx.ep_conn[i].cstat)
-    {
-      eret = GASPI_SUCCESS;
-    }
-  else
-    {
-      if(pgaspi_dev_connect_context(i) != 0)
-	{
-	  eret = GASPI_ERR_DEVICE;
-	}
-      else
-	{
-	  glb_gaspi_ctx.ep_conn[i].cstat = 1;
-	  eret = GASPI_SUCCESS;
-	}
-    }
-
-  unlock_gaspi(&gaspi_ccontext_lock);
-
-  return eret;
-}
-
-#pragma weak gaspi_connect = pgaspi_connect
-gaspi_return_t
-pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
-{
-  gaspi_return_t eret = GASPI_ERROR;
-
-  gaspi_verify_init("gaspi_connect");
-
-  const int i = (int) rank;
-
-  eret = pgaspi_create_endpoint_to(rank, timeout_ms);
-  if( eret != GASPI_SUCCESS)
-    {
-      return eret;
-    }
-
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
-    return GASPI_TIMEOUT;
-
-  if(glb_gaspi_ctx.ep_conn[i].cstat == 1)
-    {
-      /* already connected */
-      unlock_gaspi(&glb_gaspi_ctx_lock);
-      return GASPI_SUCCESS;
-    }
-
-  eret = gaspi_sn_command(GASPI_SN_CONNECT, rank, timeout_ms, NULL);
-  if(eret != GASPI_SUCCESS)
-    {
-      if( GASPI_ERROR == eret)
-	{
-	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
-	}
-
-      unlock_gaspi(&glb_gaspi_ctx_lock);
-      return eret;
-    }
-
-  eret = pgaspi_connect_endpoint_to(rank, timeout_ms);
-
-  unlock_gaspi(&glb_gaspi_ctx_lock);
-  return eret;
-}
-
-#pragma weak gaspi_disconnect = pgaspi_disconnect
-gaspi_return_t
-pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
-{
-
-  gaspi_return_t eret = GASPI_ERROR;
-
-  gaspi_verify_init("gaspi_disconnect");
-  
-  const int i = rank;
-  
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
-    return GASPI_TIMEOUT;
-
-  /* Not connected? */
-  if( 0 == glb_gaspi_ctx.ep_conn[i].cstat )
-    {
-      eret = GASPI_SUCCESS;
-      goto errL;
-    }
-  
-  eret = pgaspi_dev_disconnect_context(i);
-  if(eret != GASPI_SUCCESS)
-    goto errL;
-
-  glb_gaspi_ctx.ep_conn[i].istat = 0;
-  glb_gaspi_ctx.ep_conn[i].cstat = 0;
-
-  unlock_gaspi(&glb_gaspi_ctx_lock);
-  return GASPI_SUCCESS;
-
-errL:
-  unlock_gaspi (&glb_gaspi_ctx_lock);
-  return eret;
-}
 
 static int
 pgaspi_init_core()
@@ -552,7 +416,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   return eret;
 
  errL:
-  //TODO: should close/reset socket?
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
   return eret;

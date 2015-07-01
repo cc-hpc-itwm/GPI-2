@@ -29,6 +29,7 @@ SRCS += GPI2_PASSIVE.c
 SRCS += GPI2_SEG.c
 SRCS += GPI2_GRP.c
 SRCS += GPI2_CONFIG.c
+SRCS += GPI2_CM.c
 SRCS += GPI2.c
 
 HDRS += GPI2_Env.h
@@ -36,6 +37,7 @@ HDRS += GPI2_Utility.h
 HDRS += GPI_Types.h
 HDRS += GPI2_SN.h
 HDRS += GPI2_Coll.h
+HDRS += GPI2_CM.h
 HDRS += GPI2.h
 
 OBJS = $(SRCS:.c=.o)
