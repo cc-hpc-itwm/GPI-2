@@ -37,12 +37,6 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  if (offset & 0x7)
-    {
-      gaspi_print_error("Unaligned offset for atomic operation (fetch_add)");
-      return GASPI_ERROR;
-    }
-
   if(lock_gaspi_tout (&glb_gaspi_group_ctx[0].gl, timeout_ms))
     return GASPI_TIMEOUT;
 
@@ -54,7 +48,7 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 	  goto endL;
 	}
     }
-  
+
   eret = pgaspi_dev_atomic_fetch_add(segment_id, offset, rank,
 				     val_add);
 

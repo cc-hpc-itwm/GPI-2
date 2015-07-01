@@ -105,11 +105,11 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
 
   gaspi_print_error("NUMA was not enabled (-N option of gaspi_run)");
   
-  return GASPI_ERROR;
+  return GASPI_ERR_ENV;
 }
 
 
-static int
+static gaspi_return_t
 pgaspi_init_core()
 {
   int i;
@@ -143,7 +143,7 @@ pgaspi_init_core()
   if(page_size < 0)
     {
       gaspi_print_error ("Failed to get system's page size.");
-      return -1;
+      return GASPI_ERROR;
     }
 
   glb_gaspi_ctx.nsrc.size = size;
@@ -151,7 +151,7 @@ pgaspi_init_core()
   if(posix_memalign ((void **) &glb_gaspi_ctx.nsrc.ptr, page_size, size)!= 0)
     {
       gaspi_print_error ("Memory allocation (posix_memalign) failed");
-      return -1;
+      return GASPI_ERR_MEMALLOC;
     }
 
   memset(glb_gaspi_ctx.nsrc.buf, 0, size);
@@ -163,23 +163,23 @@ pgaspi_init_core()
 
   glb_gaspi_ctx.ep_conn = (gaspi_endpoint_conn_t *) calloc(glb_gaspi_ctx.tnc, sizeof(gaspi_endpoint_conn_t));
   if (glb_gaspi_ctx.ep_conn == NULL)
-    return -1;
+    return GASPI_ERR_MEMALLOC;
 
   if(pgaspi_dev_init_core(&glb_gaspi_cfg) != 0)
-    return -1;
+    return GASPI_ERR_DEVICE;
 
   for(i = 0; i < GASPI_MAX_QP + 3; i++)
     {
       glb_gaspi_ctx.qp_state_vec[i] = (unsigned char *) calloc (glb_gaspi_ctx.tnc, sizeof(unsigned char));
       if(!glb_gaspi_ctx.qp_state_vec[i])
 	{
-	  return -1;
+	  return GASPI_ERR_MEMALLOC;
 	}
     }
 
   glb_gaspi_dev_init = 1;
 
-  return 0;
+  return GASPI_SUCCESS;
 }
 
 #pragma weak gaspi_proc_init = pgaspi_proc_init
@@ -336,7 +336,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  if(glb_gaspi_ctx.sockfd == NULL)
 	    {
 	      gaspi_print_error("Failed to allocate memory");
-	      eret = GASPI_ERROR;
+	      eret = GASPI_ERR_MEMALLOC;
 	      goto errL;
 	    }
 	  
@@ -355,12 +355,12 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   if( 0 != gaspi_sn_broadcast_topology(GASPI_BLOCK) )
     {
       gaspi_print_error("Failed topology broadcast");
+      eret = GASPI_ERROR;
       goto errL;
     }
   
-  if(pgaspi_init_core() != GASPI_SUCCESS)
+  if( (eret = pgaspi_init_core()) != GASPI_SUCCESS )
     {
-      eret = GASPI_ERROR;
       goto errL;
     }
 
@@ -380,9 +380,8 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	{
 	  for(i = glb_gaspi_ctx.rank; i >= 0; i--)
 	    {
-	      if(pgaspi_connect((gaspi_rank_t) i, timeout_ms) != GASPI_SUCCESS)
+	      if( (eret = pgaspi_connect((gaspi_rank_t) i, timeout_ms)) != GASPI_SUCCESS )
 		{
-		  eret = GASPI_ERROR;
 		  goto errL;
 		}
 	    }
@@ -396,7 +395,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       else
 	{
 	  gaspi_print_error("GASPI_GROUP_ALL creation has failed (GASPI_GROUP_ALL)\n");
-	  return GASPI_ERROR;
 	}
     }
   else /* dont build_infrastructure */
@@ -444,7 +442,7 @@ pgaspi_cleanup_core()
 
   /* Device clean-up */
   if(pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0)
-    return GASPI_ERROR;
+    return GASPI_ERR_DEVICE;
 
   if(glb_gaspi_ctx.nsrc.buf)
     {
@@ -567,13 +565,14 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   gaspi_return_t eret = GASPI_ERROR;
 
   gaspi_verify_init("gaspi_proc_kill");
+  gaspi_verify_rank(rank);
 
-  if((rank==glb_gaspi_ctx.rank) || (rank>=glb_gaspi_ctx.tnc))
+  if( rank == glb_gaspi_ctx.rank )
     {
       gaspi_print_error("Invalid rank to kill");
-      return GASPI_ERROR;
+      return GASPI_ERR_INV_RANK;
     }
-
+  
   if(lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 

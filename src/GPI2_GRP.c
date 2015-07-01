@@ -244,7 +244,7 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
   return GASPI_SUCCESS;
 }
 
-static inline int
+static inline gaspi_return_t
 _pgaspi_group_commit_to(const gaspi_group_t group,
 			const gaspi_rank_t i,
 			const gaspi_timeout_t timeout_ms,
@@ -255,12 +255,12 @@ _pgaspi_group_commit_to(const gaspi_group_t group,
   eret = gaspi_sn_command(GASPI_SN_GRP_CONNECT, i, timeout_ms, (void *) &group);
   if(eret != GASPI_SUCCESS)
     {
-      return -1;
+      return eret;
     }
 
   glb_gaspi_group_ctx[group].committed_rank[i] = 1;
 
-  return 0;
+  return GASPI_SUCCESS;
 }
 
 /* Internal shortcut for GASPI_GROUP_ALL */
@@ -272,16 +272,16 @@ pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms)
 {
   int i;
   gaspi_group_t g0;
-  if(gaspi_group_create(&g0) != GASPI_SUCCESS)
+  gaspi_return_t eret = GASPI_ERROR;
+
+  if( (eret = gaspi_group_create(&g0)) != GASPI_SUCCESS )
     {
-      gaspi_print_error("Failed to create alll");
-      return GASPI_ERROR;
+      return eret;
     }
 
   if(g0 != GASPI_GROUP_ALL)
     {
-      gaspi_print_error("unexpected value");
-      return GASPI_ERROR;
+      return GASPI_ERR_INV_GROUP;
     }
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
@@ -494,6 +494,8 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   gaspi_verify_init("gaspi_barrier");
   gaspi_verify_group(g);
 
+  gaspi_return_t eret = GASPI_ERROR;
+
   if(lock_gaspi_tout (&glb_gaspi_group_ctx[g].gl, timeout_ms))
     {
       return GASPI_TIMEOUT;
@@ -542,20 +544,20 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	}
 
       if(!glb_gaspi_ctx.ep_conn[dst].cstat)
-	if(pgaspi_connect((gaspi_rank_t) dst, timeout_ms) != GASPI_SUCCESS)
+	if( ( eret = pgaspi_connect((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS )
 	  {
 	    gaspi_print_error("Failed to connect to rank %u", dst);
 	    unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
-	    return GASPI_ERROR;
+	    return eret;
 	  }
 
       if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
 	{
-	  if(_pgaspi_group_commit_to(g, dst, timeout_ms, 1) != 0)
+	  if( ( eret = _pgaspi_group_commit_to(g, dst, timeout_ms, 1)) != GASPI_SUCCESS )
 	    {
 	      gaspi_print_error("Failed to commit to rank %u", dst);
 	      unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
-	      return GASPI_ERROR;
+	      return eret;
 	    }
 	}
 
@@ -619,6 +621,8 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
   int idst, dst, bid = 0;
   int mask, tmprank, tmpdst;
 
+  gaspi_return_t eret = GASPI_ERROR;
+
   const int dsize = r_args->elem_size * elem_cnt;
 
   if( glb_gaspi_group_ctx[g].level == 0 )
@@ -661,19 +665,19 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	  dst = glb_gaspi_group_ctx[g].rank_grp[rank + 1];
 
 	  if(!glb_gaspi_ctx.ep_conn[dst].cstat)
-	    if(pgaspi_connect((gaspi_rank_t) dst, timeout_ms) != GASPI_SUCCESS)
+	    if( (eret = pgaspi_connect((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS)
 	      {
 		gaspi_print_error("Failed to connect to rank %u", dst);
-		return GASPI_ERROR;
+		return eret;
 	      }
 
 	  if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
 	    {
-	      if(_pgaspi_group_commit_to(g, dst, timeout_ms, 1) != 0)
+	      if( (eret = _pgaspi_group_commit_to(g, dst, timeout_ms, 1)) != GASPI_SUCCESS )
 		{
 		  gaspi_print_error("Failed to commit to rank %u", dst);
 		  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
-		  return GASPI_ERROR;
+		  return eret;
 		}
 	    }
 
@@ -776,19 +780,19 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	    }
 
 	  if(!glb_gaspi_ctx.ep_conn[dst].cstat)
-	    if(pgaspi_connect((gaspi_rank_t) dst, timeout_ms) != GASPI_SUCCESS)
+	    if( (eret = pgaspi_connect((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS)
 	      {
 		gaspi_print_error("Failed to connect to rank %u", dst);
-		return GASPI_ERROR;
+		return eret;
 	      }
 
 	  if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
 	    {
-	      if(_pgaspi_group_commit_to(g, dst, timeout_ms, 1) != 0)
+	      if( (eret = _pgaspi_group_commit_to(g, dst, timeout_ms, 1)) != GASPI_SUCCESS )
 		{
 		  gaspi_print_error("Failed to commit to rank %u", dst);
-	      unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
-	      return GASPI_ERROR;
+		  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
+		  return eret;
 		}
 	    }
 
@@ -863,19 +867,19 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	dst = glb_gaspi_group_ctx[g].rank_grp[rank - 1];
 
 	if(!glb_gaspi_ctx.ep_conn[dst].cstat)
-	  if(pgaspi_connect((gaspi_rank_t) dst, timeout_ms) != GASPI_SUCCESS)
+	  if( (eret = pgaspi_connect((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS)
 	    {
 	      gaspi_print_error("Failed to connect to rank %u", dst);
-	      return GASPI_ERROR;
+	      return eret;
 	    }
 
 	if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
 	  {
-	    if(_pgaspi_group_commit_to(g, dst, timeout_ms, 1) != 0)
+	    if( (eret = _pgaspi_group_commit_to(g, dst, timeout_ms, 1)) != GASPI_SUCCESS )
 	      {
 		gaspi_print_error("Failed to commit to rank %u", dst);
 		unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
-		return GASPI_ERROR;
+		return eret;
 	      }
 	  }
 
@@ -924,7 +928,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
   if (pret < 0)
     {
 
-      return GASPI_ERROR;
+      return GASPI_ERR_DEVICE;
     }
 
   glb_gaspi_ctx.ne_count_grp -= pret;

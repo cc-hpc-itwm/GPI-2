@@ -34,7 +34,7 @@ pgaspi_create_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout
       if(pgaspi_dev_create_endpoint(i) < 0)
 	{
 	  unlock_gaspi(&gaspi_create_lock);
-	  return GASPI_ERROR;
+	  return GASPI_ERR_DEVICE;
 	}
       glb_gaspi_ctx.ep_conn[i].istat = 1;
     }
@@ -126,7 +126,6 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 gaspi_return_t
 pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
-
   gaspi_return_t eret = GASPI_ERROR;
 
   gaspi_verify_init("gaspi_disconnect");

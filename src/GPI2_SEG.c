@@ -217,7 +217,7 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   if(pgaspi_dev_unregister_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank])) < 0)
     {
       unlock_gaspi (&gaspi_mseg_lock);
-      return GASPI_ERROR;
+      return GASPI_ERR_DEVICE;
     }
   
   free (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf);
