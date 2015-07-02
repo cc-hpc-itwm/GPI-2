@@ -42,7 +42,7 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
   
     if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
-      glb_gaspi_ctx.qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
@@ -72,7 +72,7 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
   
     if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
-      glb_gaspi_ctx.qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
@@ -150,7 +150,7 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
 
     if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
-      glb_gaspi_ctx.qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
@@ -187,7 +187,7 @@ pgaspi_dev_write_list (const gaspi_number_t num,
       
       if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
 	{
-	  glb_gaspi_ctx.qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
+	  glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
 	  return GASPI_ERROR;
 	}
     }
@@ -223,7 +223,7 @@ pgaspi_dev_read_list (const gaspi_number_t num,
 
       if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
 	{
-	  glb_gaspi_ctx.qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
+	  glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
 	  return GASPI_ERROR;
 	}
     }
@@ -246,7 +246,7 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
 		       segment_id_remote, offset_remote, size,
 		       queue) != GASPI_SUCCESS)
     {
-      glb_gaspi_ctx.qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
@@ -271,7 +271,7 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
 			    segment_id_remote, offset_remote, size,
 			    queue) != GASPI_SUCCESS)
     {
-      glb_gaspi_ctx.qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 

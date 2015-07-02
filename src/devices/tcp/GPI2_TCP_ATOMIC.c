@@ -41,7 +41,7 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
   
   if( write(glb_gaspi_ctx_tcp.qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
+      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
@@ -101,7 +101,7 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
   
   if( write(glb_gaspi_ctx_tcp.qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
+      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 

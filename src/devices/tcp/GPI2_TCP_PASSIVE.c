@@ -53,7 +53,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id,
   
   if( write(glb_gaspi_ctx_tcp.qpP->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
+      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
@@ -121,7 +121,7 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
   
   if( write(glb_gaspi_ctx_tcp.srqP, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
+      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][glb_gaspi_ctx.rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
