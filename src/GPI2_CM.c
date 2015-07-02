@@ -55,8 +55,7 @@ pgaspi_connect_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeou
       return GASPI_TIMEOUT;
     }
 
-  /* already connected? */
-  if(glb_gaspi_ctx.ep_conn[i].cstat)
+  if( GASPI_ENDPOINT_CONNECTED == glb_gaspi_ctx.ep_conn[i].cstat )
     {
       eret = GASPI_SUCCESS;
     }
@@ -68,7 +67,7 @@ pgaspi_connect_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeou
 	}
       else
 	{
-	  glb_gaspi_ctx.ep_conn[i].cstat = 1;
+	  glb_gaspi_ctx.ep_conn[i].cstat = GASPI_ENDPOINT_CONNECTED;
 	  eret = GASPI_SUCCESS;
 	}
     }
@@ -97,9 +96,8 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
-  if(glb_gaspi_ctx.ep_conn[i].cstat == 1)
+  if( GASPI_ENDPOINT_CONNECTED == glb_gaspi_ctx.ep_conn[i].cstat )
     {
-      /* already connected */
       unlock_gaspi(&glb_gaspi_ctx_lock);
       return GASPI_SUCCESS;
     }
@@ -135,8 +133,7 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
-  /* Not connected? */
-  if( 0 == glb_gaspi_ctx.ep_conn[i].cstat )
+  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[i].cstat )
     {
       eret = GASPI_SUCCESS;
       goto errL;
@@ -147,7 +144,7 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
     goto errL;
 
   glb_gaspi_ctx.ep_conn[i].istat = 0;
-  glb_gaspi_ctx.ep_conn[i].cstat = 0;
+  glb_gaspi_ctx.ep_conn[i].cstat = GASPI_ENDPOINT_DISCONNECTED;
 
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;

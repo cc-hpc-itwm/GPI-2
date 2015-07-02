@@ -542,8 +542,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	  jmp = 0;
 	  goto B0;
 	}
-
-      if(!glb_gaspi_ctx.ep_conn[dst].cstat)
+      if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[dst].cstat )
 	if( ( eret = pgaspi_connect((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS )
 	  {
 	    gaspi_print_error("Failed to connect to rank %u", dst);
@@ -664,7 +663,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	{
 	  dst = glb_gaspi_group_ctx[g].rank_grp[rank + 1];
 
-	  if(!glb_gaspi_ctx.ep_conn[dst].cstat)
+	  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[dst].cstat )
 	    if( (eret = pgaspi_connect((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS)
 	      {
 		gaspi_print_error("Failed to connect to rank %u", dst);
@@ -779,7 +778,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	      goto J2;
 	    }
 
-	  if(!glb_gaspi_ctx.ep_conn[dst].cstat)
+	  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[dst].cstat )
 	    if( (eret = pgaspi_connect((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS)
 	      {
 		gaspi_print_error("Failed to connect to rank %u", dst);
@@ -866,7 +865,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
 	dst = glb_gaspi_group_ctx[g].rank_grp[rank - 1];
 
-	if(!glb_gaspi_ctx.ep_conn[dst].cstat)
+	if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[dst].cstat )
 	  if( (eret = pgaspi_connect((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS)
 	    {
 	      gaspi_print_error("Failed to connect to rank %u", dst);

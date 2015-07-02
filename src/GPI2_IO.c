@@ -126,7 +126,7 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
-  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
       if ( eret != GASPI_SUCCESS)
@@ -168,7 +168,7 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
-  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
       if ( eret != GASPI_SUCCESS)
@@ -242,8 +242,8 @@ pgaspi_write_list (const gaspi_number_t num,
 
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
-  
-  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+
+  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
       if ( eret != GASPI_SUCCESS)
@@ -297,7 +297,7 @@ pgaspi_read_list (const gaspi_number_t num,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
-  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
       if ( eret != GASPI_SUCCESS)
@@ -340,7 +340,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
-  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
       if ( eret != GASPI_SUCCESS)
@@ -523,7 +523,7 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
-  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
       if ( eret != GASPI_SUCCESS)
@@ -585,7 +585,7 @@ pgaspi_write_list_notify (const gaspi_number_t num,
   if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
-  if(!glb_gaspi_ctx.ep_conn[rank].cstat)
+  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
       if ( eret != GASPI_SUCCESS)

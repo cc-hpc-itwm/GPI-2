@@ -34,12 +34,18 @@ typedef struct
 enum
 { MASTER_PROC = 1, WORKER_PROC = 2 };
 
-/* connection status to a endpoint */
+typedef enum
+  {
+    GASPI_ENDPOINT_DISCONNECTED = 0,
+    GASPI_ENDPOINT_CONNECTED = 1
+  }gaspi_endpoint_conn_status_t;
+
+/* connection to a endpoint */
 typedef struct
 {
   gaspi_rank_t rank; /* to whom */
-  volatile int istat; /* created? */
-  volatile int cstat; /* connected? */
+  volatile int istat;
+  volatile gaspi_endpoint_conn_status_t cstat;
 } gaspi_endpoint_conn_t;
 
 typedef struct
