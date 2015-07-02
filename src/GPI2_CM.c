@@ -29,14 +29,14 @@ pgaspi_create_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout
   if(lock_gaspi_tout(&gaspi_create_lock, timeout_ms))
     return GASPI_TIMEOUT;
 
-  if(!glb_gaspi_ctx.ep_conn[i].istat)
+  if( GASPI_ENDPOINT_NOT_CREATED == glb_gaspi_ctx.ep_conn[i].istat )
     {
       if(pgaspi_dev_create_endpoint(i) < 0)
 	{
 	  unlock_gaspi(&gaspi_create_lock);
 	  return GASPI_ERR_DEVICE;
 	}
-      glb_gaspi_ctx.ep_conn[i].istat = 1;
+      glb_gaspi_ctx.ep_conn[i].istat = GASPI_ENDPOINT_CREATED;
     }
 
   unlock_gaspi(&gaspi_create_lock);
@@ -143,7 +143,7 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   if(eret != GASPI_SUCCESS)
     goto errL;
 
-  glb_gaspi_ctx.ep_conn[i].istat = 0;
+  glb_gaspi_ctx.ep_conn[i].istat = GASPI_ENDPOINT_NOT_CREATED;
   glb_gaspi_ctx.ep_conn[i].cstat = GASPI_ENDPOINT_DISCONNECTED;
 
   unlock_gaspi(&glb_gaspi_ctx_lock);

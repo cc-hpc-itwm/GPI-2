@@ -769,7 +769,7 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
   /* TODO: single loop should be enough */
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
-      if(glb_gaspi_ctx.ep_conn[i].istat == 0)      
+      if( GASPI_ENDPOINT_NOT_CREATED == glb_gaspi_ctx.ep_conn[i].istat )
 	continue;
       
       if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpGroups[i]))
@@ -788,7 +788,7 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
-      if(glb_gaspi_ctx.ep_conn[i].istat==0)      
+      if( GASPI_ENDPOINT_NOT_CREATED == glb_gaspi_ctx.ep_conn[i].istat )
 	{
 	  continue;
 	}
@@ -809,10 +809,9 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 
   for(c = 0; c < gaspi_cfg->queue_num; c++)
     {
-      
       for(i = 0; i < glb_gaspi_ctx.tnc; i++)
 	{
-	  if(glb_gaspi_ctx.ep_conn[i].istat == 0)	  
+	  if( GASPI_ENDPOINT_NOT_CREATED == glb_gaspi_ctx.ep_conn[i].istat )
 	    {
 	      continue;
 	    }
