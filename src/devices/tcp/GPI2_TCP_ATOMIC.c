@@ -41,8 +41,7 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
   
   if( write(glb_gaspi_ctx_tcp.qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
-      printf("FAILED TO POST\n");
-      
+      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
@@ -66,7 +65,7 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 	  gaspi_print_error("Failed request to %lu. Collectives queue might be broken",
 			    wc.wr_id);
 
-	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = 1;
+	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
 
 	  return GASPI_ERROR;
 	}
@@ -102,8 +101,7 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
   
   if( write(glb_gaspi_ctx_tcp.qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
-      printf("FAILED TO POST\n");
-      
+      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
@@ -127,7 +125,7 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 	  gaspi_print_error("Failed request to %lu. Collectives queue might be broken",
 			    wc.wr_id);
 
-	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = 1;
+	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
 
 	  return GASPI_ERROR;
 	}

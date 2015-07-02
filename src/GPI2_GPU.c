@@ -222,7 +222,7 @@ static int _gaspi_event_send(gaspi_cuda_event *event, int queue)
 
   if(ibv_post_send(glb_gaspi_ctx_ib.qpC[queue][event->rank],&swr,&bad_wr))
   {
-    glb_gaspi_ctx.qp_state_vec[queue][event->rank]=1;       
+    glb_gaspi_ctx.qp_state_vec[queue][event->rank] = GASPI_STATE_CORRUPT;
     return GASPI_ERROR; 
   }
 
@@ -302,7 +302,7 @@ gaspi_return_t pgaspi_gpu_write(const gaspi_segment_id_t segment_id_local,
       cudaError_t err = cudaEventRecord(agpu->events[queue][i].event,agpu->streams[queue]); 
       if(err != cudaSuccess)
       {
-        glb_gaspi_ctx.qp_state_vec[queue][rank]=1;
+        glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
         unlock_gaspi(&glb_gaspi_ctx.lockC[queue]);
         return GASPI_ERROR;
       }
@@ -551,7 +551,7 @@ gaspi_return_t pgaspi_gpu_write_notify(const gaspi_segment_id_t segment_id_local
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swrN, &bad_wr))
   {
-    glb_gaspi_ctx.qp_state_vec[queue][rank] = 1;
+    glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
     unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
     return GASPI_ERROR;
   }

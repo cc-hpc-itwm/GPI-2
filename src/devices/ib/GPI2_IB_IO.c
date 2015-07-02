@@ -83,7 +83,7 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr, &bad_wr))
     {
-      glb_gaspi_ctx.qp_state_vec[queue][rank] = 1;
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
 
       return GASPI_ERROR;
     }
@@ -137,7 +137,7 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr, &bad_wr))
     {
-      glb_gaspi_ctx.qp_state_vec[queue][rank] = 1;
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
 
       return GASPI_ERROR;
     }
@@ -184,7 +184,7 @@ pgaspi_dev_wait (const gaspi_queue_id_t queue,
 	  gaspi_print_error("Failed request to %lu. Queue %d might be broken %s",
 			    wc.wr_id, queue, ibv_wc_status_str(wc.status) );
 
-	  glb_gaspi_ctx.qp_state_vec[queue][wc.wr_id] = 1;
+	  glb_gaspi_ctx.qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
 
 	  return GASPI_ERROR;
 	}
@@ -257,7 +257,7 @@ pgaspi_dev_write_list (const gaspi_number_t num,
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr[0], &bad_wr))
     {
-      glb_gaspi_ctx.qp_state_vec[queue][rank] = 1;
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
 
       return GASPI_ERROR;
     }
@@ -321,7 +321,7 @@ pgaspi_dev_read_list (const gaspi_number_t num,
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr[0], &bad_wr))
     {
-      glb_gaspi_ctx.qp_state_vec[queue][rank] = 1;
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       
       return GASPI_ERROR;
     }
@@ -370,7 +370,7 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swrN, &bad_wr))
     {
-      glb_gaspi_ctx.qp_state_vec[queue][rank] = 1;
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
 
       return GASPI_ERROR;
     }
@@ -455,7 +455,7 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr, &bad_wr))
     {
-      glb_gaspi_ctx.qp_state_vec[queue][rank] = 1;
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
 
       return GASPI_ERROR;
     }
@@ -557,8 +557,8 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
   
   if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr[0], &bad_wr))
     {
-      glb_gaspi_ctx.qp_state_vec[queue][rank] = 1;
-      
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+
       return GASPI_ERROR;
     }
 

@@ -39,7 +39,7 @@ pgaspi_dev_poll_groups()
 	{
 	  if (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS)
 	    {
-	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = 1;
+	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
 	    }
 	}
 
@@ -74,7 +74,10 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
   swr.wr_id = dst;
   
   if (ibv_post_send ((struct ibv_qp *) glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
+    {
+      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
       return 1;
+    }
 
   return 0;
 }

@@ -51,7 +51,7 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr))
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = 1;
+      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
 
       return GASPI_ERROR;
     }
@@ -72,8 +72,7 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 	  || (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS))
 	{
 	  glb_gaspi_ctx.
-	    qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].
-					wr_id] = 1;
+	    qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
 
 	  gaspi_print_error("Failed request to %lu : %s",
 			    glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 
@@ -124,7 +123,7 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr))
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = 1;
+      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
 
       return GASPI_ERROR;
     }
@@ -143,7 +142,7 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 
       if ((ne < 0) || (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS))
 	{
-	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = 1;
+	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
 
  	  gaspi_print_error("Failed request to %lu : %s",
 			    glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 

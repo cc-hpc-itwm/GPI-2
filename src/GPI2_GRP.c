@@ -565,7 +565,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 				     (void *) (glb_gaspi_group_ctx[g].rrcd[dst].addr + (2 * rank + glb_gaspi_group_ctx[g].togle)),
 				     g) != 0)
 	{
-	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
+	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
 	  return GASPI_ERR_DEVICE;
 	}
@@ -687,7 +687,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 					 (void *)(glb_gaspi_group_ctx[g].rrcd[dst].addr + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048)),
 					 g) != 0)
 	    {
-	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
+	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	      return GASPI_ERR_DEVICE;
 	    }
 
@@ -695,7 +695,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 					 (void *)(glb_gaspi_group_ctx[g].rrcd[dst].addr + (2 * rank + glb_gaspi_group_ctx[g].togle)),
 					 g) != 0)
 	    {
-	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
+	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	      return GASPI_ERR_DEVICE;
 	    }
 	  glb_gaspi_ctx.ne_count_grp+=2;
@@ -800,7 +800,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 					 (void *)(glb_gaspi_group_ctx[g].rrcd[dst].addr + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048)),
 					 g) != 0)
 	    {
-	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
+	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	      return GASPI_ERR_DEVICE;
 	    }
 
@@ -808,7 +808,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 					 (void *)(glb_gaspi_group_ctx[g].rrcd[dst].addr + (2 * rank + glb_gaspi_group_ctx[g].togle)),
 					 g) != 0)
 	    {
-	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
+	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	      return GASPI_ERR_DEVICE;
 	    }
 	    glb_gaspi_ctx.ne_count_grp+=2;
@@ -887,7 +887,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 				       (void *)(glb_gaspi_group_ctx[g].rrcd[dst].addr + (COLL_MEM_RECV + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048)),
 				       g) != 0)
 	  {
-	    glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
+	    glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	    return GASPI_ERR_DEVICE;
 	  }
 
@@ -895,7 +895,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 				       (void *)(glb_gaspi_group_ctx[g].rrcd[dst].addr + (2 * rank + glb_gaspi_group_ctx[g].togle)),
 				       g) != 0)
 	  {
-	    glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = 1;
+	    glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	    return GASPI_ERR_DEVICE;
 	  }
 	  glb_gaspi_ctx.ne_count_grp+=2;
