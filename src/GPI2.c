@@ -376,7 +376,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   if(glb_gaspi_cfg.build_infrastructure)
     {
       /* configuration tells us to pre-connect */
-      if( 2 == glb_gaspi_cfg.build_infrastructure )
+      if( GASPI_TOPOLOGY_STATIC == glb_gaspi_cfg.build_infrastructure )
 	{
 	  for(i = glb_gaspi_ctx.rank; i >= 0; i--)
 	    {

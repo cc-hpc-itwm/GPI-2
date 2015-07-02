@@ -39,7 +39,7 @@ gaspi_config_t glb_gaspi_cfg = {
   GASPI_MAX_TSIZE_P,		//passive_transfer_size_max;
   NEXT_OFFSET,			//allreduce_buf_size;
   255,				//allreduce_elem_max;
-  1				//build_infrastructure;
+  GASPI_TOPOLOGY_STATIC         //build_infrastructure;
 };
 
 #pragma weak gaspi_config_get = pgaspi_config_get

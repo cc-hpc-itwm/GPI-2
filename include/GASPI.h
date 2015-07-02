@@ -182,8 +182,19 @@ extern "C"
     GASPI_MEM_GPU = 2
   };
 
-#define GASPI_ALLOC_DEFAULT GASPI_MEM_UNINITIALIZED 
-  
+#define GASPI_ALLOC_DEFAULT GASPI_MEM_UNINITIALIZED
+
+  /**
+   * Topology building strategy.
+   *
+   */
+ typedef enum
+   {
+     GASPI_TOPOLOGY_NONE = 0,    /* No connection will be established (application) */
+     GASPI_TOPOLOGY_STATIC = 1,  /* Statically connect everyone (all-to-all) */
+     GASPI_TOPOLOGY_DYNAMIC = 2  /* Dynamically connect peers (as needed) */
+   } gaspi_topology_t;
+
   /**
    * A structure with configuration.
    *
@@ -208,7 +219,7 @@ extern "C"
     gaspi_number_t passive_transfer_size_max;
     gaspi_size_t allreduce_buf_size;
     gaspi_number_t allreduce_elem_max;
-    gaspi_number_t build_infrastructure;
+    gaspi_topology_t build_infrastructure;
 
   } gaspi_config_t;
 
