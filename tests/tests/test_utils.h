@@ -12,21 +12,21 @@ static gaspi_config_t tsuite_default_config =
     12121,
     0,				//netinfo
     0,				//netdev
-    2048,				//mtu
+    2048,			//mtu
     1,				//port check
     0,				//user selected network
     GASPI_IB,			//network typ
-    1024,				//queue depth
+    1024,			//queue depth
     8,				//queue count
-    GASPI_MAX_GROUPS,		//group_max;
-    GASPI_MAX_MSEGS,		//segment_max;
-    GASPI_MAX_TSIZE_C,		//transfer_size_max;
-    GASPI_MAX_NOTIFICATION,	//notification_num;
-    1024,				//passive_queue_size_max;
-    GASPI_MAX_TSIZE_P,		//passive_transfer_size_max;
-    278592,			//allreduce_buf_size;
-    255,				//allreduce_elem_max;
-    1				//build_infrastructure;  
+    GASPI_MAX_GROUPS,		//group_max
+    GASPI_MAX_MSEGS,		//segment_max
+    GASPI_MAX_TSIZE_C,		//transfer_size_max
+    GASPI_MAX_NOTIFICATION,	//notification_num
+    1024,			//passive_queue_size_max
+    GASPI_MAX_TSIZE_P,		//passive_transfer_size_max
+    278592,			//allreduce_buf_size
+    255,			//allreduce_elem_max
+    GASPI_TOPOLOGY_DYNAMIC	//build_infrastructure
   };
 
 #define _4GB 4294967296

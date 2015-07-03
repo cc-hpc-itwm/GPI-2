@@ -34,6 +34,7 @@ run_test(){
 	if [ -r defs/default.def ]; then                                                                                     
 	    printf "%45s: " "$1 [default.def]"
 	    TEST_ARGS=`gawk 'BEGIN{FS="="} /NETWORK/{print $2}' defs/default.def`
+	    TEST_ARGS="$TEST_ARGS "" `gawk 'BEGIN{FS="="} /TOPOLOGY/{print $2}' defs/default.def`"
 	else
 	    printf "%45s: " "$1"
 	fi                                

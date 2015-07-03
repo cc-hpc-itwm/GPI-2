@@ -84,6 +84,11 @@ void tsuite_init(int argc, char *argv[])
 	    tsuite_default_config.network = GASPI_IB;
 	  if(strcmp(argv[i], "GASPI_ROCE") == 0)
 	    tsuite_default_config.network = GASPI_ROCE;
+	  if(strcmp(argv[i], "STATIC_TOPO") == 0)
+	    tsuite_default_config.build_infrastructure = GASPI_TOPOLOGY_STATIC;
+	  if(strcmp(argv[i], "DYNAMIC_TOPO") == 0)
+	    tsuite_default_config.build_infrastructure = GASPI_TOPOLOGY_DYNAMIC;
+
 	}
       ASSERT(gaspi_config_set(tsuite_default_config));
     }
