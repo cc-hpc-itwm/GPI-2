@@ -345,13 +345,13 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
 
   *((unsigned int *) slistN.addr) = notification_value;
 
-  slistN.length = 4;
+  slistN.length = sizeof(gaspi_notification_t);
   slistN.lkey = ((struct ibv_mr *) glb_gaspi_group_ctx[0].rrcd[glb_gaspi_ctx.rank].mr)->lkey;
 
 #ifdef GPI2_CUDA
   if( glb_gaspi_ctx.rrmd[segment_id_remote][rank].cudaDevId >= 0)
     {
-      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].host_addr+notification_id*4);
+      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].host_addr + notification_id * sizeof(gaspi_notification_t));
       swrN.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote][rank].host_rkey;
     }
   else
@@ -365,7 +365,7 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
   swrN.num_sge = 1;
   swrN.wr_id = rank;
   swrN.opcode = IBV_WR_RDMA_WRITE;
-  swrN.send_flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;;
+  swrN.send_flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;
   swrN.next = NULL;
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swrN, &bad_wr))
@@ -535,7 +535,7 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
 #ifdef GPI2_CUDA
   if(glb_gaspi_ctx.rrmd[segment_id_notification][rank].cudaDevId >= 0)
     {
-      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_notification][rank].host_addr+notification_id*4);
+      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_notification][rank].host_addr + notification_id * sizeof(gaspi_notification_t));
       swrN.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_notification][rank].host_rkey;
     }
   else
