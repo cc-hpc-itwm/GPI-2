@@ -394,7 +394,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	}
       else
 	{
-	  gaspi_print_error("GASPI_GROUP_ALL creation has failed (GASPI_GROUP_ALL)\n");
+	  gaspi_print_error("Failed to create GASPI_GROUP_ALL.");
 	}
     }
   else /* dont build_infrastructure */
