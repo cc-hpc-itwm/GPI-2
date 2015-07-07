@@ -200,10 +200,9 @@ The gaspi_run utility has the following further options [OPTIONS]:
 ===================
 
 The gaspi_logger utility is used to view and separate the output from
-all nodes except the master node (rank 0) when the function
-gaspi_printf is called. The gaspi_logger is started, on another
-session, on the master node. The output of the application, when
-called with gaspi_printf, will be redirected to the
+all nodes when the function gaspi_printf is called. The gaspi_logger
+is started, on another session, on the master node. The output of the
+application, when using gaspi_printf, will be redirected to the
 gaspi_logger. Other I/O routines (e.g. printf) will not.
 
 A further separation of output (useful for debugging) can be achieved
@@ -212,7 +211,7 @@ gaspi_logger started on a particular node. For example,
 
   gaspi_printf_to(1, "Hello 1\n");
 
-will display the string "Hello 1" in the gaspi_logger started on node
+will display the string "Hello 1" in the gaspi_logger started on rank
 1.
 
 
