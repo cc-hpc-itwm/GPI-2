@@ -124,6 +124,7 @@ pgaspi_group_create (gaspi_group_t * const group)
   glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].size = size;
   //  glb_gaspi_group_ctx[id].id = id;
   glb_gaspi_group_ctx[id].gl.lock = 0;
+  glb_gaspi_group_ctx[id].del.lock = 0;
   glb_gaspi_group_ctx[id].togle = 0;
   glb_gaspi_group_ctx[id].barrier_cnt = 0;
   glb_gaspi_group_ctx[id].rank = 0;
@@ -192,6 +193,7 @@ pgaspi_group_delete (const gaspi_group_t group)
     return GASPI_ERR_INV_GROUP;
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  lock_gaspi_tout (&glb_gaspi_group_ctx[group].del, GASPI_BLOCK);
 
   eret = _gaspi_release_group_mem(group);
 
@@ -200,6 +202,7 @@ pgaspi_group_delete (const gaspi_group_t group)
 
   glb_gaspi_ctx.group_cnt--;
 
+  unlock_gaspi (&glb_gaspi_group_ctx[group].del);
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
   return eret;
@@ -523,6 +526,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
     (volatile unsigned char *) (glb_gaspi_group_ctx[g].rrcd[glb_gaspi_ctx.rank].buf);
 
   const int rank = glb_gaspi_group_ctx[g].rank;
+
   int mask = glb_gaspi_group_ctx[g].lastmask&0x7fffffff;
   int jmp = glb_gaspi_group_ctx[g].lastmask>>31;
 

@@ -1212,6 +1212,7 @@ void *gaspi_sn_backend(void *arg)
 				      const int group = mgmt->cdh.rank;
 				      const int tnc = mgmt->cdh.tnc;
 
+				      lock_gaspi_tout (&glb_gaspi_group_ctx[group].del, GASPI_BLOCK);
 				      if(glb_gaspi_group_ctx[group].id >= 0)
 					{
 					  if(glb_gaspi_group_ctx[group].tnc == tnc)
@@ -1227,6 +1228,7 @@ void *gaspi_sn_backend(void *arg)
 						}
 					    }
 					}
+				      unlock_gaspi (&glb_gaspi_group_ctx[group].del);
 
 				      if(gaspi_sn_writen( mgmt->fd, &gb, sizeof(gb) ) < sizeof(gb) )
 					{

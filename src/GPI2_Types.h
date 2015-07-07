@@ -129,6 +129,7 @@ typedef struct
 {
   int id;
   gaspi_lock_t gl;
+  gaspi_lock_t del;
   volatile unsigned char barrier_cnt;
   volatile unsigned char togle;
   gaspi_async_coll_t coll_op;

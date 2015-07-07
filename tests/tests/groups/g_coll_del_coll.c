@@ -65,8 +65,6 @@ int main(int argc, char *argv[])
       ASSERT(gaspi_group_delete(g));
     }
   
-  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
-
   //change culprit
   culprit = nprocs - 1;
     
