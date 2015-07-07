@@ -92,11 +92,7 @@ pgaspi_group_create (gaspi_group_t * const group)
       goto errL;
     }
 
-  /* TODO: for now as before */
-  if(id == GASPI_GROUP_ALL)
-    size = NEXT_OFFSET + 128 + NOTIFY_OFFSET;
-  else
-    size = NEXT_OFFSET;
+  size = NEXT_OFFSET;
 
   page_size = sysconf (_SC_PAGESIZE);
 

@@ -137,7 +137,7 @@ pgaspi_init_core()
     }
 
   /* Create internal memory space */
-  const unsigned int size = NOTIFY_OFFSET;
+  const unsigned int size = NOTIFY_OFFSET + sizeof(gaspi_atomic_value_t);
   const long page_size = sysconf (_SC_PAGESIZE);
 
   if(page_size < 0)
