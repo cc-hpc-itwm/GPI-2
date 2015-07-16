@@ -12,7 +12,7 @@ static gaspi_config_t tsuite_default_config =
     12121,
     0,				//netinfo
     0,				//netdev
-    2048,			//mtu
+    4096,			//mtu
     1,				//port check
     0,				//user selected network
     GASPI_IB,			//network typ
