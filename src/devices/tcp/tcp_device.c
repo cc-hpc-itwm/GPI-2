@@ -37,6 +37,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 tcp_dev_conn_state_t **rank_state = NULL;
 
+
 /* list of remote operations */
 list delayedList =
   {
@@ -334,6 +335,8 @@ tcp_dev_connect_to(int i)
       close(conn_sock);
       return 1;
     }
+
+  gaspi_sn_set_non_blocking(conn_sock);
 
   /* add new socket to epoll instance */
   tcp_dev_conn_state_t *nstate;
