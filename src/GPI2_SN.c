@@ -291,7 +291,7 @@ gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
 }
 
 static int
-gaspi_sn_recv_topology()
+gaspi_sn_recv_topology(gaspi_context *ctx)
 {
   int i;
   struct sockaddr in_addr;
@@ -313,13 +313,13 @@ gaspi_sn_recv_topology()
     }
 
   listeningAddress.sin_family = AF_INET;
-  listeningAddress.sin_port = htons((glb_gaspi_cfg.sn_port + 64 + glb_gaspi_ctx.localSocket));
+  listeningAddress.sin_port = htons((glb_gaspi_cfg.sn_port + 64 + ctx->localSocket));
   listeningAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 
   if(bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress)) < 0)
     {
       gaspi_print_error("Failed to bind socket (port %d)",
-			glb_gaspi_cfg.sn_port + 64 + glb_gaspi_ctx.localSocket);
+			glb_gaspi_cfg.sn_port + 64 + ctx->localSocket);
       return -1;
     }
 
@@ -346,35 +346,35 @@ gaspi_sn_recv_topology()
       return -1;
     }
 
-  glb_gaspi_ctx.rank = cdh.rank;
-  glb_gaspi_ctx.tnc  = cdh.tnc;
+  ctx->rank = cdh.rank;
+  ctx->tnc  = cdh.tnc;
   if(cdh.op != GASPI_SN_TOPOLOGY)
     {
       printf("Wrong header %d\n", cdh.op);
       fflush(stdout);
     }
 
-  glb_gaspi_ctx.hn_poff = (char*) calloc( glb_gaspi_ctx.tnc, 65 );
-  if( glb_gaspi_ctx.hn_poff == NULL)
+  ctx->hn_poff = (char*) calloc( ctx->tnc, 65 );
+  if( ctx->hn_poff == NULL)
     {
       gaspi_print_error("Failed to allocate memory.");
       return -1;
     }
 
-  glb_gaspi_ctx.poff = glb_gaspi_ctx.hn_poff + glb_gaspi_ctx.tnc * 64;
+  ctx->poff = ctx->hn_poff + glb_gaspi_ctx.tnc * 64;
 
-  glb_gaspi_ctx.sockfd = (int *) malloc( glb_gaspi_ctx.tnc * sizeof(int) );
-  if( glb_gaspi_ctx.sockfd == NULL )
+  ctx->sockfd = (int *) malloc( ctx->tnc * sizeof(int) );
+  if( ctx->sockfd == NULL )
     {
       gaspi_print_error("Failed to allocate memory.");
       return -1;
     }
 
   /* Read the topology */
-  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
-    glb_gaspi_ctx.sockfd[i] = -1;
+  for(i = 0; i < ctx->tnc; i++)
+    ctx->sockfd[i] = -1;
 
-  if( gaspi_sn_readn(nsock, glb_gaspi_ctx.hn_poff, glb_gaspi_ctx.tnc * 65 ) != glb_gaspi_ctx.tnc * 65 )
+  if( gaspi_sn_readn(nsock, ctx->hn_poff, ctx->tnc * 65 ) != ctx->tnc * 65 )
     {
       gaspi_print_error("Failed read.");
       return -1;
@@ -390,40 +390,40 @@ gaspi_sn_recv_topology()
 }
 
 static int
-gaspi_sn_send_topology(const int i, const gaspi_timeout_t timeout_ms)
+gaspi_sn_send_topology(gaspi_context *ctx, const int i, const gaspi_timeout_t timeout_ms)
 {
-  if( (glb_gaspi_ctx.sockfd[i] =
+  if( (ctx->sockfd[i] =
        gaspi_sn_connect2port(gaspi_get_hn(i),
-			     (glb_gaspi_cfg.sn_port + 64 + glb_gaspi_ctx.poff[i]),
+			     (glb_gaspi_cfg.sn_port + 64 + ctx->poff[i]),
 			     timeout_ms)) < 0)
     {
       gaspi_print_error("Failed to connect to %d", i);
       return -1;
     }
 
-  if( 0 != gaspi_sn_set_default_opts(glb_gaspi_ctx.sockfd[i]) )
+  if( 0 != gaspi_sn_set_default_opts(ctx->sockfd[i]) )
     {
       gaspi_print_error("Failed to opts");
-      close(glb_gaspi_ctx.sockfd[i]);
+      close(ctx->sockfd[i]);
       return -1;
     }
 
   gaspi_cd_header cdh;
   memset(&cdh, 0, sizeof(gaspi_cd_header));
 
-  cdh.op_len = glb_gaspi_ctx.tnc * 65; //TODO: 65 is magic
+  cdh.op_len = ctx->tnc * 65; //TODO: 65 is magic
   cdh.op = GASPI_SN_TOPOLOGY;
   cdh.rank = i;
-  cdh.tnc = glb_gaspi_ctx.tnc;
+  cdh.tnc = ctx->tnc;
 
   int retval = 0;
   size_t len = sizeof(gaspi_cd_header);
   void * ptr = &cdh;
-  int sockfd = glb_gaspi_ctx.sockfd[i];
+  int sockfd = ctx->sockfd[i];
 
   if (sockfd <= 0 )
     {
-      gaspi_print_error("Wrong fd %d %d", i, glb_gaspi_ctx.sockfd[i] );
+      gaspi_print_error("Wrong fd %d %d", i, ctx->sockfd[i] );
       retval = -1;
       goto endL;
     }
@@ -436,8 +436,8 @@ gaspi_sn_send_topology(const int i, const gaspi_timeout_t timeout_ms)
     }
 
   /* the de facto topology */
-  ptr = glb_gaspi_ctx.hn_poff;
-  len = glb_gaspi_ctx.tnc * 65;
+  ptr = ctx->hn_poff;
+  len = ctx->tnc * 65;
 
   if ( gaspi_sn_writen( sockfd, ptr, len)  != len )
     {
@@ -447,7 +447,7 @@ gaspi_sn_send_topology(const int i, const gaspi_timeout_t timeout_ms)
     }
 
  endL:
-  glb_gaspi_ctx.sockfd[i] = -1;
+  ctx->sockfd[i] = -1;
   if(gaspi_sn_close( sockfd ) != 0)
     retval = -1;
 
@@ -456,23 +456,23 @@ gaspi_sn_send_topology(const int i, const gaspi_timeout_t timeout_ms)
 
 /* TODO: deal with timeout */
 int
-gaspi_sn_broadcast_topology(const gaspi_timeout_t timeout_ms)
+gaspi_sn_broadcast_topology(gaspi_context *ctx, const gaspi_timeout_t timeout_ms)
 {
   int mask = 0x1;
   int relative_rank;
   int dst, src;
   const int root = 0;
 
-  relative_rank = (glb_gaspi_ctx.rank >= root) ? glb_gaspi_ctx.rank - root : glb_gaspi_ctx.rank - root + glb_gaspi_ctx.tnc;
-  while(mask <= glb_gaspi_ctx.tnc)
+  relative_rank = (ctx->rank >= root) ? ctx->rank - root : ctx->rank - root + ctx->tnc;
+  while(mask <= ctx->tnc)
     {
       if(relative_rank & mask)
 	{
-	  src = glb_gaspi_ctx.rank - mask;
+	  src = ctx->rank - mask;
 	  if(src < 0)
-	    src += glb_gaspi_ctx.tnc;
+	    src += ctx->tnc;
 
-	  if(gaspi_sn_recv_topology() != 0)
+	  if(gaspi_sn_recv_topology(ctx) != 0)
 	    {
 	      gaspi_print_error("Failed to receive topology.");
 	      return -1;
@@ -485,14 +485,14 @@ gaspi_sn_broadcast_topology(const gaspi_timeout_t timeout_ms)
 
   while (mask > 0)
     {
-      if(relative_rank + mask < glb_gaspi_ctx.tnc)
+      if(relative_rank + mask < ctx->tnc)
 	{
-	  dst = glb_gaspi_ctx.rank + mask;
+	  dst = ctx->rank + mask;
 
-	  if(dst >= glb_gaspi_ctx.tnc)
-	    dst -= glb_gaspi_ctx.tnc;
+	  if(dst >= ctx->tnc)
+	    dst -= ctx->tnc;
 
-	  if(gaspi_sn_send_topology(dst, timeout_ms) != 0)
+	  if(gaspi_sn_send_topology(ctx, dst, timeout_ms) != 0)
 	    {
 	      gaspi_print_error("Failed to send topology to %d", dst);
 	      return -1;
