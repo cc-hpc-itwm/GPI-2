@@ -1082,10 +1082,10 @@ extern "C"
    */
   gaspi_return_t gaspi_time_ticks (gaspi_cycles_t * const ticks);
 
-    /** Get elapsed time (in milliseconds).
+  /** Get elapsed time (in milliseconds).
    * 
    * 
-   * @param ticks Output parameter with the time in milliseconds.
+   * @param wtime Output parameter with the time in milliseconds.
    * 
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
