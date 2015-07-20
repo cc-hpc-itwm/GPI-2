@@ -75,21 +75,16 @@ while getopts ":hp:-:" opt; do
 	-)
 	    case "${OPTARG}" in
 		with-mpi)
-		    val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
-		    if [ "$val" = "" ]; then
-			which mpirun > /dev/null 2>&1
-			if [ $? != 0 ]; then
-			    echo "Couldn't find MPI installation. Please provide path to your MPI installation."
-			    echo "    ./install.sh <other options> --with-mpi=<Path to MPI installation>"
-			    echo ""
-			    exit 1
-			fi
-			MPI_BIN=`which mpirun`
-			MPI_PATH=`dirname $MPI_BIN`
-			MPI_PATH=`dirname $MPI_PATH`
-		    else
-			MPI_PATH=$val
+		    which mpirun > /dev/null 2>&1
+		    if [ $? != 0 ]; then
+			echo "Couldn't find MPI installation. Please provide path to your MPI installation."
+			echo "    ./install.sh <other options> --with-mpi=<Path to MPI installation>"
+			echo ""
+			exit 1
 		    fi
+		    MPI_BIN=`which mpirun`
+		    MPI_PATH=`dirname $MPI_BIN`
+		    MPI_PATH=`dirname $MPI_PATH`
 		    echo "With MPI at ${MPI_PATH}" >&2;
 		    WITH_MPI=1
 		    ;;
@@ -113,7 +108,6 @@ while getopts ":hp:-:" opt; do
 		    GPI2_DEVICE=TCP
 		    ;;
 		with-infiniband)
-		    val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
 		    echo "With Infiniband support" >&2;
 		    GPI2_DEVICE=IB
 		    ;;
@@ -140,21 +134,16 @@ while getopts ":hp:-:" opt; do
 		fi
 		;;
 		with-cuda)
-                    val="${!OPTIND}"; OPTIND=$(( $OPTIND + 1 ))
-                    if [ "$val" = "" ]; then
-                        which nvcc > /dev/null 2>&1
-                        if [ $? != 0 ]; then
-                            echo "Couldn't find CUDA installation. Please provide path to your CUDA installation."
-			    echo "    ./install.sh <other options> --with-cude=<Path to CUDA installation>"
-			    echo ""
-                            exit 1
-                        fi
-			NVCC_BIN=`which nvcc`
-			CUDA_PATH=`dirname $NVCC_BIN`
-			CUDA_PATH=`dirname $CUDA_PATH`
-		    else
-			CUDA_PATH=$val
+                    which nvcc > /dev/null 2>&1
+                    if [ $? != 0 ]; then
+                        echo "Couldn't find CUDA installation. Please provide path to your CUDA installation."
+			echo "    ./install.sh <other options> --with-cude=<Path to CUDA installation>"
+			echo ""
+                        exit 1
                     fi
+		    NVCC_BIN=`which nvcc`
+		    CUDA_PATH=`dirname $NVCC_BIN`
+		    CUDA_PATH=`dirname $CUDA_PATH`
 		    
                     echo "With CUDA at ${CUDA_PATH}" >&2;
                     WITH_CUDA=1
