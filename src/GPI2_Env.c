@@ -136,7 +136,12 @@ _gaspi_handle_env_mpi(gaspi_context *ctx)
     }
 
   free(hosts);
-  
+
+  ctx->rank = mpi_rank;
+  ctx->tnc = mpi_nnodes;
+
+  MPI_Barrier(MPI_COMM_WORLD);
+
   return 0;
 }
 #endif
