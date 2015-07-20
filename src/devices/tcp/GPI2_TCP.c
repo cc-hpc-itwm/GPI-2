@@ -84,7 +84,6 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
   if (gaspi_cfg->net_info)
     {
       gaspi_printf ("<<<<<<<<<<<<<<<< TCP-info >>>>>>>>>>>>>>>>>>>\n");
-      gaspi_printf("Using TCP - Experimental stuff\n");
     }
 
   /* Passive channel (SRQ) */
