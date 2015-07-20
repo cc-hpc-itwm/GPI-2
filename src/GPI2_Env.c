@@ -145,17 +145,18 @@ inline int
 gaspi_handle_env(gaspi_context *ctx)
 {
   int env_miss = 0;
-  
   char *socketPtr, *typePtr, *mfilePtr, *numaPtr;
+  char *rankPtr, *nranksPtr;
+
   socketPtr = getenv ("GASPI_SOCKET");
   numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
-  
+
 #ifdef LOADLEVELER
   typePtr = getenv ("MP_CHILD");
 #else
   typePtr = getenv ("GASPI_TYPE");
 #endif
-  
+
   mfilePtr = getenv ("GASPI_MFILE");
 
   if(socketPtr)
@@ -221,16 +222,9 @@ gaspi_handle_env(gaspi_context *ctx)
 	}
     }
 #endif  
-  
   if(typePtr)
     {
 #ifdef LOADLEVELER
-      if(setenv("GASPI_RANK", typePtr, 0) != 0)
-	{
-	  gaspi_print_error("Failed set GASPI_RANK");
-	  return -1;
-	}
-
       char *nRanks = getenv("GASPI_NRANKS");
       if( !nRanks )
 	{
@@ -238,7 +232,10 @@ gaspi_handle_env(gaspi_context *ctx)
 	  return -1;
 	}
 
+      ctx->tnc = atoi(nRanks);
+
       int _proc_number = atoi(typePtr);
+      ctx->rank = _proc_number;
 
       if(_proc_number == 0)
 	{
@@ -248,8 +245,27 @@ gaspi_handle_env(gaspi_context *ctx)
 	{
 	  ctx->procType = WORKER_PROC;
 	}
-#else //default
-      
+#else /* default */
+      rankPtr = getenv ("GASPI_RANK");
+      if(rankPtr == NULL)
+	{
+#ifndef GPI2_WITH_MPI
+	  gaspi_print_error("Rank not defined (GASPI_RANK).");
+#endif
+	  env_miss = 1;
+	}
+      ctx->rank = atoi(rankPtr);
+
+      nranksPtr = getenv ("GASPI_NRANKS");
+      if(nranksPtr == NULL)
+	{
+#ifndef GPI2_WITH_MPI
+	  gaspi_print_error("Num of ranks not defined (GASPI_NRANKS).");
+#endif
+	  env_miss = 1;
+	}
+      ctx->tnc = atoi(nranksPtr);
+
       if(strcmp (typePtr, "GASPI_WORKER") == 0)
 	{
 	  ctx->procType = WORKER_PROC;

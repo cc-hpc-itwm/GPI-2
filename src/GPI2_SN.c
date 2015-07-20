@@ -459,36 +459,22 @@ int
 gaspi_sn_broadcast_topology(const gaspi_timeout_t timeout_ms)
 {
   int mask = 0x1;
-  int rank, relative_rank, numnodes;
+  int relative_rank;
   int dst, src;
   const int root = 0;
-  char *rank_env = getenv ("GASPI_RANK");
-  char *num_ranks_env = getenv ("GASPI_NRANKS");
-  if( rank_env )
-    {
-      rank = atoi(rank_env);
-      if( num_ranks_env)
-	{
-	  numnodes = atoi(num_ranks_env);
-	  relative_rank = (rank >= root) ? rank - root : rank - root + numnodes;
-	}
-      else
-	return -1;
-    }
-  else
-    return -1;
 
-  while(mask <= numnodes)
+  relative_rank = (glb_gaspi_ctx.rank >= root) ? glb_gaspi_ctx.rank - root : glb_gaspi_ctx.rank - root + glb_gaspi_ctx.tnc;
+  while(mask <= glb_gaspi_ctx.tnc)
     {
       if(relative_rank & mask)
 	{
-	  src = rank - mask;
+	  src = glb_gaspi_ctx.rank - mask;
 	  if(src < 0)
-	    src +=numnodes;
+	    src += glb_gaspi_ctx.tnc;
 
 	  if(gaspi_sn_recv_topology() != 0)
 	    {
-	      gaspi_print_error("recv Failed");
+	      gaspi_print_error("Failed to receive topology.");
 	      return -1;
 	    }
 	  break;
@@ -497,30 +483,18 @@ gaspi_sn_broadcast_topology(const gaspi_timeout_t timeout_ms)
     }
   mask >>=1;
 
-  if(glb_gaspi_ctx.tnc != numnodes)
-    {
-      gaspi_print_error("Mismatch of node count %d-%d", glb_gaspi_ctx.tnc, numnodes);
-      return -1;
-    }
-
-  if(glb_gaspi_ctx.rank != rank)
-    {
-      gaspi_print_error("Ranks mismatch %d-%d\n", glb_gaspi_ctx.rank, rank);fflush(stdout);
-      return -1;
-    }
-
   while (mask > 0)
     {
-      if(relative_rank + mask < numnodes)
+      if(relative_rank + mask < glb_gaspi_ctx.tnc)
 	{
-	  dst = rank + mask;
+	  dst = glb_gaspi_ctx.rank + mask;
 
-	  if(dst >= numnodes)
-	    dst -= numnodes;
+	  if(dst >= glb_gaspi_ctx.tnc)
+	    dst -= glb_gaspi_ctx.tnc;
 
 	  if(gaspi_sn_send_topology(dst, timeout_ms) != 0)
 	    {
-	      gaspi_print_error("Rank %d: Failed send topology to %d", rank, dst);
+	      gaspi_print_error("Failed to send topology to %d", dst);
 	      return -1;
 	    }
 	}
