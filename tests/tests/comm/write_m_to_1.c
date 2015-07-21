@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 	      offset_in = 0;
 	      offset_out = (mem_size / 2) + (cur_slot_size * (myrank - 1));
 #ifdef WITH_SYNC
-	      ASSERT (gaspi_write_notify(0, offset_in, i,
+	      ASSERT (gaspi_write_notify(0, offset_in, 0,
 					 0, offset_out, cur_slot_size,
 					 myrank, 1,
 					 0, GASPI_BLOCK));
