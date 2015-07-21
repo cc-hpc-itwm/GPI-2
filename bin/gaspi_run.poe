@@ -152,8 +152,12 @@ do
     fi
     previous="$LINE"
 done
+exit_status=0
 export GASPI_NRANKS=`wc -l $LOADL_HOSTFILE|gawk '{print $1}'`
 $GASPI_LAUNCHER $PRG $PRG_ARGS
+if [ $? != 0 ]; then
+    exit_status=1
+fi
 
 unset GASPI_MASTER
 unset GASPI_MFILE
@@ -161,4 +165,4 @@ unset GASPI_SET_NUMA_SOCKET
 unset GASPI_SOCKET
 unset GASPI_NRANKS
 
-exit 0
+exit $exit_status
