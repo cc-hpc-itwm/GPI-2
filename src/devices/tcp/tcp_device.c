@@ -1475,7 +1475,7 @@ tcp_virt_dev(void *args)
 	      /* or in the middle of something to read */
 	      if(estate->read.opcode != RECV_HEADER)
 		{
-		  if( (estate->read.opcode == RECV_RDMA_READ) )
+		  if( estate->read.opcode == RECV_RDMA_READ )
 		    {
 		      if( _tcp_dev_post_wc(estate->read.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_READ, estate->read.cq_handle) != 0)
 			{
@@ -1483,7 +1483,7 @@ tcp_virt_dev(void *args)
 			}
 		    }
 
-		  if( (estate->read.opcode == RECV_SEND))
+		  if( estate->read.opcode == RECV_SEND )
 		    if( _tcp_dev_post_wc(estate->read.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RECV, estate->read.cq_handle) != 0)
 		      {
 			gaspi_print_error("Failed to post completion error.");
