@@ -19,6 +19,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <sys/timeb.h>
 #include <unistd.h>
 
+#include "PGASPI.h"
 #include "GPI2.h"
 #include "GPI2_Dev.h"
 #include "GPI2_Utility.h"
