@@ -246,8 +246,7 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
 static inline gaspi_return_t
 _pgaspi_group_commit_to(const gaspi_group_t group,
 			const gaspi_rank_t i,
-			const gaspi_timeout_t timeout_ms,
-			const int connect )
+			const gaspi_timeout_t timeout_ms)
 {
 
   gaspi_return_t  eret = GASPI_ERROR;
@@ -273,7 +272,7 @@ pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms)
   gaspi_group_t g0;
   gaspi_return_t eret = GASPI_ERROR;
 
-  if( (eret = gaspi_group_create(&g0)) != GASPI_SUCCESS )
+  if( (eret = pgaspi_group_create(&g0)) != GASPI_SUCCESS )
     {
       return eret;
     }
@@ -388,7 +387,7 @@ pgaspi_group_commit (const gaspi_group_t group,
 	  goto endL;
 	}
 
-      if( _pgaspi_group_commit_to(group, group_to_commit->rank_grp[i], timeout_ms, 0) != 0 )
+      if( _pgaspi_group_commit_to(group, group_to_commit->rank_grp[i], timeout_ms) != 0 )
 	{
 	  gaspi_print_error("Failed to commit to %d", group_to_commit->rank_grp[i]);
 	  eret = GASPI_ERROR;
@@ -552,7 +551,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
       if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
 	{
-	  if( ( eret = _pgaspi_group_commit_to(g, dst, timeout_ms, 1)) != GASPI_SUCCESS )
+	  if( ( eret = _pgaspi_group_commit_to(g, dst, timeout_ms)) != GASPI_SUCCESS )
 	    {
 	      gaspi_print_error("Failed to commit to rank %u", dst);
 	      unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
@@ -672,7 +671,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
 	  if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
 	    {
-	      if( (eret = _pgaspi_group_commit_to(g, dst, timeout_ms, 1)) != GASPI_SUCCESS )
+	      if( (eret = _pgaspi_group_commit_to(g, dst, timeout_ms)) != GASPI_SUCCESS )
 		{
 		  gaspi_print_error("Failed to commit to rank %u", dst);
 		  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
@@ -787,7 +786,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
 	  if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
 	    {
-	      if( (eret = _pgaspi_group_commit_to(g, dst, timeout_ms, 1)) != GASPI_SUCCESS )
+	      if( (eret = _pgaspi_group_commit_to(g, dst, timeout_ms)) != GASPI_SUCCESS )
 		{
 		  gaspi_print_error("Failed to commit to rank %u", dst);
 		  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
@@ -874,7 +873,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
 	if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
 	  {
-	    if( (eret = _pgaspi_group_commit_to(g, dst, timeout_ms, 1)) != GASPI_SUCCESS )
+	    if( (eret = _pgaspi_group_commit_to(g, dst, timeout_ms)) != GASPI_SUCCESS )
 	      {
 		gaspi_print_error("Failed to commit to rank %u", dst);
 		unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
