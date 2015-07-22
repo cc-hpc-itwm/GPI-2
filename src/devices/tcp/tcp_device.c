@@ -35,8 +35,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "tcp_device.h"
 #include "list.h"
 
+volatile int tcp_dev_init = 0;
 tcp_dev_conn_state_t **rank_state = NULL;
-
 
 /* list of remote operations */
 list delayedList =
@@ -1199,7 +1199,6 @@ tcp_dev_stop_device()
 void *
 tcp_virt_dev(void *args)
 {
-
   int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if(listen_sock < 0)
     {
@@ -1289,6 +1288,9 @@ tcp_virt_dev(void *args)
       gaspi_print_error("Failed to allocate events buffer");
       return NULL;
     }
+
+  /* Device is ready */
+  __sync_fetch_and_add(&tcp_dev_init, 1);
 
   while(valid_state)
     {

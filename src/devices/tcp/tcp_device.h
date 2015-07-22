@@ -136,8 +136,7 @@ typedef struct
   enum tcp_dev_wc_opcode opcode;
 } tcp_dev_wc_t;
 
-
-volatile int tcp_dev_connected_to_all;
+extern volatile int tcp_dev_init;
 
 //TODO: rename to tcp_dev_* ?
 struct tcp_passive_channel

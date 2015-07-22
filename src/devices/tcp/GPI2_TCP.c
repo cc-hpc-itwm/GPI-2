@@ -168,6 +168,9 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
+  while( !tcp_dev_init )
+    gaspi_delay();
+
   return 0;
 }
 
