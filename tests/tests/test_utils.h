@@ -26,7 +26,7 @@ static gaspi_config_t tsuite_default_config =
     GASPI_MAX_TSIZE_P,		//passive_transfer_size_max
     278592,			//allreduce_buf_size
     255,			//allreduce_elem_max
-    GASPI_TOPOLOGY_DYNAMIC	//build_infrastructure
+    GASPI_TOPOLOGY_STATIC	//build_infrastructure
   };
 
 #define _4GB 4294967296
