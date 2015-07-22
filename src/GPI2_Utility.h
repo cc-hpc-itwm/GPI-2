@@ -27,6 +27,18 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <time.h>
 #include <xmmintrin.h>
 
+#ifdef MIC
+#define gaspi_delay() _mm_delay_32(32)
+#else
+#define gaspi_delay() _mm_pause()
+#endif
+
+
+#define MAX(a,b)  (((a)<(b)) ? (b) : (a))
+#define MIN(a,b)  (((a)>(b)) ? (b) : (a))
+
+
+
 #ifdef DEBUG
 #include "GPI2.h"
 #define gaspi_print_error(msg, ...)					\
@@ -144,17 +156,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define gaspi_verify_segment_size(size)
 #define gaspi_verify_init(funcname)
 #endif
-
-#ifdef MIC
-#define gaspi_delay() _mm_delay_32(32)
-#else
-#define gaspi_delay() _mm_pause()
-#endif
-
-
-#define MAX(a,b)  (((a)<(b)) ? (b) : (a))
-#define MIN(a,b)  (((a)>(b)) ? (b) : (a))
-
 
 #define gaspi_verify_setup(funcname)					\
   {									\
