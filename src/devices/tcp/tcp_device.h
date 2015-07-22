@@ -193,4 +193,7 @@ tcp_dev_stop_device(void);
 int
 tcp_dev_is_valid_state(unsigned short);
 
+int
+tcp_dev_connect_to(int i);
+
 #endif
