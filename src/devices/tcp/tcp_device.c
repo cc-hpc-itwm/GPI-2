@@ -427,7 +427,7 @@ _tcp_dev_set_default_read_conn_state(tcp_dev_conn_state_t *estate)
 }
 
 static int
-_tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate, int epollfd)
+_tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate)
 {
   enum tcp_dev_wc_opcode op;
 
@@ -1382,7 +1382,7 @@ tcp_virt_dev(void *args)
 
 		      if(estate->read.done == estate->read.length)
 			{
-			  int ret = _tcp_dev_process_recv_data(estate, epollfd);
+			  int ret = _tcp_dev_process_recv_data(estate);
 
 			  if( ret != 0)
 			    {
