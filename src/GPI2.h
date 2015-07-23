@@ -123,6 +123,4 @@ void unlock_gaspi (gaspi_lock_t * l)
   GASPI_ATOMIC_UNLOCK (&l->lock);
 }
 
-char * gaspi_get_hn (const unsigned int id);
-
 #endif //_GPI2_H_
