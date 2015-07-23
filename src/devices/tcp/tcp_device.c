@@ -154,7 +154,7 @@ tcp_dev_create_cq(int elems, struct tcp_passive_channel *pchannel)
     return NULL;
   }
 
-  rb->mask = elems + 1;
+  rb->mask = elems * 2 + 1;
   rb->ipos = 0;
   rb->rpos = 0;
 
