@@ -471,7 +471,7 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
 #ifdef DEBUG
   if(old_notification_val == NULL)
     {
-      gaspi_print_warning("NULL pointer on parameter old_notification_val (gaspi_notify_reset)\n");
+      gaspi_print_warning("NULL pointer on parameter old_notification_val (gaspi_notify_reset).");
     }
 #endif
 
