@@ -142,7 +142,7 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
       .source      = glb_gaspi_ctx.rank,
       .target      = rank,
       .local_addr  = (uintptr_t) not_val_ptr,
-      .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].addr + notification_id * 4),
+      .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].addr + notification_id * sizeof(gaspi_notification_t)),
       .length      = sizeof(notification_value),
       .swap        = 0,
       .opcode      = POST_RDMA_WRITE_INLINED
