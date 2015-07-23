@@ -8,7 +8,7 @@ build: $(BIN)
 	$(CC) $(CFLAGS) -c $^
 
 %.bin: %.o ../test_utils.o  
-	$(CC) $(CFLAGS) $(LIB_PATH) -o $@ $^ $(LIBS)
+	$(CC) $(CFLAGS) $(LIB_PATH) -o $@ $^ $(LIBS) -lm
 
 clean:
 	rm -rf *~ \#_* *.o *.bin
