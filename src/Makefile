@@ -82,7 +82,7 @@ mic: $(OBJS_MIC) $(OBJS_DBG_MIC)
 	$(CC) $(DBG_CFLAGS) -DDEBUG $(INCLUDES) -c $<  -o $@
 
 %.mic.o: %.c
-	icc -mmic $(MIC_CFLAGS) -DMIC -c $<  -o $@
+	icc -mmic $(MIC_CFLAGS) $(INCLUDES) -DMIC -c $<  -o $@
 
 %.mic.dbg.o: %.c
 	icc -mmic -g -O0 $(INCLUDES) -D_GNU_SOURCE -DDEBUG -DMIC -c $<  -o $@
