@@ -446,9 +446,7 @@ cp -r lib64 $GPI2_PATH
 cp -r tests $GPI2_PATH
 cp -r include $GPI2_PATH
 
-
 cat << EOF
-
 Installation finished successfully!
 
 Add the following line to your $HOME/.bashrc (or your shell):
@@ -458,5 +456,26 @@ EOF
 echo "Success!"  >> install.log
 
 clean_bak_files
+
+cat <<PKG > GPI2.pc
+prefix=${GPI2_PATH}
+exec_prefix=\${prefix}
+libdir=\${exec_prefix}/lib64
+includedir=\${prefix}/include
+
+Name: GPI-2
+Description: GPI-2 library
+Version: 1.3.0
+Cflags: -I\${includedir}
+Libs: -L\${libdir} -lGPI2
+PKG
+if [ $GPI2_DEVICE = IB ]; then
+    echo "Libs.private: -libverbs -lpthread" >> GPI2.pc
+else
+    echo "Libs.private: -lrt -lpthread" >> GPI2.pc
+fi
+
+mkdir $GPI2_PATH/lib64/pkgconfig/
+mv GPI2.pc $GPI2_PATH/lib64/pkgconfig/
 
 exit 0
