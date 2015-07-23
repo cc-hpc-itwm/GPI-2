@@ -1439,11 +1439,7 @@ tcp_virt_dev(void *args)
 	    {
 	      /* remove socket from epoll instance */
 	      struct epoll_event ev;
-	      int r = epoll_ctl(epollfd, EPOLL_CTL_DEL, event_fd, &ev);
-	      if( r != 0)
-		{
-		  gaspi_print_error("Failed to remove from events instance.");
-		}
+	      epoll_ctl(epollfd, EPOLL_CTL_DEL, event_fd, &ev);
 
 	      /* a socket error (not hangup) */
 	      if(!((events[n].events & EPOLLRDHUP) || (events[n].events & EPOLLHUP)))
@@ -1490,19 +1486,9 @@ tcp_virt_dev(void *args)
 		      }
 		}
 
-	      if(shutdown(event_fd, SHUT_RDWR) != 0)
-		{
-		  int errsv = errno;
-		  if(errsv != ENOTCONN)
-		    {
-		      gaspi_print_error("shutdown operation");
-		    }
-		}
+	      shutdown(event_fd, SHUT_RDWR);
 
-	      if( close(event_fd) != 0)
-		{
-		  gaspi_print_error("close io_err");
-		}
+	      close(event_fd);
 
 	      if(event_rank >= 0)
 		rank_state[event_rank]->fd = -2; /* just invalidate fd */
