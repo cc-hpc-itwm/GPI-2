@@ -334,6 +334,8 @@ gaspi_sn_recv_topology(gaspi_context *ctx)
   if(nsock < 0)
     {
       gaspi_print_error("accept failed");
+      close(lsock);
+      close(nsock);
       return -1;
     }
 
@@ -343,6 +345,8 @@ gaspi_sn_recv_topology(gaspi_context *ctx)
   if( gaspi_sn_readn(nsock, &cdh, sizeof(cdh)) != sizeof(cdh) )
     {
       gaspi_print_error("Failed header read");
+      close(lsock);
+      close(nsock);
       return -1;
     }
 
@@ -358,6 +362,8 @@ gaspi_sn_recv_topology(gaspi_context *ctx)
   if( ctx->hn_poff == NULL)
     {
       gaspi_print_error("Failed to allocate memory.");
+      close(lsock);
+      close(nsock);
       return -1;
     }
 
@@ -367,6 +373,8 @@ gaspi_sn_recv_topology(gaspi_context *ctx)
   if( ctx->sockfd == NULL )
     {
       gaspi_print_error("Failed to allocate memory.");
+      close(lsock);
+      close(nsock);
       return -1;
     }
 
@@ -377,6 +385,8 @@ gaspi_sn_recv_topology(gaspi_context *ctx)
   if( gaspi_sn_readn(nsock, ctx->hn_poff, ctx->tnc * 65 ) != ctx->tnc * 65 )
     {
       gaspi_print_error("Failed read.");
+      close(lsock);
+      close(nsock);
       return -1;
     }
 
@@ -1084,6 +1094,7 @@ void *gaspi_sn_backend(void *arg)
 		  gaspi_print_error("Failed to allocate memory.");
 		  gaspi_sn_status = GASPI_SN_STATE_ERROR;
 		  gaspi_sn_err = GASPI_ERROR;
+		  close(nsock);
 		  return NULL;
 		}
 
@@ -1099,6 +1110,7 @@ void *gaspi_sn_backend(void *arg)
 		  gaspi_print_error("Failed to modify IO event facility");
 		  gaspi_sn_status = GASPI_SN_STATE_ERROR;
 		  gaspi_sn_err = GASPI_ERROR;
+		  close(nsock);
 		  return NULL;
 		}
 
