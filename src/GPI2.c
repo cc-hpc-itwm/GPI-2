@@ -123,8 +123,8 @@ pgaspi_init_core()
   for (i = 0; i < GASPI_MAX_GROUPS; i++)
     {
       GASPI_RESET_GROUP(glb_gaspi_group_ctx, i);
-      glb_gaspi_group_ctx[id].gl.lock = 0;
-      glb_gaspi_group_ctx[id].del.lock = 0;
+      glb_gaspi_group_ctx[i].gl.lock = 0;
+      glb_gaspi_group_ctx[i].del.lock = 0;
     }
 
   /* change/override num of queues at large scale */

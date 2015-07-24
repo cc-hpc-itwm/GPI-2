@@ -57,19 +57,23 @@ gaspi_size_t gaspi_get_mem_peak(void)
 
 gaspi_size_t gaspi_get_mem_in_use(void)
 {
-  gaspi_size_t rss = 0L;
+  gaspi_size_t rss = 0UL;
   FILE* fp = NULL;
 
   if((fp = fopen( "/proc/self/statm", "r")) == NULL)
-    return (unsigned long)0UL;
+    return (gaspi_size_t) 0UL;
 
   if(fscanf(fp, "%*s%lu", &rss ) != 1)
     {
       fclose(fp);
-      return (unsigned long)0UL;
+      return (gaspi_size_t) 0UL;
     }
 
   fclose( fp );
 
-  return (gaspi_size_t) rss * (size_t)sysconf( _SC_PAGESIZE);
+  long page_size = sysconf( _SC_PAGESIZE);
+  if ( -1 == page_size )
+    return 0UL;
+
+  return (gaspi_size_t) (rss * page_size);
 }
