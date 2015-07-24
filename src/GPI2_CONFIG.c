@@ -27,7 +27,11 @@ gaspi_config_t glb_gaspi_cfg = {
   0,				//mtu
   1,				//port check
   0,				//user selected network
-  GASPI_IB,			//network typ
+#ifdef GPI2_DEVICE_IB
+  GASPI_IB,			
+#else                           //network type
+  GASPI_ETHERNET,
+#endif
   1024,				//queue depth
   8,				//queue count
   GASPI_MAX_GROUPS,		//group_max;
