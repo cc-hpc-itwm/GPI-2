@@ -67,16 +67,20 @@ pgaspi_config_set (const gaspi_config_t nconf)
   glb_gaspi_cfg.logger = nconf.logger;
   glb_gaspi_cfg.port_check = nconf.port_check;
 
-  if (nconf.network == GASPI_IB || nconf.network == GASPI_ROCE || nconf.network == GASPI_ETHERNET)
-    {
-      glb_gaspi_cfg.network = nconf.network;
-      glb_gaspi_cfg.user_net = 1;
-    }
-  else
-    {
-      gaspi_print_error("Invalid value for parameter network");
-      return GASPI_ERR_CONFIG;
-    }
+#ifdef GPI2_DEVICE_IB
+  if( GASPI_ETHERNET == nconf.network )
+#elif GPI2_DEVICE_TCP
+    if( GASPI_ETHERNET != nconf.network )
+#endif
+      {
+	gaspi_print_error("Invalid value for parameter network");
+	return GASPI_ERR_CONFIG;
+      }
+    else
+      {
+	glb_gaspi_cfg.network = nconf.network;
+	glb_gaspi_cfg.user_net = 1;
+      }
 
   if (nconf.netdev_id > 1)
     {
