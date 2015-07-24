@@ -237,6 +237,8 @@ else
     sed -i  "s,-libverbs,,g" tests/make.defines
     echo "###### added by install script" >> src/make.inc
     echo "GPI2_DEVICE = TCP" >> src/make.inc
+    sed -i "s,GASPI_IB,GASPI_ETHERNET,g" tests/defs/default.def
+    sed -i "s,GASPI_IB,GASPI_ETHERNET,g" tests/tests/test_utils.h
 fi
 
 #MPI mixed mode
