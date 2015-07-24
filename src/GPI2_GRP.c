@@ -40,17 +40,14 @@ _gaspi_release_group_mem(const gaspi_group_t group)
 	  return GASPI_ERR_DEVICE;
 	}
 
-      if( glb_gaspi_group_ctx[group].rrcd[glb_gaspi_ctx.rank].ptr != NULL )
-	free(glb_gaspi_group_ctx[group].rrcd[glb_gaspi_ctx.rank].ptr);
+      free(glb_gaspi_group_ctx[group].rrcd[glb_gaspi_ctx.rank].ptr);
       glb_gaspi_group_ctx[group].rrcd[glb_gaspi_ctx.rank].ptr = NULL;
 
       free(glb_gaspi_group_ctx[group].rrcd);
       glb_gaspi_group_ctx[group].rrcd = NULL;
     }
 
-
-  if( glb_gaspi_group_ctx[group].rank_grp != NULL )
-    free(glb_gaspi_group_ctx[group].rank_grp);
+  free(glb_gaspi_group_ctx[group].rank_grp);
   glb_gaspi_group_ctx[group].rank_grp = NULL;
 
   return GASPI_SUCCESS;

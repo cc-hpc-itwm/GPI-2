@@ -280,8 +280,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  
 	  rewind (fp);
 	  
-	  if(glb_gaspi_ctx.hn_poff)
-	    free (glb_gaspi_ctx.hn_poff);
+	  free (glb_gaspi_ctx.hn_poff);
 	  
 	  glb_gaspi_ctx.hn_poff = (char *) calloc (glb_gaspi_ctx.tnc, 65);
 	  if(glb_gaspi_ctx.hn_poff == NULL)
@@ -322,16 +321,12 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   
 	  fclose (fp);
 	  
-	  if(line)
-	    {
-	      free (line);
-	    }
+	  free (line);
 	  
 	  //master
 	  glb_gaspi_ctx.rank = 0;
 	  
-	  if(glb_gaspi_ctx.sockfd)
-	    free(glb_gaspi_ctx.sockfd);
+	  free(glb_gaspi_ctx.sockfd);
   
 	  glb_gaspi_ctx.sockfd = (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
 	  if(glb_gaspi_ctx.sockfd == NULL)
@@ -445,49 +440,33 @@ pgaspi_cleanup_core()
   if(pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0)
     return GASPI_ERR_DEVICE;
 
-  if(glb_gaspi_ctx.nsrc.buf)
-    {
-      free(glb_gaspi_ctx.nsrc.buf);
-    }
-
+  free(glb_gaspi_ctx.nsrc.buf);
   glb_gaspi_ctx.nsrc.buf = NULL;
 
   for(i = 0; i < GASPI_MAX_GROUPS; i++)
     {
       if(glb_gaspi_group_ctx[i].id >= 0)
 	{
-	  if(glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf)
-	    {
-	      free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf);
-	    }
-
+	  free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf);
 	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf = NULL;
 
-	  if (glb_gaspi_group_ctx[i].rank_grp)
-	    free (glb_gaspi_group_ctx[i].rank_grp);
-
+	  free (glb_gaspi_group_ctx[i].rank_grp);
 	  glb_gaspi_group_ctx[i].rank_grp = NULL;
 
-	  if(glb_gaspi_group_ctx[i].rrcd)
-	    {
-	      free (glb_gaspi_group_ctx[i].rrcd);
-	    }
+	  free (glb_gaspi_group_ctx[i].rrcd);
 	  glb_gaspi_group_ctx[i].rrcd = NULL;
 	}
     }
 
-  if(glb_gaspi_ctx.hn_poff)
-    free (glb_gaspi_ctx.hn_poff);
-  
-  if (glb_gaspi_ctx.ep_conn != NULL)
-    free(glb_gaspi_ctx.ep_conn);
+  free (glb_gaspi_ctx.hn_poff);
+  glb_gaspi_ctx.hn_poff = NULL;
+
+  free(glb_gaspi_ctx.ep_conn);
+  glb_gaspi_ctx.ep_conn = NULL;
 
   for(i = 0; i < GASPI_MAX_QP + 3; i++)
     {
-      if(glb_gaspi_ctx.qp_state_vec[i])
-	{
-	  free (glb_gaspi_ctx.qp_state_vec[i]);
-	}
+      free (glb_gaspi_ctx.qp_state_vec[i]);
       glb_gaspi_ctx.qp_state_vec[i] = NULL;
     }
     

@@ -175,11 +175,9 @@ tcp_dev_destroy_cq(struct tcp_cq *cq)
     {
       if(cq->rbuf != NULL)
 	{
-	  if(cq->rbuf->cells != NULL)
-	    {
-	      free(cq->rbuf->cells);
-	      cq->rbuf->cells = NULL;
-	    }
+	  free(cq->rbuf->cells);
+	  cq->rbuf->cells = NULL;
+
 	  free(cq->rbuf);
 	  cq->rbuf = NULL;
 	}
