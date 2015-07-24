@@ -121,12 +121,10 @@ pgaspi_init_core()
   memset (&glb_gaspi_group_ctx, 0, GASPI_MAX_GROUPS * sizeof (gaspi_group_ctx));
 
   for (i = 0; i < GASPI_MAX_GROUPS; i++)
-    { 
-      glb_gaspi_group_ctx[i].id = -1;
-      glb_gaspi_group_ctx[i].coll_op = GASPI_NONE;
-      glb_gaspi_group_ctx[i].lastmask = 0x1;
-      glb_gaspi_group_ctx[i].level = 0;
-      glb_gaspi_group_ctx[i].dsize = 0;
+    {
+      GASPI_RESET_GROUP(glb_gaspi_group_ctx, i);
+      glb_gaspi_group_ctx[id].gl.lock = 0;
+      glb_gaspi_group_ctx[id].del.lock = 0;
     }
 
   /* change/override num of queues at large scale */

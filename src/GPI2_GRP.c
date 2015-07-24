@@ -100,6 +100,11 @@ pgaspi_group_create (gaspi_group_t * const group)
       goto errL;
     }
 
+  GASPI_RESET_GROUP(glb_gaspi_group_ctx, id);
+
+  glb_gaspi_group_ctx[id].gl.lock = 0;
+  glb_gaspi_group_ctx[id].del.lock = 0;
+
   /* TODO: dynamic space (re-)allocation to avoid reservation for all nodes */
   /* or maybe gaspi_group_create should have the number of ranks as input ? */
   glb_gaspi_group_ctx[id].rrcd = (gaspi_rc_mseg *) calloc (glb_gaspi_ctx.tnc, sizeof (gaspi_rc_mseg));
@@ -118,23 +123,7 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   memset (glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].buf, 0, size);
 
-  /* TODO: check that all fields are initialized */
   glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank].size = size;
-  //  glb_gaspi_group_ctx[id].id = id;
-  glb_gaspi_group_ctx[id].gl.lock = 0;
-  glb_gaspi_group_ctx[id].del.lock = 0;
-  glb_gaspi_group_ctx[id].togle = 0;
-  glb_gaspi_group_ctx[id].barrier_cnt = 0;
-  glb_gaspi_group_ctx[id].rank = 0;
-  glb_gaspi_group_ctx[id].tnc = 0;
-
-  glb_gaspi_group_ctx[id].coll_op = GASPI_NONE;
-  glb_gaspi_group_ctx[id].lastmask = 0x1;
-  glb_gaspi_group_ctx[id].level = 0;
-  glb_gaspi_group_ctx[id].dsize = 0;
-
-  glb_gaspi_group_ctx[id].next_pof2 = 0;
-  glb_gaspi_group_ctx[id].pof2_exp = 0;
 
   eret = pgaspi_dev_register_mem(&(glb_gaspi_group_ctx[id].rrcd[glb_gaspi_ctx.rank]), size);
   if(eret != GASPI_SUCCESS)
@@ -195,8 +184,7 @@ pgaspi_group_delete (const gaspi_group_t group)
 
   eret = _gaspi_release_group_mem(group);
 
-  /* TODO: reset other fields */
-  glb_gaspi_group_ctx[group].id = -1;
+  GASPI_RESET_GROUP(glb_gaspi_group_ctx, group);
 
   glb_gaspi_ctx.group_cnt--;
 

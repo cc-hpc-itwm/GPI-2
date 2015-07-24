@@ -46,6 +46,26 @@ typedef struct
   gaspi_rc_mseg *rrcd;
 } gaspi_group_ctx;
 
+#define GASPI_RESET_GROUP(group_ctx, i)					\
+  do {									\
+    group_ctx[i].rrcd = NULL;						\
+    group_ctx[i].rank_grp = NULL;					\
+    group_ctx[i].committed_rank = NULL;					\
+    group_ctx[i].id = -1;						\
+    group_ctx[i].togle = 0;						\
+    group_ctx[i].barrier_cnt = 0;					\
+    group_ctx[i].rank = 0;						\
+    group_ctx[i].tnc = 0;						\
+    group_ctx[i].coll_op = GASPI_NONE;					\
+    group_ctx[i].lastmask = 0x1;					\
+    group_ctx[i].tmprank = 0;						\
+    group_ctx[i].bid = 0;						\
+    group_ctx[i].level = 0;						\
+    group_ctx[i].dsize = 0;						\
+    group_ctx[i].next_pof2 = 0;						\
+    group_ctx[i].pof2_exp = 0;						\
+  }  while(0);
+
 gaspi_return_t
 pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms);
 
