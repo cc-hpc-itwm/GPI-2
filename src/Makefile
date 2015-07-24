@@ -8,9 +8,13 @@ endif
 ifeq ($(findstring IB,$(GPI2_DEVICE)),IB)
 $(info Configuration for Infiniband)
 include devices/ib/Makefile.inc
+CFLAGS+=-DGPI2_DEVICE_IB
+DBG_CFLAGS+=-DGPI2_DEVICE_IB
 else ifeq ($(findstring TCP,$(GPI2_DEVICE)),TCP)
 $(info Configuration for Ethernet)
 include devices/tcp/Makefile.inc
+CFLAGS+=-DGPI2_DEVICE_TCP
+DBG_CFLAGS+=-DGPI2_DEVICE_TCP
 else
 $(error Unknow interconnect $(GPI2_DEVICE))
 endif
