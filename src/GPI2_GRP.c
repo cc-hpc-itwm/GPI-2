@@ -60,7 +60,7 @@ gaspi_return_t
 pgaspi_group_create (gaspi_group_t * const group)
 {
   int i, id = GASPI_MAX_GROUPS;
-  unsigned int size;
+  const size_t size = NEXT_OFFSET;
   long page_size;
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -89,8 +89,6 @@ pgaspi_group_create (gaspi_group_t * const group)
       unlock_gaspi (&glb_gaspi_ctx_lock);
       return GASPI_ERR_MANY_GRP;
     }
-
-  size = NEXT_OFFSET;
 
   page_size = sysconf (_SC_PAGESIZE);
 
