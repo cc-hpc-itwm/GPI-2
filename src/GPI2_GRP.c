@@ -70,8 +70,8 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   if (glb_gaspi_ctx.group_cnt >= GASPI_MAX_GROUPS)
     {
-      eret = GASPI_ERR_MANY_GRP;
-      goto errL;
+      unlock_gaspi (&glb_gaspi_ctx_lock);
+      return GASPI_ERR_MANY_GRP;
     }
 
   for (i = 0; i < GASPI_MAX_GROUPS; i++)
@@ -83,10 +83,10 @@ pgaspi_group_create (gaspi_group_t * const group)
 	}
     }
 
-  if (id == GASPI_MAX_GROUPS)
+  if ( id == GASPI_MAX_GROUPS )
     {
-      eret = GASPI_ERR_MANY_GRP;
-      goto errL;
+      unlock_gaspi (&glb_gaspi_ctx_lock);
+      return GASPI_ERR_MANY_GRP;
     }
 
   size = NEXT_OFFSET;
