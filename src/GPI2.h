@@ -20,6 +20,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define _GPI2_H_
 
 #include "GASPI.h"
+#include "GPI2_GRP.h"
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
 
@@ -36,7 +37,6 @@ volatile int glb_gaspi_sn_init;      //Is the SN up?
 volatile int glb_gaspi_dev_init;     //Is device initialized?
 volatile int gaspi_master_topo_data; //Do we have topology info from master?
 volatile int gaspi_rrcd_data;        //??
-
 
 //locks
 gaspi_lock_t glb_gaspi_ctx_lock;

@@ -24,6 +24,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2.h"
 #include "GPI2_Coll.h"
 #include "GPI2_Dev.h"
+#include "GPI2_GRP.h"
 #include "GPI2_SN.h"
 #include "GPI2_Utility.h"
 
