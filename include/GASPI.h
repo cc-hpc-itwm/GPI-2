@@ -36,8 +36,8 @@ extern "C"
 
   /* Macro-ed constants */
 #define GASPI_MAJOR_VERSION (1)
-#define GASPI_MINOR_VERSION (1)
-#define GASPI_REVISION (1)
+#define GASPI_MINOR_VERSION (3)
+#define GASPI_REVISION (0)
 
 #define GASPI_MAX_NODES   (65536)
 #define GASPI_MAX_GROUPS  (32)
