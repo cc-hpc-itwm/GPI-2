@@ -86,7 +86,7 @@ tcp_dev_create_passive_channel(void)
 int
 tcp_dev_is_valid_state(gaspi_rank_t i)
 {
-  if(i >= 0  && i < glb_gaspi_ctx.tnc)
+  if( i < glb_gaspi_ctx.tnc )
     {
       if(rank_state != NULL)
 	{
