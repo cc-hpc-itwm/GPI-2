@@ -6,7 +6,7 @@ ifndef CMD_RUN
   CMD_RUN = $(GPI2_HOME)/bin/gaspi_run -m $$PBS_NODEFILE -N
 endif
 
-CC= icc
+CC= gcc
 
 NAME += left_right_double_buffer_funneled
 NAME += left_right_double_buffer_multiple
