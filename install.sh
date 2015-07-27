@@ -459,6 +459,11 @@ echo "Success!"  >> install.log
 
 clean_bak_files
 
+if [ $GPI2_DEVICE = TCP ]; then
+    sed -i "s,GASPI_ETHERNET,GASPI_IB,g" tests/defs/default.def
+    sed -i "s,GASPI_ETHERNET,GASPI_IB,g" tests/tests/test_utils.h
+fi
+
 cat <<PKG > GPI2.pc
 prefix=${GPI2_PATH}
 exec_prefix=\${prefix}
