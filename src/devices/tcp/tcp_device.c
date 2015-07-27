@@ -1207,12 +1207,14 @@ tcp_virt_dev(void *args)
   int opt = 1;
   if(setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) <  0)
     {
+      close(listen_sock);
       gaspi_print_error("Failed to modify socket.");
       return NULL;
     }
 
   if(setsockopt(listen_sock, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)) < 0)
     {
+      close(listen_sock);
       gaspi_print_error("Failed to modify socket.");
       return NULL;
     }
