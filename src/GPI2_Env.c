@@ -259,7 +259,8 @@ gaspi_handle_env(gaspi_context *ctx)
 #endif
 	  env_miss = 1;
 	}
-      ctx->rank = atoi(rankPtr);
+      else
+	ctx->rank = atoi(rankPtr);
 
       nranksPtr = getenv ("GASPI_NRANKS");
       if(nranksPtr == NULL)
@@ -269,7 +270,8 @@ gaspi_handle_env(gaspi_context *ctx)
 #endif
 	  env_miss = 1;
 	}
-      ctx->tnc = atoi(nranksPtr);
+      else
+	ctx->tnc = atoi(nranksPtr);
 
       if(strcmp (typePtr, "GASPI_WORKER") == 0)
 	{
