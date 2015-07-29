@@ -451,6 +451,9 @@ pgaspi_cleanup_core()
 	  free (glb_gaspi_group_ctx[i].rank_grp);
 	  glb_gaspi_group_ctx[i].rank_grp = NULL;
 
+	  free(glb_gaspi_group_ctx[i].committed_rank);
+	  glb_gaspi_group_ctx[i].committed_rank = NULL;
+
 	  free (glb_gaspi_group_ctx[i].rrcd);
 	  glb_gaspi_group_ctx[i].rrcd = NULL;
 	}

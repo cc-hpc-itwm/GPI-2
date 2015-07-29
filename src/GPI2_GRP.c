@@ -51,6 +51,9 @@ _gaspi_release_group_mem(const gaspi_group_t group)
   free(glb_gaspi_group_ctx[group].rank_grp);
   glb_gaspi_group_ctx[group].rank_grp = NULL;
 
+  free(glb_gaspi_group_ctx[group].committed_rank);
+  glb_gaspi_group_ctx[group].committed_rank = NULL;
+
   return GASPI_SUCCESS;
 }
 
