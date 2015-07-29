@@ -779,11 +779,7 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 	}
     }
 
-  if(glb_gaspi_ctx_ib.qpGroups)
-    {
-      free (glb_gaspi_ctx_ib.qpGroups);
-    }
-
+  free (glb_gaspi_ctx_ib.qpGroups);
   glb_gaspi_ctx_ib.qpGroups = NULL;
 
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)
@@ -800,11 +796,7 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 	}
     }
 
-  if(glb_gaspi_ctx_ib.qpP)
-    {
-      free (glb_gaspi_ctx_ib.qpP);
-    }
-  
+  free (glb_gaspi_ctx_ib.qpP);
   glb_gaspi_ctx_ib.qpP = NULL;
 
   for(c = 0; c < gaspi_cfg->queue_num; c++)
@@ -823,11 +815,7 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 	    }
 	}
       
-      if(glb_gaspi_ctx_ib.qpC[c])
-	{
-	  free (glb_gaspi_ctx_ib.qpC[c]);
-	}
-      
+      free (glb_gaspi_ctx_ib.qpC[c]);
       glb_gaspi_ctx_ib.qpC[c] = NULL;
     }
 
@@ -906,18 +894,11 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 		cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
 	      else
 #endif	    
-		if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf)
-		  {
-		    free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
-		  }
-	    
+		free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
 	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf = NULL;
 	    }
 
-	  if(glb_gaspi_ctx.rrmd[i])
-	    {
-	      free (glb_gaspi_ctx.rrmd[i]);
-	    }
+	  free (glb_gaspi_ctx.rrmd[i]);
 	  glb_gaspi_ctx.rrmd[i] = NULL;
 	}
     }
@@ -950,7 +931,6 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 
   if(glb_gaspi_ctx_ib.channelP)
     {
-      
       if(ibv_destroy_comp_channel (glb_gaspi_ctx_ib.channelP))
 	{
 	  gaspi_print_error("Failed to destroy completion channel (libibverbs)");
@@ -969,18 +949,10 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
       ibv_free_device_list (glb_gaspi_ctx_ib.dev_list);
     }
 
-  if(glb_gaspi_ctx_ib.local_info)
-    {
-      free (glb_gaspi_ctx_ib.local_info);
-    }
-  
+  free (glb_gaspi_ctx_ib.local_info);
   glb_gaspi_ctx_ib.local_info = NULL;
   
-  if(glb_gaspi_ctx_ib.remote_info)
-    {
-      free (glb_gaspi_ctx_ib.remote_info);
-    }
-  
+  free (glb_gaspi_ctx_ib.remote_info);
   glb_gaspi_ctx_ib.remote_info = NULL;
 
   return 0;
