@@ -766,59 +766,44 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
   int i;
   unsigned int c;
 
-  /* TODO: single loop should be enough */
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
-      if( GASPI_ENDPOINT_NOT_CREATED == glb_gaspi_ctx.ep_conn[i].istat )
-	continue;
-      
-      if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpGroups[i]))
+      if( GASPI_ENDPOINT_CREATED == glb_gaspi_ctx.ep_conn[i].istat )
 	{
-	  gaspi_print_error ("Failed to destroy QP (libibverbs)");  
-	  return -1;
+	  if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpGroups[i]))
+	    {
+	      gaspi_print_error ("Failed to destroy QP (libibverbs)");
+	      return -1;
+	    }
+
+	  if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpP[i]))
+	    {
+	      gaspi_print_error ("Failed to destroy QP (libibverbs)");
+	      return -1;
+	    }
+
+	  for(c = 0; c < gaspi_cfg->queue_num; c++)
+	    {
+	      if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpC[c][i]))
+		{
+		  gaspi_print_error ("Failed to destroy QP (libibverbs)");
+		  return -1;
+		}
+	    }
 	}
     }
 
   free (glb_gaspi_ctx_ib.qpGroups);
   glb_gaspi_ctx_ib.qpGroups = NULL;
 
-  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
-    {
-      if( GASPI_ENDPOINT_NOT_CREATED == glb_gaspi_ctx.ep_conn[i].istat )
-	{
-	  continue;
-	}
-
-      if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpP[i]))
-	{
-	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
-	  return -1;
-	}
-    }
-
   free (glb_gaspi_ctx_ib.qpP);
   glb_gaspi_ctx_ib.qpP = NULL;
 
   for(c = 0; c < gaspi_cfg->queue_num; c++)
     {
-      for(i = 0; i < glb_gaspi_ctx.tnc; i++)
-	{
-	  if( GASPI_ENDPOINT_NOT_CREATED == glb_gaspi_ctx.ep_conn[i].istat )
-	    {
-	      continue;
-	    }
-	  
-	  if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpC[c][i]))
-	    {
-	      gaspi_print_error ("Failed to destroy QP (libibverbs)");
-	      return -1;
-	    }
-	}
-      
       free (glb_gaspi_ctx_ib.qpC[c]);
       glb_gaspi_ctx_ib.qpC[c] = NULL;
     }
-
 
   if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqGroups))
     {
@@ -859,7 +844,7 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 	}
     }
 
-/*  TODO: to remove from here <<< LOOP*/
+  /*  TODO: to remove from here <<< LOOP*/
   for(i = 0; i < GASPI_MAX_MSEGS; i++)
     {
       if(glb_gaspi_ctx.rrmd[i] != NULL)
