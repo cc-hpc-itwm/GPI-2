@@ -28,8 +28,8 @@
 # 9 and beyond: programs <args>
 
 #set -x
-if [ $# -lt 6 ]; then
-    echo "Missing args (need at least 5, have $#)"
+if [ $# -lt 9 ]; then
+    echo "Missing args (need at least 9, have $#)"
     exit 1
 fi
 
@@ -39,7 +39,7 @@ ARGS=""
 count=1
 for i in $@
 do
-    if [ $count -gt 8 ]; then
+    if [ $count -gt 9 ]; then
 	ARGS="$ARGS ${i}"
     fi
     count=$((count+1))
