@@ -11,8 +11,8 @@ static gaspi_config_t tsuite_default_config =
     1,				//logout
     12121,
     0,				//netinfo
-    0,				//netdev
-    4096,			//mtu
+    -1,				//netdev
+    0,  			//mtu
     1,				//port check
     0,				//user selected network
     GASPI_IB,			//network typ
