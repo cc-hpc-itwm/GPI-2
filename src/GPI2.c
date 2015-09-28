@@ -369,6 +369,12 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   if(glb_gaspi_cfg.build_infrastructure)
     {
+      eret = pgaspi_group_all_local_create(timeout_ms);
+      if(eret != GASPI_SUCCESS)
+	{
+	  gaspi_print_error("Failed to create GASPI_GROUP_ALL.");
+	}
+
       /* configuration tells us to pre-connect */
       if( GASPI_TOPOLOGY_STATIC == glb_gaspi_cfg.build_infrastructure )
 	{
@@ -376,20 +382,11 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	    {
 	      if( (eret = pgaspi_connect((gaspi_rank_t) i, timeout_ms)) != GASPI_SUCCESS )
 		{
-		  goto errL;
+		  return eret;
 		}
 	    }
 	}
-
-      eret = pgaspi_group_all_local_create(timeout_ms);
-      if(eret == GASPI_SUCCESS)
-	{
-	  eret = gaspi_barrier(GASPI_GROUP_ALL, timeout_ms);
-	}
-      else
-	{
-	  gaspi_print_error("Failed to create GASPI_GROUP_ALL.");
-	}
+      eret = gaspi_barrier(GASPI_GROUP_ALL, timeout_ms);
     }
   else /* dont build_infrastructure */
     {
