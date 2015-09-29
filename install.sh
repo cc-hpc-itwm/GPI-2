@@ -195,6 +195,7 @@ cp src/make.inc src/make.inc.bak
 cp tests/make.defines tests/make.defines.bak
 
 echo "$0 $@" >> install.log
+gcc --version >> install.log
 
 if [ $GPI2_DEVICE = IB ]; then
 #check ofed installation
