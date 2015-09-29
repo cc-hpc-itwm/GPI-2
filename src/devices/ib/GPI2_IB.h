@@ -19,6 +19,9 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef _GPI2_IB_H_
 #define _GPI2_IB_H_
 
+#ifdef GPI2_EXP_VERBS
+#include <infiniband/verbs_exp.h>
+#endif
 #include <infiniband/verbs.h>
 #include <infiniband/driver.h>
 

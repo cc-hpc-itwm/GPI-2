@@ -21,6 +21,19 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Dev.h"
 #include "GPI2_Utility.h"
 
+#ifdef GPI2_EXP_VERBS
+#include <stdint.h>
+
+uint64_t
+swap_uint64( uint64_t val )
+{
+  val = ((val << 8) & 0xFF00FF00FF00FF00ULL ) | ((val >> 8) & 0x00FF00FF00FF00FFULL );
+  val = ((val << 16) & 0xFFFF0000FFFF0000ULL ) | ((val >> 16) & 0x0000FFFF0000FFFFULL );
+
+  return (val << 32) | (val >> 32);
+}
+#endif
+
 #pragma weak gaspi_atomic_fetch_add = pgaspi_atomic_fetch_add
 gaspi_return_t
 pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
@@ -60,7 +73,11 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
       goto endL;
     }
 
+#ifdef GPI2_EXP_VERBS
+    *val_old = swap_uint64((uint64_t)*((gaspi_atomic_value_t *) (gctx->nsrc.data.buf)));
+#else
   *val_old = *((gaspi_atomic_value_t *) (gctx->nsrc.data.buf));
+#endif
 
  endL:
   unlock_gaspi (&glb_gaspi_group_ctx[0].gl);
@@ -104,8 +121,11 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
       gctx->qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
-
+#ifdef GPI2_EXP_VERBS
+  *val_old = swap_uint64(*((gaspi_atomic_value_t *) (gctx->nsrc.data.buf)));
+#else
   *val_old = *((gaspi_atomic_value_t *) (gctx->nsrc.data.buf));
+#endif
 
  endL:
   unlock_gaspi (&glb_gaspi_group_ctx[0].gl);

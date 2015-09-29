@@ -26,31 +26,46 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 			     const gaspi_atomic_value_t val_add)
 {
   int i;
-  struct ibv_send_wr *bad_wr;
-  struct ibv_sge slist;
-  struct ibv_send_wr swr;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
+  struct ibv_sge slist;
   slist.addr = (uintptr_t) (gctx->nsrc.data.buf);
   slist.length = sizeof(gaspi_atomic_value_t);
   slist.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
 
-  swr.wr.atomic.remote_addr = gctx->rrmd[segment_id][rank].data.addr + offset;
+#ifdef GPI2_EXP_VERBS
+  struct ibv_exp_send_wr *bad_wr;
+  struct ibv_exp_send_wr swr;
+  swr.exp_opcode = IBV_EXP_WR_ATOMIC_FETCH_AND_ADD;
+  swr.exp_send_flags = IBV_EXP_SEND_SIGNALED;
+#else
+  struct ibv_send_wr *bad_wr;
+  struct ibv_send_wr swr;
+  swr.opcode = IBV_WR_ATOMIC_FETCH_AND_ADD;
+  swr.send_flags = IBV_SEND_SIGNALED;
+#endif
 
+  swr.wr.atomic.remote_addr = gctx->rrmd[segment_id][rank].data.addr + offset;
   swr.wr.atomic.rkey = gctx->rrmd[segment_id][rank].rkey[0];
   swr.wr.atomic.compare_add = val_add;
 
   swr.wr_id = rank;
   swr.sg_list = &slist;
   swr.num_sge = 1;
-  swr.opcode = IBV_WR_ATOMIC_FETCH_AND_ADD;
-  swr.send_flags = IBV_SEND_SIGNALED;
   swr.next = NULL;
 
-  if (ibv_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr))
+#ifdef GPI2_EXP_VERBS
+  if( ibv_exp_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr) )
+    {
+      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = 1;
+      return GASPI_ERROR;
+    }
+#else
+  if( ibv_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr) )
     {
       return GASPI_ERROR;
     }
+#endif
 
   //TODO
   gctx->ne_count_grp++;
@@ -85,18 +100,28 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 				const gaspi_atomic_value_t comparator,
 				const gaspi_atomic_value_t val_new)
 {
-  struct ibv_send_wr *bad_wr;
-  struct ibv_sge slist;
-  struct ibv_send_wr swr;
   int i;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
+  struct ibv_sge slist;
   slist.addr = (uintptr_t) (gctx->nsrc.data.buf);
   slist.length = sizeof(gaspi_atomic_value_t);
   slist.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
 
-  swr.wr.atomic.remote_addr = gctx->rrmd[segment_id][rank].data.addr + offset;
+#ifdef GPI2_EXP_VERBS
+  struct ibv_exp_send_wr *bad_wr;
+  struct ibv_exp_send_wr swr;
+  swr.exp_opcode = IBV_WR_ATOMIC_CMP_AND_SWP;
+  swr.exp_send_flags = IBV_SEND_SIGNALED;
 
+#else
+  struct ibv_send_wr *bad_wr;
+  struct ibv_send_wr swr;
+  swr.opcode = IBV_WR_ATOMIC_CMP_AND_SWP;
+  swr.send_flags = IBV_SEND_SIGNALED;
+#endif
+
+  swr.wr.atomic.remote_addr = gctx->rrmd[segment_id][rank].data.addr + offset;
   swr.wr.atomic.rkey = gctx->rrmd[segment_id][rank].rkey[0];
   swr.wr.atomic.compare_add = comparator;
   swr.wr.atomic.swap = val_new;
@@ -104,14 +129,20 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
   swr.wr_id = rank;
   swr.sg_list = &slist;
   swr.num_sge = 1;
-  swr.opcode = IBV_WR_ATOMIC_CMP_AND_SWP;
-  swr.send_flags = IBV_SEND_SIGNALED;
   swr.next = NULL;
 
+#ifdef GPI2_EXP_VERBS
+  if (ibv_exp_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr))
+    {
+      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = 1;
+      return GASPI_ERROR;
+    }
+#else
   if (ibv_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr))
     {
       return GASPI_ERROR;
     }
+#endif
 
   gctx->ne_count_grp++;
 

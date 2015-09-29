@@ -29,6 +29,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_GPU.h"
 #endif
 
+#ifdef GPI2_EXP_VERBS
+#include <math.h>
+#endif
+
 #include "GPI2.h"
 #include "GPI2_Dev.h"
 #include "GPI2_IB.h"
@@ -367,7 +371,28 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 
   /* Create default completion queues */
   /* Groups */
+#ifdef GPI2_EXP_VERBS
+  struct ibv_exp_cq_init_attr cqattr;
+  memset(&cqattr, 0, sizeof(cqattr));
+
+  glb_gaspi_ctx_ib.scqGroups = ibv_exp_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_size_max, NULL,NULL, 0, &cqattr);
+
+  if(!glb_gaspi_ctx_ib.scqGroups)
+    {
+      gaspi_print_error ("Failed to create CQ (libibverbs)");
+      return -1;
+    }
+
+  glb_gaspi_ctx_ib.rcqGroups = ibv_exp_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_size_max, NULL,NULL, 0, &cqattr);
+
+  if(!glb_gaspi_ctx_ib.rcqGroups)
+    {
+      gaspi_print_error ("Failed to create CQ (libibverbs)");
+      return -1;
+    }
+#else
   glb_gaspi_ctx_ib.scqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_size_max, NULL,NULL, 0);
+
   if(!glb_gaspi_ctx_ib.scqGroups)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
@@ -380,7 +405,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
-
+#endif
   /* Passive */
   glb_gaspi_ctx_ib.scqP = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_size_max, NULL,NULL, 0);
   if(!glb_gaspi_ctx_ib.scqP)
@@ -558,6 +583,82 @@ _pgaspi_dev_create_qp(struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv
   return qp;
 }
 
+
+#ifdef GPI2_EXP_VERBS
+static struct ibv_qp*
+_pgaspi_dev_create_qp_exp(struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv_srq *srq)
+{
+  struct ibv_exp_qp_init_attr attr;
+  struct ibv_qp* qp = NULL;
+  struct ibv_exp_device_attr dev_attr;
+
+  memset(&attr, 0, sizeof(attr));
+  memset(&dev_attr, 0, sizeof(dev_attr));
+
+  attr.pd = glb_gaspi_ctx_ib.pd;
+  attr.cap.max_send_wr = glb_gaspi_cfg.queue_size_max;
+  attr.cap.max_recv_wr = glb_gaspi_cfg.queue_size_max;
+  attr.cap.max_send_wr  = glb_gaspi_cfg.queue_size_max;
+  attr.cap.max_send_sge = 1;
+  attr.cap.max_inline_data = MAX_INLINE_BYTES;
+
+  attr.comp_mask = IBV_EXP_QP_INIT_ATTR_PD | IBV_EXP_QP_INIT_ATTR_CREATE_FLAGS;
+  attr.comp_mask |= IBV_EXP_QP_INIT_ATTR_ATOMICS_ARG;
+  attr.max_atomic_arg = pow(2,dev_attr.ext_atom.log_max_atomic_inline);
+  attr.exp_create_flags = IBV_EXP_QP_CREATE_ATOMIC_BE_REPLY;
+
+  attr.send_cq = send_cq;
+  attr.recv_cq = recv_cq;
+  attr.srq = srq;
+
+  attr.qp_type = IBV_QPT_RC;
+
+  qp = ibv_exp_create_qp(glb_gaspi_ctx_ib.context, &attr);
+  if( qp == NULL )
+    {
+      gaspi_print_error ("Failed to create QP (libibverbs)");
+      return NULL;
+    }
+
+  /* Set to init */
+  struct ibv_exp_qp_attr qp_attr;
+  memset(&qp_attr, 0, sizeof(struct ibv_exp_qp_attr));
+
+  qp_attr.qp_state = IBV_QPS_INIT;
+  qp_attr.pkey_index = 0;
+  qp_attr.port_num = glb_gaspi_ctx_ib.ib_port;
+
+  qp_attr.qp_access_flags = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE |IBV_ACCESS_REMOTE_ATOMIC;
+
+  struct ibv_exp_qp_attr exp_attr;
+  uint64_t exp_flags = 0;
+
+  memset(&exp_attr, 0, sizeof(struct ibv_exp_qp_attr));
+
+  exp_attr.qp_state = qp_attr.qp_state;
+  exp_attr.pkey_index = qp_attr.pkey_index;
+  exp_attr.port_num = glb_gaspi_ctx_ib.ib_port;
+
+  exp_attr.qp_access_flags = qp_attr.qp_access_flags;
+
+  exp_flags = IBV_EXP_QP_STATE | IBV_EXP_QP_PKEY_INDEX | IBV_EXP_QP_PORT;
+  exp_flags |= IBV_EXP_QP_ACCESS_FLAGS;
+
+  if( ibv_exp_modify_qp(qp, &exp_attr, exp_flags) )
+    {
+      gaspi_print_error ("Failed to modify QP (libibverbs)");
+
+  if( ibv_destroy_qp(qp) )
+	{
+	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
+	}
+      return NULL;
+    }
+
+  return qp;
+}
+#endif //GPI2_EXP_VERBS
+
 int
 pgaspi_dev_comm_queue_delete(const unsigned int id)
 {
@@ -658,11 +759,19 @@ pgaspi_dev_create_endpoint(const int i)
   unsigned int c;
 
   /* Groups QP*/
+#ifdef GPI2_EXP_VERBS
+  glb_gaspi_ctx_ib.qpGroups[i] =
+    _pgaspi_dev_create_qp_exp(glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL);
+
+#else
   glb_gaspi_ctx_ib.qpGroups[i] =
     _pgaspi_dev_create_qp(glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL);
 
-  if (glb_gaspi_ctx_ib.qpGroups[i] == NULL)
-    return -1;
+  if( glb_gaspi_ctx_ib.qpGroups[i] == NULL )
+    {
+      return -1;
+    }
+#endif
 
   glb_gaspi_ctx_ib.local_info[i].qpnGroup = glb_gaspi_ctx_ib.qpGroups[i]->qp_num;
 
