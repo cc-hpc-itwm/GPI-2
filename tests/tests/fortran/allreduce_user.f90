@@ -32,7 +32,6 @@ contains
 
 end module my_reduce
 
-
 program allreduce
 
   use gaspi
@@ -61,35 +60,73 @@ program allreduce
   fproc = c_funloc(my_reduce_operation)
 
   res = gaspi_proc_init(timeout)
+  if(res .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_proc_init failed"
+     call exit(-1)
+  end if
+
   res = gaspi_barrier(group, timeout)
+  if(res .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_barrier failed"
+     call exit(-1)
+  end if
 
   res = gaspi_proc_rank(rank)
-  res = gaspi_proc_num(num)
+  if(res .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_proc_rank failed"
+     call exit(-1)
+  end if
 
+  res = gaspi_proc_num(num)
+  if(res .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_proc_num failed"
+     call exit(-1)
+  end if
 
 ! allreduce
-
   buffer_send(1) = rank
   buffer_recv(1) = -1
 
-  print *, 'send, recv - pre reduce: ',  buffer_send(1),buffer_recv(1)
   res = gaspi_allreduce(C_LOC(buffer_send),C_LOC(buffer_recv),num_elem, &
 &         operation,datatyp,group,timeout)  
-  print *, 'send, recv - post reduce:',  buffer_send(1),buffer_recv(1)
+  if(res .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_allreduce failed"
+     call exit(-1)
+  end if
 
+  if (buffer_recv(1) .ne. (num -1)) then
+     write (*,*) "Wrong result"
+     call exit(-1)
+  end if
 ! allreduce_user
 
   buffer_send(1)  = rank
   buffer_recv(1)  = -1
   reduce_state(1) =  0
 
-  print *, 'send, recv - pre user_reduce: ',  buffer_send(1),buffer_recv(1)
   res = gaspi_allreduce_user(C_LOC(buffer_send),C_LOC(buffer_recv),num_elem,sizeof_int, &
 &         fproc,C_LOC(reduce_state),group,timeout)
-  print *, 'send, recv - post reduce_user:',  buffer_send(1),buffer_recv(1)
+  if(res .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_allreduce_user failed"
+     call exit(-1)
+  end if
+
+  if (buffer_recv(1) .ne. (num -1)) then
+     write (*,*) "Wrong result"
+     call exit(-1)
+  end if
 
   res = gaspi_barrier(group, timeout)
+  if(res .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_barrier failed"
+     call exit(-1)
+  end if
+
   res = gaspi_proc_term(timeout)
+  if(res .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_proc_term failed"
+     call exit(-1)
+  end if
 
 end program allreduce
 
