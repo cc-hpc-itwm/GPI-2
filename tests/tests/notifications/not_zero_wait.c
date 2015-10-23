@@ -26,6 +26,8 @@ int main(int argc, char *argv[])
 
   ASSERT(  gaspi_segment_delete(0 ));
 
+  ASSERT(gaspi_wait(0, GASPI_BLOCK));
+  
   ASSERT( gaspi_proc_term(GASPI_BLOCK) );
 
   return 0;

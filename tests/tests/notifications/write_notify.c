@@ -71,8 +71,9 @@ int main(int argc, char *argv[])
       n++;
     }
   while(n < (nprocs - 1));
+  ASSERT(gaspi_wait(0, GASPI_BLOCK));
 
- end:
+  end:
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
   

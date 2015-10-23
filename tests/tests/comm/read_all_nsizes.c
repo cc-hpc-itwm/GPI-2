@@ -28,14 +28,14 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_queue_size_max(&qmax));
 
-  for(commSize= 1; commSize < _8MB; commSize*=2 )
+  for(commSize= 4; commSize < _8MB; commSize*=2 )
     {
       for(rankSend = 0; rankSend < numranks; rankSend++)
 	{
 	  if(rankSend == myrank)
 	    continue;
 	  
-	  gaspi_printf("partner rank: %d - %lu bytes\n", rankSend, commSize);
+	  printf("partner rank: %d - %lu bytes\n", rankSend, commSize);
 
 	  //FAILS with or without outstanding requests
 	  gaspi_queue_size(1, &queueSize);

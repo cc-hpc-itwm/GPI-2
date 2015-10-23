@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  const gaspi_size_t msgSize = 1;
+  const gaspi_size_t msgSize = 4;
   const int times = 1000;
   int i;
 

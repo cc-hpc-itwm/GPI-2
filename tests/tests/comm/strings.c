@@ -188,6 +188,7 @@ int main (int argc, char *argv[])
 
   //block and exit
  end:
+  gaspi_wait(0, GASPI_BLOCK);
   gaspi_barrier(GASPI_GROUP_ALL,GASPI_BLOCK);
   gaspi_proc_term(GASPI_BLOCK);
   return EXIT_SUCCESS;

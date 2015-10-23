@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_segment_create(0, _2MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  const gaspi_size_t msgSize = 1;
+  const gaspi_size_t msgSize = 4;
   if(P > 1)
     {
       

@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 
   gaspi_size_t msgSize;
   gaspi_size_t i;
-  for(msgSize = 1; msgSize < 8192; msgSize *=2)
+  for(msgSize = 4; msgSize < 8192; msgSize *=2)
     if(myrank == 0)
       {
 
