@@ -179,14 +179,14 @@ gaspi_sn_connect2port(const char *hn, const unsigned short port, const unsigned 
       ftime(&t1);
       const unsigned int delta_ms = (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
 
-      if(delta_ms > timeout_ms)
+      if( -1 == sockfd )
 	{
-	  if( -1 != sockfd )
+	  if(delta_ms > timeout_ms)
 	    {
 	      shutdown( sockfd, SHUT_RDWR );
 	      close(sockfd);
+	      return -1;
 	    }
-	  return -1;
 	}
       gaspi_delay();
     }
