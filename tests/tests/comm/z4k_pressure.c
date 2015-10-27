@@ -36,9 +36,11 @@ int main(int argc, char *argv[])
   const gaspi_size_t memSize = 4294967296; //4GB
 
   gaspi_offset_t offset_write=0, offset_read = memSize / 2, offset_check = 3221225472 ;
+  gaspi_number_t qmax ;
+  gaspi_number_t queueSize;
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
-
+  ASSERT (gaspi_queue_size_max(&qmax));
   ASSERT (gaspi_segment_create(0, memSize, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
   gaspi_pointer_t _vptr;
@@ -56,10 +58,10 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_num(&highestnode));
 
   while(k <= RUNS)
-    { 
+    {
       //generate random
-      srand((unsigned)time(0)); 
-      
+      srand((unsigned)time(0));
+
 #ifdef FLOAT
       srand48((unsigned) time(0));
 #endif
@@ -96,18 +98,36 @@ int main(int argc, char *argv[])
 	for(j = 0; j < ITERATIONS; j++)
 	  {
 	    ASSERT (gaspi_write(0, offset_write, (myrank + 1) % highestnode,
-				0, offset_read, size, 0, GASPI_BLOCK));
+				0, offset_read, size,
+				0, GASPI_BLOCK));
 
 	    offset_write += size;
 	    offset_read += size;
 	  }
-	ASSERT (gaspi_wait(0, GASPI_BLOCK));
+	ASSERT(gaspi_queue_size(0, &queueSize));
+	if (queueSize > qmax - 24)
+	  {
+	    ASSERT(gaspi_wait(0, GASPI_BLOCK));
+	  }
       }
 #ifdef DEBUG
     gaspi_printf("%d bytes written!\n", ITERATIONS * ITERATIONS * size);
 #endif
+    /* notify remote that data is written */
+    ASSERT (gaspi_notify( 0, (myrank + 1) % highestnode, 0, 1, 0, GASPI_BLOCK));
+    gaspi_notification_id_t recv_id;
+    ASSERT(gaspi_notify_waitsome(0, 0, 1, &recv_id, GASPI_BLOCK));
+    gaspi_notification_t notification_val;
+    ASSERT( gaspi_notify_reset(0, recv_id, &notification_val));
+
+    /* notify remote that data has arrived */
+    ASSERT (gaspi_notify( 0, (myrank + highestnode - 1) % highestnode, 1, 1, 0, GASPI_BLOCK));
+    gaspi_notification_id_t ack_id;
+    ASSERT(gaspi_notify_waitsome(0, 1, 1, &ack_id, GASPI_BLOCK));
+    ASSERT( gaspi_notify_reset(0, ack_id, &notification_val));
+
     //check if data was written successfully
-    ASSERT (gaspi_read(0, offset_check, (myrank + 1) % highestnode, 
+    ASSERT (gaspi_read(0, offset_check, (myrank + 1) % highestnode,
 		       0, memSize/2, GB, 0, GASPI_BLOCK));
 
     ASSERT (gaspi_wait(0, GASPI_BLOCK));
@@ -137,13 +157,13 @@ int main(int argc, char *argv[])
 	}
 	j++;
       }
-    
+
     offset_write=0;
     offset_read = memSize / 2;
 
 #ifdef DEBUG
     gaspi_printf("Check!\n");
-#endif	
+#endif
 
     k++;
   }
@@ -156,4 +176,3 @@ int main(int argc, char *argv[])
 
   return ret;
 }
-
