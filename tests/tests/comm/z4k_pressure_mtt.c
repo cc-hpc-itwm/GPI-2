@@ -20,12 +20,10 @@ They should be the same as the is the same data */
 /* Just to put pressure on the communication. */
 #define RUNS 2
 
-#define ITERATIONS 512
 #define GB 1073741824
 #define NUMTHREADS 2
 #define RANDNUM 1024
 
-#define FLOAT 1
 //#define DEBUG 1
 
 gaspi_size_t memSize = 4294967296; //4GB
@@ -65,29 +63,26 @@ static void * thread_function(void * arg)
   gaspi_queue_id_t t_queue = (gaspi_queue_id_t) arg_ptr->threadID;
 
   ASSERT (gaspi_queue_size_max(&qmax));
+
 #ifdef DEBUG
   gaspi_printf("THREAD %d:write %lu read %lu check %lu\n",
-	      arg_ptr->threadID,
-	      offset_write_init,
-	      offset_read_init,
-	      offset_check_init);
+	       arg_ptr->threadID,
+	       offset_write_init,
+	       offset_read_init,
+	       offset_check_init);
 
   gaspi_printf("THREAD %d: Valores  %lu:%f %lu:%f %lu:%f \n",
-	      arg_ptr->threadID,
-	      offset_write_init,
-	      mptr[offset_write_init/4],
-	      offset_read_init,
-	      mptr[offset_read_init/4],
-	      offset_check_init,
-	      mptr[offset_check_init /4]);
+	       arg_ptr->threadID,
+	       offset_write_init,
+	       mptr[offset_write_init/4],
+	       offset_read_init,
+	       mptr[offset_read_init/4],
+	       offset_check_init,
+	       mptr[offset_check_init /4]);
 #endif
 
-  //just some random
-#ifdef FLOAT
+  /* just some random */
   srand48((unsigned) time(0));
-#else
-  srand((unsigned)time(0));
-#endif
 
   while(k < RUNS){ //run until break
 
@@ -100,47 +95,36 @@ static void * thread_function(void * arg)
 	//fill randoms on 1024 first positions
 	for(j=offset_write_init / 4;j < (offset_write_init /4) + RANDNUM  ;j++)
 	  {
-#ifdef FLOAT
-	  mptr[j]=  drand48() + (myrank*1.0 + arg_ptr->threadID*1.0);
-#else
-	  mptr[j]=  rand() + myrank;
-#endif
-	}
+	    mptr[j]=  drand48() + (myrank*1.0 + arg_ptr->threadID*1.0);
+	  }
 
 #ifdef DEBUG
-#ifdef FLOAT
 	gaspi_printf("THREAD %d: random value in pos %lu %f\n",
-		    arg_ptr->threadID,
-		    offset_write,
-		    mptr[offset_write/4]);
-#else
-	gpi_printf("THREAD %d: random value in pos %lu %d\n",
-		    arg_ptr->threadID,
-		    offset_write,
-		    mptr[offset_write/4]);
-#endif
+		     arg_ptr->threadID,
+		     offset_write,
+		     mptr[offset_write/4]);
 #endif
 
 	while(counter < GB / NUMTHREADS)
 	  {
 	    ASSERT(gaspi_write(0, offset_write, (myrank + 1) % highestnode,
-			      0, offset_read, size, t_queue, GASPI_BLOCK));
+			       0, offset_read, size, t_queue, GASPI_BLOCK));
 
-	   offset_write += size;
-	   offset_read += size;
-	   counter += size;
+	    offset_write += size;
+	    offset_read += size;
+	    counter += size;
 
-	   gaspi_queue_size(t_queue, &queueSize);
+	    gaspi_queue_size(t_queue, &queueSize);
 
-	   if (queueSize > qmax - 24)
-	     {
-	       if(gaspi_wait(t_queue, GASPI_BLOCK) != GASPI_SUCCESS)
-		 {
-		   gaspi_printf("failed wait on queue\n");
-		   error = -1;
-		   goto thread_exit;
-		 }
-	     }
+	    if (queueSize > qmax - 24)
+	      {
+		if(gaspi_wait(t_queue, GASPI_BLOCK) != GASPI_SUCCESS)
+		  {
+		    gaspi_printf("failed wait on queue\n");
+		    error = -1;
+		    goto thread_exit;
+		  }
+	      }
 	  }
 
 	/* notify remote that data is written */
@@ -163,22 +147,14 @@ static void * thread_function(void * arg)
 	ASSERT (gaspi_wait(t_queue, GASPI_BLOCK));
 
 #ifdef DEBUG
-#ifdef FLOAT
 	gaspi_printf("THREAD %d: Values  %lu:%f %lu:%f %lu:%f \n",
-		    arg_ptr->threadID,
-		    offset_write_init,
-		    mptr[offset_write_init / 4],
-		    offset_read_init,
-		    mptr[offset_read_init / 4],
-		    offset_check_init,
-		    mptr[offset_check_init /4]);
-#else
-	gaspi_printf("THREAD %d: Values  %d %d %d \n",
-		    arg_ptr->threadID,
-		    mptr[offset_write_init / 4],
-		    mptr[offset_read_init / 4],
-		    mptr[offset_check_init / 4]);
-#endif
+		     arg_ptr->threadID,
+		     offset_write_init,
+		     mptr[offset_write_init / 4],
+		     offset_read_init,
+		     mptr[offset_read_init / 4],
+		     offset_check_init,
+		     mptr[offset_check_init /4]);
 #endif
 	j=0;
 	int ck = 0;
@@ -186,26 +162,17 @@ static void * thread_function(void * arg)
 	while(ck < RANDNUM)
 	  {
 	    if(mptr[ (offset_write_init / 4) + ck] != mptr[ (offset_check_init) / 4 + ck])
-	    {
+	      {
+		gaspi_printf("THREAD %d: value incorrect %f-%f at %d \n",
+			     arg_ptr->threadID,
+			     mptr[(offset_write_init / 4) + ck],
+			     mptr[(offset_check_init / 4) + ck],
+			     (offset_check_init / 4) + ck);
+		break;
 
-#ifdef FLOAT
-	      gaspi_printf("THREAD %d: value incorrect %f-%f at %d \n",
-			  arg_ptr->threadID,
-			  mptr[(offset_write_init / 4) + ck],
-			  mptr[(offset_check_init / 4) + ck],
-			  (offset_check_init / 4) + ck);
-#else
-	      gaspi_printf("THREAD %d: value incorrect %d-%d at %d \n",
-			  arg_ptr->threadID,
-			  mptr[(offset_write_init / 4) + ck],
-			  mptr[(offset_check_init / 4) + ck],
-			  (offset_check_init / 4) + ck);
-#endif
-	      break;
-
-	    }
-	  ck++;
-	}
+	      }
+	    ck++;
+	  }
 
 	offset_write = offset_write_init;
 	offset_read  = offset_read_init;
@@ -242,9 +209,9 @@ int main(int argc, char *argv[])
   int thread_check[NUMTHREADS];
   pthread_t ptr_check[NUMTHREADS];
   struct thread_args t_check_args[NUMTHREADS];
-  /*   int thread_void[NUMTHREADS]; */
-  /*   pthread_t ptr_void[NUMTHREADS]; */
-  /*   struct thread_args t_void_args[NUMTHREADS]; */
+  /* int thread_void[NUMTHREADS]; */
+  /* pthread_t ptr_void[NUMTHREADS]; */
+  /* struct thread_args t_void_args[NUMTHREADS]; */
   unsigned long j;
   int i;
 
@@ -258,62 +225,43 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_segment_ptr(0, &_vptr));
 
   /* get memory area pointer */
-#ifdef FLOAT
   mptr = (float *) _vptr;
-#else
-  mptr = (int *) _vptr;
-#endif
 
   ASSERT (gaspi_proc_rank (&myrank));
   ASSERT (gaspi_proc_num (&highestnode));
   if(highestnode < 2 )
     goto exit;
 
-  /* if(highestnode > 2){ */
-  /*   gpi_printf("This test is for 2 machines only\n"); */
-  /*   setNpGPI(2); */
-
-  /* } */
-
-  //generate full random
-#ifdef FLOAT
+  /* generate full random */
   srand48((unsigned) time(0));
-#else
-  srand((unsigned)time(0));
-#endif
 
-  //fill randoms up to 1GB / NUMTHREADS
+  /* fill randoms up to 1GB / NUMTHREADS */
   for(j=0;j < memSize/4;j++)
     {
-#ifdef FLOAT
       mptr[j]=  drand48()+ (myrank*1.0);
-#else
-      mptr[j]=  rand() + myrank;
-#endif
     }
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   //create threads for check
-
   for(i = 0; i < NUMTHREADS; i++)
     {
       t_check_args[i].threadID = i;
       thread_check[i] = pthread_create(&ptr_check[i],NULL,&thread_function,&t_check_args[i]);
 
-/*       t_void_args[i].threadID= i;  */
-/*       thread_void[i] = pthread_create(&ptr_void[i],NULL,&thread_void_function,&t_void_args[i]);  */
+      /* t_void_args[i].threadID= i;  */
+      /* thread_void[i] = pthread_create(&ptr_void[i],NULL,&thread_void_function,&t_void_args[i]);  */
     }
 
-  //wait for threads
+  /* wait for threads */
   for(i = 0; i < NUMTHREADS; i++)
     {
       pthread_join(ptr_check[i],NULL);
     }
 
-  //cancel dummy threads
-/*   for(i = 0; i < NUMTHREADS; i++)  */
-/*     pthread_cancel(ptr_void[i]);  */
+  /* cancel dummy threads */
+  /* for(i = 0; i < NUMTHREADS; i++)  */
+  /* pthread_cancel(ptr_void[i]);  */
 
   gaspi_printf("Waiting to finish...\n");
 

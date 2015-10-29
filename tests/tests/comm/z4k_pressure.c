@@ -14,28 +14,23 @@
 They should be the same as the is the same data */
 
 #define RUNS 5
-
-/*DONT TOUCH!!!!! The test is made for this number of iterations -> other value will break */
-#define ITERATIONS 512
 #define GB 1073741824
 
-int highestnode;
-
-#define FLOAT 1
-
-//#define DEBUG 1
+/* #define DEBUG 1 */
 
 int main(int argc, char *argv[])
 {
-  int i,k=0;
-  int ret=0;
+  int i, k = 0;
+  int ret = 0;
   unsigned long j;
 
-  const gaspi_size_t size=4096;//4k
+  const gaspi_size_t size = 4096;
 
-  const gaspi_size_t memSize = 4294967296; //4GB
+  const gaspi_size_t memSize = _4GB;
 
-  gaspi_offset_t offset_write=0, offset_read = memSize / 2, offset_check = 3221225472 ;
+  gaspi_offset_t offset_write = 0;
+  gaspi_offset_t offset_read = _2GB;
+  gaspi_offset_t offset_check = 3221225472;
   gaspi_number_t qmax ;
   gaspi_number_t queueSize;
 
@@ -47,11 +42,8 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_segment_ptr(0, &_vptr));
 
   /* get memory area pointer */
-#ifdef FLOAT
-  float *mptr = (float *) _vptr;
-#else
-  int *mptr = (int *) _vptr;
-#endif
+  float *mptr_f = (float *) _vptr;
+  char *mptr_c = (char *) _vptr;
 
   gaspi_rank_t myrank, highestnode;
   ASSERT (gaspi_proc_rank(&myrank));
@@ -61,58 +53,51 @@ int main(int argc, char *argv[])
     {
       //generate random
       srand((unsigned)time(0));
-
-#ifdef FLOAT
       srand48((unsigned) time(0));
-#endif
+
       ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
       //clean
-      for(j = 0; j < (memSize / 4); j++)
-	mptr[j]= 0;
+      for(j = 0; j < memSize; j++)
+	mptr_c[j]= 0;
 
-    //fill randoms up to 1GB
-      for(j = 0; j < (memSize / 16); j++)
+      /* fill randoms up to 1GB */
+      for(j = 0; j < (GB / sizeof(float)); j++)
 	{
-#ifdef FLOAT
-	  mptr[j]=  drand48() + (myrank*1.0);
-#else
-	  mptr[j]=  rand() + myrank;
-#endif
+	  mptr_f[j]=  drand48() + (myrank * 1.0);
 	}
 
 #ifdef DEBUG
-#ifdef FLOAT
-      gaspi_printf("random value in pos 0 %f\n", mptr[0]);
-#else
-      gaspi_printf("random value in pos 0 %d\n", mptr[0]);
+      gaspi_printf("random value in pos 0 %f\n", mptr_f[0]);
 #endif
-#endif //DEBUG
-
       ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
       gaspi_printf("\n....Running iteration %d of %d...\n",k, RUNS);
 
-    for(i = 0; i < ITERATIONS; i++)
-      {
-	for(j = 0; j < ITERATIONS; j++)
-	  {
-	    ASSERT (gaspi_write(0, offset_write, (myrank + 1) % highestnode,
-				0, offset_read, size,
-				0, GASPI_BLOCK));
+      const unsigned long packets = (GB / size);
+      for(j = 0; j < packets; j++)
+	{
+	  ASSERT(gaspi_queue_size(0, &queueSize));
+	  if (queueSize > qmax - 24)
+	    {
+	      ASSERT(gaspi_wait(0, GASPI_BLOCK));
+	    }
 
-	    offset_write += size;
-	    offset_read += size;
-	  }
-	ASSERT(gaspi_queue_size(0, &queueSize));
-	if (queueSize > qmax - 24)
-	  {
-	    ASSERT(gaspi_wait(0, GASPI_BLOCK));
-	  }
-      }
+	  ASSERT (gaspi_write(0, offset_write, (myrank + 1) % highestnode,
+			      0, offset_read, size,
+			      0, GASPI_BLOCK));
+
+	  offset_write += size;
+	  offset_read += size;
+	}
+
+    offset_write=0;
+    offset_read = _2GB;
+
 #ifdef DEBUG
-    gaspi_printf("%d bytes written!\n", ITERATIONS * ITERATIONS * size);
+    gaspi_printf("%d bytes written!\n", packets * size);
 #endif
+
     /* notify remote that data is written */
     ASSERT (gaspi_notify( 0, (myrank + 1) % highestnode, 0, 1, 0, GASPI_BLOCK));
     gaspi_notification_id_t recv_id;
@@ -126,40 +111,30 @@ int main(int argc, char *argv[])
     ASSERT(gaspi_notify_waitsome(0, 1, 1, &ack_id, GASPI_BLOCK));
     ASSERT( gaspi_notify_reset(0, ack_id, &notification_val));
 
-    //check if data was written successfully
+    /* check if data was written successfully */
     ASSERT (gaspi_read(0, offset_check, (myrank + 1) % highestnode,
-		       0, memSize/2, GB, 0, GASPI_BLOCK));
+		       0, offset_read, GB,
+		       0, GASPI_BLOCK));
 
     ASSERT (gaspi_wait(0, GASPI_BLOCK));
-#ifdef DEBUG
-    gaspi_printf("%d bytes read!\n",GB);
-#endif
-    j=0;
 
 #ifdef DEBUG
-#ifdef FLOAT
-    gaspi_printf("Values  %f %f %f \n", mptr[0], mptr[memSize/8], mptr[offset_check/4]);
-#else
-    gaspi_printf("Values  %d %d %d \n", mptr[0], mptr[memSize/8], mptr[offset_check/4]);
+    gaspi_printf("Values %f %f %f \n", mptr_f[0], mptr_f[offset_read / sizeof(float)], mptr_f[offset_check / sizeof(float)]);
 #endif
-#endif//DEBUG
 
-    while(j < GB / 4 )
+    j = 0;
+    while(j < GB / sizeof(float) )
       {
-	if(mptr[j] != mptr[offset_check / 4 + j]){
-#ifdef FLOAT
-	  gaspi_printf("value incorrect %f-%f at %d \n",mptr[j],mptr[offset_check / 4],j);
-#else
-	  gaspi_printf("value incorrect %d-%d at %d \n",mptr[j],mptr[offset_check / 4],j);
-#endif
+	if(mptr_f[j] != mptr_f[offset_check / sizeof(float) + j]){
+	  gaspi_printf("value incorrect %f-%f at %d \n",
+		       mptr_f[j],
+		       mptr_f[offset_check / sizeof(float) + j],
+		       j);
 	  ret = -1;
 	  goto out;
 	}
 	j++;
       }
-
-    offset_write=0;
-    offset_read = memSize / 2;
 
 #ifdef DEBUG
     gaspi_printf("Check!\n");
