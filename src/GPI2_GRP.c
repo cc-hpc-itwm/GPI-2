@@ -644,7 +644,6 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
   if(rank < 2 * rest)
     {
-
       if(rank % 2 == 0)
 	{
 	  dst = glb_gaspi_group_ctx[g].rank_grp[rank + 1];
@@ -690,7 +689,6 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	{
 
 	  dst = 2 * (rank - 1) + glb_gaspi_group_ctx[g].togle;
-
 	  while (poll_buf[dst] != glb_gaspi_group_ctx[g].barrier_cnt)
 	    {
 	      //timeout...
@@ -717,7 +715,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	    {
 	      gaspi_operation_t op = r_args->f_args.op;
 	      gaspi_datatype_t type = r_args->f_args.type;
-
+	      //TODO: magic number
 	      fctArrayGASPI[op * 6 + type] ((void *) send_ptr, local_val, dst_val,elem_cnt);
 	    }
 	  else if(r_args->f_type == GASPI_USER)
@@ -749,7 +747,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
     {
 
       //mask = 0x1;
-      mask = glb_gaspi_group_ctx[g].lastmask&0x7fffffff;
+      mask = glb_gaspi_group_ctx[g].lastmask & 0x7fffffff;
       int jmp = glb_gaspi_group_ctx[g].lastmask>>31;
 
       while (mask < glb_gaspi_group_ctx[g].next_pof2)
@@ -799,7 +797,6 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	    glb_gaspi_ctx.ne_count_grp+=2;
 	J2:
 	  dst = 2 * idst + glb_gaspi_group_ctx[g].togle;
-
 	  while (poll_buf[dst] != glb_gaspi_group_ctx[g].barrier_cnt)
 	    {
 	      //timeout...
@@ -819,14 +816,14 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	  void *dst_val = (void *) (recv_ptr + (2 * bid + glb_gaspi_group_ctx[g].togle) * GPI2_REDUX_BUF_SIZE);
 	  void *local_val = (void *) send_ptr;
 	  send_ptr += dsize;
-	  glb_gaspi_group_ctx[g].dsize+=dsize;
+	  glb_gaspi_group_ctx[g].dsize += dsize;
 
 	  if(r_args->f_type == GASPI_OP)
 	    {
 	      gaspi_operation_t op = r_args->f_args.op;
 	      gaspi_datatype_t type = r_args->f_args.type;
 
-	      fctArrayGASPI[op * 6 + type] ((void *) send_ptr, local_val, dst_val,elem_cnt);
+	      fctArrayGASPI[op * 6 + type] ((void *) send_ptr, local_val, dst_val, elem_cnt);
 	    }
 	  else if(r_args->f_type == GASPI_USER)
 	    {
@@ -887,7 +884,6 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
       }
       else
 	{
-
 	  dst = 2 * (rank + 1) + glb_gaspi_group_ctx[g].togle;
 
 	  while (poll_buf[dst] != glb_gaspi_group_ctx[g].barrier_cnt)
@@ -912,7 +908,6 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 
   if (pret < 0)
     {
-
       return GASPI_ERR_DEVICE;
     }
 
@@ -929,7 +924,6 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
   memcpy (buf_recv, send_ptr, dsize);
 
   return GASPI_SUCCESS;
-
 }
 
 #pragma weak gaspi_allreduce = pgaspi_allreduce
