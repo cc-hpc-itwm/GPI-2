@@ -1,5 +1,5 @@
 BIN = loop_barrier.bin loop_barrier_group.bin loop_barrier_group_timeout.bin allreduce.bin \
-	barrier_timeout.bin allreduce_user_fun.bin
+	barrier_timeout.bin allreduce_user_fun.bin allreduce_utils.bin
 
 CFLAGS+=-I../
 
