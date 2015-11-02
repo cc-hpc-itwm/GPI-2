@@ -455,7 +455,7 @@ pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
 {
   gaspi_verify_null_ptr(buf_size);
 
-  *buf_size = NEXT_OFFSET;
+  *buf_size = GPI2_REDUX_BUF_SIZE;
 
   return GASPI_SUCCESS;
 }
@@ -905,7 +905,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	    }
 
 	  bid += glb_gaspi_group_ctx[g].pof2_exp;
-	  send_ptr = (recv_ptr + (2 * bid + glb_gaspi_group_ctx[g].togle) * 2048);
+	  send_ptr = (recv_ptr + (2 * bid + glb_gaspi_group_ctx[g].togle) * GPI2_REDUX_BUF_SIZE);
 	}
     }
   const int pret = pgaspi_dev_poll_groups();
