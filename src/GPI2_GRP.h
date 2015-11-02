@@ -21,12 +21,14 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GPI2_Types.h"
 
-typedef enum{
+#define GPI2_REDUX_BUF_SIZE 2048
+
+typedef enum {
   GASPI_BARRIER = 1,
   GASPI_ALLREDUCE = 2,
   GASPI_ALLREDUCE_USER = 4,
   GASPI_NONE = 7
-}gaspi_async_coll_t;
+} gaspi_async_coll_t;
 
 typedef struct
 {
