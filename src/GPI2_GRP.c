@@ -998,6 +998,9 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
   if(elem_cnt > 255)
     return GASPI_ERR_INV_NUM;
 
+  if( elem_size * elem_cnt > GPI2_REDUX_BUF_SIZE)
+      return GASPI_ERR_INV_SIZE;
+
   if(lock_gaspi_tout (&glb_gaspi_group_ctx[g].gl, timeout_ms))
     {
       return GASPI_TIMEOUT;
