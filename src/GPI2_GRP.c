@@ -481,6 +481,8 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
   gaspi_return_t eret = GASPI_ERROR;
 
+  GPI2_STATS_START_TIMER(GASPI_BARRIER_TIMER);
+
   if(lock_gaspi_tout (&glb_gaspi_group_ctx[g].gl, timeout_ms))
     {
       return GASPI_TIMEOUT;
@@ -590,6 +592,10 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   glb_gaspi_group_ctx[g].togle = (glb_gaspi_group_ctx[g].togle ^ 0x1);
   glb_gaspi_group_ctx[g].coll_op = GASPI_NONE;
   glb_gaspi_group_ctx[g].lastmask = 0x1;
+
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_BARRIER, 1);
+  GPI2_STATS_STOP_TIMER(GASPI_BARRIER_TIMER);
+  GPI2_STATS_INC_TIMER(GASPI_STATS_TIME_BARRIER, GPI2_STATS_GET_TIMER(GASPI_BARRIER_TIMER));
 
   unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
 

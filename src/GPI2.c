@@ -506,7 +506,9 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
 	}
     }
 #endif
-  
+
+  pgaspi_statistic_print_counters();
+
   if(pgaspi_cleanup_core() != GASPI_SUCCESS)
     goto errL;
 

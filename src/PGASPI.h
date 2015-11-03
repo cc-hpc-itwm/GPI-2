@@ -318,7 +318,7 @@ extern "C"
   gaspi_return_t
   pgaspi_statistic_counter_get ( gaspi_statistic_counter_t counter
 				, gaspi_number_t argument
-				, gaspi_number_t *value
+				, unsigned long *value
 				);
 
   gaspi_return_t pgaspi_statistic_counter_reset (gaspi_statistic_counter_t counter);
