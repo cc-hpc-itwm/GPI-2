@@ -374,8 +374,8 @@ pgaspi_gpu_write(const gaspi_segment_id_t segment_id_local,
 	    {
 	      do
 		{
-		  error= cudaEventQuery(agpu->events[queue][i].event );
-		  if( CUDA_SUCCESS == error )
+		  error = cudaEventQuery(agpu->events[queue][i].event );
+		  if( cudaSuccess == error )
 		    {
 		      if (_gaspi_event_send(&agpu->events[queue][i],queue))
 			{
@@ -402,7 +402,7 @@ pgaspi_gpu_write(const gaspi_segment_id_t segment_id_local,
 		      unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
 		      return GASPI_ERROR;
 		    }
-		} while(error != CUDA_SUCCESS);
+		} while(error != cudaSuccess);
 	    }
 	}
     }
@@ -524,7 +524,7 @@ pgaspi_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
 	      do
 		{
 		  error = cudaEventQuery(agpu->events[queue][i].event );
-		  if( CUDA_SUCCESS == error )
+		  if( cudaSuccess == error )
 		    {
 		      if (_gaspi_event_send(&agpu->events[queue][i],queue) )
 			{
@@ -551,7 +551,7 @@ pgaspi_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
 		      unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
 		      return GASPI_ERROR;
 		    }
-		} while(error != CUDA_SUCCESS);
+		} while(error != cudaSuccess);
 	    }
 	}
     }
