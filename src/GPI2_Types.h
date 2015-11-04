@@ -52,10 +52,10 @@ typedef struct
   int cudaDevId;
   union
   {
-   void* host_ptr;
+   void *host_ptr;
    unsigned long host_addr;
   };
-  void host_mr;
+  void *host_mr;
   unsigned int host_rkey;
 #endif
 } gaspi_rc_mseg;
