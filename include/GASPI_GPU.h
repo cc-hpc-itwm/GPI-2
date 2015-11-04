@@ -26,24 +26,92 @@ extern "C"
 {
 #endif
 
-#define  GASPI_GPU_MAX_SEG (224*1024*1024) 
-  
-  typedef int gaspi_gpu_t; 
+  /* Types */
+  typedef int gaspi_gpu_t;
   typedef int gaspi_gpu_num;
 
+  /** Initialization of GPUs.
+   * It is a local synchronous blocking procedure.
+   *
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
+   * error, GASPI_TIMEOUT in case of timeout.
+   */
   gaspi_return_t gaspi_init_GPUs();
-  gaspi_return_t gaspi_GPU_ids(gaspi_gpu_t *);
-  gaspi_return_t gaspi_number_of_GPUs(gaspi_gpu_num *);
-  
-  gaspi_return_t gaspi_gpu_write(const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_rank_t,
-				 const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_size_t,
-				 const gaspi_queue_id_t, const gaspi_timeout_t);
-  
-  gaspi_return_t gaspi_gpu_write_notify(const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_rank_t ,
-					const gaspi_segment_id_t, const gaspi_offset_t,const gaspi_size_t,
-					const gaspi_notification_id_t, const gaspi_notification_t,
-					const gaspi_queue_id_t, const gaspi_timeout_t);
-  
+
+  /** Get GPU ids.
+   * It is a local synchronous blocking procedure.
+   *
+   *
+   * @param gpu_ids The address where to place the ids.
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+
+  gaspi_return_t gaspi_GPU_ids(gaspi_gpu_t *gpu_ids);
+
+
+  /** Get the number of available GPUs.
+   * It is a local synchronous blocking procedure.
+   *
+   *
+   * @param gpu The address where to place the number of gpus.
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+
+  gaspi_return_t gaspi_number_of_GPUs(gaspi_gpu_num *gpus);
+
+  /** One-sided write.
+   *
+   *
+   * @param segment_id_local The local segment id with the data to write.
+   * @param offset_local The local offset with the data to write.
+   * @param rank The rank to which we want to write.
+   * @param segment_id_remote The remote segment id to write to.
+   * @param offset_remote The remote offset where to write to.
+   * @param size The size of data to write.
+   * @param queue The queue where to post the write request.
+   * @param timeout_ms Timeout in milliseconds (or GASPI_BLOCK/GASPI_TEST).
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
+   * error, GASPI_TIMEOUT in case of timeout.
+   */
+  gaspi_return_t gaspi_gpu_write(const gaspi_segment_id_t segment_id_local,
+				 const gaspi_offset_t offset_local,
+				 const gaspi_rank_t rank,
+				 const gaspi_segment_id_t segment_id_remote,
+				 const gaspi_offset_t offset_remote,
+				 const gaspi_size_t size,
+				 const gaspi_queue_id_t queue,
+				 const gaspi_timeout_t timeout);
+
+  /** Write data to a given node and notify it.
+   *
+   *
+   * @param segment_id_local The segment identifier where data to be written is located.
+   * @param offset_local The offset where the data to be written is located.
+   * @param rank The rank where to write and notify.
+   * @param segment_id_remote The remote segment identifier where to write the data to.
+   * @param offset_remote The remote offset where to write to.
+   * @param size The size of the data to write.
+   * @param notification_id The notification identifier to use.
+   * @param notification_value The notification value used.
+   * @param queue The queue where to post the request.
+   * @param timeout_ms Timeout in milliseconds (or GASPI_BLOCK/GASPI_TEST).
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
+   * error, GASPI_TIMEOUT in case of timeout.
+   */
+  gaspi_return_t gaspi_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
+					const gaspi_offset_t offset_local,
+					const gaspi_rank_t rank,
+					const gaspi_segment_id_t segment_id_remote,
+					const gaspi_offset_t offset_remote,
+					const gaspi_size_t size,
+					const gaspi_notification_id_t notification_id,
+					const gaspi_notification_t notification_value,
+					const gaspi_queue_id_t queue,
+					const gaspi_timeout_t timeout);
+
 #ifdef __cplusplus
 }
 #endif
