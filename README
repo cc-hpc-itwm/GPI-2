@@ -317,10 +317,10 @@ initialization.
 8. TROUBLESHOOTING
 ==================
 
-If you're having troubles when building GPI-2, make sure you have the
-OFED stack correctly installed and running. You can change the OFED
-path in the definitions file make.inc in the source directory (src) to
-the fix path in your system.
+If you're having troubles when building GPI-2 with support for
+Infiniband, make sure you have the OFED stack correctly installed and
+running. You can change the OFED path in the definitions file make.inc
+in the source directory (src) to the fix path in your system.
 
 When installing GPI-2 with MPI mixed-mode support (using the option
 --with-mpi<=path_to_mpi_installation>) and the installation is failing
