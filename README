@@ -333,6 +333,40 @@ For example:
    GPI2_EXTRA_LIBS=-lmpl ./install.sh --with-mpi -p /opt/GPI2
 
 
+Environment variables
+---------------------
+
+You might have some trouble when your application requires some
+dynamically set environment setting (e.g. the LD_LIBRARY_PATH), for
+instance, through the module system of your jobs batch
+system. Currently, neither the gaspi_run or the GPI-2 library take
+care of such environment settings. To this situation there are 2
+workarounds:
+
+i) you set the required environment variables in your shell
+initialization file (e.g. ~/.bashrc).
+
+ii) you create an executable shell script which sets the required
+environment variables and then starts the application. Then you can
+use gaspi_run to start the application, providing the shell script as
+the application to execute.
+
+    gaspi_run -m machinefile ./my_wrapper_script.sh
+
+where my_wrapper_script.sh contains:
+
+      #!/bin/sh
+
+      LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<path_to_my_lib>
+
+      <path_to_my_application>/my_application <my_app_args>
+
+      exit $?
+
+If you're running in MPI mixed-mode, starting your application with
+mpirun/mpiexec, this should not be an issue.
+
+
 9. UP COMING FEATURES
 =====================
 
