@@ -186,6 +186,8 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     
 #else
   eret = pgaspi_dev_segment_alloc(segment_id, size, alloc_policy);
+  if( eret != GASPI_SUCCESS )
+    goto endL;
 #endif /* GPI2_CUDA */
 
   glb_gaspi_ctx.mseg_cnt++;

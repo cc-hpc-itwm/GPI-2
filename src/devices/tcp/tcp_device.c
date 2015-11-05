@@ -294,6 +294,13 @@ _tcp_dev_add_new_conn(int rank, int conn_sock, int epollfd)
 int
 tcp_dev_connect_to(int i)
 {
+  /* no connections state map? */
+  if(rank_state == NULL)
+    {
+      return 1;
+    }
+
+  /* connection already exists? */
   if((rank_state[i] != NULL))
     {
       return 0;
