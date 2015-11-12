@@ -294,6 +294,13 @@ _tcp_dev_add_new_conn(int rank, int conn_sock, int epollfd)
 int
 tcp_dev_connect_to(int i)
 {
+  /* no connections state map? */
+  if(rank_state == NULL)
+    {
+      return 1;
+    }
+
+  /* connection already exists? */
   if((rank_state[i] != NULL))
     {
       return 0;
@@ -1351,12 +1358,26 @@ tcp_virt_dev(void *args)
 	    {
 	      if(events[n].events & EPOLLIN)
 		{
+		  char tmp[4];
+
 		  /* read until would block */
 		  while(1)
 		    {
 		      /* TODO: catch NULL-ptr */
 		      const int bytesRemaining = estate->read.length - estate->read.done;
-		      const int bytesReceived  = read(estate->fd, (void*) estate->read.addr + estate->read.done, bytesRemaining);
+		      int bytesReceived;
+
+		      /* we need to deal with read's byte granularity and */
+		      /* and make sure some things (e.g. a
+			 notification) gets set completely */
+		      /* therefore we read to a tmp and set the final
+			 destination with it (below) */
+		      if (estate->read.length == sizeof(uint32_t))
+			{
+			  bytesReceived = read(estate->fd, (void *) tmp + estate->read.done, bytesRemaining);
+			}
+		      else
+			bytesReceived = read(estate->fd, (void *) estate->read.addr + estate->read.done, bytesRemaining);
 
 		      /* would block */
 		      if(bytesReceived < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
@@ -1378,6 +1399,12 @@ tcp_virt_dev(void *args)
 		      else
 			{
 			  estate->read.done += bytesReceived;
+			}
+
+		      if (estate->read.length == sizeof(uint32_t))
+			{
+			  uint32_t *vptr = (uint32_t *) estate->read.addr;
+			  *vptr = *(uint32_t *) tmp;
 			}
 
 		      if(estate->read.done == estate->read.length)

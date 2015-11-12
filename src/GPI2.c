@@ -512,6 +512,8 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
   
   if(pgaspi_cleanup_core() != GASPI_SUCCESS)
     goto errL;
+
+  glb_gaspi_init = 0;
   
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
@@ -714,6 +716,7 @@ pgaspi_error_str(gaspi_return_t error_code)
       [GASPI_ERR_INV_NOTIF_VAL] = "Invalid notification value (must be > 0)",
       [GASPI_ERR_INV_NOTIF_ID] = "Invalid notification id",
       [GASPI_ERR_INV_NUM] = "Invalid number count",
+      [GASPI_ERR_INV_SIZE] = "Invalid size",
       [GASPI_ERR_MANY_SEG] = "Too many segments",
       [GASPI_ERR_MANY_GRP] = "Too many groups",
       [GASPI_ERR_MANY_Q_REQS] = "Too many requests in queue",

@@ -46,7 +46,7 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
     {
       sf = IBV_SEND_SIGNALED;
       slist.addr =
-	(uintptr_t) (glb_gaspi_ctx_ib.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
+	(uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
 		     offset_local);
     }
   else
@@ -105,9 +105,7 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
 #ifdef GPI2_CUDA
   if(glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].cudaDevId >= 0)
     slist.addr =
-      (uintptr_t) (glb_gaspi_ctx_ib.
-		   rrmd[segment_id_local][glb_gaspi_ctx.rank].addr +
-		   offset_local);
+      (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr + offset_local);
   else
 #endif 
     slist.addr =

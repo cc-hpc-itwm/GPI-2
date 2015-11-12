@@ -506,7 +506,10 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
   gaspi_verify_queue_depth(glb_gaspi_ctx.ne_count_c[queue]);
 
   if(notification_value == 0)
-    return GASPI_ERR_INV_NOTIF_VAL;
+    {
+      gaspi_printf("Zero is not allowed as notification value.");
+      return GASPI_ERR_INV_NOTIF_VAL;
+    }
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -690,7 +693,10 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
   gaspi_verify_queue_depth(glb_gaspi_ctx.ne_count_c[queue]);
 
   if(notification_value == 0)
-    return GASPI_ERR_INV_NOTIF_VAL;
+    {
+      gaspi_printf("Zero is not allowed as notification value.");
+      return GASPI_ERR_INV_NOTIF_VAL;
+    }
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -738,7 +744,10 @@ pgaspi_write_list_notify (const gaspi_number_t num,
     return GASPI_ERR_INV_NUM;
 
   if(notification_value == 0)
-    return GASPI_ERR_INV_NOTIF_VAL;
+    {
+      gaspi_printf("Zero is not allowed as notification value.");
+      return GASPI_ERR_INV_NOTIF_VAL;
+    }
 
 #ifdef DEBUG
   gaspi_verify_init("gaspi_write_list_notify");
