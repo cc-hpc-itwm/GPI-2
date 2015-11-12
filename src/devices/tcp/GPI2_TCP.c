@@ -76,7 +76,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
   /* start virtual device (thread) */
   if(pthread_create(&tcp_dev_thread, NULL, tcp_virt_dev, NULL) != 0)
     {
-      printf("Failed to open (virtual) device\n");
+      gaspi_print_error("Failed to open (virtual) device.");
       return -1;
     }
 
