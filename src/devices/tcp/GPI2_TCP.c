@@ -80,6 +80,12 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
+  /* user did not choose so we set the network type */
+  if( !gaspi_cfg->user_net )
+    {
+      gaspi_cfg->network = GASPI_ETHERNET;
+    }
+
   /* TODO: more info (IP, hostname...)? */
   if (gaspi_cfg->net_info)
     {
