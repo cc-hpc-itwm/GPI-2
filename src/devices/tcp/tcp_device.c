@@ -1377,7 +1377,9 @@ tcp_virt_dev(void *args)
 			  bytesReceived = read(estate->fd, (void *) tmp + estate->read.done, bytesRemaining);
 			}
 		      else
-			bytesReceived = read(estate->fd, (void *) estate->read.addr + estate->read.done, bytesRemaining);
+			{
+			  bytesReceived = read(estate->fd, (void *) estate->read.addr + estate->read.done, bytesRemaining);
+			}
 
 		      /* would block */
 		      if(bytesReceived < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
