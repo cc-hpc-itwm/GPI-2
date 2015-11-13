@@ -1403,14 +1403,15 @@ tcp_virt_dev(void *args)
 			  estate->read.done += bytesReceived;
 			}
 
-		      if (estate->read.length == sizeof(uint32_t))
-			{
-			  uint32_t *vptr = (uint32_t *) estate->read.addr;
-			  *vptr = *(uint32_t *) tmp;
-			}
-
+		      /* are we done? */
 		      if(estate->read.done == estate->read.length)
 			{
+			  if( estate->read.length == sizeof(uint32_t) )
+			    {
+			      uint32_t *vptr = (uint32_t *) estate->read.addr;
+			      *vptr = *(uint32_t *) tmp;
+			    }
+
 			  int ret = _tcp_dev_process_recv_data(estate);
 
 			  if( ret != 0)
