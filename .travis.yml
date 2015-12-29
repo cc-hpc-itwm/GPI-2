@@ -1,0 +1,8 @@
+sudo: false
+language: c
+compiler:
+    - gcc
+os:
+    - linux
+install:
+    - ./install.sh -p .$HOME/install_test/ --with-ethernet
