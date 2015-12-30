@@ -5,6 +5,6 @@ compiler:
 os:
     - linux
 install:
-    - ./install.sh -p $HOME/install_test/ --with-ethernet --with-fortran=false
+    - sh -x ./install.sh -p $HOME/install_test/ --with-ethernet --with-fortran=false
 after_failure:
-    - cat install.log
+    - cat ./install.log
