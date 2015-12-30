@@ -5,4 +5,4 @@ compiler:
 os:
     - linux
 install:
-    - ./install.sh -p .$HOME/install_test/ --with-ethernet
+    - ./install.sh -p $HOME/install_test/ --with-ethernet --with-fortran=false
