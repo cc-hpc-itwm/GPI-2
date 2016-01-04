@@ -10,6 +10,7 @@ $(info Configuration for Infiniband)
 include devices/ib/Makefile.inc
 CFLAGS+=-DGPI2_DEVICE_IB
 DBG_CFLAGS+=-DGPI2_DEVICE_IB
+MIC_CFLAGS+=-DGPI2_DEVICE_IB
 else ifeq ($(findstring TCP,$(GPI2_DEVICE)),TCP)
 $(info Configuration for Ethernet)
 include devices/tcp/Makefile.inc
@@ -99,13 +100,15 @@ mic: $(OBJS_MIC) $(OBJS_DBG_MIC)
 	icc -mmic $(MIC_CFLAGS) $(INCLUDES) -DMIC -c $<  -o $@
 
 %.mic.dbg.o: %.c
-	icc -mmic -g -O0 $(INCLUDES) -D_GNU_SOURCE -DDEBUG -DMIC -c $<  -o $@
+	icc -mmic -g -O0 $(INCLUDES) -DGPI2_DEVICE_IB -D_GNU_SOURCE -DDEBUG -DMIC -c $<  -o $@
 
 %.mic.trc.o: %.c
 	icc -mmic -g -O0 $(INCLUDES) -D_GNU_SOURCE -DGPI2_STATS -DDEBUG -DMIC -c $<  -o $@
 
 clean:
-	$(RM) -r $(OBJ_FORTRAN) $(OBJS) $(OBJS_DBG)  $(OBJS_TRC) *~ ../lib64/$(GPI2) ../lib64/$(GPI2_DBG) ../lib64/mic/$(GPI2)
+	$(RM) -r $(OBJ_FORTRAN) $(OBJS) $(OBJS_DBG) *~
+	$(RM) -r $(OBJS_MIC) $(OBJS_DBG_MIC)
+	$(RM) ../lib64/$(GPI2) ../lib64/$(GPI2_DBG) ../lib64/mic/$(GPI2)
 	$(RM) *.mod ../include/gaspi_types.mod ../include/gaspi.mod
 
 depend: $(SRCS)

@@ -47,5 +47,8 @@ extern "C"
    */
   gaspi_return_t gaspi_proc_ping (const gaspi_rank_t rank, gaspi_timeout_t tout);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif //GPI2_EXT_H  

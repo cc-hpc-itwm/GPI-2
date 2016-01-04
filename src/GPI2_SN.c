@@ -857,6 +857,7 @@ gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gasp
 	ret = _gaspi_sn_connect_command(rank);
 	break;
       }
+    case GASPI_SN_DISCONNECT:
     case GASPI_SN_PROC_PING:
     case GASPI_SN_PROC_KILL:
       {
@@ -1187,6 +1188,19 @@ void *gaspi_sn_backend(void *arg)
 				    {
 				      GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
 				    }
+				  else if(mgmt->cdh.op == GASPI_SN_DISCONNECT)
+				    {
+				      if( GASPI_ENDPOINT_CONNECTED == glb_gaspi_ctx.ep_conn[mgmt->cdh.rank].cstat )
+					{
+					  if( pgaspi_local_disconnect(mgmt->cdh.rank, GASPI_BLOCK) != GASPI_SUCCESS )
+					    {
+					      gaspi_print_error("Failed to disconnect with %u.", mgmt->cdh.rank);
+					    }
+					}
+
+				      GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
+				    }
+
 				  else if(mgmt->cdh.op == GASPI_SN_GRP_CHECK)
 				    {
 				      struct{gaspi_group_t group;int tnc, cs, ret;} gb;

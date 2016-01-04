@@ -120,6 +120,32 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   return eret;
 }
 
+gaspi_return_t
+pgaspi_local_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
+{
+  const int i = rank;
+  gaspi_return_t eret = GASPI_ERROR;
+
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
+
+  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[i].cstat )
+    {
+      unlock_gaspi(&glb_gaspi_ctx_lock);
+      return GASPI_SUCCESS;
+    }
+
+  eret = pgaspi_dev_disconnect_context(i);
+  if( eret == GASPI_SUCCESS)
+    {
+      glb_gaspi_ctx.ep_conn[i].istat = GASPI_ENDPOINT_NOT_CREATED;
+      glb_gaspi_ctx.ep_conn[i].cstat = GASPI_ENDPOINT_DISCONNECTED;
+    }
+
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+  return eret;
+}
+
 #pragma weak gaspi_disconnect = pgaspi_disconnect
 gaspi_return_t
 pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
@@ -127,29 +153,26 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   gaspi_return_t eret = GASPI_ERROR;
 
   gaspi_verify_init("gaspi_disconnect");
-  
+
   const int i = rank;
-  
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
-    return GASPI_TIMEOUT;
 
   if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[i].cstat )
     {
-      eret = GASPI_SUCCESS;
-      goto errL;
+      return GASPI_SUCCESS;
     }
-  
-  eret = pgaspi_dev_disconnect_context(i);
+
+  eret = pgaspi_local_disconnect(rank, timeout_ms);
   if(eret != GASPI_SUCCESS)
-    goto errL;
+    return eret;
 
-  glb_gaspi_ctx.ep_conn[i].istat = GASPI_ENDPOINT_NOT_CREATED;
-  glb_gaspi_ctx.ep_conn[i].cstat = GASPI_ENDPOINT_DISCONNECTED;
+  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+    return GASPI_TIMEOUT;
 
-  unlock_gaspi(&glb_gaspi_ctx_lock);
-  return GASPI_SUCCESS;
+  /* we can still get trapped inside the sn command, trying to connect */
+  /* to a remote rank and in case the remote rank is */
+  /* finished/gone. Thus we go with GASPI_TEST as timeout for now.  */
+  eret = gaspi_sn_command(GASPI_SN_DISCONNECT, rank, GASPI_TEST, NULL);
 
-errL:
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return eret;
 }
