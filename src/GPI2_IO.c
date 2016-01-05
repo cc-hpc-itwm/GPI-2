@@ -116,8 +116,8 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
 	      const gaspi_timeout_t timeout_ms)
 {
   gaspi_verify_init("gaspi_write");
-  gaspi_verify_local_off(offset_local, segment_id_local);
-  gaspi_verify_remote_off(offset_remote, segment_id_remote, rank);
+  gaspi_verify_local_off(offset_local, segment_id_local, size);
+  gaspi_verify_remote_off(offset_remote, segment_id_remote, rank, size);
   gaspi_verify_queue(queue);
   gaspi_verify_comm_size(size, segment_id_local, segment_id_remote, rank, GASPI_MAX_TSIZE_C);
   gaspi_verify_queue_depth(glb_gaspi_ctx.ne_count_c[queue]);
@@ -159,8 +159,8 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
 	     const gaspi_timeout_t timeout_ms)
 {
   gaspi_verify_init("gaspi_read");
-  gaspi_verify_local_off(offset_local, segment_id_local);
-  gaspi_verify_remote_off(offset_remote, segment_id_remote, rank);
+  gaspi_verify_local_off(offset_local, segment_id_local, size);
+  gaspi_verify_remote_off(offset_remote, segment_id_remote, rank, size);
   gaspi_verify_queue(queue);
   gaspi_verify_comm_size(size, segment_id_local, segment_id_remote, rank, GASPI_MAX_TSIZE_C);
   gaspi_verify_queue_depth(glb_gaspi_ctx.ne_count_c[queue]);
@@ -234,8 +234,8 @@ pgaspi_write_list (const gaspi_number_t num,
   gaspi_number_t n;
   for(n = 0; n < num; n++)
     {
-      gaspi_verify_local_off(offset_local[n], segment_id_local[n]);
-      gaspi_verify_remote_off(offset_remote[n], segment_id_remote[n], rank);
+      gaspi_verify_local_off(offset_local[n], segment_id_local[n], size[n]);
+      gaspi_verify_remote_off(offset_remote[n], segment_id_remote[n], rank, size[n]);
       gaspi_verify_comm_size(size[n], segment_id_local[n], segment_id_remote[n], rank, GASPI_MAX_TSIZE_C);
     }
 
@@ -289,8 +289,8 @@ pgaspi_read_list (const gaspi_number_t num,
   gaspi_number_t n;
   for(n = 0; n < num; n++)
     {
-      gaspi_verify_local_off(offset_local[n], segment_id_local[n]);
-      gaspi_verify_remote_off(offset_remote[n], segment_id_remote[n], rank);
+      gaspi_verify_local_off(offset_local[n], segment_id_local[n], size[n]);
+      gaspi_verify_remote_off(offset_remote[n], segment_id_remote[n], rank, size[n]);
       gaspi_verify_comm_size(size[n], segment_id_local[n], segment_id_remote[n], rank, GASPI_MAX_TSIZE_C);
     }
 
@@ -518,8 +518,8 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 		     const gaspi_timeout_t timeout_ms)
 {
   gaspi_verify_init("gaspi_write_notify");
-  gaspi_verify_local_off(offset_local, segment_id_local);
-  gaspi_verify_remote_off(offset_remote, segment_id_remote, rank);
+  gaspi_verify_local_off(offset_local, segment_id_local, size);
+  gaspi_verify_remote_off(offset_remote, segment_id_remote, rank, size);
   gaspi_verify_queue(queue);
   gaspi_verify_comm_size(size, segment_id_local, segment_id_remote, rank, GASPI_MAX_TSIZE_C);
   gaspi_verify_queue_depth(glb_gaspi_ctx.ne_count_c[queue]);
@@ -589,8 +589,8 @@ pgaspi_write_list_notify (const gaspi_number_t num,
   gaspi_number_t n;
   for(n = 0; n < num; n++)
     {
-      gaspi_verify_local_off(offset_local[n], segment_id_local[n]);
-      gaspi_verify_remote_off(offset_remote[n], segment_id_remote[n], rank);
+      gaspi_verify_local_off(offset_local[n], segment_id_local[n], size[n]);
+      gaspi_verify_remote_off(offset_remote[n], segment_id_remote[n], rank, size[n]);
       gaspi_verify_comm_size(size[n], segment_id_local[n], segment_id_remote[n], rank, GASPI_MAX_TSIZE_C);
     }
 
