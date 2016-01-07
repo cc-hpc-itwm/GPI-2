@@ -238,7 +238,7 @@ else
     sed -i  "s,-libverbs,,g" tests/make.defines
     echo "###### added by install script" >> src/make.inc
     echo "GPI2_DEVICE = TCP" >> src/make.inc
-    sed -i "s,GASPI_IB,GASPI_ETHERNET,g" tests/defs/default.def
+    sed -i "s,GASPI_IB,GASPI_ETHERNET,g" tests/defs/*.def
     sed -i "s,GASPI_IB,GASPI_ETHERNET,g" tests/tests/test_utils.h
 fi
 
@@ -461,7 +461,7 @@ echo "Success!"  >> install.log
 clean_bak_files
 
 if [ $GPI2_DEVICE = TCP ]; then
-    sed -i "s,GASPI_ETHERNET,GASPI_IB,g" tests/defs/default.def
+    sed -i "s,GASPI_ETHERNET,GASPI_IB,g" tests/defs/*.def
     sed -i "s,GASPI_ETHERNET,GASPI_IB,g" tests/tests/test_utils.h
 fi
 
