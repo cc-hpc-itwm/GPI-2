@@ -84,7 +84,7 @@ extern "C"
   typedef char * gaspi_string_t;
 
   /* Typed constants */
-  static const gaspi_rank_t GASPI_GROUP_ALL = 0;
+  static const gaspi_group_t GASPI_GROUP_ALL = 0;
   static const gaspi_timeout_t GASPI_BLOCK = 0xffffffffffffffff;
   static const gaspi_timeout_t GASPI_TEST = 0x0;
 
