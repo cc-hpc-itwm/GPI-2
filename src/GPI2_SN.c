@@ -51,7 +51,7 @@ volatile gaspi_return_t gaspi_sn_err = GASPI_SUCCESS;
 
 extern gaspi_config_t glb_gaspi_cfg;
 
-int gaspi_sn_set_non_blocking(int sock)
+int gaspi_sn_set_non_blocking(const int sock)
 {
   int sflags = fcntl(sock, F_GETFL, 0);
   if(sflags < 0)
@@ -65,7 +65,7 @@ int gaspi_sn_set_non_blocking(int sock)
 }
 
 int
-gaspi_sn_set_default_opts(int sockfd)
+gaspi_sn_set_default_opts(const int sockfd)
 {
   int opt = 1;
   if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
@@ -105,7 +105,7 @@ _gaspi_check_ofile_limit()
 }
 
 static int
-gaspi_sn_connect2port_intern(const char *hn, const unsigned short port)
+gaspi_sn_connect2port_intern(const char * const hn, const unsigned short port)
 {
   int ret;
   int sockfd = -1;
@@ -165,7 +165,7 @@ gaspi_sn_connect2port_intern(const char *hn, const unsigned short port)
 }
 
 int
-gaspi_sn_connect2port(const char *hn, const unsigned short port, const unsigned long timeout_ms)
+gaspi_sn_connect2port(const char * const hn, const unsigned short port, const unsigned long timeout_ms)
 {
   int sockfd = -1;
   struct timeb t0, t1;
@@ -197,7 +197,7 @@ gaspi_sn_connect2port(const char *hn, const unsigned short port, const unsigned 
 }
 
 ssize_t
-gaspi_sn_writen(int sockfd, const void * data_ptr, size_t n)
+gaspi_sn_writen(const int sockfd, const void * data_ptr, const size_t n)
 {
   ssize_t ndone;
   size_t left;
@@ -224,7 +224,7 @@ gaspi_sn_writen(int sockfd, const void * data_ptr, size_t n)
 }
 
 int
-gaspi_sn_close(int sockfd)
+gaspi_sn_close(const int sockfd)
 {
   int ret = 0;
   if( shutdown(sockfd, SHUT_RDWR) != 0 )
@@ -237,7 +237,7 @@ gaspi_sn_close(int sockfd)
 }
 
 ssize_t
-gaspi_sn_readn(int sockfd, const void * data_ptr, size_t n)
+gaspi_sn_readn(const int sockfd, const void * data_ptr, const size_t n)
 {
   ssize_t ndone;
   size_t left;
@@ -291,7 +291,7 @@ gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
 }
 
 static int
-gaspi_sn_recv_topology(gaspi_context *ctx)
+gaspi_sn_recv_topology(gaspi_context * const ctx)
 {
   int i;
   struct sockaddr in_addr;
@@ -400,7 +400,7 @@ gaspi_sn_recv_topology(gaspi_context *ctx)
 }
 
 static int
-gaspi_sn_send_topology(gaspi_context *ctx, const int i, const gaspi_timeout_t timeout_ms)
+gaspi_sn_send_topology(gaspi_context * const ctx, const int i, const gaspi_timeout_t timeout_ms)
 {
   if( (ctx->sockfd[i] =
        gaspi_sn_connect2port(gaspi_get_hn(i),
@@ -466,7 +466,7 @@ gaspi_sn_send_topology(gaspi_context *ctx, const int i, const gaspi_timeout_t ti
 
 /* TODO: deal with timeout */
 int
-gaspi_sn_broadcast_topology(gaspi_context *ctx, const gaspi_timeout_t timeout_ms)
+gaspi_sn_broadcast_topology(gaspi_context * const ctx, const gaspi_timeout_t timeout_ms)
 {
   int mask = 0x1;
   int relative_rank;
@@ -560,7 +560,7 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
 }
 
 gaspi_return_t
-gaspi_sn_connect_to_rank(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms)
+gaspi_sn_connect_to_rank(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
   struct timeb t0, t1;
   ftime(&t0);
@@ -662,9 +662,9 @@ _gaspi_sn_single_command(const gaspi_rank_t rank, const enum gaspi_sn_ops op)
 }
 
 static inline int
-_gaspi_sn_segment_register_command(const gaspi_rank_t rank, void * arg)
+_gaspi_sn_segment_register_command(const gaspi_rank_t rank, const void * const arg)
 {
-  gaspi_segment_id_t segment_id = * (gaspi_segment_id_t *) arg;
+  const gaspi_segment_id_t segment_id = * (gaspi_segment_id_t *) arg;
 
   gaspi_cd_header cdh;
   memset(&cdh, 0, sizeof(gaspi_cd_header));
@@ -720,7 +720,7 @@ struct group_desc
 };
 
 static inline int
-_gaspi_sn_group_check(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms, void *arg)
+_gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms, const void * const arg)
 {
   struct group_desc *gb = (struct group_desc *) arg;
   struct group_desc rem_gb;
@@ -794,11 +794,11 @@ _gaspi_sn_group_check(const gaspi_rank_t rank, gaspi_timeout_t timeout_ms, void 
 }
 
 static inline int
-_gaspi_sn_group_connect(const gaspi_rank_t rank, void *arg)
+_gaspi_sn_group_connect(const gaspi_rank_t rank, const void * const arg)
 {
   int i = (int) rank;
-  gaspi_group_t group = *(gaspi_group_t *) arg;
-  gaspi_group_ctx *group_to_commit = &(glb_gaspi_group_ctx[group]);
+  const gaspi_group_t group = *(gaspi_group_t *) arg;
+  const gaspi_group_ctx * const group_to_commit = &(glb_gaspi_group_ctx[group]);
 
   gaspi_cd_header cdh;
   memset(&cdh, 0, sizeof(gaspi_cd_header));
@@ -837,7 +837,7 @@ _gaspi_sn_group_connect(const gaspi_rank_t rank, void *arg)
 }
 
 gaspi_return_t
-gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms, void * arg)
+gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms, const void * const arg)
 {
   int ret = -1;
   gaspi_return_t eret = GASPI_ERROR;
@@ -902,14 +902,15 @@ gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gasp
 }
 
 void
-gaspi_sn_cleanup(int sig)
+gaspi_sn_cleanup(const int sig)
 {
   /* TODO: proper cleanup */
   if(sig == SIGSTKFLT)
     pthread_exit(NULL);
 }
 
-void *gaspi_sn_backend(void *arg)
+void *
+gaspi_sn_backend(void *arg)
 {
   int esock, lsock, n, i;
   struct epoll_event ev;
