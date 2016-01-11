@@ -67,4 +67,8 @@ extern "C"
    */
   gaspi_return_t gaspi_queue_delete(gaspi_queue_id_t queue);
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif //GPI2_EXT_H  

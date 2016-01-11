@@ -1377,7 +1377,9 @@ tcp_virt_dev(void *args)
 			  bytesReceived = read(estate->fd, (void *) tmp + estate->read.done, bytesRemaining);
 			}
 		      else
-			bytesReceived = read(estate->fd, (void *) estate->read.addr + estate->read.done, bytesRemaining);
+			{
+			  bytesReceived = read(estate->fd, (void *) estate->read.addr + estate->read.done, bytesRemaining);
+			}
 
 		      /* would block */
 		      if(bytesReceived < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
@@ -1401,14 +1403,15 @@ tcp_virt_dev(void *args)
 			  estate->read.done += bytesReceived;
 			}
 
-		      if (estate->read.length == sizeof(uint32_t))
-			{
-			  uint32_t *vptr = (uint32_t *) estate->read.addr;
-			  *vptr = *(uint32_t *) tmp;
-			}
-
+		      /* are we done? */
 		      if(estate->read.done == estate->read.length)
 			{
+			  if( estate->read.length == sizeof(uint32_t) )
+			    {
+			      /* copy tmp to final destinatin */
+			      memcpy((void *) estate->read.addr, tmp, sizeof(uint32_t));
+			    }
+
 			  int ret = _tcp_dev_process_recv_data(estate);
 
 			  if( ret != 0)

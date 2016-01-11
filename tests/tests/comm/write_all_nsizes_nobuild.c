@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <unistd.h>
 #include <test_utils.h>
 
 int main(int argc, char *argv[])
@@ -37,20 +37,17 @@ int main(int argc, char *argv[])
   int segment_ready = 0;
   for(i = 0; i < numranks; i++)
     {
+      segSize = 0;
       do
 	{
 	  if( gaspi_segment_size(0, i, &segSize) != GASPI_SUCCESS)
-	    gaspi_printf("failed to get seg size for %u\n", i);
-
-	  if( segSize != _8MB )
 	    {
-	      gaspi_printf("Erroneous segment size\n");
+	      gaspi_printf("Segment on %u not yet ready\n", i);
 	      sleep(1);
 	    }
 	  else
 	    {
-	      gaspi_printf("Seg size of rank %u = %lu MB %lu bytes\n",
-			   i, segSize / 1024 / 1024, segSize);
+	      assert( segSize == _8MB );
 	      segment_ready = 1;
 	    }
 	} while( !segment_ready );
@@ -60,7 +57,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_queue_size_max(&qmax));
 
   /* Connect and communicate */
-  for(commSize = 1; commSize <= _8MB; commSize*=2 )
+  for(commSize = 1; commSize <= _8MB; commSize *= 2 )
     {
       for(rankSend = 0; rankSend < numranks; rankSend++)
 	{
@@ -95,8 +92,6 @@ int main(int argc, char *argv[])
       gaspi_notification_id_t id;
       ASSERT(gaspi_notify_waitsome(0, rankSend, 1, &id, GASPI_BLOCK));
     }
-
-  gaspi_printf("Done\n");  
 
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 

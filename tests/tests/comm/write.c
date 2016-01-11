@@ -54,13 +54,9 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_wait(1, GASPI_BLOCK));
   
-  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, 5000));
+  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
-  //  sleep(4);
-   
-  printf("Rank %d: Finish\n", myrank);
-  fflush(stdout);
 
   return EXIT_SUCCESS;
 }

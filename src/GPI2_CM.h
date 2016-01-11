@@ -48,4 +48,8 @@ pgaspi_create_endpoint_to(const gaspi_rank_t, const gaspi_timeout_t);
 gaspi_return_t
 pgaspi_connect_endpoint_to(const gaspi_rank_t, const gaspi_timeout_t);
 
+gaspi_return_t
+pgaspi_local_disconnect(const gaspi_rank_t, const gaspi_timeout_t);
+
+
 #endif /* _GPI2_CM_H_ */

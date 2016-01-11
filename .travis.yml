@@ -1,0 +1,12 @@
+sudo: false
+language: c
+compiler:
+    - gcc
+os:
+    - linux
+script:
+    - sh -x ./install.sh -p $HOME/install_test/ --with-ethernet --with-fortran=false
+after_failure:
+    - cat ./install.log
+after_script:
+    - cat ./install.log

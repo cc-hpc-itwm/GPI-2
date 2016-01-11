@@ -29,11 +29,10 @@ enum gaspi_sn_ops
   GASPI_SN_PROC_KILL = 4,
   GASPI_SN_TOPOLOGY = 12,
   GASPI_SN_CONNECT = 14,
-  GASPI_SN_GRP_CHECK= 16,
-  GASPI_SN_GRP_CONNECT= 18,
-  GASPI_SN_SEG_REGISTER = 20,
+  GASPI_SN_DISCONNECT = 16,
   GASPI_SN_PROC_PING = 22,
-  GASPI_SN_QUEUE_CREATE = 23
+  GASPI_SN_QUEUE_CREATE = 23,
+  GASPI_SN_PROC_PING = 24
 };
 
 enum gaspi_sn_status
@@ -76,15 +75,20 @@ extern volatile gaspi_return_t gaspi_sn_err;
 extern gaspi_context glb_gaspi_ctx;
 
 int
-gaspi_sn_broadcast_topology(gaspi_context *ctx, const gaspi_timeout_t timeout_ms);
+gaspi_sn_broadcast_topology(gaspi_context * const ctx, const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
-gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, gaspi_timeout_t timeout_ms, void *arg);
+gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms, const void * const arg);
 
 void
-gaspi_sn_cleanup(int sig);
+gaspi_sn_cleanup(const int sig);
 
 void *
 gaspi_sn_backend(void *arg);
+
+int gaspi_sn_set_non_blocking(const int sock);
+
+int
+gaspi_sn_connect2port(const char *hn, const unsigned short port, const unsigned long timeout_ms);
 
 #endif

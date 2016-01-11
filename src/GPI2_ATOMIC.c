@@ -31,7 +31,7 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 			 const gaspi_timeout_t timeout_ms)
 {
   gaspi_verify_init("gaspi_atomic_fetch_add");
-  gaspi_verify_remote_off(offset, segment_id, rank);
+  gaspi_verify_remote_off(offset, segment_id, rank, sizeof(gaspi_atomic_value_t));
   gaspi_verify_null_ptr(val_old);
   gaspi_verify_unaligned_off(offset);
 
@@ -70,7 +70,7 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 			    const gaspi_timeout_t timeout_ms)
 {
   gaspi_verify_init("gaspi_atomic_compare_swap");
-  gaspi_verify_remote_off(offset, segment_id, rank);  
+  gaspi_verify_remote_off(offset, segment_id, rank, sizeof(gaspi_atomic_value_t));
   gaspi_verify_null_ptr(val_old);
   gaspi_verify_unaligned_off(offset);
 
