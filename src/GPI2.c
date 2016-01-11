@@ -111,7 +111,7 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
 
 
 static gaspi_return_t
-pgaspi_init_core()
+pgaspi_init_core(void)
 {
   int i;
 
@@ -422,7 +422,7 @@ pgaspi_initialized (int *initialized)
 }
 
 static gaspi_return_t
-pgaspi_cleanup_core()
+pgaspi_cleanup_core(void)
 {
   int i;
   

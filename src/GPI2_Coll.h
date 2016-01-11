@@ -55,6 +55,6 @@ struct redux_args
 void (*fctArrayGASPI[GASPI_COLL_OP_TYPES]) (void *, void *, void *, const unsigned char cnt);
 
 void
-gaspi_init_collectives ();
+gaspi_init_collectives (void);
 
 #endif //_GPI2_COLL_H_

@@ -83,7 +83,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t
-  gaspi_threads_term();
+  gaspi_threads_term(void);
 
   /** Run a particular task (function)
    * 
@@ -110,7 +110,7 @@ extern "C"
    *
    * 
    */
-  void gaspi_threads_sync();
+  void gaspi_threads_sync(void);
 
   /** Synchronize all threads in a group (global barrier).
    * Implies a gaspi_barrier within the group.

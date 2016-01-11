@@ -85,7 +85,7 @@ gaspi_sn_set_default_opts(const int sockfd)
 
 /* check open files limit and try to increase */
 static int
-_gaspi_check_ofile_limit()
+_gaspi_check_ofile_limit(void)
 {
   struct rlimit ofiles;
 

@@ -27,7 +27,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 /* Group utilities */
 int
-pgaspi_dev_poll_groups()
+pgaspi_dev_poll_groups(void)
 {
   int i;
   

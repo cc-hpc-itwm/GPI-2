@@ -18,7 +18,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GPI2_Mem.h"
 
-gaspi_size_t gaspi_get_system_mem()
+gaspi_size_t gaspi_get_system_mem(void)
 {
   FILE *fp;
   char line[1024];

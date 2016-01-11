@@ -47,7 +47,7 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
 
 /* TODO: number of elems to poll as arg */
 int
-pgaspi_dev_poll_groups()
+pgaspi_dev_poll_groups(void)
 {
   const int nr = glb_gaspi_ctx.ne_count_grp;
   int i, ne = 0;

@@ -35,7 +35,7 @@ gaspi_load_ulong(volatile ulong *ptr)
 
 /* CPU freq through sampling and linear regression */
 float
-_gaspi_sample_cpu_freq()
+_gaspi_sample_cpu_freq(void)
 {
   struct timeval tval1,tval2;
   gaspi_cycles_t start;
