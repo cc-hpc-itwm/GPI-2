@@ -1218,14 +1218,14 @@ gaspi_sn_backend(void *arg)
 					{
 					  if(glb_gaspi_group_ctx[group].tnc == tnc)
 					    {
-					      int i;
+					      int rg;
 					      gb.ret = 0;
 					      gb.tnc = tnc;
 
-					      for(i = 0; i < tnc; i++)
+					      for(rg = 0; rg < tnc; rg++)
 						{
 						  if( NULL != glb_gaspi_group_ctx[group].rank_grp )
-						    gb.cs ^= glb_gaspi_group_ctx[group].rank_grp[i];
+						    gb.cs ^= glb_gaspi_group_ctx[group].rank_grp[rg];
 						}
 					    }
 					}
@@ -1280,7 +1280,7 @@ gaspi_sn_backend(void *arg)
 				    gaspi_delay();
 
 				  const size_t len = pgaspi_dev_get_sizeof_rc();
-				  char *ptr = NULL;
+				  char *lrcd_ptr = NULL;
 
 				  gaspi_return_t eret = pgaspi_create_endpoint_to(mgmt->cdh.rank, GASPI_BLOCK);
 				  if( eret == GASPI_SUCCESS )
@@ -1288,7 +1288,7 @@ gaspi_sn_backend(void *arg)
 				      eret = pgaspi_connect_endpoint_to(mgmt->cdh.rank, GASPI_BLOCK);
 				      if( eret == GASPI_SUCCESS)
 					{
-					  ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
+					  lrcd_ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
 					}
 				    }
 
@@ -1299,9 +1299,9 @@ gaspi_sn_backend(void *arg)
 				    }
 				  else
 				    {
-				      if( NULL != ptr )
+				      if( NULL != lrcd_ptr )
 					{
-					  if( gaspi_sn_writen( mgmt->fd, ptr, len ) < sizeof(len) )
+					  if( gaspi_sn_writen( mgmt->fd, lrcd_ptr, len ) < sizeof(len) )
 					    {
 					      gaspi_print_error("Failed response to connection request from %u.", mgmt->cdh.rank);
 					      io_err = 1;

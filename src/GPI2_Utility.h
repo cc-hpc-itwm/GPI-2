@@ -42,10 +42,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifdef DEBUG
 #include "GPI2.h"
 #define gaspi_print_error(msg, ...)					\
-  int errsv = errno;							\
-  if( errsv != 0 )							\
+  int gaspi_debug_errsv = errno;					\
+  if( gaspi_debug_errsv != 0 )						\
     fprintf(stderr,"[Rank %4u]: Error %d (%s) at (%s:%d):" msg "\n",	\
-	    glb_gaspi_ctx.rank, errsv, (char *) strerror(errsv),	\
+	    glb_gaspi_ctx.rank, gaspi_debug_errsv, (char *) strerror(gaspi_debug_errsv), \
 	    __FILE__, __LINE__, ##__VA_ARGS__);				\
   else									\
     fprintf(stderr,"[Rank %4u]: Error at (%s:%d):" msg "\n",		\

@@ -363,20 +363,20 @@ pgaspi_group_commit (const gaspi_group_t group,
 
   for(r = 1; r <= gb.tnc; r++)
     {
-      int i = (group_to_commit->rank + r) % gb.tnc;
+      int rg = (group_to_commit->rank + r) % gb.tnc;
 
-      if(group_to_commit->rank_grp[i] == glb_gaspi_ctx.rank)
+      if(group_to_commit->rank_grp[rg] == glb_gaspi_ctx.rank)
 	continue;
 
-      eret = gaspi_sn_command(GASPI_SN_GRP_CHECK, group_to_commit->rank_grp[i], delta_tout, (void *) &gb);
+      eret = gaspi_sn_command(GASPI_SN_GRP_CHECK, group_to_commit->rank_grp[rg], delta_tout, (void *) &gb);
       if(eret != GASPI_SUCCESS)
 	{
 	  goto endL;
 	}
 
-      if( _pgaspi_group_commit_to(group, group_to_commit->rank_grp[i], timeout_ms) != 0 )
+      if( _pgaspi_group_commit_to(group, group_to_commit->rank_grp[rg], timeout_ms) != 0 )
 	{
-	  gaspi_print_error("Failed to commit to %d", group_to_commit->rank_grp[i]);
+	  gaspi_print_error("Failed to commit to %d", group_to_commit->rank_grp[rg]);
 	  eret = GASPI_ERROR;
 	  goto endL;
 	}

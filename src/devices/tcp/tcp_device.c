@@ -250,7 +250,7 @@ _tcp_dev_alloc_remote_states (int n)
 
 
 static inline tcp_dev_conn_state_t *
-_tcp_dev_add_new_conn(int rank, int conn_sock, int epollfd)
+_tcp_dev_add_new_conn(int rank, int conn_sock, int pollfd)
 {
   tcp_dev_conn_state_t *nstate = (tcp_dev_conn_state_t *) malloc(sizeof(tcp_dev_conn_state_t));
   if(nstate == NULL)
@@ -281,7 +281,7 @@ _tcp_dev_add_new_conn(int rank, int conn_sock, int epollfd)
       .events = EPOLLIN | EPOLLRDHUP
     };
 
-  if (epoll_ctl(epollfd, EPOLL_CTL_ADD, conn_sock, &nev) == -1)
+  if (epoll_ctl(pollfd, EPOLL_CTL_ADD, conn_sock, &nev) == -1)
     {
       close(conn_sock);
       free(nstate);
@@ -828,7 +828,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate)
 
 
 static int
-_tcp_dev_process_sent_data(int epollfd, tcp_dev_conn_state_t *estate)
+_tcp_dev_process_sent_data(int pollfd, tcp_dev_conn_state_t *estate)
 {
   if(estate->write.opcode == SEND_RDMA_WRITE)
     {
@@ -847,7 +847,7 @@ _tcp_dev_process_sent_data(int epollfd, tcp_dev_conn_state_t *estate)
       .events = EPOLLIN | EPOLLRDHUP
     };
 
-  if(epoll_ctl(epollfd, EPOLL_CTL_MOD, estate->fd, &ev) < 0)
+  if(epoll_ctl(pollfd, EPOLL_CTL_MOD, estate->fd, &ev) < 0)
     {
       gaspi_print_error("Failed to modify events instance.");
       return 1;
@@ -864,7 +864,7 @@ _tcp_dev_process_sent_data(int epollfd, tcp_dev_conn_state_t *estate)
 }
 
 static int
-_tcp_dev_process_delayed(int epollfd)
+_tcp_dev_process_delayed(int pollfd)
 {
 
   if(delayedList.count == 0 || rank_state == NULL)
@@ -949,7 +949,9 @@ _tcp_dev_process_delayed(int epollfd)
 
 	      if(bytes_sent <= 0 && !(errno == EAGAIN || errno == EWOULDBLOCK))
 		{
-		  gaspi_print_error("writing to node %d.", wr.target);
+		  {
+		    gaspi_print_error("writing to node %d.", wr.target);
+		  }
 
 		  if( _tcp_dev_post_wc(wr.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE, wr.cq_handle) != 0)
 		    {
@@ -971,15 +973,17 @@ _tcp_dev_process_delayed(int epollfd)
 	      ||
 	      (wr.opcode == NOTIFICATION_SEND && wr.compare_add == 1))
 	    {
-	      ssize_t done = 0;
+	      ssize_t sdone = 0;
 
-	      while(done < element->wr.length)
+	      while(sdone < element->wr.length)
 		{
-		  const int bytes_sent = write(state->fd, (void *)element->wr.local_addr + done, element->wr.length - done);
+		  const int bytes_sent = write(state->fd, (void *)element->wr.local_addr + sdone, element->wr.length - sdone);
 
 		  if(bytes_sent <= 0 && !(errno == EAGAIN || errno == EWOULDBLOCK))
 		    {
-		      gaspi_print_error("writing to node %d.", wr.target);
+		      {
+			gaspi_print_error("writing to node %d.", wr.target);
+		      }
 
 		      if( _tcp_dev_post_wc(wr.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE, wr.cq_handle) != 0)
 			{
@@ -993,7 +997,7 @@ _tcp_dev_process_delayed(int epollfd)
 		    }
 		  else if( bytes_sent > 0)
 		    {
-		      done += bytes_sent;
+		      sdone += bytes_sent;
 		    }
 		}
 
@@ -1036,7 +1040,7 @@ _tcp_dev_process_delayed(int epollfd)
 		    .events = EPOLLIN | EPOLLOUT | EPOLLRDHUP
 		  };
 
-		  if (epoll_ctl(epollfd, EPOLL_CTL_MOD, state->fd, &ev) < 0)
+		  if (epoll_ctl(pollfd, EPOLL_CTL_MOD, state->fd, &ev) < 0)
 		    {
 		      gaspi_print_error("Failed to modify events instance for %d fd %d.", state->rank, state->fd);
 		      close(state->fd);
@@ -1107,7 +1111,7 @@ _tcp_dev_wait_outstanding(int fd)
 }
 
 static void
-_tcp_dev_cleanup_connections(int epollfd)
+_tcp_dev_cleanup_connections(int pollfd)
 {
   int k;
 
@@ -1117,7 +1121,7 @@ _tcp_dev_cleanup_connections(int epollfd)
 	continue;
 
       struct epoll_event ev;
-      epoll_ctl(epollfd, EPOLL_CTL_DEL, rank_state[k]->fd, &ev);
+      epoll_ctl(pollfd, EPOLL_CTL_DEL, rank_state[k]->fd, &ev);
 
       if(shutdown(rank_state[k]->fd, SHUT_RDWR) != 0)
 	{

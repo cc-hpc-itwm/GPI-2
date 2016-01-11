@@ -559,7 +559,10 @@ _pgaspi_dev_create_qp(struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv
 		   | IBV_QP_PORT
 		   | IBV_QP_ACCESS_FLAGS))
     {
-      gaspi_print_error ("Failed to modify QP (libibverbs)");
+      {
+	gaspi_print_error ("Failed to modify QP (libibverbs)");
+      }
+
       if( ibv_destroy_qp(qp) )
 	{
 	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
