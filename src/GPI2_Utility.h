@@ -94,21 +94,29 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
       return GASPI_ERR_UNALIGN_OFF;					\
   }
 
-#define gaspi_verify_local_off(off, seg_id)				\
+#define gaspi_verify_local_off(off, seg_id, sz)				\
   {									\
-  gaspi_verify_segment(seg_id);						\
-  gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[seg_id]);			\
-  if( off > glb_gaspi_ctx.rrmd[seg_id][glb_gaspi_ctx.rank].size)	\
-    return GASPI_ERR_INV_LOC_OFF;					\
+    gaspi_verify_segment(seg_id);					\
+    gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[seg_id]);			\
+    if( off >= glb_gaspi_ctx.rrmd[seg_id][glb_gaspi_ctx.rank].size )	\
+      return GASPI_ERR_INV_LOC_OFF;					\
+    if( off + sz > glb_gaspi_ctx.rrmd[seg_id][glb_gaspi_ctx.rank].size ) \
+      {									\
+	return GASPI_ERR_INV_COMMSIZE;					\
+      }									\
   }
 
-#define gaspi_verify_remote_off(off, seg_id, rank)			\
+#define gaspi_verify_remote_off(off, seg_id, rank, sz)			\
   {									\
   gaspi_verify_segment(seg_id);						\
   gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[seg_id]);			\
   gaspi_verify_rank(rank);						\
-  if( off > glb_gaspi_ctx.rrmd[seg_id][rank].size)			\
+  if( off >= glb_gaspi_ctx.rrmd[seg_id][rank].size )			\
     return GASPI_ERR_INV_REM_OFF;					\
+  if( off + sz > glb_gaspi_ctx.rrmd[seg_id][rank].size )		\
+    {									\
+      return GASPI_ERR_INV_COMMSIZE;					\
+    }									\
   }
 
 #define gaspi_verify_comm_size(sz, seg_id_loc, seg_id_rem, rnk, max)	\
@@ -157,8 +165,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define gaspi_verify_queue_depth(depth)
 #define gaspi_verify_segment(seg_id)
 #define gaspi_verify_unaligned_off(offset)
-#define gaspi_verify_local_off(off, seg_id)
-#define gaspi_verify_remote_off(off, seg_id, rank)
+#define gaspi_verify_local_off(off, seg_id, sz)
+#define gaspi_verify_remote_off(off, seg_id, rank, sz)
 #define gaspi_verify_comm_size(size, seg_id_loc, seg_id_rem, rank, max)
 #define gaspi_verify_segment_size(size)
 #define gaspi_verify_init(funcname)

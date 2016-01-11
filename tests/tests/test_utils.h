@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <string.h>
 #include <GASPI.h>
+#include <GASPI_Ext.h>
 
 static gaspi_config_t tsuite_default_config = 
   {

@@ -19,7 +19,11 @@ int main(int argc, char *argv[])
 
   gaspi_atomic_value_t val;
   for(n = 0; n < numranks; n++)
-    ASSERT(gaspi_atomic_fetch_add(0, 0, n, 1, &val, GASPI_BLOCK));
+    {
+      EXPECT_FAIL(gaspi_atomic_fetch_add(0, (_2MB - 3), n, 1, &val, GASPI_BLOCK));
+      EXPECT_FAIL(gaspi_atomic_fetch_add(0, (_2MB), n, 1, &val, GASPI_BLOCK));
+      ASSERT(gaspi_atomic_fetch_add(0, 0, n, 1, &val, GASPI_BLOCK));
+    }
 
   gaspi_pointer_t _vptr;
   ASSERT (gaspi_segment_ptr(0, &_vptr));

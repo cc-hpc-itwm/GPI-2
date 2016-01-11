@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <GASPI.h>
 #include <test_utils.h>
 
 #define ARG_IS(param) (!strcmp(argv[i], param))

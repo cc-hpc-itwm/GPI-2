@@ -34,6 +34,8 @@ int main(int argc, char *argv[])
   gaspi_number_t qmax ;
   gaspi_number_t queueSize;
 
+  TSUITE_INIT(argc, argv);
+
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
   ASSERT (gaspi_queue_size_max(&qmax));
   ASSERT (gaspi_segment_create(0, memSize, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));

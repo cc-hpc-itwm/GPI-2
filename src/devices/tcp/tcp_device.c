@@ -1408,8 +1408,8 @@ tcp_virt_dev(void *args)
 			{
 			  if( estate->read.length == sizeof(uint32_t) )
 			    {
-			      uint32_t *vptr = (uint32_t *) estate->read.addr;
-			      *vptr = *(uint32_t *) tmp;
+			      /* copy tmp to final destinatin */
+			      memcpy((void *) estate->read.addr, tmp, sizeof(uint32_t));
 			    }
 
 			  int ret = _tcp_dev_process_recv_data(estate);

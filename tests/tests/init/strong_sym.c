@@ -2,19 +2,18 @@
 #include <stdlib.h>
 
 #include <PGASPI.h>
-
+#include <test_utils.h>
 
 int main(int argc, char *argv[])
 {
-  pgaspi_proc_init(GASPI_BLOCK);
   gaspi_rank_t rank, num;
-  pgaspi_proc_rank(&rank);
-  pgaspi_proc_num(&num);
 
-  gaspi_printf("Hello from rank %d of %d\n",
-	       rank, num);
+  TSUITE_INIT(argc, argv);
 
-  pgaspi_proc_term(GASPI_BLOCK);
+  ASSERT(pgaspi_proc_init(GASPI_BLOCK));
+  ASSERT(pgaspi_proc_rank(&rank));
+  ASSERT(pgaspi_proc_num(&num));
+  ASSERT(pgaspi_proc_term(GASPI_BLOCK));
 
   return EXIT_SUCCESS;
 }

@@ -30,11 +30,7 @@ gaspi_size_t memSize = 4294967296; //4GB
 gaspi_rank_t myrank, highestnode;
 int error;
 
-#ifdef FLOAT
-    float *mptr;
-#else
-    int *mptr;
-#endif
+int *mptr;
 
 struct thread_args {
     unsigned int threadID;
@@ -225,7 +221,8 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_segment_ptr(0, &_vptr));
 
   /* get memory area pointer */
-  mptr = (float *) _vptr;
+
+  mptr = (int *) _vptr;
 
   ASSERT (gaspi_proc_rank (&myrank));
   ASSERT (gaspi_proc_num (&highestnode));
