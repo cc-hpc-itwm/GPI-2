@@ -43,7 +43,7 @@ pgaspi_dev_get_lrcd(int rank)
 }
 
 inline size_t
-pgaspi_dev_get_sizeof_rc()
+pgaspi_dev_get_sizeof_rc(void)
 {
   return 0;
 }

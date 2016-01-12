@@ -1156,7 +1156,7 @@ _tcp_dev_cleanup_connections(int pollfd)
 }
 
 void
-tcp_dev_stop_device()
+tcp_dev_stop_device(void)
 {
 
   /* finish all operations that are in progress */

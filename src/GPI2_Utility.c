@@ -105,7 +105,7 @@ _gaspi_sample_cpu_freq(void)
 }
 
 float
-gaspi_get_cpufreq ()
+gaspi_get_cpufreq (void)
 {
   float mhz = 0.0f;
   mhz =  _gaspi_sample_cpu_freq();
