@@ -78,7 +78,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define gaspi_verify_queue_depth(depth)					\
   {									\
-    if(depth >= glb_gaspi_cfg.queue_depth)				\
+    if( (unsigned) depth >= glb_gaspi_cfg.queue_depth )			\
       return GASPI_ERR_MANY_Q_REQS;					\
   }
 
