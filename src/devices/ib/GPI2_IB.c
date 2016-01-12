@@ -37,7 +37,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 /* TODO: to remove */
 extern gaspi_config_t glb_gaspi_cfg;
 
-static char *port_state_str[] = {
+static const char *port_state_str[] = {
   "NOP",
   "Down",
   "Initializing",
@@ -46,7 +46,7 @@ static char *port_state_str[] = {
   "Active deferred"
 };
 
-static char *port_phy_state_str[] = {
+static const char *port_phy_state_str[] = {
   "No state change",
   "Sleep",
   "Polling",
