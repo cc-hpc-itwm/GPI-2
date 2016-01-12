@@ -93,7 +93,7 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
 
   if( ! glb_gaspi_init )
     {
-      fprintf(stdout, buf);
+      fprintf(stdout, "%s", buf);
       fflush (stdout);
       goto endL;
     }
