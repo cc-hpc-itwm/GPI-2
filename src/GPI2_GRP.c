@@ -302,6 +302,7 @@ pgaspi_group_commit (const gaspi_group_t group,
 {
   int i, r;
   gaspi_return_t eret = GASPI_ERROR;
+  gaspi_timeout_t delta_tout = timeout_ms;
 
   gaspi_verify_init("gaspi_group_commit");
   gaspi_verify_group(group);
@@ -359,7 +360,6 @@ pgaspi_group_commit (const gaspi_group_t group,
     {
       gb.cs ^= group_to_commit->rank_grp[i];
     }
-  gaspi_timeout_t delta_tout = timeout_ms;
 
   for(r = 1; r <= gb.tnc; r++)
     {
