@@ -427,7 +427,7 @@ gaspi_sn_send_topology(gaspi_context * const ctx, const int i, const gaspi_timeo
   cdh.tnc = ctx->tnc;
 
   int retval = 0;
-  size_t len = sizeof(gaspi_cd_header);
+  ssize_t len = sizeof(gaspi_cd_header);
   void * ptr = &cdh;
   int sockfd = ctx->sockfd[i];
 
