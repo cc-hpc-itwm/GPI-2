@@ -1231,7 +1231,7 @@ gaspi_sn_backend(void *arg)
 					}
 				      unlock_gaspi (&glb_gaspi_group_ctx[group].del);
 
-				      if(gaspi_sn_writen( mgmt->fd, &gb, sizeof(gb) ) < sizeof(gb) )
+				      if(gaspi_sn_writen( mgmt->fd, &gb, sizeof(gb) ) < 0 )
 					{
 					  gaspi_print_error("Failed response to group check.");
 					  io_err = 1;
@@ -1249,7 +1249,7 @@ gaspi_sn_backend(void *arg)
 				      /* TODO: check the pointer */
 				      if(gaspi_sn_writen( mgmt->fd,
 							  &glb_gaspi_group_ctx[mgmt->cdh.ret].rrcd[glb_gaspi_ctx.rank],
-							  sizeof(gaspi_rc_mseg) ) < sizeof(gaspi_rc_mseg) )
+							  sizeof(gaspi_rc_mseg) ) < 0 )
 					{
 					  gaspi_print_error("Failed to connect group.");
 					  io_err = 1;
@@ -1263,7 +1263,7 @@ gaspi_sn_backend(void *arg)
 				      int rret = gaspi_sn_segment_register(mgmt->cdh);
 
 				      /* write back result of registration */
-				      if(gaspi_sn_writen( mgmt->fd, &rret, sizeof(int) ) < sizeof(int) )
+				      if(gaspi_sn_writen( mgmt->fd, &rret, sizeof(int) ) < 0 )
 					{
 					  gaspi_print_error("Failed response to segment register.");
 					  io_err = 1;
@@ -1301,7 +1301,7 @@ gaspi_sn_backend(void *arg)
 				    {
 				      if( NULL != lrcd_ptr )
 					{
-					  if( gaspi_sn_writen( mgmt->fd, lrcd_ptr, len ) < sizeof(len) )
+					  if( gaspi_sn_writen( mgmt->fd, lrcd_ptr, len ) < 0 )
 					    {
 					      gaspi_print_error("Failed response to connection request from %u.", mgmt->cdh.rank);
 					      io_err = 1;
