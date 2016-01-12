@@ -520,7 +520,7 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
   if(!glb_gaspi_dev_init)
     return -1;
 
-  if( snp.seg_id < 0 && snp.seg_id >= GASPI_MAX_MSEGS)
+  if( snp.seg_id < 0 || snp.seg_id >= GASPI_MAX_MSEGS)
     return -1;
 
   lock_gaspi_tout(&gaspi_mseg_lock, GASPI_BLOCK);
