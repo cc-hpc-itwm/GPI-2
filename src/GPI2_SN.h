@@ -19,6 +19,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef _GPI2_SN_H_
 #define _GPI2_SN_H_ 1
 
+#include "GPI2.h"
 #include "GASPI.h"
 #include "GPI2_Types.h"
 
@@ -65,14 +66,10 @@ typedef struct
   gaspi_mgmt_header *mgmt;
 } gaspi_rank_data;
 
-extern volatile int glb_gaspi_init;
-extern volatile int glb_gaspi_dev_init;
-extern volatile int gaspi_master_topo_data;
-
 extern volatile enum gaspi_sn_status gaspi_sn_status;
 extern volatile gaspi_return_t gaspi_sn_err;
 
-extern gaspi_context glb_gaspi_ctx;
+/* extern gaspi_context glb_gaspi_ctx; */
 
 int
 gaspi_sn_broadcast_topology(gaspi_context * const ctx, const gaspi_timeout_t timeout_ms);

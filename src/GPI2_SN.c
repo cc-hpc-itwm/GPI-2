@@ -85,7 +85,7 @@ gaspi_sn_set_default_opts(const int sockfd)
 
 /* check open files limit and try to increase */
 static int
-_gaspi_check_ofile_limit()
+_gaspi_check_ofile_limit(void)
 {
   struct rlimit ofiles;
 
@@ -438,7 +438,7 @@ gaspi_sn_send_topology(gaspi_context * const ctx, const int i, const gaspi_timeo
   cdh.tnc = ctx->tnc;
 
   int retval = 0;
-  size_t len = sizeof(gaspi_cd_header);
+  ssize_t len = sizeof(gaspi_cd_header);
   void * ptr = &cdh;
   int sockfd = ctx->sockfd[i];
 
@@ -532,7 +532,7 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
   if(!glb_gaspi_dev_init)
     return -1;
 
-  if( snp.seg_id < 0 && snp.seg_id >= GASPI_MAX_MSEGS)
+  if( snp.seg_id < 0 || snp.seg_id >= GASPI_MAX_MSEGS)
     return -1;
 
   lock_gaspi_tout(&gaspi_mseg_lock, GASPI_BLOCK);
@@ -1296,20 +1296,20 @@ gaspi_sn_backend(void *arg)
 					{
 					  if(glb_gaspi_group_ctx[group].tnc == tnc)
 					    {
-					      int i;
+					      int rg;
 					      gb.ret = 0;
 					      gb.tnc = tnc;
 
-					      for(i = 0; i < tnc; i++)
+					      for(rg = 0; rg < tnc; rg++)
 						{
 						  if( NULL != glb_gaspi_group_ctx[group].rank_grp )
-						    gb.cs ^= glb_gaspi_group_ctx[group].rank_grp[i];
+						    gb.cs ^= glb_gaspi_group_ctx[group].rank_grp[rg];
 						}
 					    }
 					}
 				      unlock_gaspi (&glb_gaspi_group_ctx[group].del);
 
-				      if(gaspi_sn_writen( mgmt->fd, &gb, sizeof(gb) ) < sizeof(gb) )
+				      if(gaspi_sn_writen( mgmt->fd, &gb, sizeof(gb) ) < 0 )
 					{
 					  gaspi_print_error("Failed response to group check.");
 					  io_err = 1;
@@ -1327,7 +1327,7 @@ gaspi_sn_backend(void *arg)
 				      /* TODO: check the pointer */
 				      if(gaspi_sn_writen( mgmt->fd,
 							  &glb_gaspi_group_ctx[mgmt->cdh.ret].rrcd[glb_gaspi_ctx.rank],
-							  sizeof(gaspi_rc_mseg) ) < sizeof(gaspi_rc_mseg) )
+							  sizeof(gaspi_rc_mseg) ) < 0 )
 					{
 					  gaspi_print_error("Failed to connect group.");
 					  io_err = 1;
@@ -1341,7 +1341,7 @@ gaspi_sn_backend(void *arg)
 				      int rret = gaspi_sn_segment_register(mgmt->cdh);
 
 				      /* write back result of registration */
-				      if(gaspi_sn_writen( mgmt->fd, &rret, sizeof(int) ) < sizeof(int) )
+				      if(gaspi_sn_writen( mgmt->fd, &rret, sizeof(int) ) < 0 )
 					{
 					  gaspi_print_error("Failed response to segment register.");
 					  io_err = 1;
@@ -1362,7 +1362,7 @@ gaspi_sn_backend(void *arg)
 				    gaspi_delay();
 
 				  const size_t len = pgaspi_dev_get_sizeof_rc();
-				  char *ptr = NULL;
+				  char *lrcd_ptr = NULL;
 
 				  gaspi_return_t eret = pgaspi_create_endpoint_to(mgmt->cdh.rank, GASPI_BLOCK);
 				  if( eret == GASPI_SUCCESS )
@@ -1370,7 +1370,7 @@ gaspi_sn_backend(void *arg)
 				      eret = pgaspi_connect_endpoint_to(mgmt->cdh.rank, GASPI_BLOCK);
 				      if( eret == GASPI_SUCCESS)
 					{
-					  ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
+					  lrcd_ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
 					}
 				    }
 
@@ -1381,9 +1381,9 @@ gaspi_sn_backend(void *arg)
 				    }
 				  else
 				    {
-				      if( NULL != ptr )
+				      if( NULL != lrcd_ptr )
 					{
-					  if( gaspi_sn_writen( mgmt->fd, ptr, len ) < sizeof(len) )
+					  if( gaspi_sn_writen( mgmt->fd, lrcd_ptr, len ) < 0 )
 					    {
 					      gaspi_print_error("Failed response to connection request from %u.", mgmt->cdh.rank);
 					      io_err = 1;

@@ -45,7 +45,7 @@ gaspi_lock_t gaspi_ccontext_lock;
 gaspi_lock_t gaspi_mseg_lock;
 
 static inline gaspi_cycles_t
-gaspi_get_cycles ()
+gaspi_get_cycles (void)
 {
   unsigned low, high;
   unsigned long long val;

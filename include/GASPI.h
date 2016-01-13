@@ -1153,7 +1153,7 @@ extern "C"
    * 
    * 
    */
-  void gaspi_print_affinity_mask ();
+  void gaspi_print_affinity_mask (void);
 
   /** Get NUMA socket
    *

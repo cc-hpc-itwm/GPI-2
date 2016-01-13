@@ -147,7 +147,7 @@ gaspi_threads_init(gaspi_int * const num)
 
 //TODO: what do we do with existing threads
 gaspi_return_t
-gaspi_threads_term()
+gaspi_threads_term(void)
 {
   __gaspiThreadsGlobalIDCnt = -1;
   __gaspiThreadsActivated = 0;
@@ -193,7 +193,7 @@ gaspi_threads_run(void* (*function)(void*), void *arg)
 //dont spread over numa sockets -> can get slow...
 //TODO: timeout?
 void
-gaspi_threads_sync()
+gaspi_threads_sync(void)
 {
   int i;
   

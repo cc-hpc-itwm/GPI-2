@@ -24,7 +24,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include "GASPI.h"
 
-gaspi_size_t gaspi_get_system_mem();
+gaspi_size_t gaspi_get_system_mem(void);
 
 gaspi_size_t gaspi_get_mem_peak(void);
 

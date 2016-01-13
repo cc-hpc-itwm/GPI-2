@@ -24,10 +24,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <cuda.h>
 #endif
 
-extern gaspi_context glb_gaspi_ctx;
-extern gaspi_config_t glb_gaspi_cfg;
-
-
 /* Communication functions */
 gaspi_return_t
 pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
