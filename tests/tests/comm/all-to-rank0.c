@@ -58,10 +58,9 @@ int main(int argc, char *argv[])
   TSUITE_INIT(argc, argv);
 
   gaspi_config_t conf;
-  ASSERT(gaspi_config_get(&conf));
-  //  conf.mtu = 4096;
-  conf.queue_num = 1;
-  ASSERT(gaspi_config_set(conf));
+  /* ASSERT(gaspi_config_get(&conf)); */
+  /* conf.queue_num = 1; */
+  /* ASSERT(gaspi_config_set(conf)); */
 
   struct timeval start_time, end_time;
   gaspi_rank_t proc_num;
