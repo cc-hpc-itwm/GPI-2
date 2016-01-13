@@ -33,6 +33,7 @@ ORIG_MFILE=""
 NNODES=0
 DEBUG=0
 GASPI_LAUNCHER="ssh"
+VALIDATE_MACHINEFILE=0
 
 remove_temp_file()
 {
@@ -51,6 +52,7 @@ usage()
     echo "  -N               Enable NUMA for processes on same node."
     echo "  -n <procs>       Start as many <procs> from machine file."
     echo "  -d               Run with GDB (debugger) on master node."
+    echo "  -p               Ping hosts before starting binary."
     echo "  -h               This help."
     echo
     remove_temp_file
@@ -179,6 +181,9 @@ while [ -n "$1" ]; do
 	    fi
 	    NNODES=$1
 	    ;;
+	-p | --ping)
+	    VALIDATE_MACHINEFILE=1
+	    ;;
 	*) #Sucks! we're taking a small risk here
             if [ -x $1 ]; then
 
@@ -223,7 +228,9 @@ if [ $NNODES -eq 0 ]; then
     fi
 fi
 
-validate_machinefile $MFILE
+if [ $VALIDATE_MACHINEFILE -eq 1 ]; then
+    validate_machinefile $MFILE
+fi
 
 #master binary is the same
 if [ -z "$MASTER_PRG" ]; then
