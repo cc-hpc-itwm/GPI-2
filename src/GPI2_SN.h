@@ -23,18 +23,20 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GASPI.h"
 #include "GPI2_Types.h"
 
-enum gaspi_sn_ops 
-{
-  GASPI_SN_RESET = 0,
-  GASPI_SN_HEADER = 1,
-  GASPI_SN_PROC_KILL = 4,
-  GASPI_SN_TOPOLOGY = 12,
-  GASPI_SN_CONNECT = 14,
-  GASPI_SN_DISCONNECT = 16,
-  GASPI_SN_PROC_PING = 22,
-  GASPI_SN_QUEUE_CREATE = 23,
-  GASPI_SN_PROC_PING = 24
-};
+enum gaspi_sn_ops
+  {
+    GASPI_SN_RESET = 0,
+    GASPI_SN_HEADER = 1,
+    GASPI_SN_PROC_KILL = 4,
+    GASPI_SN_TOPOLOGY = 12,
+    GASPI_SN_CONNECT = 14,
+    GASPI_SN_DISCONNECT = 16,
+    GASPI_SN_GRP_CHECK = 18,
+    GASPI_SN_GRP_CONNECT= 20,
+    GASPI_SN_SEG_REGISTER = 22,
+    GASPI_SN_QUEUE_CREATE = 23,
+    GASPI_SN_PROC_PING = 24
+  };
 
 enum gaspi_sn_status
 {

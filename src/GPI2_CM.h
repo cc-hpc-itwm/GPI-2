@@ -40,6 +40,7 @@ typedef struct
   gaspi_rank_t rank; /* to whom */
   volatile gaspi_endpoint_creation_status_t istat;
   volatile gaspi_endpoint_conn_status_t cstat;
+  unsigned char queue_state[GASPI_MAX_QP]; /* queues connection state*/
 } gaspi_endpoint_conn_t;
 
 gaspi_return_t
