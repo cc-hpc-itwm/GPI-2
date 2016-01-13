@@ -33,11 +33,11 @@ pgaspi_dev_get_rrcd(int);
 pgaspi_dev_get_lrcd(int);
 
  size_t
-pgaspi_dev_get_sizeof_rc();
+pgaspi_dev_get_sizeof_rc(void);
 
 /* Groups */
 int
-pgaspi_dev_poll_groups();
+pgaspi_dev_poll_groups(void);
 
 int
 pgaspi_dev_post_group_write(void *, int, int, void *, unsigned char);

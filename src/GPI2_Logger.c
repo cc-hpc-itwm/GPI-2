@@ -93,7 +93,7 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
 
   if( ! glb_gaspi_init )
     {
-      fprintf(stdout, buf);
+      fprintf(stdout, "%s", buf);
       fflush (stdout);
       goto endL;
     }
@@ -155,7 +155,7 @@ pgaspi_printf (const char *fmt, ...)
 }
 
 void
-gaspi_print_affinity_mask ()
+gaspi_print_affinity_mask (void)
 {
   unsigned char mask[64];
   memset (mask, 0, 64);

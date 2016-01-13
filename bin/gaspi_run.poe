@@ -24,6 +24,7 @@ MAX_NUMA_NODES=1
 HAS_NUMA=0
 HN=$(hostname)
 GASPI_LAUNCHER=poe
+VALIDATE_MACHINEFILE=0
 
 #helper functions
 usage()
@@ -33,6 +34,7 @@ usage()
     echo
     echo "Available options:"
     echo "  -N               Enable NUMA for processes on same node."
+    echo "  -p               Ping hosts before starting binary."
     echo "  -h               This help."
     echo
 }
@@ -92,6 +94,9 @@ while [ -n "$1" ]; do
 	    shift
 	    echo "Warning: option (-n, --nodes) not used. Using Load Leveler settings."
 	    ;;
+	-p | --ping)
+	    VALIDATE_MACHINEFILE=1
+	    ;;
         *) #Sucks! we're taking a small risk here
             if [ -x $1 ]; then
 		PRG=$(readlink -f $1)
@@ -128,7 +133,9 @@ if [ -z $LOADL_HOSTFILE ]; then
     print_error_exit "No machine file (LOADL_HOSTFILE)"
 else
     MFILE=$LOADL_HOSTFILE
-    validate_machinefile $MFILE
+    if [ $VALIDATE_MACHINEFILE -eq 1 ]; then
+	validate_machinefile $MFILE
+    fi
 fi
 
 export GASPI_MASTER=`head -n 1 $LOADL_HOSTFILE`

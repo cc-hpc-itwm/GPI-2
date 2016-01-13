@@ -111,7 +111,7 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
 
 
 static gaspi_return_t
-pgaspi_init_core()
+pgaspi_init_core(void)
 {
   int i;
 
@@ -422,7 +422,7 @@ pgaspi_initialized (int *initialized)
 }
 
 static gaspi_return_t
-pgaspi_cleanup_core()
+pgaspi_cleanup_core(void)
 {
   int i;
   
@@ -726,10 +726,14 @@ pgaspi_error_str(gaspi_return_t error_code)
     };
 
   if(error_code == GASPI_ERROR)
-    return "general error";
+    {
+      return "general error";
+    }
 
   if(error_code < GASPI_ERROR || error_code > GASPI_ERR_MEMALLOC)
-    return "unknown";
+    {
+      return "unknown";
+    }
 
   return (gaspi_string_t) gaspi_return_str[error_code];
 }

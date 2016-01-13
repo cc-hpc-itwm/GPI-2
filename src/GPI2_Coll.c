@@ -363,7 +363,7 @@ opSumULongGASPI (void *res, void *localVal, void *dstVal,
 }
 
 void
-gaspi_init_collectives ()
+gaspi_init_collectives (void)
 {
   fctArrayGASPI[0] = &opMinIntGASPI;
   fctArrayGASPI[1] = &opMinUIntGASPI;

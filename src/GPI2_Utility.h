@@ -42,10 +42,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifdef DEBUG
 #include "GPI2.h"
 #define gaspi_print_error(msg, ...)					\
-  int errsv = errno;							\
-  if( errsv != 0 )							\
+  int gaspi_debug_errsv = errno;					\
+  if( gaspi_debug_errsv != 0 )						\
     fprintf(stderr,"[Rank %4u]: Error %d (%s) at (%s:%d):" msg "\n",	\
-	    glb_gaspi_ctx.rank, errsv, (char *) strerror(errsv),	\
+	    glb_gaspi_ctx.rank, gaspi_debug_errsv, (char *) strerror(gaspi_debug_errsv), \
 	    __FILE__, __LINE__, ##__VA_ARGS__);				\
   else									\
     fprintf(stderr,"[Rank %4u]: Error at (%s:%d):" msg "\n",		\
@@ -78,7 +78,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define gaspi_verify_queue_depth(depth)					\
   {									\
-    if(depth >= glb_gaspi_cfg.queue_depth)				\
+    if( (unsigned) depth >= glb_gaspi_cfg.queue_depth )			\
       return GASPI_ERR_MANY_Q_REQS;					\
   }
 
@@ -183,7 +183,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
   }
 
 ulong gaspi_load_ulong(volatile ulong *ptr);
-float gaspi_get_cpufreq ();
+float gaspi_get_cpufreq (void);
 int gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset);
 
 char * gaspi_get_hn (const unsigned int id);

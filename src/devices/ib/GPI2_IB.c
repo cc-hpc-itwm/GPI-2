@@ -37,7 +37,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 /* TODO: to remove */
 extern gaspi_config_t glb_gaspi_cfg;
 
-static char *port_state_str[] = {
+static const char *port_state_str[] = {
   "NOP",
   "Down",
   "Initializing",
@@ -46,7 +46,7 @@ static char *port_state_str[] = {
   "Active deferred"
 };
 
-static char *port_phy_state_str[] = {
+static const char *port_phy_state_str[] = {
   "No state change",
   "Sleep",
   "Polling",
@@ -96,7 +96,7 @@ pgaspi_dev_get_lrcd(int rank)
 }
 
 inline size_t
-pgaspi_dev_get_sizeof_rc()
+pgaspi_dev_get_sizeof_rc(void)
 {
   return sizeof(struct ib_ctx_info);
 }
@@ -559,7 +559,10 @@ _pgaspi_dev_create_qp(struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv
 		   | IBV_QP_PORT
 		   | IBV_QP_ACCESS_FLAGS))
     {
-      gaspi_print_error ("Failed to modify QP (libibverbs)");
+      {
+	gaspi_print_error ("Failed to modify QP (libibverbs)");
+      }
+
       if( ibv_destroy_qp(qp) )
 	{
 	  gaspi_print_error ("Failed to destroy QP (libibverbs)");

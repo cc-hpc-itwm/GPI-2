@@ -294,7 +294,7 @@ extern "C"
 
   void pgaspi_printf (const char *fmt, ...);
 
-  void pgaspi_print_affinity_mask ();
+  void pgaspi_print_affinity_mask (void);
 
   gaspi_return_t pgaspi_numa_socket(gaspi_uchar * const socket);
 
