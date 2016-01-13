@@ -1433,7 +1433,7 @@ gaspi_sn_backend(void *arg)
 				      else
 					if( NULL != lrcd_ptr )
 					  {
-					    if( gaspi_sn_writen( mgmt->fd, ptr, len ) < sizeof(len) )
+					    if( gaspi_sn_writen( mgmt->fd, lrcd_ptr, len ) < 0 )
 					      {
 						gaspi_print_error("Failed response to queue creation request from %u.", mgmt->cdh.rank);
 						io_err = 1;
