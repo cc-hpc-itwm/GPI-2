@@ -82,14 +82,13 @@ validate_machinefile()
     if [ ! -s $MFILE ]; then
 	print_error_exit "Empty machine file ($1)"
     fi
-    
-#newline at the end
+    # newline at the end
     endl=`tail -c 1 $MFILE`
     if [ "$endl" != "" ]; then 
 	print_error_exit "No newline at end of machine file ($1)"; 
     fi
 
-    #create tmp_file
+    # create tmp_file
     rm -f $TMP_MFILE
 
     touch $TMP_MFILE 2>/dev/null && chmod 777 $TMP_MFILE ||
@@ -102,11 +101,12 @@ validate_machinefile()
     do
 	i=`echo $LINE | gawk '{print $1}'   `
 	if [ -n "$i" ]; then
-     	    ping -c 1 $i >/dev/null 2>&1 ||
-            {
-     		print_error_exit "Host not reachable ($i)"
-     	    }
-
+	    if [ $VALIDATE_MACHINEFILE -eq 1 ]; then
+		ping -c 1 $i >/dev/null 2>&1 ||
+		{
+		    print_error_exit "Host not reachable ($i)"
+		}
+	    fi
 	    ncount=$((ncount+1))
 	    if [ $NNODES -lt $ncount ]; then
 		break
@@ -119,7 +119,7 @@ validate_machinefile()
     MFILE=$TMP_MFILE
 
     uniq $MFILE > $UNIQ_MFILE
-       #number of nodes (NNODES) must fit number of hosts
+    # number of nodes (NNODES) must fit number of hosts
     n=$(wc -l < $MFILE)
     if [ $n -lt $NNODES ]; then
 	print_error_exit "Not enough hosts ($n) for required number of nodes (-n $NNODES)"
@@ -228,9 +228,8 @@ if [ $NNODES -eq 0 ]; then
     fi
 fi
 
-if [ $VALIDATE_MACHINEFILE -eq 1 ]; then
-    validate_machinefile $MFILE
-fi
+validate_machinefile $MFILE
+
 
 #master binary is the same
 if [ -z "$MASTER_PRG" ]; then
