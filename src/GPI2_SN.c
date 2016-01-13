@@ -652,7 +652,7 @@ _gaspi_sn_connect_command(const gaspi_rank_t rank)
   return 0;
 }
 static inline int
-_gaspi_sn_queue_create_command(const gaspi_rank_t rank, void *arg)
+_gaspi_sn_queue_create_command(const gaspi_rank_t rank, const void * const arg)
 {
   const int i = (int) rank;
 
