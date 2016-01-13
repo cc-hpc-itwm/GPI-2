@@ -1402,7 +1402,7 @@ gaspi_sn_backend(void *arg)
 				    }
 
 				  const size_t len = pgaspi_dev_get_sizeof_rc();
-				  char *ptr = NULL;
+				  char *lrcd_ptr = NULL;
 
 				  gaspi_number_t next_avail_q = mgmt->cdh.tnc;
 
@@ -1420,7 +1420,7 @@ gaspi_sn_backend(void *arg)
 					  eret = pgaspi_queue_connect(next_avail_q, mgmt->cdh.rank);
 					  if( eret == GASPI_SUCCESS )
 					    {
-					      ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
+					      lrcd_ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
 					    }
 					}
 
@@ -1431,7 +1431,7 @@ gaspi_sn_backend(void *arg)
 					  io_err = 1;
 					}
 				      else
-					if( NULL != ptr )
+					if( NULL != lrcd_ptr )
 					  {
 					    if( gaspi_sn_writen( mgmt->fd, ptr, len ) < sizeof(len) )
 					      {
