@@ -37,7 +37,7 @@ int
 pgaspi_dev_register_mem(gaspi_rc_mseg *seg, const gaspi_size_t size)
 {
   seg->mr = ibv_reg_mr (glb_gaspi_ctx_ib.pd,
-			seg->buf,
+			seg->data.buf,
 			size,
 			IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
 			IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
@@ -136,7 +136,7 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 
       glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr =
 	ibv_reg_mr (glb_gaspi_ctx_ib.pd,
-		    glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf,
+		    glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf,
 		    size,
 		    IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
 		    IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);

@@ -42,7 +42,8 @@ typedef struct
     unsigned char *buf;
     void *ptr;
     unsigned long addr;
-  };
+  } data;
+
   void *mr;
   unsigned int rkey;
   unsigned long size;

@@ -149,14 +149,14 @@ pgaspi_init_core(void)
     }
 
   glb_gaspi_ctx.nsrc.size = size;
-  
-  if(posix_memalign ((void **) &glb_gaspi_ctx.nsrc.ptr, page_size, size)!= 0)
+
+  if(posix_memalign ((void **) &glb_gaspi_ctx.nsrc.data.ptr, page_size, size)!= 0)
     {
       gaspi_print_error ("Memory allocation (posix_memalign) failed");
       return GASPI_ERR_MEMALLOC;
     }
 
-  memset(glb_gaspi_ctx.nsrc.buf, 0, size);
+  memset(glb_gaspi_ctx.nsrc.data.buf, 0, size);
   
   for(i = 0; i < GASPI_MAX_MSEGS; i++)
     {
@@ -438,15 +438,15 @@ pgaspi_cleanup_core(void)
   if(pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0)
     return GASPI_ERR_DEVICE;
 
-  free(glb_gaspi_ctx.nsrc.buf);
-  glb_gaspi_ctx.nsrc.buf = NULL;
+  free(glb_gaspi_ctx.nsrc.data.buf);
+  glb_gaspi_ctx.nsrc.data.buf = NULL;
 
   for(i = 0; i < GASPI_MAX_GROUPS; i++)
     {
       if(glb_gaspi_group_ctx[i].id >= 0)
 	{
-	  free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf);
-	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf = NULL;
+	  free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].data.buf);
+	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].data.buf = NULL;
 
 	  free (glb_gaspi_group_ctx[i].rank_grp);
 	  glb_gaspi_group_ctx[i].rank_grp = NULL;
