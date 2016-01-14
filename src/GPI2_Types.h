@@ -44,11 +44,20 @@ typedef struct
     unsigned long addr;
   } data;
 
+  union
+  {
+    unsigned char *buf;
+    void *ptr;
+    unsigned long addr;
+  } notif_spc;
+
   void *mr;
   unsigned int rkey;
+
   unsigned long size;
+  size_t notif_spc_size;
   int trans; /* info transmitted */
-  
+
 #ifdef GPI2_CUDA
   int cudaDevId;
   union

@@ -888,39 +888,18 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 	}
     }
 
-
   free (glb_gaspi_ctx_ib.qpGroups);
   glb_gaspi_ctx_ib.qpGroups = NULL;
 
-  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
-    {
-      if( GASPI_ENDPOINT_NOT_CREATED == glb_gaspi_ctx.ep_conn[i].istat )
-	{
-	  continue;
-	}
-
-      if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpP[i]))
-	{
-	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
-	  return -1;
-	}
-    }
-
   free (glb_gaspi_ctx_ib.qpP);
   glb_gaspi_ctx_ib.qpP = NULL;
-
-  for(c = 0; c < glb_gaspi_ctx.num_queues; c++)
-    {
-      if( pgaspi_dev_comm_queue_delete(c) != 0 )
-	return -1;
-    }
 
   if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqGroups))
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
       return -1;
     }
-  
+
   if(ibv_destroy_cq (glb_gaspi_ctx_ib.rcqGroups))
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
