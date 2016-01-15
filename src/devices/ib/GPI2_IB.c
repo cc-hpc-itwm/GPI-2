@@ -353,20 +353,34 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-  glb_gaspi_ctx.nsrc.mr = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
-				     glb_gaspi_ctx.nsrc.notif_spc.ptr,
-				     glb_gaspi_ctx.nsrc.size + glb_gaspi_ctx.nsrc.notif_spc_size,
-				     IBV_ACCESS_REMOTE_WRITE
-				     | IBV_ACCESS_LOCAL_WRITE
-				     | IBV_ACCESS_REMOTE_READ
-				     | IBV_ACCESS_REMOTE_ATOMIC);
+  glb_gaspi_ctx.nsrc.mr[0] = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
+					glb_gaspi_ctx.nsrc.data.ptr,
+					glb_gaspi_ctx.nsrc.size,
+					IBV_ACCESS_REMOTE_WRITE
+					| IBV_ACCESS_LOCAL_WRITE
+					| IBV_ACCESS_REMOTE_READ
+					| IBV_ACCESS_REMOTE_ATOMIC);
 
-  if(!glb_gaspi_ctx.nsrc.mr)
+  if(!glb_gaspi_ctx.nsrc.mr[0])
     {
       gaspi_print_error ("Memory registration failed (libibverbs)");
       return -1;
     }
 
+  glb_gaspi_ctx.nsrc.mr[1] = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
+					glb_gaspi_ctx.nsrc.notif_spc.ptr,
+					glb_gaspi_ctx.nsrc.notif_spc_size,
+					IBV_ACCESS_REMOTE_WRITE
+					| IBV_ACCESS_LOCAL_WRITE
+					| IBV_ACCESS_REMOTE_READ
+					| IBV_ACCESS_REMOTE_ATOMIC);
+
+  if(!glb_gaspi_ctx.nsrc.mr[1])
+    {
+      gaspi_print_error ("Memory registration failed (libibverbs)");
+      return -1;
+    }
+  
   memset (&glb_gaspi_ctx_ib.srq_attr, 0, sizeof (struct ibv_srq_init_attr));
 
   glb_gaspi_ctx_ib.srq_attr.attr.max_wr  = gaspi_cfg->queue_depth;
@@ -935,15 +949,21 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 	      if(glb_gaspi_ctx.use_gpus == 0 || glb_gaspi_ctx.gpu_count == 0)
 #endif	      
 
-		if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].mr))
+		if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].mr[0]))
 		  {
 		    gaspi_print_error("Failed to de-register memory (libiverbs)");
 		    return -1;
 		  }
+		if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].mr[1]))
+		  {
+		    gaspi_print_error("Failed to de-register memory (libiverbs)");
+		    return -1;
+		  }
+
 #if GPI2_CUDA
 	      if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cudaDevId >= 0)
 		{
-		  if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_mr))
+		  if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_mr[0]))
 		    {
 		      gaspi_print_error("Failed to de-register memory (libiverbs)\n");
 		      return -1;

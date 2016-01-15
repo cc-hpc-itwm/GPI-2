@@ -47,7 +47,7 @@ enum gaspi_sn_status
 typedef struct
 {
   int op, op_len, rank, tnc;
-  int ret, rkey, seg_id;
+  int ret, rkey[2], seg_id;
   unsigned long addr, size, notif_addr;
 
 #ifdef GPI2_CUDA

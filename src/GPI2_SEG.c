@@ -175,15 +175,15 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
   if (alloc_policy == GASPI_MEM_INITIALIZED)
     memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, 0, size + NOTIFY_OFFSET);
 
-  if(pgaspi_dev_register_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank]), size + NOTIFY_OFFSET) < 0)
-    {
-      goto endL;
-    }
-
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size = size;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc_size = NOTIFY_OFFSET;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr += NOTIFY_OFFSET;
+
+  if(pgaspi_dev_register_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank]), size + NOTIFY_OFFSET) < 0)
+    {
+      goto endL;
+    }
 
 #else
   eret = pgaspi_dev_segment_alloc(segment_id, size, alloc_policy);
@@ -232,7 +232,8 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size = 0;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc_size = 0;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].trans = 0;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey = 0;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[0] = 0;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[1] = 0;
 
   eret = GASPI_SUCCESS;
 #endif

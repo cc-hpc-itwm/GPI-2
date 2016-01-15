@@ -51,8 +51,8 @@ typedef struct
     unsigned long addr;
   } notif_spc;
 
-  void *mr;
-  unsigned int rkey;
+  void *mr[2];
+  unsigned int rkey[2];
 
   unsigned long size;
   size_t notif_spc_size;

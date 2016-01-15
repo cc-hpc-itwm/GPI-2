@@ -553,7 +553,8 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
   /* for now we allow re-registration */
   /* if(glb_gaspi_ctx.rrmd[snp.seg_id][snp.rem_rank].size) -> re-registration error case */
 
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey = snp.rkey;
+  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey[0] = snp.rkey[0];
+  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey[1] = snp.rkey[1];
   glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].data.addr = snp.addr;
   glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].notif_spc.addr = snp.notif_addr;
   glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].size = snp.size;
@@ -738,7 +739,8 @@ _gaspi_sn_segment_register_command(const gaspi_rank_t rank, const void * const a
   cdh.op = GASPI_SN_SEG_REGISTER;
   cdh.rank = glb_gaspi_ctx.rank;
   cdh.seg_id = segment_id;
-  cdh.rkey = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey;
+  cdh.rkey[0] = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[0];
+  cdh.rkey[1] = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[1];
   cdh.addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr;
   cdh.notif_addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.addr;
   cdh.size = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size;
