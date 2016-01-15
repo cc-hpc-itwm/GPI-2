@@ -52,8 +52,8 @@ int main(int argc, char *argv[])
       ASSERT(gaspi_notify_waitsome(0, 0, 1, &id, GASPI_BLOCK));
       ASSERT(gaspi_wait(new_queue, GASPI_BLOCK));
 
-      ASSERT(gaspi_read(0, 0, 8,
-			0, 0, right,
+      ASSERT(gaspi_read(0, 0, right,
+			0, 0, 8,
 			new_queue, GASPI_BLOCK));
 
       ASSERT(gaspi_wait(new_queue, GASPI_BLOCK));
