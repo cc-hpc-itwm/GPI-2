@@ -40,7 +40,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
     goto checkL;
 
   slist.addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr +
-			    NOTIFY_OFFSET + offset_local);
+			    offset_local);
   slist.length = size;
   slist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr)->lkey;
 
@@ -112,9 +112,8 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
   fd_set rfds;
   struct timeval tout;
 
-  rlist.addr =
-    (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr +
-		 NOTIFY_OFFSET + offset_local);
+  rlist.addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr +
+			    offset_local);
   rlist.length = size;
   rlist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr)->lkey;
   rwr.wr_id = glb_gaspi_ctx.rank;

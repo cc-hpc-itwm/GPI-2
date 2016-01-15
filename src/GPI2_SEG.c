@@ -73,7 +73,7 @@ pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
   else
 #endif
 
-    *ptr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf + NOTIFY_OFFSET;
+    *ptr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf;
 
   return GASPI_SUCCESS;
 }
@@ -170,12 +170,10 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       goto endL;
     }
 
-  memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, 0,
-	  NOTIFY_OFFSET);
+  memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, 0, NOTIFY_OFFSET);
 
   if (alloc_policy == GASPI_MEM_INITIALIZED)
-    memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, 0,
-	    size + NOTIFY_OFFSET);
+    memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, 0, size + NOTIFY_OFFSET);
 
   if(pgaspi_dev_register_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank]), size + NOTIFY_OFFSET) < 0)
     {
@@ -183,6 +181,9 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     }
 
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size = size;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc_size = NOTIFY_OFFSET;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr += NOTIFY_OFFSET;
 
 #else
   eret = pgaspi_dev_segment_alloc(segment_id, size, alloc_policy);
@@ -223,10 +224,13 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
       return GASPI_ERR_DEVICE;
     }
 
-  free (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf);
+  //  free (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf);
+  free (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.buf);
 
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf = NULL;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.buf = NULL;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size = 0;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc_size = 0;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].trans = 0;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey = 0;
 

@@ -271,11 +271,8 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
 	{
 	  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].size)
 	    {
-	      if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf)
-		{
-		  free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf);
-		}
-	      
+	      free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
+	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf = NULL;
 	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf = NULL;
 	    }
 	  

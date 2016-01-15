@@ -48,7 +48,7 @@ typedef struct
 {
   int op, op_len, rank, tnc;
   int ret, rkey, seg_id;
-  unsigned long addr, size;
+  unsigned long addr, size, notif_addr;
 
 #ifdef GPI2_CUDA
   int host_rkey;

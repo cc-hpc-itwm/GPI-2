@@ -555,6 +555,7 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
 
   glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey = snp.rkey;
   glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].data.addr = snp.addr;
+  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].notif_spc.addr = snp.notif_addr;
   glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].size = snp.size;
 
 #ifdef GPI2_CUDA
@@ -739,6 +740,7 @@ _gaspi_sn_segment_register_command(const gaspi_rank_t rank, const void * const a
   cdh.seg_id = segment_id;
   cdh.rkey = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey;
   cdh.addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr;
+  cdh.notif_addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.addr;
   cdh.size = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size;
 
 #ifdef GPI2_CUDA

@@ -569,7 +569,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
   else
 #endif
 
-    segPtr = (volatile unsigned char *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr;
+  segPtr = (volatile unsigned char *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].notif_spc.addr;
 
   volatile unsigned int *p = (volatile unsigned int *) segPtr;
 
@@ -659,7 +659,7 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
   else
 #endif
     segPtr = (volatile unsigned char *)
-      glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr;
+        glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].notif_spc.addr;
 
   volatile unsigned int *p = (volatile unsigned int *) segPtr;
 

@@ -148,7 +148,6 @@ pgaspi_init_core(void)
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx.nsrc.size = size;
 
   if(posix_memalign ((void **) &glb_gaspi_ctx.nsrc.data.ptr, page_size, size)!= 0)
     {
@@ -157,6 +156,10 @@ pgaspi_init_core(void)
     }
 
   memset(glb_gaspi_ctx.nsrc.data.buf, 0, size);
+  glb_gaspi_ctx.nsrc.size = sizeof(gaspi_atomic_value_t);
+  glb_gaspi_ctx.nsrc.notif_spc.addr = glb_gaspi_ctx.nsrc.data.addr;
+  glb_gaspi_ctx.nsrc.notif_spc_size = NOTIFY_OFFSET;
+  glb_gaspi_ctx.nsrc.data.addr += NOTIFY_OFFSET;
   
   for(i = 0; i < GASPI_MAX_MSEGS; i++)
     {
@@ -438,15 +441,17 @@ pgaspi_cleanup_core(void)
   if(pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0)
     return GASPI_ERR_DEVICE;
 
-  free(glb_gaspi_ctx.nsrc.data.buf);
+  free(glb_gaspi_ctx.nsrc.notif_spc.buf);
+  glb_gaspi_ctx.nsrc.notif_spc.buf = NULL;
   glb_gaspi_ctx.nsrc.data.buf = NULL;
 
   for(i = 0; i < GASPI_MAX_GROUPS; i++)
     {
       if(glb_gaspi_group_ctx[i].id >= 0)
 	{
-	  free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].data.buf);
+	  free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].notif_spc.buf);
 	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].data.buf = NULL;
+	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].notif_spc.buf = NULL;
 
 	  free (glb_gaspi_group_ctx[i].rank_grp);
 	  glb_gaspi_group_ctx[i].rank_grp = NULL;

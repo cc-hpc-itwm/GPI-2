@@ -354,8 +354,8 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
     }
 
   glb_gaspi_ctx.nsrc.mr = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
-				     glb_gaspi_ctx.nsrc.data.ptr,
-				     glb_gaspi_ctx.nsrc.size,
+				     glb_gaspi_ctx.nsrc.notif_spc.ptr,
+				     glb_gaspi_ctx.nsrc.size + glb_gaspi_ctx.nsrc.notif_spc_size,
 				     IBV_ACCESS_REMOTE_WRITE
 				     | IBV_ACCESS_LOCAL_WRITE
 				     | IBV_ACCESS_REMOTE_READ
@@ -952,15 +952,19 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf)
 		    cudaFree(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf);
 
+		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf)
+		    cudaFree(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
+
 		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_ptr)
 		    cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_ptr);
 		}
 	      else if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
-		cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf);
+		cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
 	      else
 #endif	    
-		free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf);
+		free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
 	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf = NULL;
+	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf = NULL;
 	    }
 
 	  free (glb_gaspi_ctx.rrmd[i]);
