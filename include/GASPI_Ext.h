@@ -85,6 +85,7 @@ extern "C"
 				      gaspi_memory_description_t const memory_description,
 				      gaspi_pointer_t const pointer,
 				      gaspi_size_t const size );
+
   /** Use a user-provided buffer as a segment.
    *
    *
