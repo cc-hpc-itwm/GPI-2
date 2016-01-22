@@ -54,6 +54,7 @@ extern "C"
    *
    *
    * @param queue Output parameter with id of created queue.
+   * @param timeout_ms A timeout value in milliseconds.
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
