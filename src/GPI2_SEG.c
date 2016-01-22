@@ -397,9 +397,9 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 #pragma weak gaspi_segment_bind = pgaspi_segment_bind
 gaspi_return_t
 pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
-		      gaspi_memory_description_t const memory_description,
 		      gaspi_pointer_t const pointer,
-		      gaspi_size_t const size )
+		      gaspi_size_t const size,
+		      gaspi_memory_description_t const memory_description)
 {
   gaspi_verify_init("gaspi_segment_bind");
   gaspi_verify_segment_size(size);
@@ -475,13 +475,13 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 #pragma weak gaspi_segment_use = pgaspi_segment_use
 gaspi_return_t
 pgaspi_segment_use ( gaspi_segment_id_t const segment_id,
-		    gaspi_memory_description_t const memory_description,
 		    gaspi_pointer_t const pointer,
 		    gaspi_size_t const size,
 		    gaspi_group_t const group,
-		    gaspi_timeout_t const timeout)
+		     gaspi_timeout_t const timeout,
+		     gaspi_memory_description_t const memory_description)
 {
-  gaspi_return_t ret = pgaspi_segment_bind(segment_id, memory_description, pointer, size);
+  gaspi_return_t ret = pgaspi_segment_bind(segment_id, pointer, size, memory_description );
   if ( GASPI_SUCCESS != ret )
     {
       return ret;
