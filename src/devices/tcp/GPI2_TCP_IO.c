@@ -32,8 +32,8 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
       .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
       .source      = glb_gaspi_ctx.rank,
       .target      = rank,
-      .local_addr  = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr + NOTIFY_OFFSET + offset_local),
-      .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].addr + NOTIFY_OFFSET + offset_remote),
+      .local_addr  = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr + offset_local),
+      .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].data.addr + offset_remote),
       .length      = size,
       .swap        = 0,
       .compare_add = 0,
@@ -62,8 +62,8 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
       .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
       .source      = glb_gaspi_ctx.rank,
       .target       = rank,
-      .local_addr  = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr + NOTIFY_OFFSET + offset_local),
-      .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].addr + NOTIFY_OFFSET + offset_remote),
+      .local_addr  = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr + offset_local),
+      .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].data.addr + offset_remote),
       .length      = size,
       .swap        = 0,
       .compare_add = 0,
@@ -78,7 +78,43 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
 
   return GASPI_SUCCESS;
 }
-  
+
+gaspi_return_t
+pgaspi_dev_purge (const gaspi_queue_id_t queue,
+		  int * counter,
+		  const gaspi_timeout_t timeout_ms)
+{
+  int ne = 0, i;
+  tcp_dev_wc_t wc;
+
+  const int nr = *counter;
+  const gaspi_cycles_t s0 = gaspi_get_cycles ();
+
+  for (i = 0; i < nr; i++)
+    {
+      do
+	{
+	  ne = tcp_dev_return_wc (glb_gaspi_ctx_tcp.scqC[queue], &wc);
+	  *counter -= ne;
+
+	  if (ne == 0)
+	    {
+	      const gaspi_cycles_t s1 = gaspi_get_cycles ();
+	      const gaspi_cycles_t tdelta = s1 - s0;
+
+	      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+	      if (ms > timeout_ms)
+		{
+		  return GASPI_TIMEOUT;
+		}
+	    }
+	}
+      while (ne == 0);
+    }
+
+  return GASPI_SUCCESS;
+}
+
 gaspi_return_t
 pgaspi_dev_wait (const gaspi_queue_id_t queue, int *counter, const gaspi_timeout_t timeout_ms)
 {
@@ -142,7 +178,7 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
       .source      = glb_gaspi_ctx.rank,
       .target      = rank,
       .local_addr  = (uintptr_t) not_val_ptr,
-      .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].addr + notification_id * sizeof(gaspi_notification_t)),
+      .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].notif_spc.addr + notification_id * sizeof(gaspi_notification_t)),
       .length      = sizeof(notification_value),
       .swap        = 0,
       .opcode      = POST_RDMA_WRITE_INLINED
@@ -177,8 +213,8 @@ pgaspi_dev_write_list (const gaspi_number_t num,
 	  .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
 	  .source      = glb_gaspi_ctx.rank,
 	  .target        = rank,
-	  .local_addr  = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].addr + NOTIFY_OFFSET + offset_local[i]),
-	  .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].addr + NOTIFY_OFFSET + offset_remote[i]),
+	  .local_addr  = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].data.addr + offset_local[i]),
+	  .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].data.addr + offset_remote[i]),
 	  .length      = size[i],
 	  .swap        = 0,
 	  .compare_add = 0,
@@ -213,8 +249,8 @@ pgaspi_dev_read_list (const gaspi_number_t num,
 	  .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
 	  .source      = glb_gaspi_ctx.rank,
 	  .target        = rank,
-	  .local_addr  = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].addr + NOTIFY_OFFSET + offset_local[i]),
-	  .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].addr + NOTIFY_OFFSET + offset_remote[i]),
+	  .local_addr  = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].data.addr + offset_local[i]),
+	  .remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].data.addr + offset_remote[i]),
 	  .length      = size[i],
 	  .swap        = 0,
 	  .compare_add = 0,

@@ -28,6 +28,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Utility.h"
 #include "tcp_device.h"
 
+extern gaspi_config_t glb_gaspi_cfg;
+
 /* TODO: empty functions smell */
 inline char *
 pgaspi_dev_get_rrcd(int rank)
@@ -64,6 +66,41 @@ int
 pgaspi_dev_connect_context(const int i)
 {
   return tcp_dev_connect_to(i);
+}
+
+int
+pgaspi_dev_comm_queue_connect(const unsigned short q, const int i)
+{
+  return 0;
+}
+
+int
+pgaspi_dev_comm_queue_delete(const unsigned int id)
+{
+  tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpC[id]);
+  tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.scqC[id]);
+
+  return 0;
+}
+
+int
+pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_node)
+{
+  glb_gaspi_ctx_tcp.scqC[id] = tcp_dev_create_cq(glb_gaspi_cfg.queue_depth, NULL);
+  if(glb_gaspi_ctx_tcp.scqC[id] == NULL)
+    {
+      gaspi_print_error("Failed to create IO completion queue.");
+      return -1;
+    }
+
+  glb_gaspi_ctx_tcp.qpC[id] = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqC[id], NULL);
+  if(glb_gaspi_ctx_tcp.qpC[id] == NULL)
+    {
+      gaspi_print_error("Failed to create queue %d for IO.", id);
+      return -1;
+    }
+
+  return 0;
 }
 
 int
@@ -234,12 +271,9 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
 	{
 	  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].size)
 	    {
-	      if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf)
-		{
-		  free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
-		}
-	      
-	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf = NULL;
+	      free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
+	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf = NULL;
+	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf = NULL;
 	    }
 	  
 	  if(glb_gaspi_ctx.rrmd[i])

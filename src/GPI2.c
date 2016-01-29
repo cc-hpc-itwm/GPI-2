@@ -135,6 +135,9 @@ pgaspi_init_core(void)
       glb_gaspi_cfg.queue_num = 1;
     }
 
+  /* Set number of "created" communication queues */
+  glb_gaspi_ctx.num_queues = glb_gaspi_cfg.queue_num;
+
   /* Create internal memory space */
   const unsigned int size = NOTIFY_OFFSET + sizeof(gaspi_atomic_value_t);
   const long page_size = sysconf (_SC_PAGESIZE);
@@ -145,15 +148,18 @@ pgaspi_init_core(void)
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx.nsrc.size = size;
-  
-  if(posix_memalign ((void **) &glb_gaspi_ctx.nsrc.ptr, page_size, size)!= 0)
+
+  if(posix_memalign ((void **) &glb_gaspi_ctx.nsrc.data.ptr, page_size, size)!= 0)
     {
       gaspi_print_error ("Memory allocation (posix_memalign) failed");
       return GASPI_ERR_MEMALLOC;
     }
 
-  memset(glb_gaspi_ctx.nsrc.buf, 0, size);
+  memset(glb_gaspi_ctx.nsrc.data.buf, 0, size);
+  glb_gaspi_ctx.nsrc.size = sizeof(gaspi_atomic_value_t);
+  glb_gaspi_ctx.nsrc.notif_spc.addr = glb_gaspi_ctx.nsrc.data.addr;
+  glb_gaspi_ctx.nsrc.notif_spc_size = NOTIFY_OFFSET;
+  glb_gaspi_ctx.nsrc.data.addr += NOTIFY_OFFSET;
   
   for(i = 0; i < GASPI_MAX_MSEGS; i++)
     {
@@ -432,18 +438,34 @@ pgaspi_cleanup_core(void)
     }
 
   /* Device clean-up */
+  /* delete extra queues created */
+  if( glb_gaspi_ctx.num_queues != glb_gaspi_cfg.queue_num )
+    {
+      int q;
+      for (q = glb_gaspi_cfg.queue_num; q < glb_gaspi_ctx.num_queues; q ++)
+	{
+	  if( pgaspi_dev_comm_queue_delete(q) != 0)
+	    {
+	      gaspi_print_error ("Failed to destroy QP (libibverbs)");
+	      return -1;
+	    }
+	}
+    }
+
   if(pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0)
     return GASPI_ERR_DEVICE;
 
-  free(glb_gaspi_ctx.nsrc.buf);
-  glb_gaspi_ctx.nsrc.buf = NULL;
+  free(glb_gaspi_ctx.nsrc.notif_spc.buf);
+  glb_gaspi_ctx.nsrc.notif_spc.buf = NULL;
+  glb_gaspi_ctx.nsrc.data.buf = NULL;
 
   for(i = 0; i < GASPI_MAX_GROUPS; i++)
     {
       if(glb_gaspi_group_ctx[i].id >= 0)
 	{
-	  free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf);
-	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].buf = NULL;
+	  free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].notif_spc.buf);
+	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].data.buf = NULL;
+	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].notif_spc.buf = NULL;
 
 	  free (glb_gaspi_group_ctx[i].rank_grp);
 	  glb_gaspi_group_ctx[i].rank_grp = NULL;

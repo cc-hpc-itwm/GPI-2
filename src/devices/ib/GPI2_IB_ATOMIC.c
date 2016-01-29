@@ -31,14 +31,13 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
   struct ibv_send_wr swr;
   int i;
 
-  slist.addr = (uintptr_t) (glb_gaspi_ctx.nsrc.buf + NOTIFY_OFFSET);
+  slist.addr = (uintptr_t) (glb_gaspi_ctx.nsrc.data.buf);
   slist.length = sizeof(gaspi_atomic_value_t);
-  slist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.nsrc.mr)->lkey;
+  slist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.nsrc.mr[0])->lkey;
 
-  swr.wr.atomic.remote_addr =
-    glb_gaspi_ctx.rrmd[segment_id][rank].addr + NOTIFY_OFFSET + offset;
+  swr.wr.atomic.remote_addr = glb_gaspi_ctx.rrmd[segment_id][rank].data.addr + offset;
 
-  swr.wr.atomic.rkey = glb_gaspi_ctx.rrmd[segment_id][rank].rkey;
+  swr.wr.atomic.rkey = glb_gaspi_ctx.rrmd[segment_id][rank].rkey[0];
   swr.wr.atomic.compare_add = val_add;
 
   swr.wr_id = rank;
@@ -67,11 +66,9 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 	}
       while (ne == 0);
 
-      if ((ne < 0)
-	  || (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS))
+      if ((ne < 0)  || (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS))
 	{
-	  glb_gaspi_ctx.
-	    qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
+	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
 
 	  gaspi_print_error("Failed request to %lu : %s",
 			    glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 
@@ -100,14 +97,13 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
   struct ibv_send_wr swr;
   int i;
 
-  slist.addr = (uintptr_t) (glb_gaspi_ctx.nsrc.buf + NOTIFY_OFFSET);
+  slist.addr = (uintptr_t) (glb_gaspi_ctx.nsrc.data.buf);
   slist.length = sizeof(gaspi_atomic_value_t);
-  slist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.nsrc.mr)->lkey;
+  slist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.nsrc.mr[0])->lkey;
   
-  swr.wr.atomic.remote_addr =
-    glb_gaspi_ctx.rrmd[segment_id][rank].addr + NOTIFY_OFFSET + offset;
+  swr.wr.atomic.remote_addr = glb_gaspi_ctx.rrmd[segment_id][rank].data.addr + offset;
 
-  swr.wr.atomic.rkey = glb_gaspi_ctx.rrmd[segment_id][rank].rkey;
+  swr.wr.atomic.rkey = glb_gaspi_ctx.rrmd[segment_id][rank].rkey[0];
   swr.wr.atomic.compare_add = comparator;
   swr.wr.atomic.swap = val_new;
 

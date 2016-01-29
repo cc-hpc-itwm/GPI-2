@@ -45,7 +45,8 @@ pgaspi_queue_num (gaspi_number_t * const queue_num)
 {
   gaspi_verify_null_ptr(queue_num);
 
-  *queue_num = glb_gaspi_cfg.queue_num;
+  *queue_num = glb_gaspi_ctx.num_queues;
+
   return GASPI_SUCCESS;
 }
 
@@ -97,6 +98,173 @@ pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
 
   *elem_max = ((1 << 8) - 1);
   return GASPI_SUCCESS;
+}
+
+gaspi_return_t
+pgaspi_queue_create_i(gaspi_queue_id_t const queue_id, gaspi_rank_t i)
+{
+  /* TODO: to remove */
+  while( !glb_gaspi_dev_init )
+    gaspi_delay();
+
+  lock_gaspi_tout(&gaspi_create_lock, GASPI_BLOCK);
+
+  if ( glb_gaspi_ctx.ep_conn[i].queue_state[queue_id] > 0 )
+    {
+      unlock_gaspi (&gaspi_create_lock);
+      return GASPI_SUCCESS;
+    }
+  else
+    {
+      if( 0 != pgaspi_dev_comm_queue_create(queue_id, i) )
+	{
+	  unlock_gaspi (&gaspi_create_lock);
+	  return GASPI_ERR_DEVICE;
+	}
+    }
+
+  /* Set as ready */
+  glb_gaspi_ctx.ep_conn[i].queue_state[queue_id] = 1;
+
+  unlock_gaspi(&gaspi_create_lock);
+
+  return GASPI_SUCCESS;
+}
+
+gaspi_return_t
+pgaspi_queue_connect(gaspi_queue_id_t queue_id, gaspi_rank_t i)
+{
+  lock_gaspi_tout(&gaspi_ccontext_lock, GASPI_BLOCK);
+  if ( 2 == glb_gaspi_ctx.ep_conn[i].queue_state[queue_id] )
+    {
+      unlock_gaspi (&gaspi_ccontext_lock);
+      return GASPI_SUCCESS;
+    }
+
+  if( pgaspi_dev_comm_queue_connect(queue_id, i) != 0 )
+    {
+      unlock_gaspi(&gaspi_ccontext_lock);
+      return GASPI_ERR_DEVICE;
+    }
+
+  /* Set as connected */
+  glb_gaspi_ctx.ep_conn[i].queue_state[queue_id] = 2;
+
+  unlock_gaspi(&gaspi_ccontext_lock);
+  return GASPI_SUCCESS;
+}
+
+/* Queue creation/deletion/purging */
+#pragma weak gaspi_queue_create = pgaspi_queue_create
+gaspi_return_t
+pgaspi_queue_create(gaspi_queue_id_t * const queue_id, const gaspi_timeout_t timeout_ms)
+{
+  gaspi_rank_t n;
+  gaspi_return_t eret = GASPI_ERROR;
+
+  gaspi_verify_null_ptr(queue_id);
+
+  if( GASPI_MAX_QP == glb_gaspi_ctx.num_queues )
+    return GASPI_ERROR; /* TODO: proper error code */
+
+  if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
+    return GASPI_TIMEOUT;
+
+  gaspi_number_t next_avail_q = __sync_fetch_and_add( &glb_gaspi_ctx.num_queues, 0);
+
+  /* We already have it ie. a remote peer did it first ?*/
+  if ( glb_gaspi_ctx.ep_conn[glb_gaspi_ctx.rank].queue_state[next_avail_q] == 2 )
+    {
+      unlock_gaspi(&glb_gaspi_ctx_lock);
+      return GASPI_SUCCESS;
+    }
+
+  /* Create it and advertise it to the already connected nodes */
+  for( n = 0; n < glb_gaspi_ctx.tnc; n++ )
+    {
+      gaspi_rank_t i = (glb_gaspi_ctx.rank + n) % glb_gaspi_ctx.tnc;
+
+      if( GASPI_ENDPOINT_CONNECTED == glb_gaspi_ctx.ep_conn[i].cstat )
+	{
+	  eret = pgaspi_queue_create_i(next_avail_q, i);
+	  if( eret != GASPI_SUCCESS )
+	    {
+	      unlock_gaspi(&glb_gaspi_ctx_lock);
+	      return eret;
+	    }
+
+	  eret = gaspi_sn_command( GASPI_SN_QUEUE_CREATE, i, timeout_ms, &next_avail_q );
+	  if( GASPI_SUCCESS != eret )
+	    {
+	      if( GASPI_ERROR == eret )
+		{
+		  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
+		}
+
+	      unlock_gaspi(&glb_gaspi_ctx_lock);
+	      return eret;
+	    }
+
+	  eret = pgaspi_queue_connect(next_avail_q, i);
+	  if( GASPI_SUCCESS != eret )
+	    {
+	      unlock_gaspi(&glb_gaspi_ctx_lock);
+	      return eret;
+	    }
+	}
+    }
+
+  /* Increment queue counter */
+  __sync_fetch_and_add( &glb_gaspi_ctx.num_queues, 1);
+
+  *queue_id = (gaspi_queue_id_t) next_avail_q;
+
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+
+  return GASPI_SUCCESS;
+}
+
+#pragma weak gaspi_queue_delete = pgaspi_queue_delete
+gaspi_return_t
+pgaspi_queue_delete(const gaspi_queue_id_t queue_id)
+{
+  int n;
+
+  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+
+  if( pgaspi_dev_comm_queue_delete(queue_id) != 0 )
+    {
+      unlock_gaspi(&glb_gaspi_ctx_lock);
+      return GASPI_ERR_DEVICE;
+    }
+
+  /* Decrement queue counter */
+  __sync_fetch_and_sub( &glb_gaspi_ctx.num_queues, 1);
+
+  for (n = 0; n < glb_gaspi_ctx.tnc; n++)
+    glb_gaspi_ctx.ep_conn[n].queue_state[queue_id] = 0;
+
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+  return GASPI_SUCCESS;
+}
+
+#pragma weak gaspi_queue_purge = pgaspi_queue_purge
+gaspi_return_t
+pgaspi_queue_purge(const gaspi_queue_id_t queue, gaspi_timeout_t timeout_ms)
+{
+  gaspi_verify_init("gaspi_queue_purge");
+  gaspi_verify_queue(queue);
+
+  gaspi_return_t eret = GASPI_ERROR;
+
+  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
+    return GASPI_TIMEOUT;
+
+  eret = pgaspi_dev_purge(queue, &glb_gaspi_ctx.ne_count_c[queue], timeout_ms);
+
+  unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
+
+  return eret;
 }
 
 /* Communication routines */
@@ -401,7 +569,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
   else
 #endif
 
-    segPtr = (volatile unsigned char *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr;
+  segPtr = (volatile unsigned char *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].notif_spc.addr;
 
   volatile unsigned int *p = (volatile unsigned int *) segPtr;
 
@@ -491,7 +659,7 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
   else
 #endif
     segPtr = (volatile unsigned char *)
-      glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].addr;
+        glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].notif_spc.addr;
 
   volatile unsigned int *p = (volatile unsigned int *) segPtr;
 

@@ -23,6 +23,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GASPI.h"
 #include "GPI2_CM.h"
+#include "GASPI_Ext.h"
 
 #define ALIGN64  __attribute__ ((aligned (64)))
 
@@ -42,12 +43,24 @@ typedef struct
     unsigned char *buf;
     void *ptr;
     unsigned long addr;
-  };
-  void *mr;
-  unsigned int rkey;
+  } data;
+
+  union
+  {
+    unsigned char *buf;
+    void *ptr;
+    unsigned long addr;
+  } notif_spc;
+
+  void *mr[2];
+  unsigned int rkey[2];
+
   unsigned long size;
+  size_t notif_spc_size;
   int trans; /* info transmitted */
-  
+
+  gaspi_memory_description_t desc;
+
 #ifdef GPI2_CUDA
   int cudaDevId;
   union
@@ -91,6 +104,9 @@ typedef struct
   gaspi_rc_mseg *rrmd[GASPI_MAX_MSEGS];
 
   gaspi_endpoint_conn_t *ep_conn;
+
+  /* Number of "created" communication queues */
+  gaspi_number_t num_queues;
 
   /* Comm counters  */
   int ne_count_grp;

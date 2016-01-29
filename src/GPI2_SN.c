@@ -248,19 +248,30 @@ gaspi_sn_readn(const int sockfd, const void * data_ptr, const size_t n)
 
   while( left > 0 )
     {
-      if( (ndone = read( sockfd, ptr, left) ) <= 0 )
+/*       if( (ndone = read( sockfd, ptr, left) ) <= 0 ) */
+/* 	{ */
+/* 	  if(ndone < 0 && errno == EAGAIN) */
+/* 	    ndone = 0; */
+/* 	  else */
+/* 	    { */
+/* 	      return (-1); */
+/* 	    } */
+/* 	} */
+      if( (ndone = read( sockfd, ptr, left) ) < 0 )
 	{
 	  if(ndone < 0 && errno == EAGAIN)
 	    ndone = 0;
 	  else
 	    return (-1);
 	}
+      else if ( 0 == ndone )
+	break; /* EOF */
 
       left -= ndone;
       ptr += ndone;
     }
 
-  return n;
+  return (n - left);
 }
 
 int
@@ -465,6 +476,7 @@ gaspi_sn_send_topology(gaspi_context * const ctx, const int i, const gaspi_timeo
 }
 
 /* TODO: deal with timeout */
+/* TODO: remove stuff with env vars */
 int
 gaspi_sn_broadcast_topology(gaspi_context * const ctx, const gaspi_timeout_t timeout_ms)
 {
@@ -541,8 +553,10 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
   /* for now we allow re-registration */
   /* if(glb_gaspi_ctx.rrmd[snp.seg_id][snp.rem_rank].size) -> re-registration error case */
 
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey = snp.rkey;
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].addr = snp.addr;
+  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey[0] = snp.rkey[0];
+  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey[1] = snp.rkey[1];
+  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].data.addr = snp.addr;
+  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].notif_spc.addr = snp.notif_addr;
   glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].size = snp.size;
 
 #ifdef GPI2_CUDA
@@ -627,7 +641,9 @@ _gaspi_sn_connect_command(const gaspi_rank_t rank)
 	  return -1;
 	}
 
-      ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_rrcd(i), rc_size);
+      char *remote_info = pgaspi_dev_get_rrcd(i);
+
+      ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], remote_info, rc_size);
       if( rret != (ssize_t) rc_size )
 	{
 	  gaspi_print_error("Failed to read from %d", i);
@@ -637,6 +653,56 @@ _gaspi_sn_connect_command(const gaspi_rank_t rank)
 
   return 0;
 }
+static inline int
+_gaspi_sn_queue_create_command(const gaspi_rank_t rank, const void * const arg)
+{
+  const int i = (int) rank;
+
+  gaspi_cd_header cdh;
+  memset(&cdh, 0, sizeof(gaspi_cd_header));
+
+  const size_t rc_size = pgaspi_dev_get_sizeof_rc();
+  cdh.op_len = (int) rc_size;
+  cdh.op = GASPI_SN_QUEUE_CREATE;
+  cdh.rank = glb_gaspi_ctx.rank;
+  cdh.tnc = *((int *) arg);
+
+  /* if we have something to exchange */
+  if(rc_size > 0 )
+    {
+      ssize_t ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
+      if(ret != sizeof(gaspi_cd_header))
+	{
+	  gaspi_print_error("Failed to write to %d", i);
+	  return -1;
+	}
+
+      ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
+      if(ret != (ssize_t) rc_size)
+	{
+	  gaspi_print_error("Failed to write to %d", i);
+	  return -1;
+	}
+
+      char *remote_info = pgaspi_dev_get_rrcd(i);
+
+      do
+	{
+	  ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], remote_info, rc_size);
+	  if( rret != (ssize_t) rc_size )
+	    {
+	      gaspi_print_error("Failed to read from %d %s %ld", i, gaspi_get_hn(i),rret);
+	      return -1;
+	    }
+	  else
+	    break;
+	}
+      while(1);
+    }
+
+  return 0;
+}
+
 
 static inline int
 _gaspi_sn_single_command(const gaspi_rank_t rank, const enum gaspi_sn_ops op)
@@ -673,8 +739,10 @@ _gaspi_sn_segment_register_command(const gaspi_rank_t rank, const void * const a
   cdh.op = GASPI_SN_SEG_REGISTER;
   cdh.rank = glb_gaspi_ctx.rank;
   cdh.seg_id = segment_id;
-  cdh.rkey = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey;
-  cdh.addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].addr;
+  cdh.rkey[0] = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[0];
+  cdh.rkey[1] = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[1];
+  cdh.addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr;
+  cdh.notif_addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.addr;
   cdh.size = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size;
 
 #ifdef GPI2_CUDA
@@ -879,6 +947,12 @@ gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gasp
 	ret = _gaspi_sn_group_connect(rank, arg);
 	break;
       }
+    case GASPI_SN_QUEUE_CREATE:
+      {
+	ret = _gaspi_sn_queue_create_command(rank, arg);
+	break;
+      }
+
     default:
       {
 	gaspi_print_error("Unknown SN op");
@@ -1145,6 +1219,14 @@ gaspi_sn_backend(void *arg)
 			  ptr = pgaspi_dev_get_rrcd(mgmt->cdh.rank);
 			  rcount = read( mgmt->fd, ptr + mgmt->bdone, rsize );
 			}
+		      else if( mgmt->op == GASPI_SN_QUEUE_CREATE )
+			{
+			  while( !glb_gaspi_dev_init )
+			    gaspi_delay();
+
+			  ptr = pgaspi_dev_get_rrcd(mgmt->cdh.rank);
+			  rcount = read( mgmt->fd, ptr + mgmt->bdone, rsize );
+			}
 
 		      /* errno==EAGAIN => we have read all data */
 		      int errsv = errno;
@@ -1272,6 +1354,10 @@ gaspi_sn_backend(void *arg)
 
 				      GASPI_SN_RESET_EVENT(mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
 				    }
+				  else if(mgmt->cdh.op == GASPI_SN_QUEUE_CREATE)
+				    {
+				      GASPI_SN_RESET_EVENT( mgmt, mgmt->cdh.op_len, mgmt->cdh.op );
+				    }
 				}/* !header */
 			      else if(mgmt->op == GASPI_SN_CONNECT)
 				{
@@ -1307,6 +1393,56 @@ gaspi_sn_backend(void *arg)
 					      io_err = 1;
 					    }
 					}
+				    }
+
+				  GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
+				}
+			      else if( mgmt->op == GASPI_SN_QUEUE_CREATE )
+				{
+				  /* TODO: to remove */
+				  while( !glb_gaspi_dev_init )
+				    {
+				      gaspi_delay();
+				    }
+
+				  const size_t len = pgaspi_dev_get_sizeof_rc();
+				  char *lrcd_ptr = NULL;
+
+				  gaspi_number_t next_avail_q = mgmt->cdh.tnc;
+
+				  if( GASPI_MAX_QP == next_avail_q )
+				    {
+				      gaspi_print_error("Cannot create queue: maximum exceeded.");
+				      /* We've exausted the number of queues */
+				      io_err = 1;
+				    }
+				  else
+				    {
+				      gaspi_return_t eret = pgaspi_queue_create_i(next_avail_q, mgmt->cdh.rank);
+				      if( eret == GASPI_SUCCESS )
+					{
+					  eret = pgaspi_queue_connect(next_avail_q, mgmt->cdh.rank);
+					  if( eret == GASPI_SUCCESS )
+					    {
+					      lrcd_ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
+					    }
+					}
+
+				      if( eret != GASPI_SUCCESS )
+					{
+					  gaspi_print_error("Failed to create requested queue (%d)", next_avail_q);
+					  /* We set io_err, connection is closed and remote peer reads EOF */
+					  io_err = 1;
+					}
+				      else
+					if( NULL != lrcd_ptr )
+					  {
+					    if( gaspi_sn_writen( mgmt->fd, lrcd_ptr, len ) < 0 )
+					      {
+						gaspi_print_error("Failed response to queue creation request from %u.", mgmt->cdh.rank);
+						io_err = 1;
+					      }
+					  }
 				    }
 
 				  GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );

@@ -72,7 +72,6 @@ link_layer_str (uint8_t link_layer)
     }
 }
 
-
 static int
 pgaspi_null_gid (union ibv_gid *gid)
 {
@@ -80,7 +79,6 @@ pgaspi_null_gid (union ibv_gid *gid)
 	   raw[11] | gid->raw[12] | gid->raw[13] | gid->raw[14] | gid->
 	   raw[15]);
 }
-
 
 /* Utilities */
 inline char *
@@ -304,11 +302,10 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 	      gaspi_print_error ("No active Ethernet (RoCE) port found");
 	      return -1;
 	    }
-	    
+
 	    glb_gaspi_ctx_ib.ib_port = 2;
 	  }
 	}
-      
     }/* if(gaspi_cfg->port_check) */
   else
     {
@@ -317,7 +314,6 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
   
   if(gaspi_cfg->net_info)
     gaspi_printf ("\tusing port : %d\n", glb_gaspi_ctx_ib.ib_port);
-  
 
   if (gaspi_cfg->network == GASPI_IB)
     {
@@ -357,20 +353,34 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-  glb_gaspi_ctx.nsrc.mr = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
-				     glb_gaspi_ctx.nsrc.ptr,
-				     glb_gaspi_ctx.nsrc.size,
-				     IBV_ACCESS_REMOTE_WRITE
-				     | IBV_ACCESS_LOCAL_WRITE
-				     | IBV_ACCESS_REMOTE_READ
-				     | IBV_ACCESS_REMOTE_ATOMIC);
+  glb_gaspi_ctx.nsrc.mr[0] = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
+					glb_gaspi_ctx.nsrc.data.ptr,
+					glb_gaspi_ctx.nsrc.size,
+					IBV_ACCESS_REMOTE_WRITE
+					| IBV_ACCESS_LOCAL_WRITE
+					| IBV_ACCESS_REMOTE_READ
+					| IBV_ACCESS_REMOTE_ATOMIC);
 
-  if(!glb_gaspi_ctx.nsrc.mr)
+  if(!glb_gaspi_ctx.nsrc.mr[0])
     {
       gaspi_print_error ("Memory registration failed (libibverbs)");
       return -1;
     }
 
+  glb_gaspi_ctx.nsrc.mr[1] = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
+					glb_gaspi_ctx.nsrc.notif_spc.ptr,
+					glb_gaspi_ctx.nsrc.notif_spc_size,
+					IBV_ACCESS_REMOTE_WRITE
+					| IBV_ACCESS_LOCAL_WRITE
+					| IBV_ACCESS_REMOTE_READ
+					| IBV_ACCESS_REMOTE_ATOMIC);
+
+  if(!glb_gaspi_ctx.nsrc.mr[1])
+    {
+      gaspi_print_error ("Memory registration failed (libibverbs)");
+      return -1;
+    }
+  
   memset (&glb_gaspi_ctx_ib.srq_attr, 0, sizeof (struct ibv_srq_init_attr));
 
   glb_gaspi_ctx_ib.srq_attr.attr.max_wr  = gaspi_cfg->queue_depth;
@@ -383,7 +393,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-  /* Create completion queues */
+  /* Create default completion queues */
   /* Groups */
   glb_gaspi_ctx_ib.scqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_depth, NULL,NULL, 0);
   if(!glb_gaspi_ctx_ib.scqGroups)
@@ -445,12 +455,15 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       if(!glb_gaspi_ctx_ib.qpC[c])
 	return -1;
     }
-  
+
   glb_gaspi_ctx_ib.qpP = (struct ibv_qp **) calloc (glb_gaspi_ctx.tnc , sizeof (struct ibv_qp *));
   if(!glb_gaspi_ctx_ib.qpP)
     {
       return -1;
     }
+
+  /* Zero-fy QP creation state */
+  memset(&(glb_gaspi_ctx_ib.qpC_cstat), 0, GASPI_MAX_QP);
 
   /* RoCE */
   if(gaspi_cfg->network == GASPI_ROCE)
@@ -461,7 +474,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 	  gaspi_print_error ("Failed to query gid (RoCE - libiverbs)");
 	  return -1;
 	}
-      
+
       if (!pgaspi_null_gid (&glb_gaspi_ctx_ib.gid))
 	{
 	  if (gaspi_cfg->net_info)
@@ -485,7 +498,6 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
     }
 
   glb_gaspi_ctx_ib.remote_info = (struct ib_ctx_info *) calloc (glb_gaspi_ctx.tnc, sizeof(struct ib_ctx_info));
-
   if(!glb_gaspi_ctx_ib.remote_info)
     {
       return -1;
@@ -574,6 +586,90 @@ _pgaspi_dev_create_qp(struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv
 }
 
 int
+pgaspi_dev_comm_queue_delete(const unsigned int id)
+{
+  int i;
+
+  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+    {
+      if(glb_gaspi_ctx.ep_conn[i].istat == 0)
+	{
+	  continue;
+	}
+
+      if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpC[id][i]))
+	{
+	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
+	  return -1;
+	}
+    }
+
+  if(glb_gaspi_ctx_ib.qpC[id])
+    {
+      free (glb_gaspi_ctx_ib.qpC[id]);
+    }
+
+  glb_gaspi_ctx_ib.qpC[id] = NULL;
+
+  if( 1 == glb_gaspi_ctx_ib.qpC_cstat[id] )
+    {
+
+      if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqC[id]))
+	{
+	  gaspi_print_error ("Failed to destroy CQ (libibverbs)");
+	  return -1;
+	}
+      glb_gaspi_ctx_ib.scqC[id] = NULL;
+
+      glb_gaspi_ctx_ib.qpC_cstat[id] = 0;
+    }
+
+  return 0;
+}
+
+int
+pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_node)
+{
+  if( 0 == glb_gaspi_ctx_ib.qpC_cstat[id] )
+    {
+      /* Completion queue */
+      glb_gaspi_ctx_ib.scqC[id] = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL, NULL, 0);
+      if(!glb_gaspi_ctx_ib.scqC[id])
+	{
+	  gaspi_print_error ("Failed to create CQ (libibverbs)");
+	  return -1;
+	}
+
+      /* Queue Pair */
+      glb_gaspi_ctx_ib.qpC[id] = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp *));
+      if( glb_gaspi_ctx_ib.qpC[id] == NULL)
+	{
+	  gaspi_print_error ("Failed to memory allocation");
+	  return -1;
+	}
+      
+      glb_gaspi_ctx_ib.qpC_cstat[id] = 1;
+    }
+
+  if( glb_gaspi_ctx_ib.qpC[id] == NULL)
+    {
+      gaspi_print_error ("Failed to memory allocation");
+      return -1;
+    }
+  
+  glb_gaspi_ctx_ib.qpC[id][remote_node] = _pgaspi_dev_create_qp(glb_gaspi_ctx_ib.scqC[id], glb_gaspi_ctx_ib.scqC[id], NULL);
+  if( glb_gaspi_ctx_ib.qpC[id][remote_node] == NULL )
+    {
+      gaspi_print_error ("Failed to create QP (libibverbs)");
+      return -1;
+    }
+
+  glb_gaspi_ctx_ib.local_info[remote_node].qpnC[id] = glb_gaspi_ctx_ib.qpC[id][remote_node]->qp_num;
+  
+  return 0;
+}
+
+int
 pgaspi_dev_create_endpoint(const int i)
 {
   unsigned int c;
@@ -611,6 +707,7 @@ pgaspi_dev_create_endpoint(const int i)
   return 0;
 }
 
+/* TODO: rename to endpoint */
 int
 pgaspi_dev_disconnect_context(const int i)
 {
@@ -733,6 +830,15 @@ _pgaspi_dev_qp_set_ready(struct ibv_qp *qp, int target, int target_qp)
 }
 
 int
+pgaspi_dev_comm_queue_connect(const unsigned short q, const int i)
+{
+  return _pgaspi_dev_qp_set_ready(glb_gaspi_ctx_ib.qpC[q][i],
+				  i,
+				  glb_gaspi_ctx_ib.remote_info[i].qpnC[q]);
+}
+
+/* TODO: rename to endpoint */
+int
 pgaspi_dev_connect_context(const int i)
 {
   unsigned int c;
@@ -802,18 +908,12 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
   free (glb_gaspi_ctx_ib.qpP);
   glb_gaspi_ctx_ib.qpP = NULL;
 
-  for(c = 0; c < gaspi_cfg->queue_num; c++)
-    {
-      free (glb_gaspi_ctx_ib.qpC[c]);
-      glb_gaspi_ctx_ib.qpC[c] = NULL;
-    }
-
   if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqGroups))
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
       return -1;
     }
-  
+
   if(ibv_destroy_cq (glb_gaspi_ctx_ib.rcqGroups))
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
@@ -837,15 +937,6 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
       gaspi_print_error ("Failed to destroy SRQ (libibverbs)");
       return -1;
     }
-  
-  for(c = 0; c < gaspi_cfg->queue_num; c++)
-    {
-      if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqC[c]))
-	{
-	  gaspi_print_error ("Failed to destroy CQ (libibverbs)");
-	  return -1;
-	}
-    }
 
   /*  TODO: to remove from here <<< LOOP*/
   for(i = 0; i < GASPI_MAX_MSEGS; i++)
@@ -858,32 +949,42 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 	      if(glb_gaspi_ctx.use_gpus == 0 || glb_gaspi_ctx.gpu_count == 0)
 #endif	      
 
-		if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].mr))
+		if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].mr[0]))
 		  {
 		    gaspi_print_error("Failed to de-register memory (libiverbs)");
 		    return -1;
 		  }
+		if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].mr[1]))
+		  {
+		    gaspi_print_error("Failed to de-register memory (libiverbs)");
+		    return -1;
+		  }
+
 #if GPI2_CUDA
 	      if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cudaDevId >= 0)
 		{
-		  if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_mr))
+		  if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_mr[0]))
 		    {
 		      gaspi_print_error("Failed to de-register memory (libiverbs)\n");
 		      return -1;
 		    }
 		  cudaSetDevice( (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cudaDevId));
-		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf)
-		    cudaFree(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
+		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf)
+		    cudaFree(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf);
+
+		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf)
+		    cudaFree(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
 
 		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_ptr)
 		    cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_ptr);
 		}
 	      else if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
-		cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
+		cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
 	      else
 #endif	    
-		free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf);
-	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].buf = NULL;
+		free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
+	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf = NULL;
+	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf = NULL;
 	    }
 
 	  free (glb_gaspi_ctx.rrmd[i]);
