@@ -7,8 +7,6 @@
 
 #include <test_utils.h>
 
-#include <GASPI_Ext.h>
-
 #include <string>
 #include <cassert>
 #include <cstring>

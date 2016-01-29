@@ -3,8 +3,6 @@
 
 #include <test_utils.h>
 
-#include <GASPI_Ext.h>
-
 /* DESCRIPTION: Tests gaspi_segment_bind using a previously created
    segment */
 

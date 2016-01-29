@@ -3,8 +3,6 @@
 
 #include <test_utils.h>
 
-#include <GASPI_Ext.h>
-
 /* DESCRIPTION: Test gaspi_segment_use using a application buffer */
 /* STEPS: */
 /* - We create a buffer */
