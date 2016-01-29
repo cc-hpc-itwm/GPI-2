@@ -438,6 +438,20 @@ pgaspi_cleanup_core(void)
     }
 
   /* Device clean-up */
+  /* delete extra queues created */
+  if( glb_gaspi_ctx.num_queues != glb_gaspi_cfg.queue_num )
+    {
+      int q;
+      for (q = glb_gaspi_cfg.queue_num; q < glb_gaspi_ctx.num_queues; q ++)
+	{
+	  if( pgaspi_dev_comm_queue_delete(q) != 0)
+	    {
+	      gaspi_print_error ("Failed to destroy QP (libibverbs)");
+	      return -1;
+	    }
+	}
+    }
+
   if(pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0)
     return GASPI_ERR_DEVICE;
 
