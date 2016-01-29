@@ -412,7 +412,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
 #pragma weak gaspi_initialized = pgaspi_initialized
 gaspi_return_t
-pgaspi_initialized (int *initialized)
+pgaspi_initialized (gaspi_number_t *initialized)
 {
   gaspi_verify_null_ptr(initialized);
   
