@@ -34,13 +34,20 @@ typedef enum
     GASPI_ENDPOINT_CREATED = 1
   }gaspi_endpoint_creation_status_t;
 
+typedef enum
+  {
+    GASPI_QUEUE_STATE_DISABLED = 0,
+    GASPI_QUEUE_STATE_CREATED = 1,
+    GASPI_QUEUE_STATE_ENABLED = 2,
+  } gaspi_queue_connection_state_t ;
+
 /* connection to a endpoint */
 typedef struct
 {
   gaspi_rank_t rank; /* to whom */
   volatile gaspi_endpoint_creation_status_t istat;
   volatile gaspi_endpoint_conn_status_t cstat;
-  unsigned char queue_state[GASPI_MAX_QP]; /* queues connection state*/
+  gaspi_queue_connection_state_t queue_state[GASPI_MAX_QP];
 } gaspi_endpoint_conn_t;
 
 gaspi_return_t
