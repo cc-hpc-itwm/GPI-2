@@ -109,7 +109,7 @@ pgaspi_queue_create_i(gaspi_queue_id_t const queue_id, gaspi_rank_t i)
 
   lock_gaspi_tout(&gaspi_create_lock, GASPI_BLOCK);
 
-  if ( glb_gaspi_ctx.ep_conn[i].queue_state[queue_id] > 0 )
+  if( GASPI_QUEUE_STATE_DISABLED != glb_gaspi_ctx.ep_conn[i].queue_state[queue_id] )
     {
       unlock_gaspi (&gaspi_create_lock);
       return GASPI_SUCCESS;
@@ -123,8 +123,7 @@ pgaspi_queue_create_i(gaspi_queue_id_t const queue_id, gaspi_rank_t i)
 	}
     }
 
-  /* Set as ready */
-  glb_gaspi_ctx.ep_conn[i].queue_state[queue_id] = 1;
+  glb_gaspi_ctx.ep_conn[i].queue_state[queue_id] = GASPI_QUEUE_STATE_CREATED;
 
   unlock_gaspi(&gaspi_create_lock);
 
@@ -135,7 +134,7 @@ gaspi_return_t
 pgaspi_queue_connect(gaspi_queue_id_t queue_id, gaspi_rank_t i)
 {
   lock_gaspi_tout(&gaspi_ccontext_lock, GASPI_BLOCK);
-  if ( 2 == glb_gaspi_ctx.ep_conn[i].queue_state[queue_id] )
+  if ( GASPI_QUEUE_STATE_ENABLED == glb_gaspi_ctx.ep_conn[i].queue_state[queue_id] )
     {
       unlock_gaspi (&gaspi_ccontext_lock);
       return GASPI_SUCCESS;
@@ -147,8 +146,7 @@ pgaspi_queue_connect(gaspi_queue_id_t queue_id, gaspi_rank_t i)
       return GASPI_ERR_DEVICE;
     }
 
-  /* Set as connected */
-  glb_gaspi_ctx.ep_conn[i].queue_state[queue_id] = 2;
+  glb_gaspi_ctx.ep_conn[i].queue_state[queue_id] = GASPI_QUEUE_STATE_ENABLED;
 
   unlock_gaspi(&gaspi_ccontext_lock);
   return GASPI_SUCCESS;
@@ -173,7 +171,7 @@ pgaspi_queue_create(gaspi_queue_id_t * const queue_id, const gaspi_timeout_t tim
   gaspi_number_t next_avail_q = __sync_fetch_and_add( &glb_gaspi_ctx.num_queues, 0);
 
   /* We already have it ie. a remote peer did it first ?*/
-  if ( glb_gaspi_ctx.ep_conn[glb_gaspi_ctx.rank].queue_state[next_avail_q] == 2 )
+  if ( GASPI_QUEUE_STATE_ENABLED == glb_gaspi_ctx.ep_conn[glb_gaspi_ctx.rank].queue_state[next_avail_q] )
     {
       unlock_gaspi(&glb_gaspi_ctx_lock);
       return GASPI_SUCCESS;
@@ -242,7 +240,7 @@ pgaspi_queue_delete(const gaspi_queue_id_t queue_id)
   __sync_fetch_and_sub( &glb_gaspi_ctx.num_queues, 1);
 
   for (n = 0; n < glb_gaspi_ctx.tnc; n++)
-    glb_gaspi_ctx.ep_conn[n].queue_state[queue_id] = 0;
+    glb_gaspi_ctx.ep_conn[n].queue_state[queue_id] = GASPI_QUEUE_STATE_DISABLED;
 
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
