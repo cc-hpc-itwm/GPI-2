@@ -28,7 +28,7 @@ typedef enum
     GASPI_ENDPOINT_CONNECTED = 1
   }gaspi_endpoint_conn_status_t;
 
-typedef enum
+typedef enun
   {
     GASPI_ENDPOINT_NOT_CREATED = 0,
     GASPI_ENDPOINT_CREATED = 1
