@@ -1419,7 +1419,7 @@ gaspi_sn_backend(void *arg)
 				    }
 				  else
 				    {
-				      gaspi_return_t eret = pgaspi_queue_create_i(next_avail_q, mgmt->cdh.rank);
+				      gaspi_return_t eret = pgaspi_queue_create_i(next_avail_q, mgmt->cdh.rank, GASPI_BLOCK);
 				      if( eret == GASPI_SUCCESS )
 					{
 					  eret = pgaspi_queue_connect(next_avail_q, mgmt->cdh.rank);
