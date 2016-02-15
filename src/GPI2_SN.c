@@ -402,7 +402,10 @@ gaspi_sn_recv_topology(gaspi_context * const ctx)
     }
 
   if( gaspi_sn_close( nsock ) != 0 )
-    return -1;
+    {
+      close(lsock);
+      return -1;
+    }
 
   if( gaspi_sn_close( lsock ) != 0 )
     return -1;
