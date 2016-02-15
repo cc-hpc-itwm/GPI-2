@@ -1014,7 +1014,7 @@ extern "C"
    */
   gaspi_return_t
   pgaspi_queue_purge(const gaspi_queue_id_t queue,
-		     gaspi_timeout_t timeout_ms);
+		     const gaspi_timeout_t timeout_ms);
 
   /** Get the current number of elements on a given queue.
    *
@@ -1056,7 +1056,8 @@ extern "C"
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
-  gaspi_return_t gaspi_queue_create(gaspi_queue_id_t *queue, gaspi_timeout_t timeout_ms);
+  gaspi_return_t gaspi_queue_create(gaspi_queue_id_t * const queue,
+				    const gaspi_timeout_t timeout_ms);
 
   /** Delete a new communication queue.
    *
@@ -1066,7 +1067,7 @@ extern "C"
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
-  gaspi_return_t gaspi_queue_delete(gaspi_queue_id_t queue);
+  gaspi_return_t gaspi_queue_delete(const gaspi_queue_id_t queue);
 
 
   /** Get the minimum size (in bytes) that can be communicated in a

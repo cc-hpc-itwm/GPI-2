@@ -101,7 +101,7 @@ pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
 }
 
 gaspi_return_t
-pgaspi_queue_create_i(gaspi_queue_id_t const queue_id, gaspi_rank_t i, const gaspi_timeout_t timeout_ms)
+pgaspi_queue_create_i(const gaspi_queue_id_t queue_id, const gaspi_rank_t i, const gaspi_timeout_t timeout_ms)
 {
   /* TODO: to remove */
   while( !glb_gaspi_dev_init )
@@ -132,7 +132,7 @@ pgaspi_queue_create_i(gaspi_queue_id_t const queue_id, gaspi_rank_t i, const gas
 }
 
 gaspi_return_t
-pgaspi_queue_connect(gaspi_queue_id_t queue_id, gaspi_rank_t i, const gaspi_timeout_t timeout_ms)
+pgaspi_queue_connect(const gaspi_queue_id_t queue_id, const gaspi_rank_t i, const gaspi_timeout_t timeout_ms)
 {
   if( lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms) )
     return GASPI_TIMEOUT;
@@ -251,7 +251,7 @@ pgaspi_queue_delete(const gaspi_queue_id_t queue_id)
 
 #pragma weak gaspi_queue_purge = pgaspi_queue_purge
 gaspi_return_t
-pgaspi_queue_purge(const gaspi_queue_id_t queue, gaspi_timeout_t timeout_ms)
+pgaspi_queue_purge(const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 {
   gaspi_verify_init("gaspi_queue_purge");
   gaspi_verify_queue(queue);
