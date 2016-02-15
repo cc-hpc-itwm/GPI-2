@@ -183,8 +183,6 @@ gaspi_sn_connect2port(const char * const hn, const unsigned short port, const un
 	{
 	  if(delta_ms > timeout_ms)
 	    {
-	      shutdown( sockfd, SHUT_RDWR );
-	      close(sockfd);
 	      return -1;
 	    }
 	}
