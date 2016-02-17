@@ -51,13 +51,12 @@ typedef struct
 } gaspi_endpoint_conn_t;
 
 gaspi_return_t
-pgaspi_create_endpoint_to(const gaspi_rank_t, const gaspi_timeout_t);
+pgaspi_create_endpoint_to(const gaspi_rank_t target, const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
-pgaspi_connect_endpoint_to(const gaspi_rank_t, const gaspi_timeout_t);
+pgaspi_connect_endpoint_to(const gaspi_rank_t target, const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
-pgaspi_local_disconnect(const gaspi_rank_t, const gaspi_timeout_t);
-
+pgaspi_local_disconnect(const gaspi_rank_t from, const gaspi_timeout_t timeout_ms);
 
 #endif /* _GPI2_CM_H_ */
