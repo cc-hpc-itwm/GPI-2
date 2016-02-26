@@ -1,5 +1,5 @@
 /*
-Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2015
+Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2016
 
 This file is part of GPI-2.
 
@@ -392,6 +392,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 		}
 	    }
 	}
+
       eret = gaspi_barrier(GASPI_GROUP_ALL, timeout_ms);
     }
   else /* dont build_infrastructure */

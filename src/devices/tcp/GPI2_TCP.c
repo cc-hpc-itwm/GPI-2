@@ -1,5 +1,5 @@
 /*
-Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2015
+Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2016
 
 This file is part of GPI-2.
 
@@ -82,6 +82,11 @@ pgaspi_dev_comm_queue_delete(const unsigned int id)
 
   return 0;
 }
+
+
+/* TODO: we need to check if we already have it. */
+/* This gets called several times for different ranks (remote_node param) */
+/* which is not used. It will result in memory leaks. */
 
 int
 pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_node)
