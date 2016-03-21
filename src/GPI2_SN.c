@@ -443,7 +443,7 @@ gaspi_sn_send_topology(gaspi_context * const ctx, const int i, const gaspi_timeo
   void * ptr = &cdh;
   int sockfd = ctx->sockfd[i];
 
-  if (sockfd <= 0 )
+  if (sockfd < 0 )
     {
       gaspi_print_error("Wrong fd %d %d", i, ctx->sockfd[i] );
       retval = -1;
