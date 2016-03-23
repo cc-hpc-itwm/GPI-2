@@ -127,14 +127,6 @@ pgaspi_init_core(void)
       glb_gaspi_group_ctx[i].del.lock = 0;
     }
 
-  /* change/override num of queues at large scale */
-  if (glb_gaspi_ctx.tnc > 1000 && glb_gaspi_cfg.queue_num > 1)
-    {
-      if(glb_gaspi_ctx.rank == 0)
-	gaspi_printf("Warning: setting number of queues to 1\n");
-      glb_gaspi_cfg.queue_num = 1;
-    }
-
   /* Set number of "created" communication queues */
   glb_gaspi_ctx.num_queues = glb_gaspi_cfg.queue_num;
 
