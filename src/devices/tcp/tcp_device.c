@@ -171,9 +171,9 @@ tcp_dev_create_cq(int elems, struct tcp_passive_channel *pchannel)
 void
 tcp_dev_destroy_cq(struct tcp_cq *cq)
 {
-  if(cq != NULL)
+  if( cq != NULL )
     {
-      if(cq->rbuf != NULL)
+      if( cq->rbuf != NULL )
 	{
 	  free(cq->rbuf->cells);
 	  cq->rbuf->cells = NULL;
