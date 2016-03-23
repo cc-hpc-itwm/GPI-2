@@ -685,20 +685,21 @@ _gaspi_sn_queue_create_command(const gaspi_rank_t rank, const void * const arg)
 	  return -1;
 	}
 
-      char *remote_info = pgaspi_dev_get_rrcd(i);
-
-      do
+      int result = 1;
+      ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], &result, sizeof(int));
+      if( rret != sizeof(int) )
 	{
-	  ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], remote_info, rc_size);
-	  if( rret != (ssize_t) rc_size )
-	    {
-	      gaspi_print_error("Failed to read from %d %s %ld", i, gaspi_get_hn(i),rret);
-	      return -1;
-	    }
-	  else
-	    break;
+	  gaspi_print_error("Failed to read from rank %u (args: %d %p %lu)",
+			    rank,
+			    glb_gaspi_ctx.sockfd[i],
+			    &rret,
+			    sizeof(int));
+	  return -1;
 	}
-      while(1);
+
+      /* failed on the remote side */
+      if( result != 0)
+	return -1;
     }
 
   return 0;
@@ -1398,55 +1399,19 @@ gaspi_sn_backend(void *arg)
 
 				  GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
 				}
-			      else if( mgmt->op == GASPI_SN_QUEUE_CREATE )
+			      else if( mgmt->op == GASPI_SN_QUEUE_CREATE)
 				{
-				  /* TODO: to remove */
-				  while( !glb_gaspi_dev_init )
+				  int rret = 0;
+
+				  /* just ack back */
+				  if(gaspi_sn_writen( mgmt->fd, &rret, sizeof(int) ) < 0 )
 				    {
-				      gaspi_delay();
-				    }
-
-				  const size_t len = pgaspi_dev_get_sizeof_rc();
-				  char *lrcd_ptr = NULL;
-
-				  gaspi_number_t next_avail_q = mgmt->cdh.tnc;
-
-				  if( GASPI_MAX_QP == next_avail_q )
-				    {
-				      gaspi_print_error("Cannot create queue: maximum exceeded.");
-				      /* We've exausted the number of queues */
+				      gaspi_print_error("Failed response to segment register.");
 				      io_err = 1;
-				    }
-				  else
-				    {
-				      gaspi_return_t eret = pgaspi_queue_create_i(next_avail_q, mgmt->cdh.rank, GASPI_BLOCK);
-				      if( eret == GASPI_SUCCESS )
-					{
-					  eret = pgaspi_queue_connect(next_avail_q, mgmt->cdh.rank);
-					  if( eret == GASPI_SUCCESS )
-					    {
-					      lrcd_ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
-					    }
-					}
-
-				      if( eret != GASPI_SUCCESS )
-					{
-					  gaspi_print_error("Failed to create requested queue (%d)", next_avail_q);
-					  /* We set io_err, connection is closed and remote peer reads EOF */
-					  io_err = 1;
-					}
-				      else
-					if( NULL != lrcd_ptr )
-					  {
-					    if( gaspi_sn_writen( mgmt->fd, lrcd_ptr, len ) < 0 )
-					      {
-						gaspi_print_error("Failed response to queue creation request from %u.", mgmt->cdh.rank);
-						io_err = 1;
-					      }
-					  }
+					  break;
 				    }
 
-				  GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
+				  GASPI_SN_RESET_EVENT( mgmt, mgmt->cdh.op_len, mgmt->cdh.op );
 				}
 			      else
 				{

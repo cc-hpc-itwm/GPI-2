@@ -100,68 +100,6 @@ pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
   return GASPI_SUCCESS;
 }
 
-gaspi_return_t
-pgaspi_queue_create_i(const gaspi_queue_id_t queue_id, const gaspi_rank_t i, const gaspi_timeout_t timeout_ms)
-{
-  gaspi_context *ctx = &glb_gaspi_ctx;
-
-  /* TODO: to remove */
-  while( !glb_gaspi_dev_init )
-    gaspi_delay();
-
-  if( lock_gaspi_tout(&gaspi_create_lock, timeout_ms) )
-    return GASPI_TIMEOUT;
-
-  if( GASPI_QUEUE_STATE_DISABLED != ctx->ep_conn[i].queue_state[queue_id] )
-    {
-      unlock_gaspi (&gaspi_create_lock);
-      return GASPI_SUCCESS;
-    }
-  else
-    {
-      if( 0 != pgaspi_dev_comm_queue_create(queue_id, i) )
-	{
-	  unlock_gaspi (&gaspi_create_lock);
-	  return GASPI_ERR_DEVICE;
-	}
-    }
-
-  ctx->ep_conn[i].queue_state[queue_id] = GASPI_QUEUE_STATE_CREATED;
-
-  unlock_gaspi(&gaspi_create_lock);
-
-  return GASPI_SUCCESS;
-}
-
-gaspi_return_t
-pgaspi_queue_connect(const gaspi_queue_id_t queue_id, const gaspi_rank_t i, const gaspi_timeout_t timeout_ms)
-{
-  gaspi_context *ctx = &glb_gaspi_ctx;
-
-  if( lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms) )
-    {
-      return GASPI_TIMEOUT;
-    }
-
-  if ( GASPI_QUEUE_STATE_ENABLED == ctx->ep_conn[i].queue_state[queue_id] )
-    {
-      unlock_gaspi (&gaspi_ccontext_lock);
-      return GASPI_SUCCESS;
-    }
-
-  if( pgaspi_dev_comm_queue_connect(queue_id, i) != 0 )
-    {
-      unlock_gaspi(&gaspi_ccontext_lock);
-      return GASPI_ERR_DEVICE;
-    }
-
-  ctx->ep_conn[i].queue_state[queue_id] = GASPI_QUEUE_STATE_ENABLED;
-
-  unlock_gaspi(&gaspi_ccontext_lock);
-
-  return GASPI_SUCCESS;
-}
-
 /* Queue creation/deletion/purging */
 #pragma weak gaspi_queue_create = pgaspi_queue_create
 gaspi_return_t
@@ -181,13 +119,6 @@ pgaspi_queue_create(gaspi_queue_id_t * const queue_id, const gaspi_timeout_t tim
 
   gaspi_number_t next_avail_q = __sync_fetch_and_add( & (ctx->num_queues), 0);
 
-  /* We already have it ie. a remote peer did it first ?*/
-  if ( GASPI_QUEUE_STATE_ENABLED == ctx->ep_conn[ctx->rank].queue_state[next_avail_q] )
-    {
-      unlock_gaspi(&glb_gaspi_ctx_lock);
-      return GASPI_SUCCESS;
-    }
-
   /* Create it and advertise it to the already connected nodes */
   for( n = 0; n < ctx->tnc; n++ )
     {
@@ -195,11 +126,9 @@ pgaspi_queue_create(gaspi_queue_id_t * const queue_id, const gaspi_timeout_t tim
 
       if( GASPI_ENDPOINT_CONNECTED == ctx->ep_conn[i].cstat )
 	{
-	  eret = pgaspi_queue_create_i(next_avail_q, i, timeout_ms);
-	  if( eret != GASPI_SUCCESS )
+	  if( 0 != pgaspi_dev_comm_queue_create(next_avail_q, i) )
 	    {
-	      unlock_gaspi(&glb_gaspi_ctx_lock);
-	      return eret;
+	      return GASPI_ERR_DEVICE;
 	    }
 
 	  eret = gaspi_sn_command( GASPI_SN_QUEUE_CREATE, i, timeout_ms, &next_avail_q );
@@ -213,12 +142,18 @@ pgaspi_queue_create(gaspi_queue_id_t * const queue_id, const gaspi_timeout_t tim
 	      unlock_gaspi(&glb_gaspi_ctx_lock);
 	      return eret;
 	    }
+	}
+    }
 
-	  eret = pgaspi_queue_connect(next_avail_q, i, timeout_ms);
-	  if( GASPI_SUCCESS != eret )
+  for( n = 0; n < ctx->tnc; n++ )
+    {
+      gaspi_rank_t i = (ctx->rank + n) % ctx->tnc;
+
+      if( GASPI_ENDPOINT_CONNECTED == ctx->ep_conn[i].cstat )
+	{
+	  if( pgaspi_dev_comm_queue_connect(next_avail_q, i) != 0 )
 	    {
-	      unlock_gaspi(&glb_gaspi_ctx_lock);
-	      return eret;
+	      return GASPI_ERR_DEVICE;
 	    }
 	}
     }
@@ -238,7 +173,6 @@ gaspi_return_t
 pgaspi_queue_delete(const gaspi_queue_id_t queue_id)
 {
   gaspi_context *ctx = &glb_gaspi_ctx;
-  int n;
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
@@ -250,9 +184,6 @@ pgaspi_queue_delete(const gaspi_queue_id_t queue_id)
 
   /* Decrement queue counter */
   __sync_fetch_and_sub( &(ctx->num_queues), 1);
-
-  for (n = 0; n < ctx->tnc; n++)
-    ctx->ep_conn[n].queue_state[queue_id] = GASPI_QUEUE_STATE_DISABLED;
 
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;

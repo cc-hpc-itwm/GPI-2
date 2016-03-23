@@ -597,29 +597,37 @@ pgaspi_dev_comm_queue_delete(const unsigned int id)
 	  continue;
 	}
 
-      if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpC[id][i]))
+      if( glb_gaspi_ctx_ib.qpC[id] )
 	{
-	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
-	  return -1;
+	  if( glb_gaspi_ctx_ib.qpC[id][i] )
+	    {
+	      if( ibv_destroy_qp( glb_gaspi_ctx_ib.qpC[id][i] ) )
+		{
+		  gaspi_print_error ("Failed to destroy QP (libibverbs)");
+		  return -1;
+		}
+	    }
 	}
+
+      glb_gaspi_ctx_ib.remote_info[i].qpnC[id] = 0;
     }
 
-  if(glb_gaspi_ctx_ib.qpC[id])
-    {
-      free (glb_gaspi_ctx_ib.qpC[id]);
-    }
+  free (glb_gaspi_ctx_ib.qpC[id]);
 
   glb_gaspi_ctx_ib.qpC[id] = NULL;
 
   if( 1 == glb_gaspi_ctx_ib.qpC_cstat[id] )
     {
-
-      if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqC[id]))
+      if( glb_gaspi_ctx_ib.scqC[id] )
 	{
-	  gaspi_print_error ("Failed to destroy CQ (libibverbs)");
-	  return -1;
+	  if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqC[id]))
+	    {
+	      gaspi_print_error ("Failed to destroy CQ (libibverbs)");
+	      return -1;
+	    }
+
+	  glb_gaspi_ctx_ib.scqC[id] = NULL;
 	}
-      glb_gaspi_ctx_ib.scqC[id] = NULL;
 
       glb_gaspi_ctx_ib.qpC_cstat[id] = 0;
     }
@@ -832,6 +840,13 @@ _pgaspi_dev_qp_set_ready(struct ibv_qp *qp, int target, int target_qp)
 int
 pgaspi_dev_comm_queue_connect(const unsigned short q, const int i)
 {
+  /* Not very nice but we need to wait for info to be available */
+  do
+    {
+      usleep(10);
+    }
+  while(glb_gaspi_ctx_ib.remote_info[i].qpnC[q] == 0);
+
   return _pgaspi_dev_qp_set_ready(glb_gaspi_ctx_ib.qpC[q][i],
 				  i,
 				  glb_gaspi_ctx_ib.remote_info[i].qpnC[q]);
