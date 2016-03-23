@@ -1142,23 +1142,15 @@ extern "C"
 
   gaspi_return_t gaspi_time_get (gaspi_time_t * const wtime);
 
-  /** Get the CPU frequency.
+  /** Translate a error code to a text message.
    *
    *
-   * @param cpu_mhz Output parameter with the frequency.
+   * @param error_code The error code to translate.
+   * @param error_message Output parameter with the text message.
    *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   * @return GASPI_SUCCESS in case of SUCCESS, GASPI_ERROR in case of error.
    */
-  gaspi_return_t gaspi_cpu_frequency (gaspi_float * const cpu_mhz);
-
-  /** Get the machine type (CPU, accelerator...)
-   *
-   *
-   * @param machine_type Output parameter with machine type.
-   *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
-   */
-  gaspi_return_t gaspi_machine_type (char const machine_type[16]);
+  gaspi_return_t gaspi_print_error( gaspi_return_t error_code, gaspi_string_t *error_message);
 
   /** Get the state vector.
    *

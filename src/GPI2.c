@@ -759,6 +759,24 @@ pgaspi_error_str(gaspi_return_t error_code)
   return (gaspi_string_t) gaspi_return_str[error_code];
 }
 
+#pragma weak gaspi_print_error = pgaspi_print_error
+gaspi_return_t
+pgaspi_print_error(gaspi_return_t error_code, gaspi_string_t *error_message )
+{
+  gaspi_string_t msg = pgaspi_error_str(error_code);
+  size_t n = strlen(msg);
+
+  *error_message = malloc(n + 1);
+  if( error_message == NULL)
+    {
+      return GASPI_ERR_MEMALLOC;
+    }
+
+  memmove(*error_message, msg, n + 1);
+
+  return GASPI_SUCCESS;
+}
+
 #pragma weak gaspi_state_vec_get = pgaspi_state_vec_get
 gaspi_return_t
 pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
