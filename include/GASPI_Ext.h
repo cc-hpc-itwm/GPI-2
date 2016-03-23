@@ -36,6 +36,97 @@ extern "C"
 {
 #endif
 
+  /** Check if GPI-2 is initialized
+   *
+   * @param initialized Output parameter with flag value.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
+   * error.
+   */
+  gaspi_return_t gaspi_initialized (gaspi_number_t * initialized);
+
+  /** Get the process local rank.
+   *
+   *
+   * @param local_rank Rank within a node of calling process.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_proc_local_rank (gaspi_rank_t * const local_rank);
+
+  /** Get the number of processes (ranks) started by the application.
+   *
+   *
+   * @param local_num The number of processes (ranks) in the same node
+   *
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_proc_local_num (gaspi_rank_t * const local_num);
+
+  /** Get the machine type (CPU, accelerator...)
+   *
+   *
+   * @param machine_type Output parameter with machine type.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_machine_type (char const machine_type[16]);
+
+    /** Get the CPU frequency.
+   *
+   *
+   * @param cpu_mhz Output parameter with the frequency.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_cpu_frequency (gaspi_float * const cpu_mhz);
+
+  /** GASPI printf to print the gaspi_logger.
+   *
+   *
+   * @param fmt printf parameters.
+   */
+  void gaspi_printf (const char *fmt, ...);
+
+  /** GASPI printf to print to a particular gaspi_logger.
+   *
+   * @param rank the rank of the logger node.
+   * @param fmt printf parameters.
+   */
+  void gaspi_printf_to (gaspi_rank_t rank, const char *fmt, ...);
+
+  /**  Print the CPU's affinity mask.
+   *
+   *
+   */
+  void gaspi_print_affinity_mask (void);
+
+  /** Get NUMA socket
+   *
+   *
+   * @param socket Output parameter with the socket
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case
+   * GPI2 was not started with NUMA enabled.
+   */
+  gaspi_return_t gaspi_numa_socket(gaspi_uchar * const socket);
+
+  /** Set socket affinity
+   *
+   *
+   */
+  gaspi_return_t gaspi_set_socket_affinity (const gaspi_uchar socket);
+
+  /** Get string describing return value.
+   *
+   *
+   * @param error_code The return value to be described.
+   *
+   * @return A string that describes the return value.
+   */
+  gaspi_string_t gaspi_error_str(gaspi_return_t error_code);
+
   /** Ping a particular proc (rank).
    * This is useful in FT applications to determine if a rank is alive.
    *
