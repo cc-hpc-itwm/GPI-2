@@ -78,31 +78,35 @@ int
 pgaspi_dev_comm_queue_delete(const unsigned int id)
 {
   tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpC[id]);
+  glb_gaspi_ctx_tcp.qpC[id] = NULL;
+
   tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.scqC[id]);
+  glb_gaspi_ctx_tcp.scqC[id] = NULL;
 
   return 0;
 }
 
-
-/* TODO: we need to check if we already have it. */
-/* This gets called several times for different ranks (remote_node param) */
-/* which is not used. It will result in memory leaks. */
-
 int
 pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_node)
 {
-  glb_gaspi_ctx_tcp.scqC[id] = tcp_dev_create_cq(glb_gaspi_cfg.queue_depth, NULL);
-  if(glb_gaspi_ctx_tcp.scqC[id] == NULL)
+  if( glb_gaspi_ctx_tcp.scqC[id] == NULL)
     {
-      gaspi_print_error("Failed to create IO completion queue.");
-      return -1;
+      glb_gaspi_ctx_tcp.scqC[id] = tcp_dev_create_cq(glb_gaspi_cfg.queue_depth, NULL);
+      if(glb_gaspi_ctx_tcp.scqC[id] == NULL)
+	{
+	  gaspi_print_error("Failed to create IO completion queue.");
+	  return -1;
+	}
     }
 
-  glb_gaspi_ctx_tcp.qpC[id] = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqC[id], NULL);
-  if(glb_gaspi_ctx_tcp.qpC[id] == NULL)
+  if( glb_gaspi_ctx_tcp.qpC[id] == NULL)
     {
-      gaspi_print_error("Failed to create queue %d for IO.", id);
-      return -1;
+      glb_gaspi_ctx_tcp.qpC[id] = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqC[id], NULL);
+      if(glb_gaspi_ctx_tcp.qpC[id] == NULL)
+	{
+	  gaspi_print_error("Failed to create queue %d for IO.", id);
+	  return -1;
+	}
     }
 
   return 0;
