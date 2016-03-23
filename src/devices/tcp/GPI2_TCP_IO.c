@@ -21,9 +21,11 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 /* Communication functions */
 gaspi_return_t
 pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
-		  const gaspi_offset_t offset_local, const gaspi_rank_t rank,
+		  const gaspi_offset_t offset_local,
+		  const gaspi_rank_t rank,
 		  const gaspi_segment_id_t segment_id_remote,
-		  const gaspi_offset_t offset_remote, const gaspi_size_t size,
+		  const gaspi_offset_t offset_remote,
+		  const gaspi_size_t size,
 		  const gaspi_queue_id_t queue)
 {
   tcp_dev_wr_t wr =
@@ -51,9 +53,11 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
 
 gaspi_return_t
 pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
-		 const gaspi_offset_t offset_local, const gaspi_rank_t rank,
+		 const gaspi_offset_t offset_local,
+		 const gaspi_rank_t rank,
 		 const gaspi_segment_id_t segment_id_remote,
-		 const gaspi_offset_t offset_remote, const gaspi_size_t size,
+		 const gaspi_offset_t offset_remote,
+		 const gaspi_size_t size,
 		 const gaspi_queue_id_t queue)
 {
   tcp_dev_wr_t wr =
@@ -116,7 +120,9 @@ pgaspi_dev_purge (const gaspi_queue_id_t queue,
 }
 
 gaspi_return_t
-pgaspi_dev_wait (const gaspi_queue_id_t queue, int *counter, const gaspi_timeout_t timeout_ms)
+pgaspi_dev_wait (const gaspi_queue_id_t queue,
+		 int *counter,
+		 const gaspi_timeout_t timeout_ms)
 {
 
   int ne = 0, i;
@@ -201,7 +207,8 @@ pgaspi_dev_write_list (const gaspi_number_t num,
 		       const gaspi_rank_t rank,
 		       gaspi_segment_id_t * const segment_id_remote,
 		       gaspi_offset_t * const offset_remote,
-		       gaspi_size_t * const size, const gaspi_queue_id_t queue)
+		       gaspi_size_t * const size,
+		       const gaspi_queue_id_t queue)
 {
   gaspi_number_t i;
 
@@ -234,10 +241,12 @@ pgaspi_dev_write_list (const gaspi_number_t num,
 gaspi_return_t
 pgaspi_dev_read_list (const gaspi_number_t num,
 		      gaspi_segment_id_t * const segment_id_local,
-		      gaspi_offset_t * const offset_local, const gaspi_rank_t rank,
+		      gaspi_offset_t * const offset_local,
+		      const gaspi_rank_t rank,
 		      gaspi_segment_id_t * const segment_id_remote,
 		      gaspi_offset_t * const offset_remote,
-		      gaspi_size_t * const size, const gaspi_queue_id_t queue)
+		      gaspi_size_t * const size,
+		      const gaspi_queue_id_t queue)
 {
   gaspi_number_t i;
 
