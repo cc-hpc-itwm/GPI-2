@@ -18,7 +18,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GPI2_Mem.h"
 
-gaspi_size_t gaspi_get_system_mem(void)
+gaspi_size_t
+gaspi_get_system_mem(void)
 {
   FILE *fp;
   char line[1024];
@@ -44,7 +45,8 @@ gaspi_size_t gaspi_get_system_mem(void)
   return memory;
 }
 
-gaspi_size_t gaspi_get_mem_peak(void)
+gaspi_size_t
+gaspi_get_mem_peak(void)
 {
   struct rusage rusage;
   
@@ -55,13 +57,16 @@ gaspi_size_t gaspi_get_mem_peak(void)
 }
 
 
-gaspi_size_t gaspi_get_mem_in_use(void)
+gaspi_size_t
+gaspi_get_mem_in_use(void)
 {
   gaspi_size_t rss = 0UL;
   FILE* fp = NULL;
 
   if((fp = fopen( "/proc/self/statm", "r")) == NULL)
-    return (gaspi_size_t) 0UL;
+    {
+      return (gaspi_size_t) 0UL;
+    }
 
   if(fscanf(fp, "%*s%lu", &rss ) != 1)
     {
