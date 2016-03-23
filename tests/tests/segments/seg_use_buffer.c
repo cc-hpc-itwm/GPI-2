@@ -50,7 +50,6 @@ int main(int argc, char *argv[])
 				GASPI_GROUP_ALL, GASPI_BLOCK,
 				GASPI_MEM_INITIALIZED) );
 
-
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   /* write data to neighbour */
@@ -70,6 +69,14 @@ int main(int argc, char *argv[])
   for (i = 0; i < num_elems; i++)
     {
       assert(recv_buf[i] == left);
+    }
+
+  ASSERT( gaspi_segment_delete(0));
+  ASSERT( gaspi_segment_delete(1));
+
+  for (i = 0; i < num_elems; i++)
+    {
+      assert(buf[i] == rank);
     }
 
   ASSERT( gaspi_barrier( GASPI_GROUP_ALL, GASPI_BLOCK ) );
