@@ -140,7 +140,6 @@ pgaspi_init_core(void)
       return GASPI_ERROR;
     }
 
-
   if(posix_memalign ((void **) &glb_gaspi_ctx.nsrc.data.ptr, page_size, size)!= 0)
     {
       gaspi_print_error ("Memory allocation (posix_memalign) failed");
@@ -439,7 +438,7 @@ pgaspi_cleanup_core(void)
 	{
 	  if( pgaspi_dev_comm_queue_delete(q) != 0)
 	    {
-	      gaspi_print_error ("Failed to destroy QP (libibverbs)");
+	      gaspi_print_error ("Failed to destroy queue.");
 	      return -1;
 	    }
 	}
