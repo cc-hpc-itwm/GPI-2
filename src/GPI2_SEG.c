@@ -369,6 +369,13 @@ pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
   return eret;
 }
 
+/* TODO: from the spec: */
+/* 1) If the communication infrastructure was not established */
+/* for all group members beforehand, gaspi_segment_create will accomplish this */
+/* as well. */
+
+/* 2) Creating a new segment with an existing segment ID */
+/* results in undefined behavior */
 #pragma weak gaspi_segment_create = pgaspi_segment_create
 gaspi_return_t
 pgaspi_segment_create(const gaspi_segment_id_t segment_id,
