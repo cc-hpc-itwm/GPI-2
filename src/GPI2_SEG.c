@@ -234,6 +234,13 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[0] = 0;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[1] = 0;
 
+  /* Reset trans info flag for all ranks */
+  int r;
+  for(r = 0; r < glb_gaspi_ctx.tnc; r++)
+    {
+      glb_gaspi_ctx.rrmd[segment_id][r].trans = 0;
+    }
+
   eret = GASPI_SUCCESS;
 #endif
 
