@@ -42,7 +42,6 @@ validate_machinefile()
 	ping -c 1 $i > /dev/null 2>&1
 	if [ $? != 0 ]; then
 	   echo "Host not reachable ($i)"
-	   exit 1
 	fi
     done
 }
