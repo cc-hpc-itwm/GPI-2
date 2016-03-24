@@ -405,8 +405,6 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 /* - GPU case */
 /* - merge common/repetead code from other segment related function (create, alloc, ...) */
 /* - check/deal with alignment issues */
-/* - move header include to top */
-#include <GASPI_Ext.h>
 
 #pragma weak gaspi_segment_bind = pgaspi_segment_bind
 gaspi_return_t
