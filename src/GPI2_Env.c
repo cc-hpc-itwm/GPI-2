@@ -36,7 +36,7 @@ struct  mpi_node_info
 
 /* Try to handle environment if running with MPI */
 static inline int
-_gaspi_handle_env_mpi(gaspi_context *ctx) 
+_gaspi_handle_env_mpi(gaspi_context *ctx)
 {
   int i;
   int mpi_inited = 0;
@@ -44,30 +44,22 @@ _gaspi_handle_env_mpi(gaspi_context *ctx)
 
   struct mpi_node_info *hosts;
   struct mpi_node_info ninfo;
-  
+
   if(MPI_Initialized(&mpi_inited) != MPI_SUCCESS)
     {
-      printf("Error: MPI not initialized\n");
       return -1;
     }
-  
-  if(!mpi_inited)
+
+  if( !mpi_inited )
     {
-      printf("Error: MPI not initialized\n");
       return -1;
     }
-      
+
   if(MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank) != MPI_SUCCESS)
     return -1;
-  
+
   if(MPI_Comm_size(MPI_COMM_WORLD, &mpi_nnodes) != MPI_SUCCESS)
     return -1;
-  
-  //set proc type
-  if(mpi_rank == 0)
-    ctx->procType = MASTER_PROC;
-  else
-    ctx->procType = WORKER_PROC;
 
   if(gethostname (ninfo.host, 128))
     return -1;
@@ -80,7 +72,7 @@ _gaspi_handle_env_mpi(gaspi_context *ctx)
       printf("Memory allocation failed\n");
       return -1;
     }
-  
+
   if(MPI_Allgather(&ninfo, sizeof(ninfo), MPI_BYTE, hosts, sizeof(ninfo), MPI_BYTE, MPI_COMM_WORLD) != MPI_SUCCESS)
     {
       printf("rank %d: all to all failed \n", mpi_rank);
@@ -97,7 +89,7 @@ _gaspi_handle_env_mpi(gaspi_context *ctx)
 	{
 	  if(i < mpi_rank)
 	    ctx->localSocket++;
-	  
+
 	  ranks_node++;
 	}
     }
@@ -108,7 +100,7 @@ _gaspi_handle_env_mpi(gaspi_context *ctx)
       char *tmpfile;
       char template[16];
       FILE *mfile;
-      
+
       strcpy(template, ".gpi2.XXXXXX");
 
       tmpfile = mktemp(template);
@@ -125,12 +117,12 @@ _gaspi_handle_env_mpi(gaspi_context *ctx)
 	  printf("Failed to open file %s\n",tmpfile);
 	  return -1;
 	}
-      
+
       for(i = 0; i < mpi_nnodes; i++)
 	{
 	  fprintf(mfile, "%s\n", hosts[i].host);
 	}
-      
+
       fclose(mfile);
       snprintf (ctx->mfile, 1024, "%s", tmpfile);
     }
@@ -145,181 +137,105 @@ _gaspi_handle_env_mpi(gaspi_context *ctx)
   return 0;
 }
 #endif
-    
+
 inline int
 gaspi_handle_env(gaspi_context *ctx)
 {
-  int env_miss = 0;
-  char *socketPtr, *typePtr, *mfilePtr, *numaPtr;
-  char *rankPtr, *nranksPtr;
-
-  socketPtr = getenv ("GASPI_SOCKET");
-  numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
-
-#ifdef LOADLEVELER
-  typePtr = getenv ("MP_CHILD");
-#else
-  typePtr = getenv ("GASPI_TYPE");
+#ifdef GPI2_WITH_MPI
+  if( _gaspi_handle_env_mpi(ctx) == 0 )
+    {
+      return 0;
+    }
 #endif
 
-  mfilePtr = getenv ("GASPI_MFILE");
+  const char* nranksPtr = getenv ("GASPI_NRANKS");
+  if( nranksPtr == NULL )
+    {
+      gaspi_print_error("Num of ranks not defined (GASPI_NRANKS).");
+      return -1;
+    }
+  ctx->tnc = atoi(nranksPtr);
 
-  if(socketPtr)
+#ifdef LOADLEVELER
+  const char* rankPtr = getenv ("MP_CHILD");
+#else /* default */
+  const char *rankPtr = getenv ("GASPI_RANK");
+#endif
+  if( rankPtr == NULL )
+    {
+      gaspi_print_error("Rank not defined (GASPI_RANK).");
+      return -1;
+    }
+
+  ctx->rank = atoi(rankPtr);
+
+  const char* socketPtr = getenv ("GASPI_SOCKET");
+  if( socketPtr )
     {
 #ifdef LOADLEVELER
-      if(typePtr)
-        {
-          ctx->localSocket = MAX (atoi (socketPtr), 0);
-	  
-          int _my_id = atoi(typePtr);
-	  
-          char *ntasks = getenv("MP_COMMON_TASKS");
-          if(ntasks)
-            {
-              //first token has the number of partners
-              char *s = strtok(ntasks, ":");
-              do
-                {
-                  s = strtok(NULL, ":");
-                  if(s)
-                    {
-                      if(atoi(s) < _my_id)
-                        ctx->localSocket++;
-                    }
-                }
-              while(s != NULL);
-            }
-        }
+      ctx->localSocket = MAX (atoi (socketPtr), 0);
+
+      char *ntasks = getenv("MP_COMMON_TASKS");
+      if(ntasks)
+	{
+	  //first token has the number of partners
+	  char *s = strtok(ntasks, ":");
+	  do
+	    {
+	      s = strtok(NULL, ":");
+	      if(s)
+		{
+		  if(atoi(s) < ctx->rank)
+		    ctx->localSocket++;
+		}
+	    }
+	  while(s != NULL);
+	}
 #else
-      //  ctx->localSocket = MIN(MAX(atoi(socketPtr),0),3);
       ctx->localSocket = atoi(socketPtr);
 #endif
     }
   else
     {
-#ifndef GPI2_WITH_MPI      
-      gaspi_print_error ("No socket defined (GASPI_SOCKET)");
-#endif      
-      env_miss = 1;
+      gaspi_print_error("No socket defined (GASPI_SOCKET)");
+      return -1;
     }
 
-#ifndef MIC  
-  if(numaPtr)
+#ifndef MIC
+  const char* numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
+  if( numaPtr )
     {
-      if(atoi(numaPtr) == 1)
+      if( atoi(numaPtr) == 1 )
 	{
 	  cpu_set_t sock_mask;
-	  if(gaspi_get_affinity_mask (ctx->localSocket, &sock_mask) < 0)
+	  if( gaspi_get_affinity_mask (ctx->localSocket, &sock_mask) < 0 )
 	    {
 	      gaspi_print_error ("Failed to get affinity mask");
 	    }
 	  else
 	    {
-	      char mtyp[16];
-	      gaspi_machine_type (mtyp);
-	      if(strncmp (mtyp, "x86_64", 6) == 0){
-		if(sched_setaffinity (0, sizeof (cpu_set_t), &sock_mask) != 0)
-		  {
-		    gaspi_print_error ("Failed to set affinity (NUMA)");
-		  }
-	      }
+	      char mtype[16];
+	      gaspi_machine_type (mtype);
+	      if( strncmp (mtype, "x86_64", 6) == 0 )
+		{
+		  if( sched_setaffinity (0, sizeof (cpu_set_t), &sock_mask) != 0 )
+		    {
+		      gaspi_print_error ("Failed to set affinity (NUMA)");
+		    }
+		}
 	    }
 	}
     }
-#endif  
-  if(typePtr)
-    {
-#ifdef LOADLEVELER
-      char *nRanks = getenv("GASPI_NRANKS");
-      if( !nRanks )
-	{
-	  gaspi_print_error("Env var GASPI_NRANKS not found");
-	  return -1;
-	}
-
-      ctx->tnc = atoi(nRanks);
-
-      int _proc_number = atoi(typePtr);
-      ctx->rank = _proc_number;
-
-      if(_proc_number == 0)
-	{
-	  ctx->procType = MASTER_PROC;
-	}
-      else if (_proc_number > 0)
-	{
-	  ctx->procType = WORKER_PROC;
-	}
-#else /* default */
-      rankPtr = getenv ("GASPI_RANK");
-      if(rankPtr == NULL)
-	{
-#ifndef GPI2_WITH_MPI
-	  gaspi_print_error("Rank not defined (GASPI_RANK).");
 #endif
-	  env_miss = 1;
-	}
-      else
-	ctx->rank = atoi(rankPtr);
 
-      nranksPtr = getenv ("GASPI_NRANKS");
-      if(nranksPtr == NULL)
-	{
-#ifndef GPI2_WITH_MPI
-	  gaspi_print_error("Num of ranks not defined (GASPI_NRANKS).");
-#endif
-	  env_miss = 1;
-	}
-      else
-	ctx->tnc = atoi(nranksPtr);
-
-      if(strcmp (typePtr, "GASPI_WORKER") == 0)
-	{
-	  ctx->procType = WORKER_PROC;
-	}
-      
-      else if (strcmp (typePtr, "GASPI_MASTER") == 0)
-	{
-	  ctx->procType = MASTER_PROC;
-	}
-#endif
-      else
-	{
-#ifndef GPI2_WITH_MPI      	  
-	  gaspi_print_error ("Incorrect node type!\n");
-#endif	  
-	  env_miss = 1;
-	}
-    }
-  else
+  const char* mfilePtr = getenv ("GASPI_MFILE");
+  if ( !mfilePtr )
     {
-#ifndef GPI2_WITH_MPI      
-      gaspi_print_error ("No node type defined (GASPI_TYPE)");
-#endif      
-      env_miss = 1;
-    }
-
-  if (mfilePtr)
-    {
-      snprintf (ctx->mfile, 1024, "%s", mfilePtr);
-    }
-  else
-    {
-#ifndef GPI2_WITH_MPI      
       gaspi_print_error ("No machine file defined (GASPI_MFILE)");
-#endif      
-      env_miss = 1;
+      return -1;
     }
 
-  if(env_miss)
-    {
-#ifdef GPI2_WITH_MPI
-      //last try: via mpi  
-      return _gaspi_handle_env_mpi(ctx);
-#else
-      return -1;
-#endif      
-    }
-  
+  snprintf (ctx->mfile, 1024, "%s", mfilePtr);
+
   return 0;
 }

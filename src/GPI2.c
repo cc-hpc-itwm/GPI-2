@@ -234,8 +234,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
     }//glb_gaspi_sn_init
 
-  
-  if(glb_gaspi_ctx.procType == MASTER_PROC)
+  if( glb_gaspi_ctx.rank == 0 )
     {
       if(glb_gaspi_dev_init == 0)
 	{
@@ -297,7 +296,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	      for(i = 0; i < id; i++)
 		{
 		  //already in list ?
-		  //TODO: 64? 63? Magic numbers -> just get cacheline from system or define as such
 		  const int hnlen = MAX (strlen (glb_gaspi_ctx.hn_poff + i * 64), MIN (strlen (line) - 1, 63));
 		  if(strncmp (glb_gaspi_ctx.hn_poff + i * 64, line, hnlen) == 0)
 		    {
@@ -318,9 +316,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  
 	  free (line);
 	  
-	  //master
-	  glb_gaspi_ctx.rank = 0;
-	  
 	  free(glb_gaspi_ctx.sockfd);
   
 	  glb_gaspi_ctx.sockfd = (int *) malloc (glb_gaspi_ctx.tnc * sizeof (int));
@@ -335,12 +330,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	    glb_gaspi_ctx.sockfd[i] = -1;
 
 	}//glb_gaspi_dev_init
-    }//MASTER_PROC
-  else if(glb_gaspi_ctx.procType != WORKER_PROC)
-    {
-      gaspi_print_error ("Invalid node type (GASPI_TYPE)");
-      eret = GASPI_ERR_ENV;
-      goto errL;
     }
 
   if( 0 != gaspi_sn_broadcast_topology(&glb_gaspi_ctx, GASPI_BLOCK) )

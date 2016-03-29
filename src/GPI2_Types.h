@@ -76,7 +76,6 @@ typedef struct
 typedef struct
 {
   int localSocket;
-  int procType;
   int rank;
   int tnc;
   float mhz;

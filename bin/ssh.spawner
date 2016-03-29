@@ -50,7 +50,6 @@ do
     cmd="/bin/sh -c"
     cmd="$cmd 'export GASPI_MASTER=$1"
     cmd="$cmd; export GASPI_SOCKET=$i"
-    cmd="$cmd; export GASPI_TYPE=GASPI_WORKER"
     cmd="$cmd; export GASPI_MFILE=$3"
     cmd="$cmd; export GASPI_RANK=$(($5 * ($6 + 1) + $i));export GASPI_NRANKS=$7"
 

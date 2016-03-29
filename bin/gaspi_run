@@ -342,7 +342,6 @@ if [ "$master_node" != "$HN" ]; then
     cmd="/bin/sh -c"
     cmd="$cmd 'export GASPI_MASTER=$master_node"
     cmd="$cmd; export GASPI_SOCKET=0"
-    cmd="$cmd; export GASPI_TYPE=GASPI_MASTER"
     cmd="$cmd; export GASPI_MFILE=$MFILE"
     cmd="$cmd; export GASPI_RANK=0"
     cmd="$cmd; export GASPI_NRANKS=$NNODES"
@@ -365,7 +364,6 @@ else
 	export GASPI_SET_NUMA_SOCKET=1
     fi
     export GASPI_SOCKET=0
-    export GASPI_TYPE=GASPI_MASTER
     export GASPI_MFILE=$MFILE
     export GASPI_RANK=0
     export GASPI_NRANKS=$NNODES
