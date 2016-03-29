@@ -196,4 +196,11 @@ tcp_dev_is_valid_state(unsigned short);
 int
 tcp_dev_connect_to(int i);
 
+char*
+tcp_dev_get_local_ip(void);
+
+char*
+tcp_dev_get_local_if(char* ip);
+
+
 #endif

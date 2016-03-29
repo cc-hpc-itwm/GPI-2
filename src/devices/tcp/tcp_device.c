@@ -15,15 +15,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
+#include <arpa/inet.h>
 #include <netdb.h>
 #include <netinet/tcp.h>
 #include <signal.h>
 #include <sys/epoll.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <sys/socket.h>
+#include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <linux/if_link.h>
+#include <ifaddrs.h>
+
 
 #ifdef __linux__
 #include <linux/sockios.h>
@@ -289,6 +293,77 @@ _tcp_dev_add_new_conn(int rank, int conn_sock, int pollfd)
     }
 
   return nstate;
+}
+
+char*
+tcp_dev_get_local_if(char *ip)
+{
+  struct ifaddrs *ifaddr, *ifa;
+  int family, s, n;
+  char host[NI_MAXHOST];
+
+  if (getifaddrs(&ifaddr) == -1)
+    {
+      return NULL;
+    }
+
+  for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++)
+    {
+      if (ifa->ifa_addr == NULL)
+	continue;
+
+      family = ifa->ifa_addr->sa_family;
+
+      if (family == AF_INET || family == AF_INET6)
+	{
+	  s = getnameinfo(ifa->ifa_addr,
+			  (family == AF_INET) ? sizeof(struct sockaddr_in) :
+			  sizeof(struct sockaddr_in6),
+			  host, NI_MAXHOST,
+			  NULL, 0, NI_NUMERICHOST);
+	  if (s != 0)
+	    {
+	      return NULL;
+	    }
+
+	  if( strcmp(ip, host) == 0 )
+	    {
+	      char *myifa = malloc(8);
+	      if( myifa != NULL)
+		{
+		  sprintf(myifa, "%-8s", ifa->ifa_name);
+		}
+
+	      return myifa;
+	    }
+	}
+    }
+
+  return NULL;
+}
+
+char*
+tcp_dev_get_local_ip(void)
+{
+  struct addrinfo hints, *res;
+  struct in_addr addr;
+  int err;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_family = AF_INET;
+
+  if ((err = getaddrinfo(gaspi_get_hn(glb_gaspi_ctx.rank), NULL, &hints, &res)) != 0)
+    {
+      gaspi_print_error("Failed to get addr info for %u.", glb_gaspi_ctx.rank);
+      return NULL;
+    }
+
+  addr.s_addr = ((struct sockaddr_in *)(res->ai_addr))->sin_addr.s_addr;
+
+  freeaddrinfo(res);
+
+  return inet_ntoa(addr);
 }
 
 int
