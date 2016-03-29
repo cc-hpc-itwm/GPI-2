@@ -24,6 +24,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
 
+#include "GPI2_Stats.h"
+
 #define COLL_MEM_SEND     (131136)
 #define COLL_MEM_RECV     (COLL_MEM_SEND + 73728)
 #define NEXT_OFFSET       (COLL_MEM_RECV + 73728)

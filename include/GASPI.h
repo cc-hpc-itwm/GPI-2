@@ -233,7 +233,8 @@ extern "C"
    */
   typedef enum
     {
-      GASPI_STATISTIC_ARGUMENT_NONE
+      GASPI_STATISTIC_ARGUMENT_NONE,
+      GASPI_STATISTIC_ARGUMENT_RANK
     } gaspi_statistic_argument_t;
 
 
@@ -1181,7 +1182,7 @@ extern "C"
    *
    * @return GASPI_SUCCESS in case of SUCCESS, GASPI_ERROR in case of error.
    */
-  gaspi_return_t gaspi_statistic_counter_max(gaspi_statistic_counter_t* counter_max);
+  gaspi_return_t gaspi_statistic_counter_max(gaspi_number_t* counter_max);
 
   /** Get information about a counter.
    *
@@ -1214,7 +1215,7 @@ extern "C"
   gaspi_return_t
   gaspi_statistic_counter_get ( gaspi_statistic_counter_t counter
 				, gaspi_number_t argument
-				, gaspi_number_t *value
+				, unsigned long *value
 				);
 
   /** Reset a counter (set to 0).

@@ -251,6 +251,9 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
 
   glb_gaspi_ctx.ne_count_c[queue]++;
 
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_WRITE, 1);
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_BYTES_WRITE, size);
+
  endL:
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
   return eret;
@@ -294,6 +297,8 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
 
   glb_gaspi_ctx.ne_count_c[queue]++;
 
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_READ, 1);
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_BYTES_READ, size);
  endL:
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
   return eret;
@@ -304,9 +309,12 @@ gaspi_return_t
 pgaspi_wait (const gaspi_queue_id_t queue,
 	     const gaspi_timeout_t timeout_ms)
 {
-
   gaspi_verify_init("gaspi_wait");
   gaspi_verify_queue(queue);
+
+  /* We need to start timing before the lock to include contention in
+     lock when execution is multithreaded */
+  GPI2_STATS_START_TIMER(GASPI_WAIT_TIMER);
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -315,7 +323,11 @@ pgaspi_wait (const gaspi_queue_id_t queue,
 
   eret = pgaspi_dev_wait(queue, &glb_gaspi_ctx.ne_count_c[queue], timeout_ms);
 
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_WAIT, 1);
+
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
+
+  GPI2_STATS_STOP_TIMER(GASPI_WAIT_TIMER);
 
   return eret;
 }
@@ -490,6 +502,10 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
   gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id_local]);
   gaspi_verify_null_ptr(first_id);
 
+  /* We need to start timing before the lock to include contention in
+     lock when execution is multithreaded */
+  GPI2_STATS_START_TIMER(GASPI_WAITSOME_TIMER);
+
 #ifdef DEBUG
   if( num >= GASPI_MAX_NOTIFICATION)
     return GASPI_ERR_INV_NUM;
@@ -523,6 +539,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 	      if (p[n])
 		{
 		  *first_id = n;
+		  GPI2_STATS_STOP_TIMER(GASPI_WAITSOME_TIMER);
 		  return GASPI_SUCCESS;
 		}
 	    }
@@ -538,6 +555,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 	  if (p[n])
 	    {
 	      *first_id = n;
+	      GPI2_STATS_STOP_TIMER(GASPI_WAITSOME_TIMER);
 	      return GASPI_SUCCESS;
 	    }
 	}
@@ -571,6 +589,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
       gaspi_delay ();
     }
 
+  GPI2_STATS_STOP_TIMER(GASPI_WAITSOME_TIMER);
   return GASPI_SUCCESS;
 }
 
@@ -659,6 +678,9 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 				 queue);
 
   glb_gaspi_ctx.ne_count_c[queue] += 2;
+
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_WRITE_NOT, 1);
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_BYTES_WRITE, size);
 
  endL:
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
