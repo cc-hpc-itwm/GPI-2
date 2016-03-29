@@ -47,18 +47,18 @@ HDRS += GPI2.h
 
 OBJS = $(SRCS:.c=.o)
 OBJS_DBG = $(SRCS:.c=.dbg.o)
-OBJS_TRC = $(SRCS:.c=.trc.o)
+OBJS_STAT = $(SRCS:.c=.stat.o)
 OBJS_MIC = $(SRCS:.c=.mic.o)
 OBJS_DBG_MIC = $(SRCS:.c=.mic.dbg.o)
-OBJS_TRC_MIC = $(SRCS:.c=.mic.trc.o)
+OBJS_STAT_MIC = $(SRCS:.c=.mic.stat.o)
 
 OBJ_FORTRAN = GASPI.o
 
 GPI2 = libGPI2.a
 GPI2_DBG = libGPI2-dbg.a
-GPI2_TRC = libGPI2-trace.a
+GPI2_STAT = libGPI2-stats.a
 
-gpi: $(GPI2) $(GPI2_DBG) $(GPI2_TRC)
+gpi: $(GPI2) $(GPI2_DBG) $(GPI2_STAT)
 
 fortran: $(OBJ_FORTRAN)
 
@@ -70,9 +70,9 @@ $(GPI2_DBG): $(OBJS_DBG)
 	rm -f ../lib64/$(GPI2_DBG)
 	ar crs ../lib64/$(GPI2_DBG) $(OBJS_DBG)
 
-$(GPI2_TRC): $(OBJS_TRC)
-	rm -f ../lib64/$(GPI2_TRC)
-	ar crs ../lib64/$(GPI2_TRC) $(OBJS_TRC)
+$(GPI2_STAT): $(OBJS_STAT)
+	rm -f ../lib64/$(GPI2_STAT)
+	ar crs ../lib64/$(GPI2_STAT) $(OBJS_STAT)
 
 $(OBJ_FORTRAN): GASPI.f90
 	@if test "$(HAS_FORTRAN)" == "" ; then \
@@ -93,7 +93,7 @@ mic: $(OBJS_MIC) $(OBJS_DBG_MIC)
 %.dbg.o: %.c
 	$(CC) $(DBG_CFLAGS) -DDEBUG $(INCLUDES) -c $<  -o $@
 
-%.trc.o: %.c
+%.stat.o: %.c
 	$(CC) $(DBG_CFLAGS) -DGPI2_STATS -DDEBUG $(INCLUDES) -c $<  -o $@
 
 %.mic.o: %.c
@@ -102,7 +102,7 @@ mic: $(OBJS_MIC) $(OBJS_DBG_MIC)
 %.mic.dbg.o: %.c
 	icc -mmic -g -O0 $(INCLUDES) -DGPI2_DEVICE_IB -D_GNU_SOURCE -DDEBUG -DMIC -c $<  -o $@
 
-%.mic.trc.o: %.c
+%.mic.stat.o: %.c
 	icc -mmic -g -O0 $(INCLUDES) -D_GNU_SOURCE -DGPI2_STATS -DDEBUG -DMIC -c $<  -o $@
 
 clean:
