@@ -255,6 +255,7 @@ pgaspi_statistic_counter_reset (gaspi_statistic_counter_t counter)
 void
 pgaspi_statistic_print_counters (void)
 {
+#ifdef GPI2_STATS
   gaspi_statistic_counter_t i;
   gaspi_rank_t myrank, nranks, r;
 
@@ -322,6 +323,6 @@ pgaspi_statistic_print_counters (void)
 	  return;
 	}
     }
-
+#endif
   return;
 }
