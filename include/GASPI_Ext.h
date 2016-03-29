@@ -138,6 +138,19 @@ extern "C"
    */
   gaspi_return_t gaspi_proc_ping (const gaspi_rank_t rank, gaspi_timeout_t tout);
 
+  /** Get an available segment id (only locally).
+   *
+   * To create/alloc a segment, the application must provide a segment
+   * id. This provides a helper function to find the next available id
+   * locally i.e. for the calling rank.
+   *
+   *
+   * @param avail_seg_id The available segment id.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_segment_avail_local (gaspi_segment_id_t* const avail_seg_id);
+
 #ifdef __cplusplus
 }
 #endif

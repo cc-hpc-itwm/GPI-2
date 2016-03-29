@@ -114,6 +114,63 @@ pgaspi_segment_num (gaspi_number_t * const segment_num)
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_segment_avail_local = pgaspi_segment_avail_local
+gaspi_return_t
+pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
+{
+  gaspi_verify_null_ptr(avail_seg_id);
+
+  gaspi_number_t num_segs;
+  if( gaspi_segment_num (&num_segs) != GASPI_SUCCESS)
+    {
+      return GASPI_ERROR;
+    }
+
+  //fast path
+  if( num_segs == 0 )
+    {
+      *avail_seg_id = 0;
+      return GASPI_SUCCESS;
+    }
+
+  gaspi_number_t segs_max;
+  if( gaspi_segment_max (&segs_max) != GASPI_SUCCESS )
+    {
+      return GASPI_ERROR;
+    }
+
+  if( num_segs == segs_max)
+    {
+      return GASPI_ERR_MANY_SEG;
+    }
+
+  gaspi_segment_id_t *segment_ids = malloc(num_segs * sizeof(gaspi_segment_id_t));
+  if( segment_ids == NULL )
+    {
+      return GASPI_ERR_MEMALLOC;
+    }
+
+  if( gaspi_segment_list (num_segs, segment_ids) != GASPI_SUCCESS)
+    {
+      return GASPI_ERROR;
+    }
+
+  int i;
+  for(i = 1; i < num_segs; i++)
+    {
+      if( segment_ids[i] != segment_ids[i-1]+1 )
+	{
+	  *avail_seg_id = i ;
+	  return GASPI_SUCCESS;
+	}
+    }
+  *avail_seg_id = num_segs;
+
+  free(segment_ids);
+
+  return GASPI_SUCCESS;
+}
+
 #pragma weak gaspi_segment_alloc = pgaspi_segment_alloc
 gaspi_return_t
 pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,

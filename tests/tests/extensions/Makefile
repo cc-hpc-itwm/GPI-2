@@ -1,4 +1,4 @@
-BIN =  ping_procs.bin q_create.bin
+BIN =  ping_procs.bin q_create.bin seg_avail_local.bin
 
 CFLAGS+=-I../
 
