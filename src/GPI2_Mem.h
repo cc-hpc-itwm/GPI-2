@@ -23,6 +23,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <sys/resource.h>
 #include <unistd.h>
 #include "GASPI.h"
+#include "GASPI_Ext.h"
 
 gaspi_size_t gaspi_get_system_mem(void);
 

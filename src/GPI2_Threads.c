@@ -22,6 +22,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include <GASPI_Threads.h>
 #include "GPI2_Utility.h"
+#include "GASPI_Ext.h"
 
 #define GASPI_MAX_THREADS (1024)
 

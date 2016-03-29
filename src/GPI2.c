@@ -433,7 +433,7 @@ pgaspi_cleanup_core(void)
   /* delete extra queues created */
   if( glb_gaspi_ctx.num_queues != glb_gaspi_cfg.queue_num )
     {
-      int q;
+      gaspi_uint q;
       for (q = glb_gaspi_cfg.queue_num; q < glb_gaspi_ctx.num_queues; q ++)
 	{
 	  if( pgaspi_dev_comm_queue_delete(q) != 0)
@@ -741,12 +741,12 @@ pgaspi_error_str(gaspi_return_t error_code)
 
   if(error_code == GASPI_ERROR)
     {
-      return "general error";
+      return (gaspi_string_t) "general error";
     }
 
   if(error_code < GASPI_ERROR || error_code > GASPI_ERR_MEMALLOC)
     {
-      return "unknown";
+      return (gaspi_string_t) "unknown";
     }
 
   return (gaspi_string_t) gaspi_return_str[error_code];

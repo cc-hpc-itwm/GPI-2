@@ -155,12 +155,12 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
       return GASPI_ERROR;
     }
 
-  int i;
+  gaspi_number_t i;
   for(i = 1; i < num_segs; i++)
     {
       if( segment_ids[i] != segment_ids[i-1]+1 )
 	{
-	  *avail_seg_id = i ;
+	  *avail_seg_id = (gaspi_segment_id_t) i ;
 	  return GASPI_SUCCESS;
 	}
     }
@@ -483,6 +483,7 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 
   gaspi_context* const ctx = &glb_gaspi_ctx;
   const int myrank = (int) ctx->rank;
+  long page_size;
 
   if( ctx->mseg_cnt >= GASPI_MAX_MSEGS )
     {
@@ -511,7 +512,7 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
     }
 
   /* Get space for notifications and register it as well */
-  long page_size = sysconf (_SC_PAGESIZE);
+  page_size = sysconf (_SC_PAGESIZE);
 
   if( page_size < 0 )
     {
