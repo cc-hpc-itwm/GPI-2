@@ -18,6 +18,7 @@
 #include <assert.h>
 
 #include <GASPI.h>                    
+#include <GASPI_Ext.h>
 //#include <GASPI_Threads.h> 
 
 #include "utils.h"

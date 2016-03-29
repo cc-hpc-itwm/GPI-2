@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <GASPI.h>
+#include <GASPI_Ext.h>
 
 int start_bench (int);
 

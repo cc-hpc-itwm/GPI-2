@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <GASPI.h>
-
+#include <GASPI_Ext.h>
 
 static int
 mcycles_compare (const void *aptr, const void *bptr)
