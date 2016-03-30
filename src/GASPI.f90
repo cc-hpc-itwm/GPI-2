@@ -694,7 +694,7 @@ module GASPI
     end interface
 
     interface ! gaspi_queue_create
-      function gaspi_queue_create(queue,timeout_msg) &
+      function gaspi_queue_create(queue,timeout_ms) &
 &         result( res ) bind(C, name="gaspi_queue_create")
         import
         integer(gaspi_queue_id_t), value :: queue
