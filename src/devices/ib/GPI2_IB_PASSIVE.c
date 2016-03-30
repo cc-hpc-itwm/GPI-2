@@ -170,7 +170,7 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
   if ((ne < 0) || (wc_recv.status != IBV_WC_SUCCESS))
     {
       //TODO: for now here but has to go up
-      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc_recv.wr_id]] = GASPI_STATE_CORRUPT;
+      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc_recv.wr_id] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
