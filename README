@@ -192,7 +192,10 @@ The gaspi_run utility has the following further options [OPTIONS]:
   -d               Run with GDB (debugger) on master node. With this
   		   option, GDB is started in the master node, to allow
 		   debugging the application.
-  
+
+  -p               Ping hosts before starting the binary to make sure
+  		   they are available.
+
   -h               Show help.
 
 
