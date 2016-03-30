@@ -31,7 +31,9 @@ pgaspi_dev_poll_groups(void)
 {
   int i;
   
-  const int pret = ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx.ne_count_grp,glb_gaspi_ctx_ib.wc_grp_send);
+  const int pret = ibv_poll_cq( glb_gaspi_ctx_ib.scqGroups,
+				glb_gaspi_ctx.ne_count_grp,
+				glb_gaspi_ctx_ib.wc_grp_send );
   
   if (pret < 0)
     {
@@ -39,13 +41,14 @@ pgaspi_dev_poll_groups(void)
 	{
 	  if (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS)
 	    {
+	      //TODO: for now here, but has to go out of device
 	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
 	    }
 	}
 
       gaspi_print_error("Failed request to %lu. Collectives queue might be broken",
 			glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
-      return GASPI_ERROR;
+      return -1;
     }
 
   return pret;
@@ -75,7 +78,6 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
   
   if (ibv_post_send ((struct ibv_qp *) glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
       return 1;
     }
 

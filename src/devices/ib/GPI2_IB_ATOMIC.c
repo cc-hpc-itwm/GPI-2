@@ -25,11 +25,10 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 			     const gaspi_rank_t rank,
 			     const gaspi_atomic_value_t val_add)
 {
- 
+  int i;
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slist;
   struct ibv_send_wr swr;
-  int i;
 
   slist.addr = (uintptr_t) (glb_gaspi_ctx.nsrc.data.buf);
   slist.length = sizeof(gaspi_atomic_value_t);
@@ -49,11 +48,10 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr))
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
-
       return GASPI_ERROR;
     }
 
+  //TODO
   glb_gaspi_ctx.ne_count_grp++;
 
   int ne = 0;
@@ -68,12 +66,6 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
       if ((ne < 0)  || (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS))
 	{
-	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
-
-	  gaspi_print_error("Failed request to %lu : %s",
-			    glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 
-			    ibv_wc_status_str(glb_gaspi_ctx_ib.wc_grp_send[i].status));
-
 	  return GASPI_ERROR;
 	}
     }
@@ -116,8 +108,6 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 
   if (ibv_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr))
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
-
       return GASPI_ERROR;
     }
 
@@ -135,16 +125,11 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 
       if ((ne < 0) || (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS))
 	{
-	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
-
- 	  gaspi_print_error("Failed request to %lu : %s",
-			    glb_gaspi_ctx_ib.wc_grp_send[i].wr_id, 
-			    ibv_wc_status_str(glb_gaspi_ctx_ib.wc_grp_send[i].status));
-
 	  return GASPI_ERROR;
 	}
     }
 
+  //TODO:
   glb_gaspi_ctx.ne_count_grp = 0;
   
   return GASPI_SUCCESS;

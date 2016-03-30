@@ -52,6 +52,12 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
   eret = pgaspi_dev_atomic_fetch_add(segment_id, offset, rank,
 				     val_add);
 
+  if( eret != GASPI_SUCCESS )
+    {
+      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
+      goto endL;
+    }
+
   *val_old = *((gaspi_atomic_value_t *) (glb_gaspi_ctx.nsrc.data.buf));
 
  endL:
@@ -89,6 +95,12 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
     }
   eret = pgaspi_dev_atomic_compare_swap(segment_id, offset, rank,
 					comparator, val_new);
+
+  if( eret != GASPI_SUCCESS )
+    {
+      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
+      goto endL;
+    }
 
   *val_old = *((gaspi_atomic_value_t *) (glb_gaspi_ctx.nsrc.data.buf));
 

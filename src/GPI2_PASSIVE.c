@@ -47,20 +47,27 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  if(lock_gaspi_tout (&glb_gaspi_ctx.lockPS, timeout_ms))
-    return GASPI_TIMEOUT;
+  if( lock_gaspi_tout (&glb_gaspi_ctx.lockPS, timeout_ms) )
+    {
+      return GASPI_TIMEOUT;
+    }
 
   if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
-      if ( eret != GASPI_SUCCESS)
+      if( eret != GASPI_SUCCESS )
 	{
 	  goto endL;
 	}
     }
-  
+
   eret = pgaspi_dev_passive_send(segment_id_local, offset_local, rank,
 				 size, glb_gaspi_ctx.ne_count_p, timeout_ms);
+
+  if( eret == GASPI_ERROR )
+    {
+      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][rank] = GASPI_STATE_CORRUPT;
+    }
 
  endL:
   unlock_gaspi (&glb_gaspi_ctx.lockPS);
@@ -82,8 +89,10 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  if(lock_gaspi_tout (&glb_gaspi_ctx.lockPR, timeout_ms))
-    return GASPI_TIMEOUT;
+  if( lock_gaspi_tout (&glb_gaspi_ctx.lockPR, timeout_ms) )
+    {
+      return GASPI_TIMEOUT;
+    }
 
   eret = pgaspi_dev_passive_receive(segment_id_local, offset_local, rem_rank,
 				    size, timeout_ms);

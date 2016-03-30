@@ -41,11 +41,10 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
   
   if( write(glb_gaspi_ctx_tcp.qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
-  //REPCODE: repeated code (what changes is the ctx)
+  //TODO: repeated code (what changes is the ctx)
   glb_gaspi_ctx.ne_count_grp++; 
 
   int ne = 0;
@@ -60,18 +59,13 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 	}
       while (ne == 0);
 
-      if ((ne < 0) || (wc.status != TCP_WC_SUCCESS))
+      if( (ne < 0) || (wc.status != TCP_WC_SUCCESS) )
 	{
-	  gaspi_print_error("Failed request to %lu. Collectives queue might be broken",
-			    wc.wr_id);
-
-	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
-
 	  return GASPI_ERROR;
 	}
     }
 
-  //REPCODE: repeated code (what changes is the ctx)
+  //TODO: repeated code (what changes is the ctx)
   glb_gaspi_ctx.ne_count_grp = 0;
 
   return GASPI_SUCCESS;
@@ -84,7 +78,6 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 				const gaspi_atomic_value_t comparator,
 				const gaspi_atomic_value_t val_new)
 { 
-
   tcp_dev_wr_t wr =
     {
       .wr_id       = rank,
@@ -101,11 +94,10 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
   
   if( write(glb_gaspi_ctx_tcp.qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
-  //REPCODE: repeated code (what changes is the ctx)    
+  //TODO: repeated code (what changes is the ctx)
   glb_gaspi_ctx.ne_count_grp++;
 
   int ne = 0;
@@ -122,16 +114,11 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 
       if ((ne < 0) || (wc.status != TCP_WC_SUCCESS))
 	{
-	  gaspi_print_error("Failed request to %lu. Collectives queue might be broken",
-			    wc.wr_id);
-
-	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
-
 	  return GASPI_ERROR;
 	}
     }
 
-  //REPCODE: repeated code (what changes is the ctx)
+  //TODO: repeated code (what changes is the ctx)
   glb_gaspi_ctx.ne_count_grp = 0;
   
   return GASPI_SUCCESS;

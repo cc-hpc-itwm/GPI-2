@@ -239,7 +239,7 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
   if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
-      if ( eret != GASPI_SUCCESS)
+      if( eret != GASPI_SUCCESS)
 	{
 	  goto endL;
 	}
@@ -248,6 +248,12 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
   eret = pgaspi_dev_write(segment_id_local, offset_local, rank,
 			  segment_id_remote,offset_remote, (unsigned int) size,
 			  queue);
+
+  if( eret != GASPI_SUCCESS )
+    {
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      goto endL;
+    }
 
   glb_gaspi_ctx.ne_count_c[queue]++;
 
@@ -295,6 +301,12 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
 			 segment_id_remote,offset_remote, (unsigned int) size,
 			 queue);
 
+  if( eret != GASPI_SUCCESS )
+    {
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      goto endL;
+    }
+
   glb_gaspi_ctx.ne_count_c[queue]++;
 
   GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_READ, 1);
@@ -323,8 +335,14 @@ pgaspi_wait (const gaspi_queue_id_t queue,
 
   eret = pgaspi_dev_wait(queue, &glb_gaspi_ctx.ne_count_c[queue], timeout_ms);
 
+  if( eret != GASPI_SUCCESS )
+    {
+      goto endL;
+    }
+
   GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_WAIT, 1);
 
+ endL:
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
 
   GPI2_STATS_STOP_TIMER(GASPI_WAIT_TIMER);
@@ -380,6 +398,12 @@ pgaspi_write_list (const gaspi_number_t num,
 			       segment_id_remote, offset_remote, size,
 			       queue);
 
+  if( eret != GASPI_SUCCESS )
+    {
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      goto endL;
+    }
+
   glb_gaspi_ctx.ne_count_c[queue] +=  num;
 
  endL:
@@ -408,19 +432,20 @@ pgaspi_read_list (const gaspi_number_t num,
   gaspi_verify_queue_depth(glb_gaspi_ctx.ne_count_c[queue]);
 
   gaspi_number_t n;
-  for(n = 0; n < num; n++)
+  for( n = 0; n < num; n++ )
     {
       gaspi_verify_local_off(offset_local[n], segment_id_local[n], size[n]);
       gaspi_verify_remote_off(offset_remote[n], segment_id_remote[n], rank, size[n]);
       gaspi_verify_comm_size(size[n], segment_id_local[n], segment_id_remote[n], rank, GASPI_MAX_TSIZE_C);
     }
-
 #endif
 
   gaspi_return_t eret;
 
-  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
-    return GASPI_TIMEOUT;
+  if( lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms) )
+    {
+      return GASPI_TIMEOUT;
+    }
 
   if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
     {
@@ -434,6 +459,12 @@ pgaspi_read_list (const gaspi_number_t num,
   eret = pgaspi_dev_read_list(num, segment_id_local, offset_local, rank,
 			      segment_id_remote, offset_remote, size,
 			      queue);
+
+  if( eret != GASPI_SUCCESS )
+    {
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      goto endL;
+    }
 
   glb_gaspi_ctx.ne_count_c[queue] += num;
 
@@ -481,6 +512,12 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
   eret = pgaspi_dev_notify(segment_id_remote, rank,
 			   notification_id, notification_value,
 			   queue);
+
+  if( eret != GASPI_SUCCESS )
+    {
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      goto endL;
+    }
 
   glb_gaspi_ctx.ne_count_c[queue]++;
 
@@ -590,6 +627,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
     }
 
   GPI2_STATS_STOP_TIMER(GASPI_WAITSOME_TIMER);
+
   return GASPI_SUCCESS;
 }
 
@@ -677,6 +715,12 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 				 notification_id, notification_value,
 				 queue);
 
+  if( eret != GASPI_SUCCESS )
+    {
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      goto endL;
+    }
+
   glb_gaspi_ctx.ne_count_c[queue] += 2;
 
   GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_WRITE_NOT, 1);
@@ -746,6 +790,12 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 				      segment_id_remote, offset_remote, (unsigned int *)size,
 				      segment_id_notification, notification_id, notification_value,
 				      queue);
+
+  if( eret != GASPI_SUCCESS )
+    {
+      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      goto endL;
+    }
 
   glb_gaspi_ctx.ne_count_c[queue] += (int) (num + 1);
 

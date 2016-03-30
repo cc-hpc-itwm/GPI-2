@@ -36,8 +36,10 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
   const int bit_pos = rank - (byte_id * 8);
   const unsigned char bit_cmp = 1 << bit_pos;
 
-  if (passive_counter[byte_id] & bit_cmp)
-    goto checkL;
+  if( passive_counter[byte_id] & bit_cmp )
+    {
+      goto checkL;
+    }
 
   slist.addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr +
 			    offset_local);
@@ -51,10 +53,8 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
   swr.send_flags = IBV_SEND_SIGNALED;
   swr.next = NULL;
 
-  if (ibv_post_send (glb_gaspi_ctx_ib.qpP[rank], &swr, &bad_wr))
+  if( ibv_post_send (glb_gaspi_ctx_ib.qpP[rank], &swr, &bad_wr) )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][rank] = GASPI_STATE_CORRUPT;
-
       return GASPI_ERROR;
     }
 
@@ -83,10 +83,8 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
     }
   while (ne == 0);
 
-  if ((ne < 0) || (wc_send.status != IBV_WC_SUCCESS))
+  if( (ne < 0) || (wc_send.status != IBV_WC_SUCCESS) )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc_send.wr_id] = GASPI_STATE_CORRUPT;
-
       return GASPI_ERROR;
     }
 
@@ -171,8 +169,8 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
 
   if ((ne < 0) || (wc_recv.status != IBV_WC_SUCCESS))
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc_recv.wr_id] = GASPI_STATE_CORRUPT;
-
+      //TODO: for now here but has to go up
+      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc_recv.wr_id]] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 

@@ -22,7 +22,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 int
 pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_addr, int g)
 {
-
   tcp_dev_wr_t wr =
     {
       .cq_handle   = glb_gaspi_ctx_tcp.scqGroups->num,
@@ -61,15 +60,17 @@ pgaspi_dev_poll_groups(void)
 	}
       while (ne == 0);
       
-      if ((ne < 0) || (wc.status != TCP_WC_SUCCESS))
+      if( (ne < 0) || (wc.status != TCP_WC_SUCCESS) )
 	{
-	  if(!tcp_dev_is_valid_state(wc.wr_id))
+	  if( !tcp_dev_is_valid_state(wc.wr_id) )
 	    continue;
 
-	  gaspi_print_error("Rank %u: Failed request to %lu. Collectives queue might be broken",
-			    glb_gaspi_ctx.rank,
+	  //TODO: for now here, but has to go out of device
+	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
+
+	  gaspi_print_error("Failed request to %lu. Collectives queue might be broken",
 			    wc.wr_id);
-	  return GASPI_ERROR;
+	  return -1;
 	}
     }
 
