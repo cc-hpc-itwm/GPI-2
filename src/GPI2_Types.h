@@ -33,9 +33,6 @@ typedef struct
   char dummy[63];
 } gaspi_lock_t;
 
-enum
-{ MASTER_PROC = 1, WORKER_PROC = 2 };
-
 typedef struct
 {
   union
