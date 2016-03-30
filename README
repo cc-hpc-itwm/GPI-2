@@ -317,8 +317,8 @@ must be located on the same NUMA socket. Otherwise, direct data
 transfers are not supported. GPI-2 checks this at the
 initialization.
 
-8. TROUBLESHOOTING
-==================
+8. TROUBLESHOOTING AND KNOWN ISSUES
+===================================
 
 If you're having troubles when building GPI-2 with support for
 Infiniband, make sure you have the OFED stack correctly installed and
