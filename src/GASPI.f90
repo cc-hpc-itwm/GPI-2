@@ -46,6 +46,7 @@ module GASPI_types
   integer, parameter   :: gaspi_notification_t = c_int
   integer, parameter   :: gaspi_statistic_counter_t = c_int
   integer, parameter   :: gaspi_cycles_t = c_long
+  integer, parameter   :: gaspi_memory_description_t = c_int
   integer(gaspi_group_t), parameter :: GASPI_GROUP_ALL = 0
 
 end module GASPI_types
@@ -350,6 +351,32 @@ module GASPI
         integer(gaspi_alloc_t), value :: alloc_policy
         integer(gaspi_return_t) :: res
       end function gaspi_segment_create
+    end interface
+
+    interface ! gaspi_segment_bind
+       function gaspi_segment_bind(segment_id,ptr,size,desc) &
+&         result( res ) bind(C, name="gaspi_segment_bind")
+        import
+        integer(gaspi_segment_id_t), value :: segment_id
+        type(c_ptr) :: ptr
+        integer(gaspi_size_t), value :: size
+        integer(gaspi_memory_description_t), value :: desc
+        integer(gaspi_return_t) :: res
+      end function gaspi_segment_bind
+    end interface
+
+    interface ! gaspi_segment_use
+       function gaspi_segment_use(segment_id,ptr,size,group,timeout_ms,desc) &
+&         result( res ) bind(C, name="gaspi_segment_use")
+        import
+        integer(gaspi_segment_id_t), value :: segment_id
+        type(c_ptr) :: ptr
+        integer(gaspi_size_t), value :: size
+        integer(gaspi_group_t), value :: group
+        integer(gaspi_timeout_t), value :: timeout_ms
+        integer(gaspi_memory_description_t), value :: desc
+        integer(gaspi_return_t) :: res
+      end function gaspi_segment_use
     end interface
 
     interface ! gaspi_segment_num
@@ -664,6 +691,25 @@ module GASPI
         integer(gaspi_timeout_t), value :: timeout_ms
         integer(gaspi_return_t) :: res
       end function gaspi_write_list_notify
+    end interface
+
+    interface ! gaspi_queue_create
+      function gaspi_queue_create(queue,timeout_msg) &
+&         result( res ) bind(C, name="gaspi_queue_create")
+        import
+        integer(gaspi_queue_id_t), value :: queue
+        integer(gaspi_timeout_t), value :: timeout_ms
+        integer(gaspi_return_t) :: res
+      end function gaspi_queue_create
+    end interface
+
+    interface ! gaspi_queue_delete
+      function gaspi_queue_delete(queue) &
+&         result( res ) bind(C, name="gaspi_queue_delete")
+        import
+        integer(gaspi_queue_id_t), value :: queue
+        integer(gaspi_return_t) :: res
+      end function gaspi_queue_delete
     end interface
 
     interface ! gaspi_queue_size
