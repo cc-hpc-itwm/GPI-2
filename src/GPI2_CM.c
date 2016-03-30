@@ -26,12 +26,14 @@ pgaspi_create_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout
 {
   const int i = (int) rank;
 
-  if(lock_gaspi_tout(&gaspi_create_lock, timeout_ms))
-    return GASPI_TIMEOUT;
+  if( lock_gaspi_tout(&gaspi_create_lock, timeout_ms) )
+    {
+      return GASPI_TIMEOUT;
+    }
 
   if( GASPI_ENDPOINT_NOT_CREATED == glb_gaspi_ctx.ep_conn[i].istat )
     {
-      if(pgaspi_dev_create_endpoint(i) < 0)
+      if( pgaspi_dev_create_endpoint(i) < 0 )
 	{
 	  unlock_gaspi(&gaspi_create_lock);
 	  return GASPI_ERR_DEVICE;
@@ -50,7 +52,7 @@ pgaspi_connect_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeou
   const int i = (int) rank;
   gaspi_return_t eret = GASPI_ERROR;
 
-  if(lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms))
+  if( lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
@@ -61,7 +63,7 @@ pgaspi_connect_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeou
     }
   else
     {
-      if(pgaspi_dev_connect_context(i) != 0)
+      if( pgaspi_dev_connect_context(i) != 0 )
 	{
 	  eret = GASPI_ERR_DEVICE;
 	}
@@ -93,7 +95,7 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
       return eret;
     }
 
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+  if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
@@ -105,7 +107,7 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
     }
 
   eret = gaspi_sn_command(GASPI_SN_CONNECT, rank, timeout_ms, NULL);
-  if(eret != GASPI_SUCCESS)
+  if( eret != GASPI_SUCCESS )
     {
       if( GASPI_ERROR == eret)
 	{
@@ -128,7 +130,7 @@ pgaspi_local_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_m
   const int i = rank;
   gaspi_return_t eret = GASPI_ERROR;
 
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
+  if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
@@ -166,11 +168,15 @@ pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
     }
 
   eret = pgaspi_local_disconnect(rank, timeout_ms);
-  if(eret != GASPI_SUCCESS)
-    return eret;
+  if( eret != GASPI_SUCCESS )
+    {
+      return eret;
+    }
 
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
-    return GASPI_TIMEOUT;
+  if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
+    {
+      return GASPI_TIMEOUT;
+    }
 
   /* we can still get trapped inside the sn command, trying to connect */
   /* to a remote rank and in case the remote rank is */
