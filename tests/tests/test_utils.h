@@ -25,6 +25,6 @@ void must_timeout ( const char* file, const int line, const int ec);
 #define EXPECT_FAIL(ec) must_fail(__FILE__, __LINE__, ec);
 #define EXPECT_TIMEOUT(ec) must_timeout(__FILE__, __LINE__, ec);  
 
-void exit_safely();
+void exit_safely(void);
   
 #endif //_TEST_UTILS_H_

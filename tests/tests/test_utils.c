@@ -147,7 +147,8 @@ void must_timeout ( const char* file, const int line, const int ec)
     }
 }
 
-void exit_safely()
+void
+exit_safely(void)
 {
   gaspi_rank_t rank, nprocs, i;
   ASSERT (gaspi_proc_num(&nprocs));
