@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
-  mem = get_system_mem();
+  mem = gaspi_get_system_mem();
   if(mem > 0)
     {
       mem *= 1024; //to bytes
