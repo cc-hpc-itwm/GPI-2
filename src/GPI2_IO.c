@@ -787,7 +787,7 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 
   eret = pgaspi_dev_write_list_notify(num,
 				      segment_id_local, offset_local, rank,
-				      segment_id_remote, offset_remote, (unsigned int *)size,
+				      segment_id_remote, offset_remote, size,
 				      segment_id_notification, notification_id, notification_value,
 				      queue);
 
