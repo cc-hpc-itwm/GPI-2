@@ -60,6 +60,12 @@ typedef struct
 extern counter_info_t gpi2_counter_info[GASPI_STATS_COUNTER_NUM_MAX];
 extern gaspi_number_t glb_gaspi_stats_verbosity_level;
 
+void
+gaspi_stats_start_timer(enum gaspi_timer t);
+
+void
+gaspi_stats_stop_timer(enum gaspi_timer t);
+
 #ifdef GPI2_STATS
 
 #define GPI2_STATS_INC_COUNT(counter, val) do {				\
