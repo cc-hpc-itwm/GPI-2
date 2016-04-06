@@ -29,7 +29,7 @@ gaspi_return_t
 pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
 		  const gaspi_offset_t offset_local, const gaspi_rank_t rank,
 		  const gaspi_segment_id_t segment_id_remote,
-		  const gaspi_offset_t offset_remote, const unsigned int size,
+		  const gaspi_offset_t offset_remote, const gaspi_size_t size,
 		  const gaspi_queue_id_t queue)
 {
   struct ibv_send_wr *bad_wr;
@@ -87,7 +87,7 @@ gaspi_return_t
 pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
 		 const gaspi_offset_t offset_local, const gaspi_rank_t rank,
 		 const gaspi_segment_id_t segment_id_remote,
-		 const gaspi_offset_t offset_remote, const unsigned int size,
+		 const gaspi_offset_t offset_remote, const gaspi_size_t size,
 		 const gaspi_queue_id_t queue)
 {
   struct ibv_send_wr *bad_wr;
@@ -242,7 +242,7 @@ pgaspi_dev_write_list (const gaspi_number_t num,
 		       const gaspi_rank_t rank,
 		       gaspi_segment_id_t * const segment_id_remote,
 		       gaspi_offset_t * const offset_remote,
-		       unsigned long * const size, const gaspi_queue_id_t queue)
+		       gaspi_size_t * const size, const gaspi_queue_id_t queue)
 
 {
 
@@ -262,10 +262,8 @@ pgaspi_dev_write_list (const gaspi_number_t num,
 
       else
 #endif
-	slist[i].addr =
-	  (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local[i]]
-		       [glb_gaspi_ctx.rank].data.addr +
-		       offset_local[i]);
+	slist[i].addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].data.addr +
+				     offset_local[i]);
 
       slist[i].length = size[i];
       slist[i].lkey = ((struct ibv_mr *)glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].mr[0])->lkey;
@@ -303,7 +301,7 @@ pgaspi_dev_read_list (const gaspi_number_t num,
 		      gaspi_offset_t * const offset_local, const gaspi_rank_t rank,
 		      gaspi_segment_id_t * const segment_id_remote,
 		      gaspi_offset_t * const offset_remote,
-		      unsigned long * const size, const gaspi_queue_id_t queue)
+		      gaspi_size_t * const size, const gaspi_queue_id_t queue)
 
 {
 
@@ -491,7 +489,7 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
 			      const gaspi_rank_t rank,
 			      gaspi_segment_id_t * const segment_id_remote,
 			      gaspi_offset_t * const offset_remote,
-			      unsigned int * const size,
+			      gaspi_size_t * const size,
 			      const gaspi_segment_id_t segment_id_notification,
 			      const gaspi_notification_id_t notification_id,
 			      const gaspi_notification_t notification_value,
@@ -515,10 +513,8 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
 
       else
 #endif
-	slist[i].addr =
-	  (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local[i]]
-		       [glb_gaspi_ctx.rank].data.addr +
-		       offset_local[i]);
+	slist[i].addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].data.addr +
+				     offset_local[i]);
 
       slist[i].length = size[i];
       slist[i].lkey = ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].mr[0])->lkey;
@@ -533,8 +529,7 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
 	swr[i].wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].data.addr +
 				      offset_remote[i]);
 
-      swr[i].wr.rdma.rkey =
-	glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].rkey[0];
+      swr[i].wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].rkey[0];
       swr[i].sg_list = &slist[i];
       swr[i].num_sge = 1;
       swr[i].wr_id = rank;

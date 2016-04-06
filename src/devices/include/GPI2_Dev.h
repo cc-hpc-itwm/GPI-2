@@ -95,12 +95,12 @@ pgaspi_dev_purge (const gaspi_queue_id_t queue,
 
 gaspi_return_t
 pgaspi_dev_write (const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_rank_t,
-		  const gaspi_segment_id_t, const gaspi_offset_t, const unsigned int,
+		  const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_size_t,
 		  const gaspi_queue_id_t);
 
 gaspi_return_t
 pgaspi_dev_read (const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_rank_t,
-		 const gaspi_segment_id_t, const gaspi_offset_t, const unsigned int,
+		 const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_size_t,
 		 const gaspi_queue_id_t);
 
 
@@ -115,16 +115,18 @@ pgaspi_dev_write_list (const gaspi_number_t,
 		       const gaspi_rank_t,
 		       gaspi_segment_id_t * const,
 		       gaspi_offset_t * const,
-		       unsigned long* const,
+		       gaspi_size_t* const,
 		       const gaspi_queue_id_t);
 
 gaspi_return_t
 pgaspi_dev_read_list (const gaspi_number_t,
 		      gaspi_segment_id_t * const,
-		      gaspi_offset_t * const, const gaspi_rank_t,
+		      gaspi_offset_t * const,
+		      const gaspi_rank_t,
 		      gaspi_segment_id_t * const,
 		      gaspi_offset_t * const,
-		      unsigned long * const, const gaspi_queue_id_t);
+		      gaspi_size_t* const,
+		      const gaspi_queue_id_t);
 
 gaspi_return_t
 pgaspi_dev_notify (const gaspi_segment_id_t,
@@ -139,7 +141,7 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t,
 			 const gaspi_rank_t,
 			 const gaspi_segment_id_t,
 			 const gaspi_offset_t,
-			 const unsigned int,
+			 const gaspi_size_t,
 			 const gaspi_notification_id_t,
 			 const gaspi_notification_t,
 			 const gaspi_queue_id_t);
@@ -152,7 +154,7 @@ pgaspi_dev_write_list_notify (const gaspi_number_t,
 			      const gaspi_rank_t,
 			      gaspi_segment_id_t * const,
 			      gaspi_offset_t * const,
-			      unsigned int * const,
+			      gaspi_size_t* const,
 			      const gaspi_segment_id_t,
 			      const gaspi_notification_id_t,
 			      const gaspi_notification_t,
@@ -160,7 +162,8 @@ pgaspi_dev_write_list_notify (const gaspi_number_t,
 
 gaspi_return_t
 pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t,
-			     const gaspi_offset_t, const gaspi_rank_t,
+			     const gaspi_offset_t,
+			     const gaspi_rank_t,
 			     const gaspi_atomic_value_t);
 
 
@@ -175,7 +178,7 @@ gaspi_return_t
 pgaspi_dev_passive_send (const gaspi_segment_id_t,
 			 const gaspi_offset_t,
 			 const gaspi_rank_t,
-			 const unsigned int,
+			 const gaspi_size_t,
 			 unsigned char *,
 			 const gaspi_timeout_t);
 
@@ -183,7 +186,7 @@ gaspi_return_t
 pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
 			    const gaspi_offset_t offset_local,
 			    gaspi_rank_t * const rem_rank,
-			    const unsigned int size,
+			    const gaspi_size_t size,
 			    const gaspi_timeout_t timeout_ms);
 
 /* OPTION B */
