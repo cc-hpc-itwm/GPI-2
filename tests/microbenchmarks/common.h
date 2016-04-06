@@ -8,7 +8,7 @@
 
 int start_bench (int);
 
-void end_bench ();
+void end_bench (void);
 
 
 #endif //_BENCH_COMMON_H_

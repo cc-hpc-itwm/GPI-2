@@ -11,7 +11,7 @@
 typedef unsigned long mcycles_t;
 
 static inline mcycles_t
-get_mcycles ()
+get_mcycles (void)
 {
   unsigned low, high;
   unsigned long long val;

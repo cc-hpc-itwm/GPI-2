@@ -41,7 +41,7 @@ start_bench (int max_nodes)
 
 
 void
-end_bench ()
+end_bench (void)
 {
   gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK);
 
