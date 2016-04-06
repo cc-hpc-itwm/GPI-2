@@ -240,20 +240,13 @@ extern "C"
 
 
 
-  typedef gaspi_return_t (*gaspi_reduce_operation_t) (gaspi_pointer_t const
-						      operand_one,
-						      gaspi_pointer_t const
-						      operand_two,
-						      gaspi_pointer_t const
-						      result,
-						      gaspi_state_t const
-						      state,
-						      const gaspi_number_t
-						      num,
-						      const gaspi_size_t
-						      element_size,
-						      const gaspi_timeout_t
-						      timeout_ms);
+  typedef gaspi_return_t (*gaspi_reduce_operation_t) (gaspi_pointer_t const operand_one,
+						      gaspi_pointer_t const operand_two,
+						      gaspi_pointer_t const result,
+						      gaspi_state_t const state,
+						      const gaspi_number_t num,
+						      const gaspi_size_t element_size,
+						      const gaspi_timeout_t timeout_ms);
 
   /** Get configuration structure.
    *
@@ -510,8 +503,7 @@ extern "C"
   gaspi_return_t gaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 				      gaspi_pointer_t const pointer,
 				      gaspi_size_t const size,
-				      gaspi_memory_description_t const memory_description
-				      );
+				      gaspi_memory_description_t const memory_description);
 
   /** Use a user-provided buffer as a segment.
    *
@@ -553,8 +545,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t gaspi_segment_list (const gaspi_number_t num,
-				     gaspi_segment_id_t *
-				     const segment_id_list);
+				     gaspi_segment_id_t * const segment_id_list);
 
   /** Get the pointer to the location of a given segment.
    *
@@ -656,12 +647,10 @@ extern "C"
    * error, GASPI_TIMEOUT in case of timeout.
    */
   gaspi_return_t gaspi_write_list (const gaspi_number_t num,
-				   gaspi_segment_id_t *
-				   const segment_id_local,
+				   gaspi_segment_id_t * const segment_id_local,
 				   gaspi_offset_t * const offset_local,
 				   const gaspi_rank_t rank,
-				   gaspi_segment_id_t *
-				   const segment_id_remote,
+				   gaspi_segment_id_t * const segment_id_remote,
 				   gaspi_offset_t * const offset_remote,
 				   gaspi_size_t * const size,
 				   const gaspi_queue_id_t queue,
@@ -688,8 +677,7 @@ extern "C"
 				  gaspi_segment_id_t * const segment_id_local,
 				  gaspi_offset_t * const offset_local,
 				  const gaspi_rank_t rank,
-				  gaspi_segment_id_t *
-				  const segment_id_remote,
+				  gaspi_segment_id_t * const segment_id_remote,
 				  gaspi_offset_t * const offset_remote,
 				  gaspi_size_t * const size,
 				  const gaspi_queue_id_t queue,
@@ -746,8 +734,7 @@ extern "C"
 				       gaspi_pointer_t const buffer_receive,
 				       const gaspi_number_t num,
 				       const gaspi_size_t element_size,
-				       gaspi_reduce_operation_t const
-				       reduce_operation,
+				       gaspi_reduce_operation_t const reduce_operation,
 				       gaspi_state_t const reduce_state,
 				       const gaspi_group_t group,
 				       const gaspi_timeout_t timeout_ms);
@@ -788,16 +775,12 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
    * error, GASPI_TIMEOUT in case of timeout.
    */
-  gaspi_return_t gaspi_atomic_compare_swap (const gaspi_segment_id_t
-					    segment_id,
+  gaspi_return_t gaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 					    const gaspi_offset_t offset,
 					    const gaspi_rank_t rank,
-					    const gaspi_atomic_value_t
-					    comparator,
-					    const gaspi_atomic_value_t
-					    val_new,
-					    gaspi_atomic_value_t *
-					    const val_old,
+					    const gaspi_atomic_value_t comparator,
+					    const gaspi_atomic_value_t val_new,
+					    gaspi_atomic_value_t * const val_old,
 					    const gaspi_timeout_t timeout_ms);
   //@}
 
@@ -815,8 +798,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
    * error, GASPI_TIMEOUT in case of timeout.
    */
-  gaspi_return_t gaspi_passive_send (const gaspi_segment_id_t
-				     segment_id_local,
+  gaspi_return_t gaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 				     const gaspi_offset_t offset_local,
 				     const gaspi_rank_t rank,
 				     const gaspi_size_t size,
@@ -834,8 +816,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
    * error, GASPI_TIMEOUT in case of timeout.
    */
-  gaspi_return_t gaspi_passive_receive (const gaspi_segment_id_t
-					segment_id_local,
+  gaspi_return_t gaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 					const gaspi_offset_t offset_local,
 					gaspi_rank_t * const rem_rank,
 					const gaspi_size_t size,
@@ -876,13 +857,10 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
    * error, GASPI_TIMEOUT in case of timeout.
    */
-  gaspi_return_t gaspi_notify_waitsome (const gaspi_segment_id_t
-					segment_id_local,
-					const gaspi_notification_id_t
-					notification_begin,
+  gaspi_return_t gaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
+					const gaspi_notification_id_t notification_begin,
 					const gaspi_number_t num,
-					gaspi_notification_id_t *
-					const first_id,
+					gaspi_notification_id_t * const first_id,
 					const gaspi_timeout_t timeout_ms);
 
   /** Reset a given notification (and retrieve its value).
@@ -894,12 +872,9 @@ extern "C"
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
-  gaspi_return_t gaspi_notify_reset (const gaspi_segment_id_t
-				     segment_id_local,
-				     const gaspi_notification_id_t
-				     notification_id,
-				     gaspi_notification_t *
-				     const old_notification_val);
+  gaspi_return_t gaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
+				     const gaspi_notification_id_t notification_id,
+				     gaspi_notification_t * const old_notification_val);
 
   /** Write data to a given node and notify it.
    *
@@ -918,18 +893,14 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
    * error, GASPI_TIMEOUT in case of timeout.
    */
-  gaspi_return_t gaspi_write_notify (const gaspi_segment_id_t
-				     segment_id_local,
+  gaspi_return_t gaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 				     const gaspi_offset_t offset_local,
 				     const gaspi_rank_t rank,
-				     const gaspi_segment_id_t
-				     segment_id_remote,
+				     const gaspi_segment_id_t segment_id_remote,
 				     const gaspi_offset_t offset_remote,
 				     const gaspi_size_t size,
-				     const gaspi_notification_id_t
-				     notification_id,
-				     const gaspi_notification_t
-				     notification_value,
+				     const gaspi_notification_id_t notification_id,
+				     const gaspi_notification_t notification_value,
 				     const gaspi_queue_id_t queue,
 				     const gaspi_timeout_t timeout_ms);
 
@@ -953,21 +924,15 @@ extern "C"
    * error, GASPI_TIMEOUT in case of timeout.
    */
   gaspi_return_t gaspi_write_list_notify (const gaspi_number_t num,
-					  gaspi_segment_id_t *
-					  const segment_id_local,
+					  gaspi_segment_id_t * const segment_id_local,
 					  gaspi_offset_t * const offset_local,
 					  const gaspi_rank_t rank,
-					  gaspi_segment_id_t *
-					  const segment_id_remote,
-					  gaspi_offset_t *
-					  const offset_remote,
+					  gaspi_segment_id_t * const segment_id_remote,
+					  gaspi_offset_t * const offset_remote,
 					  gaspi_size_t * const size,
-					  const gaspi_segment_id_t
-					  segment_id_notification,
-					  const gaspi_notification_id_t
-					  notification_id,
-					  const gaspi_notification_t
-					  notification_value,
+					  const gaspi_segment_id_t segment_id_notification,
+					  const gaspi_notification_id_t notification_id,
+					  const gaspi_notification_t notification_value,
 					  const gaspi_queue_id_t queue,
 					  const gaspi_timeout_t timeout_ms);
 
@@ -1083,9 +1048,7 @@ extern "C"
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
-  gaspi_return_t gaspi_passive_transfer_size_max (gaspi_size_t *
-						  const
-						  passive_transfer_size_max);
+  gaspi_return_t gaspi_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max);
 
   /** Get the internal buffer size for gaspi_allreduce_user.
    *
@@ -1151,7 +1114,8 @@ extern "C"
    *
    * @return GASPI_SUCCESS in case of SUCCESS, GASPI_ERROR in case of error.
    */
-  gaspi_return_t gaspi_print_error( gaspi_return_t error_code, gaspi_string_t *error_message);
+  gaspi_return_t gaspi_print_error( gaspi_return_t error_code,
+				    gaspi_string_t *error_message);
 
   /** Get the state vector.
    *
@@ -1196,12 +1160,11 @@ extern "C"
    * @return GASPI_SUCCESS in case of SUCCESS, GASPI_ERROR in case of error.
    */
   gaspi_return_t
-  gaspi_statistic_counter_info(gaspi_statistic_counter_t counter
-			       , gaspi_statistic_argument_t* counter_argument
-			       , gaspi_string_t* counter_name
-			       , gaspi_string_t* counter_description
-			       , gaspi_number_t* verbosity_level
-			       );
+  gaspi_statistic_counter_info( gaspi_statistic_counter_t counter,
+			        gaspi_statistic_argument_t* counter_argument,
+			        gaspi_string_t* counter_name,
+				gaspi_string_t* counter_description,
+			        gaspi_number_t* verbosity_level);
 
   /** Get statistical counter.
    *
@@ -1213,10 +1176,9 @@ extern "C"
    * @return GASPI_SUCCESS in case of SUCCESS, GASPI_ERROR in case of error.
    */
   gaspi_return_t
-  gaspi_statistic_counter_get ( gaspi_statistic_counter_t counter
-				, gaspi_number_t argument
-				, unsigned long *value
-				);
+  gaspi_statistic_counter_get ( gaspi_statistic_counter_t counter,
+				gaspi_number_t argument,
+				unsigned long *value);
 
   /** Reset a counter (set to 0).
    *
