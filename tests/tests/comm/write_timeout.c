@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
   if(P < 2 )
     {
       gaspi_printf("Must have more than 1 procs\n");
-      goto end;
+      return EXIT_FAILURE;
     }
 
   gaspi_printf("P = %d N = %lu\n", P, N);
@@ -64,7 +64,6 @@ int main(int argc, char *argv[])
 
   ASSERT(gaspi_wait(1, GASPI_BLOCK));
 
- end:
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   ASSERT (gaspi_proc_term(GASPI_BLOCK));

@@ -245,6 +245,11 @@ int main(int argc, char *argv[])
     {
       t_check_args[i].threadID = i;
       thread_check[i] = pthread_create(&ptr_check[i],NULL,&thread_function,&t_check_args[i]);
+      if( thread_check[i] != 0 )
+	{
+	  gaspi_printf("Failed to create thread %d\n", i);
+	  return EXIT_FAILURE;
+	}
 
       /* t_void_args[i].threadID= i;  */
       /* thread_void[i] = pthread_create(&ptr_void[i],NULL,&thread_void_function,&t_void_args[i]);  */

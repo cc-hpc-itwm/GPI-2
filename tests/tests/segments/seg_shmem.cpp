@@ -97,8 +97,6 @@ namespace
 int main(int argc, char *argv[])
 {
   gaspi_rank_t rank, nprocs;
-  gaspi_number_t seg_max;
-  gaspi_segment_id_t s;
   gaspi_notification_id_t id;
   const int num_elems = 1024;
 

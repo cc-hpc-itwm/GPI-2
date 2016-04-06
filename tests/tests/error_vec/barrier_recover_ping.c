@@ -43,7 +43,7 @@ enum D3Q19{
 };
 
 void
-read_params(int argc, char* argv[], int * timesteps, gaspi_rank_t * numprocs_idle)
+read_params(int argc, char* argv[], int * timesteps, gaspi_rank_t * nprocs_idle)
 {
   int i;
 
@@ -57,14 +57,14 @@ read_params(int argc, char* argv[], int * timesteps, gaspi_rank_t * numprocs_idl
 		
       if(ARG_IS("numprocs_idle"))
 	{
-	  *numprocs_idle = atoi(argv[++i]);
-	  gaspi_printf("numprocs_idle : %d\n", *numprocs_idle);
+	  *nprocs_idle = atoi(argv[++i]);
+	  gaspi_printf("numprocs idle : %d\n", *nprocs_idle);
 	}
     }
 }
 
 gaspi_return_t
-recover()
+recover(void)
 {
   gaspi_return_t ret = GASPI_ERROR;
   
@@ -214,7 +214,6 @@ update_status_processes_array(int *status_processes, gaspi_state_vector_t health
 gaspi_return_t
 init_segment (gaspi_segment_id_t seg_id, gaspi_size_t seg_size)
 {
-  gaspi_rank_t myrank;
   gaspi_size_t segSize;
   gaspi_proc_rank(&myrank);
   
@@ -268,7 +267,6 @@ int main(int argc, char* argv[])
     {
       ASSERT(gaspi_group_create(&COMM_MAIN));
 
-      gaspi_number_t i;
       for(i=0; i<numprocs; i++)
 	{
 	  if(status_processes[i]==WORKING)

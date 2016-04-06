@@ -20,7 +20,7 @@ They should be the same as the is the same data */
 
 int main(int argc, char *argv[])
 {
-  int i, k = 0;
+  int k = 0;
   int ret = 0;
   unsigned long j;
 

@@ -7,7 +7,6 @@ int main(int argc, char *argv[])
 {
   gaspi_rank_t numranks, myrank;
   gaspi_rank_t rankSend;
-  gaspi_size_t segSize;
   const  gaspi_offset_t localOff= 0;
   const gaspi_offset_t remOff = 0;
   gaspi_number_t queueSize, qmax;

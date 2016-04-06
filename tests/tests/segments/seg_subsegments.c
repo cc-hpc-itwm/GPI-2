@@ -22,8 +22,6 @@ int main(int argc, char *argv[])
 {
   int i;
   gaspi_rank_t rank, nprocs;
-  gaspi_number_t seg_max;
-  gaspi_segment_id_t s;
   gaspi_notification_id_t id;
 
   gaspi_segment_id_t const segment_id = 0;

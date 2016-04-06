@@ -10,7 +10,7 @@
 
 
 //recover => clean the queue
-gaspi_return_t recover()
+gaspi_return_t recover(void)
 {
   gaspi_return_t ret = GASPI_ERROR;
 

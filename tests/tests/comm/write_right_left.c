@@ -2,16 +2,13 @@
 #include <stdlib.h>
 
 #include <test_utils.h>
-
+//TODO: to improve
 int main(int argc, char *argv[])
 {
-  unsigned long i;
   gaspi_pointer_t _vptr;
   gaspi_rank_t num_ranks, myrank;
   gaspi_number_t qmax ;
-  gaspi_number_t queueSize;
   gaspi_rank_t left_rank, right_rank;
-  const unsigned long N = (1 << 13);
 
   TSUITE_INIT(argc, argv);
 
@@ -39,7 +36,7 @@ int main(int argc, char *argv[])
 		      left_rank,  //rank
 		      0,          //seg rem
 		      0,          //remote off
-		      1,          //size 32KB
+		      1,          //size
 		      0,          //queue
 		      GASPI_BLOCK));
 
@@ -48,7 +45,7 @@ int main(int argc, char *argv[])
 		      right_rank,  //rank
 		      0,          //seg rem
 		      0,          //remote off
-		      1,          //size 32KB
+		      1,          //size
 		      0,          //queue
 		      GASPI_BLOCK));
 

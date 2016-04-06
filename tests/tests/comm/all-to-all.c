@@ -9,8 +9,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/resource.h>
+#include <sys/time.h>
 
-int get_num_fds()
+int get_num_fds(void)
 {
   int fd_count;
   char buf[64];
@@ -33,7 +34,7 @@ int get_num_fds()
   return fd_count;
 }
 
-void print_resources()
+void print_resources(void)
 {
   gaspi_size_t sys_mem = gaspi_get_system_mem();
   gaspi_size_t mem_in_use = gaspi_get_mem_in_use();
@@ -64,7 +65,6 @@ int main(int argc, char *argv[])
   ASSERT(gaspi_config_set(conf));
 
   struct timeval start_time, end_time;
-  gaspi_rank_t proc_num;
   double init_time = 0.0f;
   
   gettimeofday(&start_time, NULL);

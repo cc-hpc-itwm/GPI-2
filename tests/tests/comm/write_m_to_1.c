@@ -30,8 +30,10 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_rank(&myrank));
   ASSERT (gaspi_proc_num(&numranks));
 
-  if(numranks < 2 )
-    goto end;
+  if( numranks < 2 )
+    {
+      return EXIT_SUCCESS;
+    }
   
   mem_size = 2 * SLOT_SIZE * (numranks - 1);
 

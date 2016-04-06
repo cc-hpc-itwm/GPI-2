@@ -66,8 +66,7 @@ int main(int argc, char *argv[])
 
   free(a);
   free(b);
-  
-  gaspi_printf("done\n");
+
   //sync                                                                                                  
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));

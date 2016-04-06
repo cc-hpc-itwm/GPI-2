@@ -16,9 +16,9 @@
 
 
 void tsuite_init(int argc, char *argv[]);
-void success_or_exit ( const char* file, const int line, const int ec);
-void must_fail ( const char* file, const int line, const int ec);
-void must_timeout ( const char* file, const int line, const int ec);
+void success_or_exit ( const char* file, const int line, const gaspi_return_t ec);
+void must_fail ( const char* file, const int line, const gaspi_return_t ec);
+void must_timeout ( const char* file, const int line, const gaspi_return_t ec);
 
 #define TSUITE_INIT(argc, argv) tsuite_init(argc, argv);   
 #define ASSERT(ec) success_or_exit (__FILE__, __LINE__, ec);

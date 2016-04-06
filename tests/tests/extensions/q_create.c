@@ -7,8 +7,7 @@
 int main(int argc, char *argv[])
 {
   gaspi_rank_t rank, nprocs;
-  gaspi_number_t seg_max, queue_number;
-  gaspi_segment_id_t s;
+  gaspi_number_t queue_number;
   gaspi_notification_id_t id;
   
   TSUITE_INIT(argc, argv);
@@ -18,7 +17,6 @@ int main(int argc, char *argv[])
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT (gaspi_proc_rank(&rank));
 
-  const gaspi_rank_t left = (rank + nprocs - 1 ) % nprocs;
   const gaspi_rank_t right = (rank + nprocs + 1) % nprocs;
 
   ASSERT(gaspi_queue_num(&queue_number));

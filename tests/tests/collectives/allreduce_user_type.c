@@ -35,7 +35,7 @@ gaspi_return_t my_fun (struct elem * const a,
 
 int main(int argc, char *argv[])
 {
-  int n;
+  gaspi_number_t n;
   gaspi_rank_t nprocs, myrank;
   gaspi_size_t buf_size;
   gaspi_number_t elem_max;
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 
   if(myrank == 0)
     {
-      printf("Max buf size %lu max elem %d elem size %lu (will allow %d elems).\n",
+      printf("Max buf size %lu max elem %d elem size %lu (will allow %lu elems).\n",
 	     buf_size, elem_max, sizeof(struct elem), buf_size / sizeof(struct elem));
     }
 
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 
   for(n = 1; n <= elem_max; n++)
     {
-      int i;
+      gaspi_number_t i;
       if( (n * sizeof(struct elem)) > buf_size)
 	{
 	  EXPECT_FAIL(gaspi_allreduce_user(a, b, n, sizeof(struct elem),

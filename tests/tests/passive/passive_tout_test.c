@@ -15,9 +15,11 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_num(&P));
   ASSERT (gaspi_proc_rank(&myrank));
 
-  if(P < 2)
-    goto end;
-  
+  if( P < 2 )
+    {
+      return EXIT_SUCCESS;
+    }
+
   ASSERT (gaspi_segment_create(0, _2MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
@@ -48,7 +50,7 @@ int main(int argc, char *argv[])
 	  assert(sender == 1);
 	}
     }
- end:  
+
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 

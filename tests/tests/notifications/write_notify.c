@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
   
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
   
-  gaspi_notification_id_t  n=0;
+  gaspi_notification_id_t n = 0;
   gaspi_rank_t rank, nprocs, i;
   const  gaspi_segment_id_t seg_id = 0;
   gaspi_offset_t offset;
@@ -22,8 +22,11 @@ int main(int argc, char *argv[])
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT (gaspi_proc_rank(&rank));
 
-  if(nprocs < 2 )
-    goto end;
+  if( nprocs < 2 )
+    {
+      return EXIT_SUCCESS;
+    }
+  
   
   ASSERT (gaspi_segment_create(seg_id, nprocs * sizeof(int), GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_UNINITIALIZED));
 
@@ -42,8 +45,6 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
    
-  //go  
-  
   for(i = 0; i < nprocs; i++)
     {
       if (i == rank)
@@ -73,7 +74,6 @@ int main(int argc, char *argv[])
   while(n < (nprocs - 1));
   ASSERT(gaspi_wait(0, GASPI_BLOCK));
 
-  end:
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
   

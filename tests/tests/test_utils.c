@@ -56,7 +56,7 @@ void tsuite_sighandler(int signum, siginfo_t *info, void *ptr)
 {
   FILE * bt_file;
   pid_t ptid =  syscall(__NR_gettid);
-  int initialized;
+  gaspi_number_t initialized;
   gaspi_rank_t nodeRank = 0;
 
   gaspi_initialized(&initialized);
@@ -118,7 +118,7 @@ void tsuite_init(int argc, char *argv[])
     }
 }
 
-void success_or_exit ( const char* file, const int line, const int ec)
+void success_or_exit ( const char* file, const int line, const gaspi_return_t ec)
 {
   if (ec != GASPI_SUCCESS)
     {
@@ -127,7 +127,7 @@ void success_or_exit ( const char* file, const int line, const int ec)
     }
 }
 
-void must_fail ( const char* file, const int line, const int ec)
+void must_fail ( const char* file, const int line, const gaspi_return_t ec)
 {
   if (ec == GASPI_SUCCESS || ec == GASPI_TIMEOUT)
     {
@@ -137,7 +137,7 @@ void must_fail ( const char* file, const int line, const int ec)
     }
 }
 
-void must_timeout ( const char* file, const int line, const int ec)
+void must_timeout ( const char* file, const int line, const gaspi_return_t ec)
 {
   if (ec != GASPI_TIMEOUT)
     {

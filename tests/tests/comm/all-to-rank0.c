@@ -9,8 +9,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/resource.h>
+#include <sys/time.h>
 
-int get_num_fds()
+int get_num_fds(void)
 {
   int fd_count;
   char buf[64];
@@ -33,7 +34,7 @@ int get_num_fds()
   return fd_count;
 }
 
-void print_resources()
+void print_resources(void)
 {
   gaspi_size_t sys_mem = gaspi_get_system_mem();
   gaspi_size_t mem_in_use = gaspi_get_mem_in_use();
@@ -57,13 +58,12 @@ int main(int argc, char *argv[])
 
   TSUITE_INIT(argc, argv);
 
-  gaspi_config_t conf;
+/*   gaspi_config_t conf; */
   /* ASSERT(gaspi_config_get(&conf)); */
   /* conf.queue_num = 1; */
   /* ASSERT(gaspi_config_set(conf)); */
 
   struct timeval start_time, end_time;
-  gaspi_rank_t proc_num;
   double init_time = 0.0f;
   
   gettimeofday(&start_time, NULL);
@@ -87,7 +87,6 @@ int main(int argc, char *argv[])
   const gaspi_offset_t localOff = 0;
   const  gaspi_offset_t remOff   = 0;
   const gaspi_offset_t size = 1;
-  gaspi_number_t queueSize, qmax;
   const  gaspi_queue_id_t q = 0;
 
   if(myrank != 0)
