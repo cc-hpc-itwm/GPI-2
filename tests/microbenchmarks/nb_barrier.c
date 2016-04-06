@@ -38,7 +38,6 @@ main(int argc,char *argv[])
   char mtype[16];
   int i;
   mcycles_t t0,t1,dt;
-  mcycles_t delta[1024];
   int amount_work = 1000;
   gaspi_float cpu_freq;
   

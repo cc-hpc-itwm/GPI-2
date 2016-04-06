@@ -37,7 +37,6 @@ main(int argc,char *argv[])
   char mtype[16];
   int i;
   mcycles_t t0, t1;
-  mcycles_t delta[1024];
   gaspi_float cpu_freq;
 
   gaspi_config_get(&gconf);
