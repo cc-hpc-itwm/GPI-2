@@ -1,4 +1,4 @@
-BIN = write_list.bin write_list_all.bin write_list_check.bin read_list_check.bin #read_list.bin
+BIN = write_list_check.bin write_list_notify_check.bin read_list_check.bin
 
 CFLAGS+=-I../
 

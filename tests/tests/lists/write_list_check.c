@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
   gaspi_offset_t remOffs[nListElems];
   gaspi_size_t sizes[nListElems];
   
-  const unsigned int bytes = 4;
+  const unsigned int bytes = sizeof(int);
   gaspi_offset_t initLocOff = 0;
   gaspi_offset_t initRemOff = (bytes * nListElems + 64);
 
@@ -64,18 +64,29 @@ int main(int argc, char *argv[])
       remSegs[n] = 0;
       remOffs[n] = initRemOff;
       initRemOff += bytes;
-
     }
 
-  ASSERT (gaspi_write_list(nListElems, localSegs,localOffs, rank2send, remSegs, remOffs, sizes, 0, GASPI_BLOCK));
+  ASSERT (gaspi_write_list(nListElems,
+			   localSegs, localOffs, rank2send,
+			   remSegs, remOffs, sizes, 0, GASPI_BLOCK));
   
   ASSERT (gaspi_queue_size(0, &queue_size));
   assert (queue_size == nListElems);
 
+  ASSERT( gaspi_notify(0, rank2send, myrank, 1, 0, GASPI_BLOCK));
+
   ASSERT (gaspi_wait(0, GASPI_BLOCK));
 
+  gaspi_notification_id_t id;
+  ASSERT (gaspi_notify_waitsome(0, rank2recv, 1, &id, GASPI_BLOCK));
+
+  gaspi_notification_t notification_val;
+  ASSERT( gaspi_notify_reset(0, id, &notification_val));
+
+  assert(notification_val == 1);
+
   //sync  
-  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+  ASSERT( gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK) );
 
   //check
   gaspi_number_t l;

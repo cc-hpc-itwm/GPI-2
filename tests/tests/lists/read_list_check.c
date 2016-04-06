@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
   gaspi_offset_t remOffs[nListElems];
   gaspi_size_t sizes[nListElems];
   
-  const unsigned int bytes = 4;
+  const unsigned int bytes = sizeof(int);
   gaspi_offset_t initLocOff = 0;
   gaspi_offset_t initRemOff = (bytes * nListElems + 64);
 
@@ -79,19 +79,17 @@ int main(int argc, char *argv[])
   //check
   gaspi_number_t l;
   
-  gaspi_offset_t off2check = 0;//(bytes * nListElems + 64);
+  gaspi_offset_t off2check = 0;
   char * chPtr = (char *) _vptr;
   mem = (int *) (chPtr + off2check);
 
   for(l = 0; l < nListElems; l++)
     {
-      if(mem[l] != (int) rank2read)
-	gaspi_printf("wrong value on %d: %d instead of %d\n",
-		     l, mem[l], rank2read);
-
+      assert(mem[l] == (int) rank2read);
     }
 
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 
   return EXIT_SUCCESS;
