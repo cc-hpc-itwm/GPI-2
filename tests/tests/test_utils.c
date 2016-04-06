@@ -147,32 +147,6 @@ void must_timeout ( const char* file, const int line, const int ec)
     }
 }
 
-gaspi_size_t get_system_mem()
-{
-  FILE *fp;
-  char line[1024];
-  unsigned long memory = 0;
-        
-  fp = fopen("/proc/meminfo", "r");
-  if (fp == NULL) 
-    {
-      gaspi_printf("Cannot open file /proc/meminfo\n");
-      return 0;
-    }
-        
-  while (fgets(line, sizeof(line), fp))
-    {
-      if (!strncmp("MemTotal", line, 8))
-        {
-          strtok(line, ":");
-          memory = strtol((char*) strtok(NULL, " kB\n"), (char**) NULL, 0);
-        }
-    }
-
-  fclose(fp);
-  return memory;
-}
-
 void exit_safely()
 {
   gaspi_rank_t rank, nprocs, i;

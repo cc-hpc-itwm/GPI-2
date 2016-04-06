@@ -25,7 +25,6 @@ void must_timeout ( const char* file, const int line, const int ec);
 #define EXPECT_FAIL(ec) must_fail(__FILE__, __LINE__, ec);
 #define EXPECT_TIMEOUT(ec) must_timeout(__FILE__, __LINE__, ec);  
 
-gaspi_size_t get_system_mem();
 void exit_safely();
   
 #endif //_TEST_UTILS_H_
