@@ -152,6 +152,7 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
 
   if( gaspi_segment_list (num_segs, segment_ids) != GASPI_SUCCESS)
     {
+      free(segment_ids);
       return GASPI_ERROR;
     }
 
@@ -161,6 +162,7 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
       if( segment_ids[i] != segment_ids[i-1]+1 )
 	{
 	  *avail_seg_id = (gaspi_segment_id_t) i ;
+	  free(segment_ids);
 	  return GASPI_SUCCESS;
 	}
     }
