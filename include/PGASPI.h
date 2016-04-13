@@ -300,6 +300,8 @@ extern "C"
 
   gaspi_return_t pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max);
 
+  gaspi_return_t pgaspi_queue_max(gaspi_number_t * const queue_max);
+
   gaspi_return_t pgaspi_network_type (gaspi_network_t * const network_type);
 
   gaspi_return_t pgaspi_time_ticks (gaspi_cycles_t * const ticks);

@@ -794,6 +794,15 @@ module GASPI
       end function gaspi_rw_list_elem_max
     end interface
 
+    interface ! gaspi_queue_max
+      function gaspi_queue_max(queue_max) &
+&         result( res ) bind(C, name="gaspi_queue_max")
+        import
+        integer(gaspi_number_t) :: queue_max
+        integer(gaspi_return_t) :: res
+      end function gaspi_queue_max
+    end interface
+
     interface ! gaspi_network_type
       function gaspi_network_type(network_type) &
 &         result( res ) bind(C, name="gaspi_network_type")

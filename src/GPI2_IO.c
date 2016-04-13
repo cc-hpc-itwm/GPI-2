@@ -100,6 +100,17 @@ pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
   return GASPI_SUCCESS;
 }
 
+#pragma weak gaspi_queue_max = pgaspi_queue_max
+gaspi_return_t
+pgaspi_queue_max(gaspi_number_t * const queue_max)
+{
+  gaspi_verify_null_ptr(queue_max);
+
+  *queue_max = GASPI_MAX_QP;
+
+  return GASPI_SUCCESS;
+}
+
 /* Queue creation/deletion/purging */
 #pragma weak gaspi_queue_create = pgaspi_queue_create
 gaspi_return_t
