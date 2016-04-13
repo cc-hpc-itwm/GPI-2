@@ -544,7 +544,6 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
   /* TODO: what to do with the memory description?? */
   ctx->rrmd[segment_id][myrank].desc = memory_description;
 
-  data.addr += NOTIFY_OFFSET;
   /* Register it with the device */
   if( pgaspi_dev_register_mem( &(ctx->rrmd[segment_id][myrank]), size) < 0)
     {
