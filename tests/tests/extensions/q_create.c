@@ -30,7 +30,10 @@ int main(int argc, char *argv[])
   ASSERT ( gaspi_queue_create(&new_queue, GASPI_BLOCK) );
   assert( new_queue == (queue_number) );
 
-  for ( queue_number = new_queue + 1; queue_number < GASPI_MAX_QP; queue_number++)
+  gaspi_number_t q_max;
+  ASSERT( gaspi_queue_max(&q_max) );
+
+  for( queue_number = new_queue + 1; queue_number < q_max; queue_number++)
     {
       ASSERT ( gaspi_queue_create(&new_queue, GASPI_BLOCK) );
       assert( new_queue == queue_number);
@@ -40,7 +43,7 @@ int main(int argc, char *argv[])
   /* use queues */
   ASSERT ( gaspi_segment_create(0, 1024, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_UNINITIALIZED) );
 
-  for (new_queue = 0; new_queue < GASPI_MAX_QP; new_queue++)
+  for (new_queue = 0; new_queue < q_max; new_queue++)
     {
       ASSERT(gaspi_write(0, 0, right,
 			 0, 0, 8,
