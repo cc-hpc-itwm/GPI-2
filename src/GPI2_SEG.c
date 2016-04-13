@@ -593,6 +593,7 @@ pgaspi_segment_use ( gaspi_segment_id_t const segment_id,
   ret = gaspi_group_ranks (group, group_ranks);
   if( GASPI_SUCCESS != ret )
     {
+      free(group_ranks);
       return ret;
     }
 
@@ -602,6 +603,7 @@ pgaspi_segment_use ( gaspi_segment_id_t const segment_id,
       ret = pgaspi_segment_register( segment_id, group_ranks[i], timeout);
       if ( GASPI_SUCCESS != ret )
 	{
+	  free(group_ranks);
 	  return ret;
 	}
     }
