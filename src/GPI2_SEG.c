@@ -241,6 +241,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc_size = NOTIFY_OFFSET;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr += NOTIFY_OFFSET;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].user_provided = 0;
 
   if(pgaspi_dev_register_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank]), size + NOTIFY_OFFSET) < 0)
     {
@@ -538,6 +539,12 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
   ctx->rrmd[segment_id][myrank].size = size;
   ctx->rrmd[segment_id][myrank].notif_spc_size = NOTIFY_OFFSET;
 
+  ctx->rrmd[segment_id][glb_gaspi_ctx.rank].user_provided = 1;
+
+  /* TODO: what to do with the memory description?? */
+  ctx->rrmd[segment_id][myrank].desc = memory_description;
+
+  data.addr += NOTIFY_OFFSET;
   /* Register it with the device */
   if( pgaspi_dev_register_mem( &(ctx->rrmd[segment_id][myrank]), size) < 0)
     {
@@ -545,8 +552,6 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
       goto endL;
     }
 
-  /* TODO: what to do with the memory description?? */
-  ctx->rrmd[segment_id][myrank].desc = memory_description;
 
   ctx->mseg_cnt++;
 

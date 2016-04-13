@@ -56,6 +56,7 @@ typedef struct
   size_t notif_spc_size;
   int trans; /* info transmitted */
 
+  int user_provided;
   gaspi_memory_description_t desc;
 
 #ifdef GPI2_CUDA
