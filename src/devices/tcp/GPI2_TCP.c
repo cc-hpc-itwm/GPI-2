@@ -298,11 +298,7 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
 	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf = NULL;
 	    }
 	  
-	  if(glb_gaspi_ctx.rrmd[i])
-	    {
-	      free (glb_gaspi_ctx.rrmd[i]);
-	    }
-	  
+	  free (glb_gaspi_ctx.rrmd[i]);
 	  glb_gaspi_ctx.rrmd[i] = NULL;
 	}
     }
