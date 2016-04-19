@@ -137,10 +137,11 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
       gaspi_printf("<<<<<<<<<<<<<<<< TCP-info >>>>>>>>>>>>>>>>>>>\n");
       gaspi_printf("  Hostname: %s\n", gaspi_get_hn(glb_gaspi_ctx.rank));
 
-      char * ip = tcp_dev_get_local_ip();
+      char* ip = tcp_dev_get_local_ip();
       tcp_dev_get_local_if(ip);
       gaspi_printf("  %-8s: %s\n", tcp_dev_get_local_if(ip), ip );
       gaspi_printf("<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+      free(ip);
     }
 
   /* Passive channel (SRQ) */
