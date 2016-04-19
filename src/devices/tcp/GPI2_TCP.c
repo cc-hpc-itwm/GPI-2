@@ -225,8 +225,16 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-  while( !tcp_dev_init )
-    gaspi_delay();
+  gaspi_tcp_dev_status_t _dev_status = gaspi_tcp_dev_status_get();
+
+  while( GASPI_TCP_DEV_STATUS_DOWN == _dev_status )
+    {
+      gaspi_delay();
+      _dev_status = gaspi_tcp_dev_status_get();
+    }
+
+  if( GASPI_TCP_DEV_STATUS_FAILED == _dev_status )
+    return -1;
 
   return 0;
 }

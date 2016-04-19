@@ -39,7 +39,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "tcp_device.h"
 #include "list.h"
 
-volatile int tcp_dev_init = 0;
+volatile gaspi_tcp_dev_status_t gaspi_tcp_dev_status = GASPI_TCP_DEV_STATUS_DOWN;
 tcp_dev_conn_state_t **rank_state = NULL;
 
 /* list of remote operations */
@@ -1279,6 +1279,18 @@ tcp_dev_stop_device(void)
   __sync_sub_and_fetch(&valid_state, 1);
 }
 
+static inline void
+gaspi_tcp_dev_status_set(gaspi_tcp_dev_status_t status)
+{
+  __sync_fetch_and_add(&gaspi_tcp_dev_status, status);
+}
+
+gaspi_tcp_dev_status_t
+gaspi_tcp_dev_status_get(void)
+{
+  return gaspi_tcp_dev_status;
+}
+
 /* virtual device thread body */
 void *
 tcp_virt_dev(void *args)
@@ -1287,6 +1299,7 @@ tcp_virt_dev(void *args)
   if(listen_sock < 0)
     {
       gaspi_print_error("Failed to create socket.");
+      gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_FAILED);
       return NULL;
     }
 
@@ -1295,6 +1308,7 @@ tcp_virt_dev(void *args)
     {
       close(listen_sock);
       gaspi_print_error("Failed to modify socket.");
+      gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_FAILED);
       return NULL;
     }
 
@@ -1302,6 +1316,7 @@ tcp_virt_dev(void *args)
     {
       close(listen_sock);
       gaspi_print_error("Failed to modify socket.");
+      gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_FAILED);
       return NULL;
     }
 
@@ -1318,6 +1333,7 @@ tcp_virt_dev(void *args)
     {
       gaspi_print_error("Failed to bind to port %d\n", TCP_DEV_PORT + glb_gaspi_ctx.localSocket); /* TODO: glb_gaspi_ctx does not belong here*/
       close(listen_sock);
+      gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_FAILED);
       return NULL;
     }
 
@@ -1327,6 +1343,7 @@ tcp_virt_dev(void *args)
     {
       close(listen_sock);
       gaspi_print_error("Failed to listen on socket");
+      gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_FAILED);
       return NULL;
     }
 
@@ -1335,6 +1352,7 @@ tcp_virt_dev(void *args)
     {
       close(listen_sock);
       gaspi_print_error("Failed to create events instance.");
+      gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_FAILED);
       return NULL;
     }
 
@@ -1344,6 +1362,7 @@ tcp_virt_dev(void *args)
       close(listen_sock);
       close(epollfd);
       gaspi_print_error("Failed to allocate memory.");
+      gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_FAILED);
       return NULL;
     }
 
@@ -1359,11 +1378,14 @@ tcp_virt_dev(void *args)
   if(epoll_ctl(epollfd, EPOLL_CTL_ADD, listen_sock, &lev) < 0)
     {
       gaspi_print_error("Failed to add socket to event instance.");
+      gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_FAILED);
       return NULL;
     }
 
   if( _tcp_dev_alloc_remote_states (glb_gaspi_ctx.tnc) != 0)
     {
+      gaspi_print_error("Failed to allocate states buffer");
+      gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_FAILED);
       return NULL;
     }
 
@@ -1372,11 +1394,12 @@ tcp_virt_dev(void *args)
   if(events == NULL)
     {
       gaspi_print_error("Failed to allocate events buffer");
+      gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_FAILED);
       return NULL;
     }
 
   /* Device is ready */
-  __sync_fetch_and_add(&tcp_dev_init, 1);
+  gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_UP);
 
   while(valid_state)
     {

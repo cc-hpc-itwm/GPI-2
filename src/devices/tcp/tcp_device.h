@@ -37,6 +37,13 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define TCP_DEV_PORT 19000
 #define CONN_TIMEOUT 1000000
 
+typedef enum
+  {
+    GASPI_TCP_DEV_STATUS_DOWN = 0,
+    GASPI_TCP_DEV_STATUS_UP = 1,
+    GASPI_TCP_DEV_STATUS_FAILED = 2
+  } gaspi_tcp_dev_status_t;
+
 /* TODO: minimize sizes */
 typedef struct 
 {
@@ -136,8 +143,6 @@ typedef struct
   enum tcp_dev_wc_opcode opcode;
 } tcp_dev_wc_t;
 
-extern volatile int tcp_dev_init;
-
 //TODO: rename to tcp_dev_* ?
 struct tcp_passive_channel
 {
@@ -202,5 +207,7 @@ tcp_dev_get_local_ip(void);
 char*
 tcp_dev_get_local_if(char* ip);
 
+gaspi_tcp_dev_status_t
+gaspi_tcp_dev_status_get(void);
 
 #endif
