@@ -121,8 +121,9 @@ pgaspi_dev_print_info()
   char* ip = tcp_dev_get_local_ip();
   if( ip != NULL )
     {
-      tcp_dev_get_local_if(ip);
-      gaspi_printf("  %-8s: %s\n", tcp_dev_get_local_if(ip), ip );
+      char* iface = tcp_dev_get_local_if(ip);
+      gaspi_printf("  %-8s: %s\n", iface, ip );
+      free(iface);
     }
   else
     {
