@@ -1116,12 +1116,15 @@ extern "C"
   gaspi_return_t gaspi_time_get (gaspi_time_t * const wtime);
 
   /** Translate a error code to a text message.
-   *
+   * NOTE: the parameter error_message will allocate memory which the application
+   * must de-allocate (using free())
    *
    * @param error_code The error code to translate.
    * @param error_message Output parameter with the text message.
    *
-   * @return GASPI_SUCCESS in case of SUCCESS, GASPI_ERROR in case of error.
+   * @return GASPI_SUCCESS in case of SUCCESS, GASPI_ERR_MEMALLOC in
+   * case of error there was an error allocating the error_message
+   * buffer.
    */
   gaspi_return_t gaspi_print_error( gaspi_return_t error_code,
 				    gaspi_string_t *error_message);
