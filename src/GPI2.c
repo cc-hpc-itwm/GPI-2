@@ -749,7 +749,7 @@ pgaspi_print_error(gaspi_return_t error_code, gaspi_string_t *error_message )
   size_t n = strlen(msg);
 
   *error_message = malloc(n + 1);
-  if( error_message == NULL)
+  if( *error_message == NULL)
     {
       return GASPI_ERR_MEMALLOC;
     }
