@@ -185,7 +185,7 @@ pgaspi_queue_delete(const gaspi_queue_id_t queue_id)
 {
   gaspi_context *ctx = &glb_gaspi_ctx;
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  lock_gaspi (&glb_gaspi_ctx_lock);
 
   if( pgaspi_dev_comm_queue_delete(queue_id) != 0 )
     {

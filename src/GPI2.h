@@ -79,8 +79,16 @@ unsigned char gaspi_atomic_xchg (volatile unsigned char *addr,
 
 #endif
 
-static inline
-int lock_gaspi_tout (gaspi_lock_t * l, const gaspi_timeout_t timeout_ms)
+static inline void
+lock_gaspi (gaspi_lock_t * l)
+{
+  while (GASPI_ATOMIC_TRY_LOCK(&l->lock))
+    while (l->lock)
+      gaspi_delay ();
+}
+
+static inline int
+lock_gaspi_tout (gaspi_lock_t * l, const gaspi_timeout_t timeout_ms)
 {
 
   if (timeout_ms == GASPI_BLOCK)
@@ -119,8 +127,8 @@ int lock_gaspi_tout (gaspi_lock_t * l, const gaspi_timeout_t timeout_ms)
   return 0;
 }
 
-static inline
-void unlock_gaspi (gaspi_lock_t * l)
+static inline void
+unlock_gaspi (gaspi_lock_t * l)
 {
   GASPI_ATOMIC_UNLOCK (&l->lock);
 }

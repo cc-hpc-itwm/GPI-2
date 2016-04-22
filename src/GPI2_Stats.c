@@ -43,7 +43,7 @@ gaspi_stats_start_timer(enum gaspi_timer t)
   if(_timers[t].running)
     return;
 
-  lock_gaspi_tout(&gaspi_stats_lock, GASPI_BLOCK);
+  lock_gaspi(&gaspi_stats_lock);
 
   _timers[t].tstart = gaspi_get_cycles();
   _timers[t].running = 1;
@@ -57,7 +57,7 @@ gaspi_stats_stop_timer(enum gaspi_timer t)
   if(!_timers[t].running)
     return;
 
-  lock_gaspi_tout(&gaspi_stats_lock, GASPI_BLOCK);
+  lock_gaspi(&gaspi_stats_lock);
 
   _timers[t].tend = gaspi_get_cycles();
   _timers[t].ttotal += _timers[t].tend - _timers[t].tstart;
@@ -69,7 +69,7 @@ gaspi_stats_stop_timer(enum gaspi_timer t)
 float
 gaspi_stats_get_timer_ms(enum gaspi_timer t)
 {
-  lock_gaspi_tout(&gaspi_stats_lock, GASPI_BLOCK);
+  lock_gaspi(&gaspi_stats_lock);
   float f = _timers[t].ttotal_ms;
   unlock_gaspi(&gaspi_stats_lock);
   return f;
