@@ -483,14 +483,11 @@ int
 gaspi_sn_broadcast_topology(gaspi_context * const ctx, const gaspi_timeout_t timeout_ms)
 {
   int mask = 0x1;
-  int relative_rank;
   int dst, src;
-  const int root = 0;
 
-  relative_rank = (ctx->rank >= root) ? ctx->rank - root : ctx->rank - root + ctx->tnc;
-  while(mask <= ctx->tnc)
+  while( mask <= ctx->tnc )
     {
-      if(relative_rank & mask)
+      if( ctx->rank & mask )
 	{
 	  src = ctx->rank - mask;
 	  if(src < 0)
@@ -509,7 +506,7 @@ gaspi_sn_broadcast_topology(gaspi_context * const ctx, const gaspi_timeout_t tim
 
   while (mask > 0)
     {
-      if(relative_rank + mask < ctx->tnc)
+      if( ctx->rank + mask < ctx->tnc)
 	{
 	  dst = ctx->rank + mask;
 
