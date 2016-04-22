@@ -1577,11 +1577,14 @@ tcp_virt_dev(void *args)
 	      if(!((events[n].events & EPOLLRDHUP) || (events[n].events & EPOLLHUP)))
 		{
 		  int error = 0;
-		  socklen_t errlen = sizeof(error);
-		  getsockopt(event_fd, SOL_SOCKET, SO_ERROR, (void *)&error, &errlen);
+		  socklen22_t errlen = sizeof(error);
+		  gaspi_print_error("Unexpected error with rank %d.", event_rank);
 
-		  gaspi_print_error("with rank %d, socket error %d (%s)",
-				    event_rank, error,strerror(error));
+		  if( getsockopt(event_fd, SOL_SOCKET, SO_ERROR, (void *)&error, &errlen) != 0 )
+		    {
+		      gaspi_print_error("socket error with rank %d = %d: %s",
+					event_rank, error, strerror(error));
+		    }
 		}
 
 	      /* still had something to write => generate error wc */
