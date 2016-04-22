@@ -1199,7 +1199,8 @@ extern "C"
    *
    * @return GASPI_SUCCESS in case of SUCCESS, GASPI_ERROR in case of error.
    */
-  gaspi_return_t gaspi_statistic_counter_reset (gaspi_statistic_counter_t counter);
+  gaspi_return_t
+  gaspi_statistic_counter_reset (gaspi_statistic_counter_t counter);
 
   //@}
 
