@@ -1577,7 +1577,7 @@ tcp_virt_dev(void *args)
 	      if(!((events[n].events & EPOLLRDHUP) || (events[n].events & EPOLLHUP)))
 		{
 		  int error = 0;
-		  socklen22_t errlen = sizeof(error);
+		  socklen_t errlen = sizeof(error);
 		  gaspi_print_error("Unexpected error with rank %d.", event_rank);
 
 		  if( getsockopt(event_fd, SOL_SOCKET, SO_ERROR, (void *)&error, &errlen) != 0 )
