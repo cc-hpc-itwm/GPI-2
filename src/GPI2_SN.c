@@ -329,6 +329,7 @@ gaspi_sn_recv_topology(gaspi_context * const ctx)
     {
       gaspi_print_error("Failed to bind socket (port %d)",
 			glb_gaspi_cfg.sn_port + 64 + ctx->localSocket);
+      close(lsock);
       return -1;
     }
 
