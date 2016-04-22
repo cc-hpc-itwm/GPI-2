@@ -357,6 +357,8 @@ pgaspi_wait (const gaspi_queue_id_t queue,
   unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
 
   GPI2_STATS_STOP_TIMER(GASPI_WAIT_TIMER);
+  GPI2_STATS_INC_TIMER( GASPI_STATS_TIME_WAIT,
+			GPI2_STATS_GET_TIMER(GASPI_WAIT_TIMER));
 
   return eret;
 }
@@ -587,7 +589,11 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 	      if (p[n])
 		{
 		  *first_id = n;
+
 		  GPI2_STATS_STOP_TIMER(GASPI_WAITSOME_TIMER);
+		  GPI2_STATS_INC_TIMER( GASPI_STATS_TIME_WAITSOME,
+					GPI2_STATS_GET_TIMER(GASPI_WAITSOME_TIMER));
+
 		  return GASPI_SUCCESS;
 		}
 	    }
@@ -604,6 +610,8 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 	    {
 	      *first_id = n;
 	      GPI2_STATS_STOP_TIMER(GASPI_WAITSOME_TIMER);
+	      GPI2_STATS_INC_TIMER( GASPI_STATS_TIME_WAITSOME,
+				    GPI2_STATS_GET_TIMER(GASPI_WAITSOME_TIMER));
 	      return GASPI_SUCCESS;
 	    }
 	}
@@ -631,6 +639,10 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
       const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
       if (ms > timeout_ms)
 	{
+	  GPI2_STATS_STOP_TIMER(GASPI_WAITSOME_TIMER);
+	  GPI2_STATS_INC_TIMER( GASPI_STATS_TIME_WAITSOME,
+				GPI2_STATS_GET_TIMER(GASPI_WAITSOME_TIMER));
+
 	  return GASPI_TIMEOUT;
 	}
 
@@ -638,6 +650,8 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
     }
 
   GPI2_STATS_STOP_TIMER(GASPI_WAITSOME_TIMER);
+  GPI2_STATS_INC_TIMER( GASPI_STATS_TIME_WAITSOME,
+			GPI2_STATS_GET_TIMER(GASPI_WAITSOME_TIMER));
 
   return GASPI_SUCCESS;
 }

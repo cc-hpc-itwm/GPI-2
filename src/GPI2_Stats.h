@@ -79,6 +79,7 @@ gaspi_stats_stop_timer(enum gaspi_timer t);
     if(glb_gaspi_stats_verbosity_level)					\
       {									\
 	gpi2_counter_info[timer].value_f += val;			\
+	gpi2_counter_info[GASPI_STATS_TIME_ALL].value_f += val;		\
       }									\
   } while(0);
 

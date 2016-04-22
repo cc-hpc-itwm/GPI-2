@@ -32,9 +32,10 @@ struct gaspi_stats_timer
 };
 
 gaspi_number_t glb_gaspi_stats_verbosity_level = 1;
-struct gaspi_stats_timer _timers[GASPI_TIMER_MAX];
+static struct gaspi_stats_timer _timers[GASPI_TIMER_MAX];
 
 gaspi_lock_t gaspi_stats_lock;
+
 
 void
 gaspi_stats_start_timer(enum gaspi_timer t)
@@ -60,9 +61,14 @@ gaspi_stats_stop_timer(enum gaspi_timer t)
   lock_gaspi(&gaspi_stats_lock);
 
   _timers[t].tend = gaspi_get_cycles();
-  _timers[t].ttotal += _timers[t].tend - _timers[t].tstart;
+  _timers[t].ttotal += (_timers[t].tend - _timers[t].tstart);
   _timers[t].ttotal_ms = (float) _timers[t].ttotal * glb_gaspi_ctx.cycles_to_msecs;
   _timers[t].running = 0;
+
+  _timers[GASPI_ALL_TIMER].ttotal += (_timers[t].tend - _timers[t].tstart);
+  _timers[GASPI_ALL_TIMER].ttotal_ms = (float) _timers[GASPI_ALL_TIMER].ttotal * glb_gaspi_ctx.cycles_to_msecs;
+  _timers[GASPI_ALL_TIMER].running = 0;
+
   unlock_gaspi(&gaspi_stats_lock);
 }
 
