@@ -1,11 +1,15 @@
-addons:
-  ssh_known_hosts: localhost
 sudo: false
 language: c
 compiler:
     - gcc
 os:
     - linux
+before_install:
+     - ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa
+     - cat /home/travis/.ssh/id_rsa.pub >> /home/travis/.ssh/authorized_keys
+     - ln -s $HOME/.ssh/authorized_keys $HOME/.ssh/authorized_keys2
+     - echo "Host localhost" >> $HOME/.ssh/config
+     - echo "    StrictHostKeyChecking no" >> $HOME/.ssh/config
 script:
     - sh -x ./install.sh -p $HOME/install_test/ --with-ethernet --with-fortran=false
 after_failure:
