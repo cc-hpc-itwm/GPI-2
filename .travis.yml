@@ -12,15 +12,15 @@ before_install:
      - echo "    StrictHostKeyChecking no" >> $HOME/.ssh/config
 script:
     - sh -x ./install.sh -p $HOME/install_test/ --with-ethernet --with-fortran=false
+    - cd $HOME/install_test/tests/
+    - echo localhost > machines
+    - echo localhost >> machines
+    - ./runtests.sh
+    - rm machines
+    - cd -
 after_failure:
     - cat ./install.log
 after_script:
     - cat ./install.log
 after_success:
-    - cd $HOME/install_test/tests/
-    - echo localhost > machines
-    - echo localhost >> machines
-    - sh -x ./runtests.sh
-    - rm machines
-    - cd -
     - bash <(curl -s https://codecov.io/bash)
