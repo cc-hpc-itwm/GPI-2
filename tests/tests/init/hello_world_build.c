@@ -22,8 +22,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_rank(&rank));
   ASSERT (gaspi_proc_num(&num));
   
-  printf("Hello from rank %d of %d -> %d\n", 
-	       rank, num, (rank + 1 ) % num );
+  printf("Hello from rank %d of %d\n", rank, num);
 
   gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK);
 
