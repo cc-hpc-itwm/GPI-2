@@ -258,22 +258,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	      goto errL;
 	    }
 
-	  glb_gaspi_ctx.tnc = 0;
-	  
-	  while ((read = getline (&line, &len, fp)) != -1)
-	    {
-	      
-	      //we assume a single hostname per line
-	      if ((read < 2) || (read > 64))
-		continue;
-	      glb_gaspi_ctx.tnc++;
-	      
-	      if (glb_gaspi_ctx.tnc >= GASPI_MAX_NODES)
-		break;
-	    }
-	  
-	  rewind (fp);
-	  
 	  free (glb_gaspi_ctx.hn_poff);
 	  
 	  glb_gaspi_ctx.hn_poff = (char *) calloc (glb_gaspi_ctx.tnc, 65);
