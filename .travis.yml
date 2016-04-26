@@ -11,4 +11,9 @@ after_failure:
 after_script:
     - cat ./install.log
 after_success:
+    - cd $HOME/install_test/tests/
+    - echo $HOSTNAME > machines
+    - echo $HOSTNAME >> machines
+    - sh -x ./runtests.sh
+    - cd -
     - bash <(curl -s https://codecov.io/bash)
