@@ -51,7 +51,7 @@ run_test(){
 
     if [ $Time = 1 ] ; then
 	export PID
-	(sleep 3600; kill -9 $PID;) &
+	(sleep 60; kill -9 $PID;) &
 	TPID=$!
    #wait test to finish
        wait $PID
