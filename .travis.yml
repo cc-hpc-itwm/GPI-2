@@ -10,3 +10,5 @@ after_failure:
     - cat ./install.log
 after_script:
     - cat ./install.log
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
