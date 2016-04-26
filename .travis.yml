@@ -1,3 +1,5 @@
+addons:
+  ssh_known_hosts: localhost
 sudo: false
 language: c
 compiler:
@@ -12,8 +14,9 @@ after_script:
     - cat ./install.log
 after_success:
     - cd $HOME/install_test/tests/
-    - echo $HOSTNAME > machines
-    - echo $HOSTNAME >> machines
+    - echo localhost > machines
+    - echo localhost >> machines
     - sh -x ./runtests.sh
+    - rm machines
     - cd -
     - bash <(curl -s https://codecov.io/bash)
