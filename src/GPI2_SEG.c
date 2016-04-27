@@ -612,5 +612,7 @@ pgaspi_segment_use ( gaspi_segment_id_t const segment_id,
 	}
     }
 
+  free(group_ranks);
+
   return gaspi_barrier( group, timeout);
 }
