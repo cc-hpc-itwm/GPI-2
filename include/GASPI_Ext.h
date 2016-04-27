@@ -151,6 +151,19 @@ extern "C"
    */
   gaspi_return_t gaspi_segment_avail_local (gaspi_segment_id_t* const avail_seg_id);
 
+  /** Get the size of a given segment on a particular rank.
+   *
+   *
+   * @param segment_id The segment id we are interested in.
+   * @param rank The rank.
+   * @param size Output parameter with the size of the segment.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_segment_size (const gaspi_segment_id_t segment_id,
+				     const gaspi_rank_t rank,
+				     gaspi_size_t * const size);
+
 #ifdef __cplusplus
 }
 #endif

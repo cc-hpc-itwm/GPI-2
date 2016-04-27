@@ -558,19 +558,6 @@ extern "C"
   gaspi_return_t gaspi_segment_ptr (const gaspi_segment_id_t segment_id,
 				    gaspi_pointer_t * ptr);
 
-  /** Get the size of a given segment.
-   *
-   *
-   * @param segment_id The segment id we are interested in.
-   * @param rank The rank.
-   * @param size Output parameter with the size of the segment.
-   *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
-   */
-  gaspi_return_t gaspi_segment_size (const gaspi_segment_id_t segment_id,
-				     const gaspi_rank_t rank,
-				     gaspi_size_t * const size);
-
   /** Get the maximum number of segments allowed to be allocated/created.
    *
    *
