@@ -462,6 +462,11 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
+  if( eret != GASPI_SUCCESS )
+    {
+      return eret;
+    }
+
   eret = pgaspi_barrier(group, timeout_ms);
 
   return eret;
