@@ -287,6 +287,9 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
       return GASPI_ERR_DEVICE;
     }
 
+  /* For both "normal" and user-provided segments, the notif_spc
+     points to begin of memory and only the size changes.
+  */
   free (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.buf);
 
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf = NULL;
