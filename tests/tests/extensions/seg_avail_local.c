@@ -18,12 +18,11 @@ int main(int argc, char *argv[])
 
   ASSERT(gaspi_segment_max(&seg_max));
   
-  assert(seg_max == GASPI_MAX_MSEGS);
+  assert(seg_max == 32);
 
   for( s = 0; s < seg_max; s++ )
     {
       ASSERT( gaspi_segment_avail_local(&seg_avail) );
-      gaspi_printf("%d Creating %d of %d (%d)\n",s, seg_avail, seg_max, GASPI_MAX_MSEGS);
 
       ASSERT (gaspi_segment_create(seg_avail,
 				   1024,

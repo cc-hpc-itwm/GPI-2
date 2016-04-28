@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 
   ASSERT(gaspi_segment_max(&seg_max));
   
-  assert(seg_max == GASPI_MAX_MSEGS);
+  assert(seg_max == 32);
 
   for (s = 0; s < seg_max; s++)
     ASSERT (gaspi_segment_alloc(s, 1024, GASPI_MEM_INITIALIZED));
