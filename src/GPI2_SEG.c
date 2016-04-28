@@ -329,6 +329,7 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 
   if( rank == glb_gaspi_ctx.rank)
     {
+      glb_gaspi_ctx.rrmd[segment_id][rank].trans = 1;
       return GASPI_SUCCESS;
     }
 
