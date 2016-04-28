@@ -194,7 +194,6 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 
   /*  TODO: for now like this, but we need to change this */
 #ifndef GPI2_CUDA
-  long page_size;
 
   if( glb_gaspi_ctx.rrmd[segment_id] == NULL)
     {
@@ -213,7 +212,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       goto endL;
     }
 
-  page_size = sysconf (_SC_PAGESIZE);
+  const long page_size = sysconf (_SC_PAGESIZE);
 
   if( page_size < 0 )
     {
