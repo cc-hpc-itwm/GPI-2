@@ -66,9 +66,9 @@ pgaspi_set_socket_affinity (const gaspi_uchar socket)
 {
   cpu_set_t sock_mask;
 
-  if( socket >= 4 )
+  if( socket >= GASPI_MAX_NUMAS )
     {
-      gaspi_print_error("GPI-2 only allows up to a maximum of 4 NUMA sockets");
+      gaspi_print_error("GPI-2 only allows up to a maximum of %d NUMA sockets", GASPI_MAX_NUMAS);
       return GASPI_ERROR;
     }
 

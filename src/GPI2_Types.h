@@ -43,6 +43,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_MAX_TSIZE_P ((1ul<<16ul)-1ul)
 #define GASPI_MAX_QSIZE   (4096)
 #define GASPI_MAX_NOTIFICATION  (65536)
+#define GASPI_MAX_NUMAS   (4)
 
 typedef struct
 {
