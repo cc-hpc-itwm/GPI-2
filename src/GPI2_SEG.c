@@ -339,43 +339,11 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 
   gaspi_return_t eret = gaspi_sn_command(GASPI_SN_SEG_REGISTER, rank, timeout_ms, (void *) &segment_id);
 
+  glb_gaspi_ctx.rrmd[segment_id][rank].trans = 1;
+
   unlock_gaspi(&glb_gaspi_ctx_lock);
 
   return eret;
-}
-
-static gaspi_return_t
-pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
-			      const gaspi_group_t group,
-			      const gaspi_timeout_t timeout_ms)
-{
-  int r;
-  gaspi_return_t eret = GASPI_ERROR;
-
-  /* register segment to all other group members */
-  for(r = 1; r <= glb_gaspi_group_ctx[group].tnc; r++)
-    {
-      int i = (glb_gaspi_group_ctx[group].rank + r) % glb_gaspi_group_ctx[group].tnc;
-
-      if(glb_gaspi_group_ctx[group].rank_grp[i] == glb_gaspi_ctx.rank)
-	{
-	  glb_gaspi_ctx.rrmd[segment_id][i].trans = 1;
-	  continue;
-	}
-
-      if(glb_gaspi_ctx.rrmd[segment_id][i].trans)
-	continue;
-
-      eret = gaspi_sn_command(GASPI_SN_SEG_REGISTER, glb_gaspi_group_ctx[group].rank_grp[i], timeout_ms, (void *) &segment_id);
-      if(eret != GASPI_SUCCESS)
-	{
-	  return eret;
-	}
-
-      glb_gaspi_ctx.rrmd[segment_id][i].trans = 1;
-    }
-
-  return GASPI_SUCCESS;
 }
 
 /* TODO: from the spec: */
@@ -402,18 +370,19 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
       return eret;
     }
 
-  if(lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms))
+  /* register segment to all other group members */
+  int r;
+  for(r = 1; r <= glb_gaspi_group_ctx[group].tnc; r++)
     {
-      return GASPI_TIMEOUT;
-    }
+      int i = (glb_gaspi_group_ctx[group].rank + r) % glb_gaspi_group_ctx[group].tnc;
 
-  eret = pgaspi_segment_register_group(segment_id, group, timeout_ms);
-
-  unlock_gaspi (&glb_gaspi_ctx_lock);
-
-  if( eret != GASPI_SUCCESS )
-    {
-      return eret;
+      eret = pgaspi_segment_register(segment_id,
+				     glb_gaspi_group_ctx[group].rank_grp[i],
+				     timeout_ms);
+      if( eret != GASPI_SUCCESS )
+	{
+	  return eret;
+	}
     }
 
   eret = pgaspi_barrier(group, timeout_ms);
