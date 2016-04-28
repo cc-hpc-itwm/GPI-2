@@ -345,55 +345,6 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 }
 
 static gaspi_return_t
-pgaspi_dev_wait_remote_register(const gaspi_segment_id_t segment_id,
-				const gaspi_group_t group,
-				const gaspi_timeout_t timeout_ms)
-{
-  int r;
-  struct timeb t0, t1;
-  ftime(&t0);
-
-  while(1)
-    {
-      int cnt = 0;
-
-      for(r = 0; r < glb_gaspi_group_ctx[group].tnc; r++)
-	{
-	  int i = glb_gaspi_group_ctx[group].rank_grp[r];
-
-	  ulong s = gaspi_load_ulong(&glb_gaspi_ctx.rrmd[segment_id][i].size);
-	  if( s > 0 && s == glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size)
-	    {
-	      cnt++;
-	    }
-	}
-
-      if(cnt == glb_gaspi_group_ctx[group].tnc)
-	{
-	  break;
-	}
-
-      ftime(&t1);
-
-      const unsigned int delta_ms = (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
-
-      if(delta_ms > timeout_ms)
-	{
-	  return GASPI_TIMEOUT;
-	}
-
-      struct timespec sleep_time,rem;
-      sleep_time.tv_sec = 0;
-      sleep_time.tv_nsec = 250000000;
-      nanosleep(&sleep_time, &rem);
-
-      //usleep(250000);
-    }
-
-  return GASPI_SUCCESS;
-}
-
-static gaspi_return_t
 pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
 			      const gaspi_group_t group,
 			      const gaspi_timeout_t timeout_ms)
@@ -424,9 +375,7 @@ pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
       glb_gaspi_ctx.rrmd[segment_id][i].trans = 1;
     }
 
-  eret = pgaspi_dev_wait_remote_register(segment_id, group, timeout_ms);
-
-  return eret;
+  return GASPI_SUCCESS;
 }
 
 /* TODO: from the spec: */
