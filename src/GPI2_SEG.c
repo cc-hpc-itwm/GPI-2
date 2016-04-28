@@ -294,8 +294,11 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size = 0;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc_size = 0;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].trans = 0;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr[0] = NULL;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr[1] = NULL;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[0] = 0;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[1] = 0;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].user_provided = 0;
 
   /* Reset trans info flag for all ranks */
   int r;
