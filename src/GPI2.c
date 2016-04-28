@@ -437,7 +437,7 @@ pgaspi_cleanup_core(void)
     {
       if( glb_gaspi_group_ctx[i].id >= 0 )
 	{
-	  free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].notif_spc.buf);
+	  free (glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].data.buf);
 	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].data.buf = NULL;
 	  glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank].notif_spc.buf = NULL;
 
