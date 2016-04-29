@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 
   for (int j = 0; j < VLEN; ++j)
     {
-      gaspi_printf("rank %d rcv elem %d: %f \n", iProc,j,rcv_array[j] );
+      printf("rank %d rcv elem %d: %f \n", iProc,j,rcv_array[j] );
     }
   
   wait_for_flush_queues();

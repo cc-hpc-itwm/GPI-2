@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
   SUCCESS_OR_DIE( gaspi_proc_rank(&rank) );
   SUCCESS_OR_DIE( gaspi_proc_num(&num) );
  
-  gaspi_printf("Hello world from rank %d of %d\n",rank, num);
+  printf("Hello world from rank %d of %d\n",rank, num);
  
   SUCCESS_OR_DIE( gaspi_proc_term(GASPI_BLOCK) );
  
