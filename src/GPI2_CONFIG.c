@@ -76,52 +76,51 @@ pgaspi_config_set (const gaspi_config_t nconf)
 	gaspi_print_error("Invalid value for parameter network");
 	return GASPI_ERR_CONFIG;
       }
-    else
-      {
-	glb_gaspi_cfg.network = nconf.network;
-	glb_gaspi_cfg.user_net = 1;
-      }
+  glb_gaspi_cfg.network = nconf.network;
+  glb_gaspi_cfg.user_net = 1;
 
-  if (nconf.netdev_id > 1)
+  if( nconf.netdev_id > 1 )
     {
       gaspi_print_error("Invalid value for parameter netdev_id");
       return GASPI_ERR_CONFIG;
     }
-  else
-    glb_gaspi_cfg.netdev_id = nconf.netdev_id;
 
-  if (nconf.queue_num > GASPI_MAX_QP || nconf.queue_num < 1)
+  glb_gaspi_cfg.netdev_id = nconf.netdev_id;
+
+  if( nconf.queue_num > GASPI_MAX_QP || nconf.queue_num < 1 )
     {
       gaspi_print_error("Invalid value for parameter queue_num (min=1 and max=GASPI_MAX_QP");
       return GASPI_ERR_CONFIG;
     }
-  else
-    glb_gaspi_cfg.queue_num = nconf.queue_num;
 
-  if (nconf.queue_depth > GASPI_MAX_QSIZE || nconf.queue_depth < 1)
+  glb_gaspi_cfg.queue_num = nconf.queue_num;
+
+  if( nconf.queue_depth > GASPI_MAX_QSIZE || nconf.queue_depth < 1 )
     {
       gaspi_print_error("Invalid value for parameter queue_depth (min=1 and max=GASPI_MAX_QSIZE");
       return GASPI_ERR_CONFIG;
     }
-  else
-    glb_gaspi_cfg.queue_depth = nconf.queue_depth;
 
-  if (nconf.mtu == 0 || nconf.mtu == 1024 || nconf.mtu == 2048 || nconf.mtu == 4096)
-    glb_gaspi_cfg.mtu = nconf.mtu;
+  glb_gaspi_cfg.queue_depth = nconf.queue_depth;
+
+  if( nconf.mtu == 0 || nconf.mtu == 1024 || nconf.mtu == 2048 || nconf.mtu == 4096 )
+    {
+      glb_gaspi_cfg.mtu = nconf.mtu;
+    }
   else
     {
-      gaspi_print_error("Invalid value for parameter mtu (supported: 1024, 2048,4096)");
+      gaspi_print_error("Invalid value for parameter mtu (supported: 1024, 2048, 4096)");
       return GASPI_ERR_CONFIG;
     }
 
-  if(nconf.sn_port < 1024 || nconf.sn_port > 65536)
+  if( nconf.sn_port < 1024 || nconf.sn_port > 65536 )
     {
       gaspi_print_error("Invalid value for parameter sn_port ( from 1024 to 65536)");
       return GASPI_ERR_CONFIG;
     }
-  else  
-    glb_gaspi_cfg.sn_port = nconf.sn_port;
   
+  glb_gaspi_cfg.sn_port = nconf.sn_port;
+
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.logger = nconf.logger;
   glb_gaspi_cfg.port_check = nconf.port_check;
