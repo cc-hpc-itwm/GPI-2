@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
   for (int j = 0; j < VLEN; ++j)
     {
       ( (double *)array )[j]= (double)( iProc * VLEN + j );
-      gaspi_printf("rank %d elem %d: %f \n", iProc,j,( (double *)array )[j] );
+      printf("rank %d elem %d: %f \n", iProc,j,( (double *)array )[j] );
     }
  
   SUCCESS_OR_DIE( gaspi_proc_term(GASPI_BLOCK) );

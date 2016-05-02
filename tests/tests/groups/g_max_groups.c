@@ -7,7 +7,7 @@
 int main(int argc, char *argv[])
 {
 
-  gaspi_group_t gs[GASPI_MAX_GROUPS];
+  gaspi_group_t gs[32];
 
   gaspi_rank_t nprocs, n;
   gaspi_number_t max_groups,i;

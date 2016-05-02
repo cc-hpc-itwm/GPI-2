@@ -194,7 +194,6 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 
   /*  TODO: for now like this, but we need to change this */
 #ifndef GPI2_CUDA
-  long page_size;
 
   if( glb_gaspi_ctx.rrmd[segment_id] == NULL)
     {
@@ -213,7 +212,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       goto endL;
     }
 
-  page_size = sysconf (_SC_PAGESIZE);
+  const long page_size = sysconf (_SC_PAGESIZE);
 
   if( page_size < 0 )
     {
@@ -287,6 +286,9 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
       return GASPI_ERR_DEVICE;
     }
 
+  /* For both "normal" and user-provided segments, the notif_spc
+     points to begin of memory and only the size changes.
+  */
   free (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.buf);
 
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf = NULL;
@@ -294,8 +296,11 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size = 0;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc_size = 0;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].trans = 0;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr[0] = NULL;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr[1] = NULL;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[0] = 0;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[1] = 0;
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].user_provided = 0;
 
   /* Reset trans info flag for all ranks */
   int r;
@@ -329,6 +334,7 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 
   if( rank == glb_gaspi_ctx.rank)
     {
+      glb_gaspi_ctx.rrmd[segment_id][rank].trans = 1;
       return GASPI_SUCCESS;
     }
 
@@ -339,92 +345,9 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 
   gaspi_return_t eret = gaspi_sn_command(GASPI_SN_SEG_REGISTER, rank, timeout_ms, (void *) &segment_id);
 
+  glb_gaspi_ctx.rrmd[segment_id][rank].trans = 1;
+
   unlock_gaspi(&glb_gaspi_ctx_lock);
-
-  return eret;
-}
-
-static gaspi_return_t
-pgaspi_dev_wait_remote_register(const gaspi_segment_id_t segment_id,
-				const gaspi_group_t group,
-				const gaspi_timeout_t timeout_ms)
-{
-  int r;
-  struct timeb t0, t1;
-  ftime(&t0);
-
-  while(1)
-    {
-      int cnt = 0;
-
-      for(r = 0; r < glb_gaspi_group_ctx[group].tnc; r++)
-	{
-	  int i = glb_gaspi_group_ctx[group].rank_grp[r];
-
-	  ulong s = gaspi_load_ulong(&glb_gaspi_ctx.rrmd[segment_id][i].size);
-	  if( s > 0 && s == glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size)
-	    {
-	      cnt++;
-	    }
-	}
-
-      if(cnt == glb_gaspi_group_ctx[group].tnc)
-	{
-	  break;
-	}
-
-      ftime(&t1);
-
-      const unsigned int delta_ms = (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
-
-      if(delta_ms > timeout_ms)
-	{
-	  return GASPI_TIMEOUT;
-	}
-
-      struct timespec sleep_time,rem;
-      sleep_time.tv_sec = 0;
-      sleep_time.tv_nsec = 250000000;
-      nanosleep(&sleep_time, &rem);
-
-      //usleep(250000);
-    }
-
-  return GASPI_SUCCESS;
-}
-
-static gaspi_return_t
-pgaspi_segment_register_group(const gaspi_segment_id_t segment_id,
-			      const gaspi_group_t group,
-			      const gaspi_timeout_t timeout_ms)
-{
-  int r;
-  gaspi_return_t eret = GASPI_ERROR;
-
-  /* register segment to all other group members */
-  for(r = 1; r <= glb_gaspi_group_ctx[group].tnc; r++)
-    {
-      int i = (glb_gaspi_group_ctx[group].rank + r) % glb_gaspi_group_ctx[group].tnc;
-
-      if(glb_gaspi_group_ctx[group].rank_grp[i] == glb_gaspi_ctx.rank)
-	{
-	  glb_gaspi_ctx.rrmd[segment_id][i].trans = 1;
-	  continue;
-	}
-
-      if(glb_gaspi_ctx.rrmd[segment_id][i].trans)
-	continue;
-
-      eret = gaspi_sn_command(GASPI_SN_SEG_REGISTER, glb_gaspi_group_ctx[group].rank_grp[i], timeout_ms, (void *) &segment_id);
-      if(eret != GASPI_SUCCESS)
-	{
-	  return eret;
-	}
-
-      glb_gaspi_ctx.rrmd[segment_id][i].trans = 1;
-    }
-
-  eret = pgaspi_dev_wait_remote_register(segment_id, group, timeout_ms);
 
   return eret;
 }
@@ -453,14 +376,20 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
       return eret;
     }
 
-  if(lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms))
+  /* register segment to all other group members */
+  int r;
+  for(r = 1; r <= glb_gaspi_group_ctx[group].tnc; r++)
     {
-      return GASPI_TIMEOUT;
+      int i = (glb_gaspi_group_ctx[group].rank + r) % glb_gaspi_group_ctx[group].tnc;
+
+      eret = pgaspi_segment_register(segment_id,
+				     glb_gaspi_group_ctx[group].rank_grp[i],
+				     timeout_ms);
+      if( eret != GASPI_SUCCESS )
+	{
+	  return eret;
+	}
     }
-
-  eret = pgaspi_segment_register_group(segment_id, group, timeout_ms);
-
-  unlock_gaspi (&glb_gaspi_ctx_lock);
 
   eret = pgaspi_barrier(group, timeout_ms);
 
@@ -564,9 +493,9 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 #pragma weak gaspi_segment_use = pgaspi_segment_use
 gaspi_return_t
 pgaspi_segment_use ( gaspi_segment_id_t const segment_id,
-		    gaspi_pointer_t const pointer,
-		    gaspi_size_t const size,
-		    gaspi_group_t const group,
+		     gaspi_pointer_t const pointer,
+		     gaspi_size_t const size,
+		     gaspi_group_t const group,
 		     gaspi_timeout_t const timeout,
 		     gaspi_memory_description_t const memory_description)
 {
@@ -606,6 +535,8 @@ pgaspi_segment_use ( gaspi_segment_id_t const segment_id,
 	  return ret;
 	}
     }
+
+  free(group_ranks);
 
   return gaspi_barrier( group, timeout);
 }

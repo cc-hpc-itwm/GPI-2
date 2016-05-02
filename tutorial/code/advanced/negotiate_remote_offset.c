@@ -79,8 +79,8 @@ void *handle_passive(void *arg)
 static void say_hello(gaspi_rank_t rank, gaspi_size_t len, gaspi_offset_t offset)
 {
 
-  gaspi_printf("# Hello from rank :% d wrote %d bytes to offset: %lu\n"
-	       ,rank,len*sizeof(int),offset);
+  printf("# Hello from rank :% d wrote %lu bytes to offset: %lu\n"
+	 ,rank,len*sizeof(int),offset);
 
 }
 
@@ -128,7 +128,7 @@ static void return_offset(gaspi_rank_t rank, gaspi_size_t len, gaspi_offset_t of
   local_recv_offset -= len * sizeof(int);
   if ( local_recv_offset < core_segment_size / 2) 
     {
-      gaspi_printf("ERROR: Overlapping send/recv offset !?\n");
+      printf("ERROR: Overlapping send/recv offset !?\n");
       exit(1);
     }
 
@@ -220,7 +220,7 @@ static void init_offset()
       local_send_offset += len * sizeof(int);
       if ( local_send_offset >= core_segment_size / 2) 
 	{
-	  gaspi_printf("ERROR: Overlapping send/recv offset !?\n");
+	  printf("ERROR: Overlapping send/recv offset !?\n");
 	  exit(1);
 	}
       local_offset[i].local_recv_len = 0;
@@ -392,7 +392,7 @@ int main(int argc, char *argv[])
 	  , argv[0], nProc, _time
 	  );
 
-  gaspi_printf("done\n");
+  printf("done\n");
   fflush(stdout);
 
   SUCCESS_OR_DIE (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));

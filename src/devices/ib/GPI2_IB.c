@@ -923,6 +923,11 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
   free (glb_gaspi_ctx_ib.qpP);
   glb_gaspi_ctx_ib.qpP = NULL;
 
+  for(c = 0; c < gaspi_cfg->queue_num; c++)
+    {
+      free(glb_gaspi_ctx_ib.qpC[c]);
+    }
+
   if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqGroups))
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
