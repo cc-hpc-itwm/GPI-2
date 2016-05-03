@@ -619,7 +619,7 @@ pgaspi_proc_local_num(gaspi_rank_t * const local_num)
       return GASPI_ERROR;
     }
 
-  while( glb_gaspi_ctx.poff[rank + 1] != 0 )
+  while( glb_gaspi_ctx.poff[rank + 1] != 0  && (rank < glb_gaspi_ctx.tnc - 1))
     {
       rank++;
     }
