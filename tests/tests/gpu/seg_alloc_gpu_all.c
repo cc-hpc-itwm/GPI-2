@@ -17,17 +17,17 @@ int main(int argc, char *argv[])
   gaspi_rank_t rank, nprocs, i,j;
   gaspi_number_t seg_max;
 
-  gaspi_gpu_t gpus[8]; 
-  gaspi_gpu_num nGPUs;
+  gaspi_gpu_id_t gpus[8]; 
+  gaspi_number_t nGPUs;
 
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT (gaspi_proc_rank(&rank));
-  ASSERT(gaspi_init_GPUs());
+  ASSERT(gaspi_gpu_init());
   seg_max = 1;
-  ASSERT (gaspi_number_of_GPUs(&nGPUs));
-  ASSERT (gaspi_GPU_ids(gpus));
+  ASSERT (gaspi_gpu_number(&nGPUs));
+  ASSERT (gaspi_gpu_ids(gpus));
 
-  for (i =0; i<nGPUs; i++)
+  for(i = 0; i < nGPUs; i++)
     {
       cudaSetDevice(gpus[i]);
       ASSERT (gaspi_segment_alloc(i, 1024, GASPI_MEM_INITIALIZED|GASPI_MEM_GPU));
@@ -37,11 +37,10 @@ int main(int argc, char *argv[])
 
   for (i = 0; i < nprocs; i++)
     {
-
       if(i == rank)
 	continue;
 
-      for (j =0; j<nGPUs; j++)
+      for(j = 0; j < nGPUs; j++)
 	{
 	  ASSERT( gaspi_segment_register(j, i, GASPI_BLOCK));
 	  //sleep(1);

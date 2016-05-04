@@ -27,8 +27,7 @@ extern "C"
 #endif
 
   /* Types */
-  typedef int gaspi_gpu_t;
-  typedef int gaspi_gpu_num;
+  typedef int gaspi_gpu_id_t;
 
   /** Initialization of GPUs.
    * It is a local synchronous blocking procedure.
@@ -37,7 +36,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
    * error, GASPI_TIMEOUT in case of timeout.
    */
-  gaspi_return_t gaspi_init_GPUs();
+  gaspi_return_t gaspi_gpu_init(void);
 
   /** Get GPU ids.
    * It is a local synchronous blocking procedure.
@@ -47,7 +46,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
 
-  gaspi_return_t gaspi_GPU_ids(gaspi_gpu_t *gpu_ids);
+  gaspi_return_t gaspi_gpu_ids(gaspi_gpu_id_t* gpu_ids);
 
 
   /** Get the number of available GPUs.
@@ -58,7 +57,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
 
-  gaspi_return_t gaspi_number_of_GPUs(gaspi_gpu_num *gpus);
+  gaspi_return_t gaspi_gpu_number(gaspi_number_t* num_gpus);
 
   /** One-sided write.
    *

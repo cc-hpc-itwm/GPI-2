@@ -7,15 +7,13 @@
 int main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
-  gaspi_gpu_t gpus[8]; 
-  gaspi_gpu_num nGPUs;
-
+  gaspi_gpu_id_t gpus[8]; 
+  gaspi_number_t nGPUs;
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
-  ASSERT (gaspi_init_GPUs());
-  ASSERT (gaspi_number_of_GPUs(&nGPUs));
-  ASSERT (gaspi_GPU_ids(gpus));
-
+  ASSERT (gaspi_gpu_init());
+  ASSERT (gaspi_gpu_number(&nGPUs));
+  ASSERT (gaspi_gpu_ids(gpus));
 
   gaspi_notification_id_t  n=0;
   gaspi_number_t notif_num;

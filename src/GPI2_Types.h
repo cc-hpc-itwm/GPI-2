@@ -27,7 +27,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define ALIGN64  __attribute__ ((aligned (64)))
 
-  /* Macro-ed constants */
+/* Macro-ed constants */
 #define GASPI_MAJOR_VERSION (1)
 #define GASPI_MINOR_VERSION (3)
 #define GASPI_REVISION (0)
@@ -67,7 +67,7 @@ typedef struct
     unsigned long addr;
   } notif_spc;
 
-  void *mr[2];
+  void* mr[2];
   unsigned int rkey[2];
 
   unsigned long size;
@@ -78,11 +78,11 @@ typedef struct
   gaspi_memory_description_t desc;
 
 #ifdef GPI2_CUDA
-  int cudaDevId;
+  int cuda_dev_id; //cuda device id holding the memory
   union
   {
-   void *host_ptr;
-   unsigned long host_addr;
+    void *host_ptr;
+    unsigned long host_addr;
   };
   void *host_mr;
   unsigned int host_rkey;
@@ -91,7 +91,7 @@ typedef struct
 
 typedef struct
 {
-  int localSocket;
+  int localSocket; //TODO: rename?
   int rank;
   int tnc;
   float mhz;
@@ -111,7 +111,7 @@ typedef struct
   pthread_t snt;
 
 #ifdef GPI2_CUDA
-  int gpu_count;
+  gaspi_number_t gpu_count;
   int use_gpus;
 #endif
 

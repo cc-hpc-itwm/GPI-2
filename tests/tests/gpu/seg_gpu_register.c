@@ -15,21 +15,19 @@ int main(int argc, char *argv[])
 
   gaspi_rank_t rank, nprocs, i;
   gaspi_number_t seg_max;
-  gaspi_gpu_t gpus[8]; 
-  gaspi_gpu_num nGPUs;
+  gaspi_gpu_id_t gpus[8]; 
+  gaspi_number_t nGPUs;
 
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT (gaspi_proc_rank(&rank));
 
-  ASSERT(gaspi_init_GPUs());
-  ASSERT (gaspi_number_of_GPUs(&nGPUs));
-  ASSERT (gaspi_GPU_ids(gpus));
-
+  ASSERT(gaspi_gpu_init());
+  ASSERT (gaspi_gpu_number(&nGPUs));
+  ASSERT (gaspi_gpu_ids(gpus));
 
   cudaSetDevice(gpus[0]);
 
   ASSERT (gaspi_segment_create(0, 1024,GASPI_GROUP_ALL,GASPI_BLOCK, GASPI_MEM_INITIALIZED|GASPI_MEM_GPU ));
-
 
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 

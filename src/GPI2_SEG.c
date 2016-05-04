@@ -67,13 +67,7 @@ pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 
   gaspi_verify_segment_size(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size);
 
-#ifdef GPI2_CUDA
-  if(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId >= 0)
-    *ptr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf;
-  else
-#endif
-
-    *ptr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf;
+  *ptr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf;
 
   return GASPI_SUCCESS;
 }
@@ -206,6 +200,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 	}
     }
 
+  /* TODO: not really the right way */
   if( glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size)
     {
       eret = GASPI_SUCCESS;
@@ -242,7 +237,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr += NOTIFY_OFFSET;
   glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].user_provided = 0;
 
-  if(pgaspi_dev_register_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank]), size + NOTIFY_OFFSET) < 0)
+  if( pgaspi_dev_register_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank]), size + NOTIFY_OFFSET) < 0 )
     {
       goto endL;
     }

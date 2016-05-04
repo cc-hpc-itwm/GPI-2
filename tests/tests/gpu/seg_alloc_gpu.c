@@ -4,7 +4,7 @@
 #include <test_utils.h>
 #include <cuda.h>
 //alloc GPU segemnt
-//and then registe it with all nodes
+//and then register it with all nodes
 //then delete it 
 int main(int argc, char *argv[])
 {
@@ -17,15 +17,15 @@ int main(int argc, char *argv[])
   gaspi_rank_t rank, nprocs, i;
   gaspi_number_t seg_max;
 
-  gaspi_gpu_t gpus[8]; 
-  gaspi_gpu_num nGPUs;
+  gaspi_gpu_id_t gpus[8]; 
+  gaspi_number_t nGPUs;
 
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT (gaspi_proc_rank(&rank));
-  ASSERT(gaspi_init_GPUs());
+  ASSERT(gaspi_gpu_init());
   seg_max = 1;
-  ASSERT (gaspi_number_of_GPUs(&nGPUs));
-  ASSERT (gaspi_GPU_ids(gpus));
+  ASSERT (gaspi_gpu_number(&nGPUs));
+  ASSERT (gaspi_gpu_ids(gpus));
 
   cudaSetDevice(gpus[0]);
 

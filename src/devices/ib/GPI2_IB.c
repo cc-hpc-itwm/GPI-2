@@ -28,7 +28,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GASPI_GPU.h"
 #include "GPI2_GPU.h"
 #endif
-      
+
 #include "GPI2.h"
 #include "GPI2_Dev.h"
 #include "GPI2_IB.h"
@@ -90,7 +90,7 @@ pgaspi_dev_get_rrcd(int rank)
 inline char *
 pgaspi_dev_get_lrcd(int rank)
 {
-  return (char *)&glb_gaspi_ctx_ib.local_info[rank];  
+  return (char *)&glb_gaspi_ctx_ib.local_info[rank];
 }
 
 inline size_t
@@ -112,7 +112,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
     {
       glb_gaspi_ctx_ib.wc_grp_send[i].status = IBV_WC_SUCCESS;
     }
-  
+
   /* Take care of IB device ( */
   glb_gaspi_ctx_ib.dev_list = ibv_get_device_list (&glb_gaspi_ctx_ib.num_dev);
   if (!glb_gaspi_ctx_ib.dev_list)
@@ -143,13 +143,13 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       for (i = 0;i < glb_gaspi_ctx_ib.num_dev; i++)
 	{
 	  glb_gaspi_ctx_ib.ib_dev = glb_gaspi_ctx_ib.dev_list[i];
-	  
+
 	  if (!glb_gaspi_ctx_ib.ib_dev)
 	    {
 	      gaspi_print_error ("Failed to get device (libibverbs)");
 	      continue;
 	    }
-	  
+
 	  if (glb_gaspi_ctx_ib.ib_dev->transport_type != IBV_TRANSPORT_IB)
 	    continue;
 	  else
@@ -211,9 +211,9 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       gaspi_printf ("\tca type    : %d\n",
 		    glb_gaspi_ctx_ib.device_attr.vendor_part_id);
       if(gaspi_cfg->mtu==0)
-        gaspi_printf ("\tmtu        : (active_mtu)\n");
+	gaspi_printf ("\tmtu        : (active_mtu)\n");
       else
-        gaspi_printf ("\tmtu        : %d (user)\n", gaspi_cfg->mtu);
+	gaspi_printf ("\tmtu        : %d (user)\n", gaspi_cfg->mtu);
 
       gaspi_printf ("\tfw_version : %s\n",
 		    glb_gaspi_ctx_ib.device_attr.fw_ver);
@@ -235,10 +235,10 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 
       for(p = 0; p < MIN (glb_gaspi_ctx_ib.device_attr.phys_port_cnt, 2);p++)
 	{
-          gaspi_printf ("\tport Nr    : %d\n", p + 1);
+	  gaspi_printf ("\tport Nr    : %d\n", p + 1);
 	  id0[p] = glb_gaspi_ctx_ib.port_attr[p].state <6 ? glb_gaspi_ctx_ib.port_attr[p].state : 0;
 	  gaspi_printf ("\t  state      : %s\n", port_state_str[id0[p]]);
-	  
+
 	  id1[p] = glb_gaspi_ctx_ib.port_attr[p].phys_state <8 ? glb_gaspi_ctx_ib.port_attr[p].phys_state : 3;
 	  gaspi_printf ("\t  phy state  : %s\n", port_phy_state_str[id1[p]]);
 	  gaspi_printf ("\t  link layer : %s\n",link_layer_str (glb_gaspi_ctx_ib.port_attr[p].link_layer));
@@ -253,24 +253,24 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 	  gaspi_print_error ("No IB active port found");
 	  return -1;
 	}
-      
+
       if((glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)&& (glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP))
 	{
 	  gaspi_print_error ("No IB active link found");
 	  return -1;
 	}
-      
+
       glb_gaspi_ctx_ib.ib_port = 1;
-      
+
       if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE) || (glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP))
 	{
-	  
+
 	  if((glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE) || (glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP))
 	    {
 	      gaspi_print_error ("No IB active port found");
 	      return -1;
 	    }
-	  
+
 	  glb_gaspi_ctx_ib.ib_port = 2;
 	}
 
@@ -283,22 +283,22 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 	  else if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer == IBV_LINK_LAYER_ETHERNET)
 	    gaspi_cfg->network = GASPI_ROCE;
 	}
-      
-      
+
+
       if(gaspi_cfg->network == GASPI_ROCE)
 	{
-	  
+
 	  glb_gaspi_ctx_ib.ib_port = 1;
-	  
+
 	  if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)
 	     ||(glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)
 	     ||(glb_gaspi_ctx_ib.port_attr[0].link_layer != IBV_LINK_LAYER_ETHERNET)){
-	    
-	    
+
+
 	    if((glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE)
 	       ||(glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP)
 	       ||(glb_gaspi_ctx_ib.port_attr[1].link_layer != IBV_LINK_LAYER_ETHERNET)){
-	      
+
 	      gaspi_print_error ("No active Ethernet (RoCE) port found");
 	      return -1;
 	    }
@@ -311,7 +311,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
     {
       glb_gaspi_ctx_ib.ib_port = 1;
     }
-  
+
   if(gaspi_cfg->net_info)
     gaspi_printf ("\tusing port : %d\n", glb_gaspi_ctx_ib.ib_port);
 
@@ -320,7 +320,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       if(gaspi_cfg->mtu == 0)
 	{
 	  switch(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].active_mtu){
-	    
+
 	  case IBV_MTU_1024:
 	    gaspi_cfg->mtu = 1024;
 	    break;
@@ -334,7 +334,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 	    break;
 	  };
 	}
-  
+
       if(gaspi_cfg->net_info)
 	gaspi_printf ("\tmtu        : %d\n", gaspi_cfg->mtu);
     }
@@ -380,7 +380,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       gaspi_print_error ("Memory registration failed (libibverbs)");
       return -1;
     }
-  
+
   memset (&glb_gaspi_ctx_ib.srq_attr, 0, sizeof (struct ibv_srq_init_attr));
 
   glb_gaspi_ctx_ib.srq_attr.attr.max_wr  = gaspi_cfg->queue_depth;
@@ -418,13 +418,13 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
     }
 
   glb_gaspi_ctx_ib.rcqP = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_depth, NULL, glb_gaspi_ctx_ib.channelP, 0);
-  
+
   if(!glb_gaspi_ctx_ib.rcqP)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
-  
+
   if(ibv_req_notify_cq (glb_gaspi_ctx_ib.rcqP, 0))
     {
       gaspi_print_error ("Failed to request CQ notifications (libibverbs)");
@@ -502,16 +502,16 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
     {
       return -1;
     }
-  
+
   for(i = 0; i < glb_gaspi_ctx.tnc; i++)
     {
       glb_gaspi_ctx_ib.local_info[i].lid = glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].lid;
-      
+
       struct timeval tv;
       gettimeofday (&tv, NULL);
       srand48 (tv.tv_usec);
       glb_gaspi_ctx_ib.local_info[i].psn = lrand48 () & 0xffffff;
-      
+
       if(gaspi_cfg->port_check)
 	{
 	  if(!glb_gaspi_ctx_ib.local_info[i].lid && (gaspi_cfg->network == GASPI_IB))
@@ -566,7 +566,7 @@ _pgaspi_dev_create_qp(struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv
   qp_attr.qp_access_flags = IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE |IBV_ACCESS_REMOTE_ATOMIC;
 
   if(ibv_modify_qp(qp, &qp_attr,
-		   IBV_QP_STATE  
+		   IBV_QP_STATE
 		   | IBV_QP_PKEY_INDEX
 		   | IBV_QP_PORT
 		   | IBV_QP_ACCESS_FLAGS))
@@ -655,7 +655,7 @@ pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_
 	  gaspi_print_error ("Failed to memory allocation");
 	  return -1;
 	}
-      
+
       glb_gaspi_ctx_ib.qpC_cstat[id] = 1;
     }
 
@@ -664,7 +664,7 @@ pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_
       gaspi_print_error ("Failed to memory allocation");
       return -1;
     }
-  
+
   glb_gaspi_ctx_ib.qpC[id][remote_node] = _pgaspi_dev_create_qp(glb_gaspi_ctx_ib.scqC[id], glb_gaspi_ctx_ib.scqC[id], NULL);
   if( glb_gaspi_ctx_ib.qpC[id][remote_node] == NULL )
     {
@@ -673,7 +673,7 @@ pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_
     }
 
   glb_gaspi_ctx_ib.local_info[remote_node].qpnC[id] = glb_gaspi_ctx_ib.qpC[id][remote_node]->qp_num;
-  
+
   return 0;
 }
 
@@ -735,21 +735,21 @@ pgaspi_dev_disconnect_context(const int i)
 	  return -1;
 	}
     }
-    
+
   if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpP[i]))
     {
       gaspi_print_error ("Failed to destroy QP (libibverbs)");
       return -1;
     }
-  
+
   glb_gaspi_ctx_ib.local_info[i].qpnGroup = 0;
   glb_gaspi_ctx_ib.local_info[i].qpnP = 0;
-  
+
   for(c = 0; c < glb_gaspi_cfg.queue_num; c++)
     {
       glb_gaspi_ctx_ib.local_info[i].qpnC[c] = 0;
     }
-  
+
   return 0;
 }
 
@@ -939,13 +939,13 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
       return -1;
     }
-  
+
   if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqP))
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
       return -1;
     }
-  
+
   if(ibv_destroy_cq (glb_gaspi_ctx_ib.rcqP))
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
@@ -967,7 +967,7 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 	    {
 #ifdef GPI2_CUDA
 	      if(glb_gaspi_ctx.use_gpus == 0 || glb_gaspi_ctx.gpu_count == 0)
-#endif	      
+#endif
 
 		if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].mr[0]))
 		  {
@@ -980,15 +980,15 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 		    return -1;
 		  }
 
-#if GPI2_CUDA
-	      if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cudaDevId >= 0)
+#ifdef GPI2_CUDA
+	      if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cuda_dev_id >= 0)
 		{
-		  if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_mr[0]))
+		  if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_mr))
 		    {
 		      gaspi_print_error("Failed to de-register memory (libiverbs)\n");
 		      return -1;
 		    }
-		  cudaSetDevice( (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cudaDevId));
+		  cudaSetDevice( (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cuda_dev_id));
 		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf)
 		    cudaFree(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf);
 
@@ -1001,7 +1001,7 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 	      else if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
 		cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
 	      else
-#endif	    
+#endif
 		free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
 	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf = NULL;
 	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf = NULL;
@@ -1046,13 +1046,13 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 	  return -1;
 	}
     }
-  
+
   if(ibv_close_device (glb_gaspi_ctx_ib.context))
     {
       gaspi_print_error ("Failed to close device (libibverbs)");
       return -1;
     }
-  
+
   if(glb_gaspi_ctx_ib.dev_list)
     {
       ibv_free_device_list (glb_gaspi_ctx_ib.dev_list);
@@ -1060,7 +1060,7 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 
   free (glb_gaspi_ctx_ib.local_info);
   glb_gaspi_ctx_ib.local_info = NULL;
-  
+
   free (glb_gaspi_ctx_ib.remote_info);
   glb_gaspi_ctx_ib.remote_info = NULL;
 

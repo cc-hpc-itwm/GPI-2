@@ -562,10 +562,10 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
   glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].host_rkey = snp.host_rkey;
   glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].host_addr = snp.host_addr;
 
-  if(snp.host_addr != 0)
-    glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].cudaDevId = 1;
+  if(snp.host_addr != 0 )
+    glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].cuda_dev_id = 1;
   else
-    glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].cudaDevId = -1;
+    glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].cuda_dev_id = -1;
 #endif
 
   unlock_gaspi(&gaspi_mseg_lock);
@@ -775,7 +775,7 @@ _gaspi_sn_segment_register_command(const gaspi_rank_t rank, const void * const a
     }
 
   /* Registration failed on the remote side */
-  if( result != 0)
+  if( result != 0 )
     return -1;
 
   return 0;

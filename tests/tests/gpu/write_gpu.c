@@ -13,15 +13,14 @@
 int main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
-  gaspi_gpu_t gpus[8]; 
-  gaspi_gpu_num nGPUs;
+  gaspi_gpu_id_t gpus[8];
+  gaspi_number_t nGPUs;
 
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
-  ASSERT (gaspi_init_GPUs());
-  ASSERT (gaspi_number_of_GPUs(&nGPUs));
-  ASSERT (gaspi_GPU_ids(gpus));
-
+  ASSERT (gaspi_gpu_init());
+  ASSERT (gaspi_gpu_number(&nGPUs));
+  ASSERT (gaspi_gpu_ids(gpus));
 
   const unsigned long N = (1 << 8);
   gaspi_rank_t P, myrank;
@@ -36,7 +35,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_segment_create(0,
 			       MAX(_128MB, 2 * ((N/P) * N * 2 * sizeof (double))),
 			       GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED|GASPI_MEM_GPU));
-  
+
 
   unsigned char * pGlbMem;
 
@@ -60,7 +59,7 @@ int main(int argc, char *argv[])
   for (i = 0; i < 2 * N; i ++)
   {
     ASSERT (gaspi_queue_size(1, &queueSize));
-    
+
 
     if (queueSize > qmax - 24)
     {
@@ -70,13 +69,13 @@ int main(int argc, char *argv[])
 
 
     if (gaspi_write(0, //seg
-          1024, //local
-          rankSend, //rank
-          0, //seg rem
-          1024, //remote
-          32768, //size
-          1, //queue
-          GASPI_BLOCK) != GASPI_SUCCESS)
+	  1024, //local
+	  rankSend, //rank
+	  0, //seg rem
+	  1024, //remote
+	  32768, //size
+	  1, //queue
+	  GASPI_BLOCK) != GASPI_SUCCESS)
 
     {
       gaspi_queue_size(1, &queueSize);
@@ -91,7 +90,6 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
-
 
   return EXIT_SUCCESS;
 }

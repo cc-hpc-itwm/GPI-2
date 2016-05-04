@@ -101,8 +101,6 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 			  const gaspi_size_t size,
 			  const gaspi_alloc_t alloc_policy)
 {
-  unsigned int page_size;
-
   if (glb_gaspi_ctx.rrmd[segment_id] == NULL)
     {
       glb_gaspi_ctx.rrmd[segment_id] = (gaspi_rc_mseg *) calloc (glb_gaspi_ctx.tnc, sizeof (gaspi_rc_mseg));
@@ -116,61 +114,72 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
       goto okL;
     }
 
-  page_size = sysconf (_SC_PAGESIZE);
-  //TODO: error check on page_size
-
-#ifdef GPI2_CUDA
-  if(alloc_policy&GASPI_MEM_GPU)
+  if( alloc_policy & GASPI_MEM_GPU )
     {
-      if(size > GASPI_GPU_MAX_SEG)
+      if( size > GASPI_GPU_MAX_SEG )
 	{
-	  gaspi_print_error("Segment size too large for GPU Segment (max %u)\n", GASPI_GPU_MAX_SEG);
+	  gaspi_print_error("Segment size too large for GPU Segment (max %u).", GASPI_GPU_MAX_SEG);
 	  goto errL;
 	}
 
-      cudaGetDevice(&glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId);
-      gaspi_gpu* agpu =  _gaspi_find_gpu(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId);
-      if(!agpu)
+      cudaError_t cuda_error_id = cudaGetDevice(&glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cuda_dev_id);
+      if( cuda_error_id != cudaSuccess )
 	{
-	  gaspi_print_error("No GPU found. Maybe forgot to call gaspi_init_GPUs?\n");
+	  gaspi_print_error("Failed cudaGetDevice." );
+	  return GASPI_ERROR;
+	}
+
+      gaspi_gpu_t* agpu =  _gaspi_find_gpu(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cuda_dev_id);
+      if( !agpu )
+	{
+	  gaspi_print_error("No GPU found. Maybe forgot to call gaspi_init_GPUs?");
 	  goto errL;
 	}
 
-      if(cudaMalloc((void**)&glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].ptr,size) != 0)
+      /* Allocate device memory for data */
+      if( cudaMalloc((void**)&glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, size ) != 0)
 	{
-	  gaspi_print_error("GPU memory allocation (cudaMalloc) failed!\n");
+	  gaspi_print_error("GPU memory allocation (cudaMalloc) failed.");
 	  goto errL;
 	}
 
-      if(cudaMallocHost((void**)&glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr,size+NOTIFY_OFFSET)!=0)
+      /* Allocate host memory for data and notifications */
+      if( cudaMallocHost((void**)&glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr, size + NOTIFY_OFFSET ) != 0)
 	{
-	  gaspi_print_error("Memory allocattion (cudaMallocHost)  failed!\n");
+	  gaspi_print_error("Memory allocattion (cudaMallocHost)  failed.");
 	  goto errL;
 	}
 
-      memset(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr, 0, size+NOTIFY_OFFSET);
+      memset(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr, 0, size + NOTIFY_OFFSET);
 
+      /* Register host memory */
       glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr =
-	ibv_reg_mr(glb_gaspi_ctx_ib.pd,glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr,
-		   NOTIFY_OFFSET+size,IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ|IBV_ACCESS_REMOTE_ATOMIC);
+	ibv_reg_mr( glb_gaspi_ctx_ib.pd,
+		    glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr,
+		    NOTIFY_OFFSET + size,
+		    IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
+		    IBV_ACCESS_REMOTE_READ|IBV_ACCESS_REMOTE_ATOMIC);
 
-      if(!glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr)
+      if( glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr == NULL )
 	{
-	  gaspi_print_error("Memory registration failed (libibverbs)\n");
+	  gaspi_print_error("Memory registration failed (libibverbs).");
 	  goto errL;
 	}
 
-      if(alloc_policy == GASPI_MEM_INITIALIZED)
-	cudaMemset(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].ptr,0,size);
+      if( alloc_policy == GASPI_MEM_INITIALIZED )
+	{
+	  cudaMemset(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, 0, size);
+	}
 
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr =
-	ibv_reg_mr (glb_gaspi_ctx_ib.pd,
+      /* Register device memory */
+      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr[0] =
+	ibv_reg_mr( glb_gaspi_ctx_ib.pd,
 		    glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf,
 		    size,
 		    IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
 		    IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
 
-      if (!glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr)
+      if( glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr[0] == NULL )
 	{
 	  gaspi_print_error ("Memory registration failed (libibverbs)");
 	  goto errL;
@@ -183,60 +192,39 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
     }
   else
     {
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId = -1;
+      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cuda_dev_id = -1;
       glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_rkey = 0;
       glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_addr = 0;
-      if(glb_gaspi_ctx.use_gpus!=0 &&glb_gaspi_ctx.gpu_count==0)
+      if( glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count == 0 )
 	{
-	  if( cudaMallocHost((void**)&glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].ptr, size+NOTIFY_OFFSET))
+	  if( cudaMallocHost((void**)&glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, size + NOTIFY_OFFSET))
 	    {
-	      gaspi_print_error("Memory allocation (cudaMallocHost) failed !\n");
+	      gaspi_print_error("Memory allocation (cudaMallocHost) failed.");
 	      goto errL;
 	    }
 	}
-      else
-#endif
-	if (posix_memalign
-	    ((void **) &glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].ptr,
-	     page_size, size + NOTIFY_OFFSET) != 0)
-	  {
-	    gaspi_print_error ("Memory allocation (posix_memalign) failed");
-	    goto errL;
-	  }
 
-      memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].ptr, 0,
+      memset( glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, 0,
 	      NOTIFY_OFFSET);
 
-      if (alloc_policy == GASPI_MEM_INITIALIZED)
-	memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].ptr, 0,
-		size + NOTIFY_OFFSET);
-
-#ifdef GPI2_CUDA
-      if(glb_gaspi_ctx.use_gpus == 0 || glb_gaspi_ctx.gpu_count == 0)
-#endif
-	glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr =
-	  ibv_reg_mr (glb_gaspi_ctx_ib.pd,
-		      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf,
-		      size + NOTIFY_OFFSET,
-		      IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
-		      IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
-
-      if (!glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr)
+      if( alloc_policy == GASPI_MEM_INITIALIZED )
 	{
-	  gaspi_print_error ("Memory registration failed (libibverbs)");
+	  memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr,
+		  0,
+		  size + NOTIFY_OFFSET);
+	}
+
+      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size = size;
+      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc_size = NOTIFY_OFFSET;
+      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr;
+      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr += NOTIFY_OFFSET;
+      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].user_provided = 0;
+
+      if( pgaspi_dev_register_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank]), size + NOTIFY_OFFSET) < 0)
+	{
 	  goto errL;
 	}
-#ifdef GPI2_CUDA
     }
-#endif
-
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey =
-    ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr)->rkey;
-
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].addr =
-    (uintptr_t) glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf;
-
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size = size;
 
  okL:
   return GASPI_SUCCESS;
@@ -248,21 +236,18 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_dev_segment_delete (const gaspi_segment_id_t segment_id)
 {
-
-#ifdef GPI2_CUDA
-  if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
-#endif
-
-    if (ibv_dereg_mr (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr))
-      {
-	gaspi_print_error ("Memory de-registration failed (libibverbs)");
-	goto errL;
-      }
-
-#ifdef GPI2_CUDA
-  if(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cudaDevId >= 0)
+  if( glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0 )
     {
-      if (ibv_dereg_mr (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr))
+      if( ibv_dereg_mr (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr[0]) )
+	{
+	  gaspi_print_error ("Memory de-registration failed (libibverbs)");
+	  goto errL;
+	}
+    }
+
+  if( glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cuda_dev_id >= 0 )
+    {
+      if( ibv_dereg_mr (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr) )
 	{
 	  gaspi_print_error ("Memory de-registration failed (libibverbs)");
 	  goto errL;
@@ -270,23 +255,18 @@ pgaspi_dev_segment_delete (const gaspi_segment_id_t segment_id)
 
       cudaFreeHost(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr);
       glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr = NULL;
-      cudaFree(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf);
+      cudaFree(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf);
     }
-  else if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
+  else if( glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0 )
     {
-      cudaFreeHost(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf);
+      cudaFreeHost(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf);
     }
 
-  else
-#endif
-    free (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf);
-
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].buf = NULL;
+  free (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf);
+  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf = NULL;
 
   memset(glb_gaspi_ctx.rrmd[segment_id], 0, glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
-
   free(glb_gaspi_ctx.rrmd[segment_id]);
-
   glb_gaspi_ctx.rrmd[segment_id] = NULL;
 
   return GASPI_SUCCESS;
