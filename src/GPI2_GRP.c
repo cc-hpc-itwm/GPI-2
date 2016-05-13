@@ -565,7 +565,6 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
 	  return GASPI_ERR_DEVICE;
 	}
-      gctx->ne_count_grp++;
 
     B0:
       index = 2 * src + glb_gaspi_group_ctx[g].togle;
@@ -595,8 +594,6 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
       return GASPI_ERR_DEVICE;
     }
-
-  gctx->ne_count_grp -= pret;
 
   glb_gaspi_group_ctx[g].togle = (glb_gaspi_group_ctx[g].togle ^ 0x1);
   glb_gaspi_group_ctx[g].coll_op = GASPI_NONE;
@@ -698,7 +695,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	      gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	      return GASPI_ERR_DEVICE;
 	    }
-	  gctx->ne_count_grp+=2;
+
 	  tmprank = -1;
 	}
       else
@@ -810,7 +807,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	      gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	      return GASPI_ERR_DEVICE;
 	    }
-	    gctx->ne_count_grp+=2;
+
 	J2:
 	  dst = 2 * idst + glb_gaspi_group_ctx[g].togle;
 	  while (poll_buf[dst] != glb_gaspi_group_ctx[g].barrier_cnt)
@@ -896,7 +893,6 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
 	    gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	    return GASPI_ERR_DEVICE;
 	  }
-	  gctx->ne_count_grp+=2;
       }
       else
 	{
@@ -926,8 +922,6 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
     {
       return GASPI_ERR_DEVICE;
     }
-
-  gctx->ne_count_grp -= pret;
 
   glb_gaspi_group_ctx[g].togle = (glb_gaspi_group_ctx[g].togle ^ 0x1);
 

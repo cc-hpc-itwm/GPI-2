@@ -24,18 +24,17 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id,
 			 const gaspi_offset_t offset_local,
 			 const gaspi_rank_t rank,
 			 const gaspi_size_t size,
-			 unsigned char *passive_counter,
 			 const gaspi_timeout_t timeout_ms)
 {
 
   gaspi_cycles_t s0;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context * const gctx = &glb_gaspi_ctx;
 
   const int byte_id = rank >> 3;
   const int bit_pos = rank - (byte_id * 8);
   const unsigned char bit_cmp = 1 << bit_pos;
 
-  if( passive_counter[byte_id] & bit_cmp )
+  if( gctx->ne_count_p[byte_id] & bit_cmp )
     {
       goto checkL;
     }
@@ -59,7 +58,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-  passive_counter[byte_id] |= bit_cmp;
+  gctx->ne_count_p[byte_id] |= bit_cmp;
 
  checkL:
   s0 = gaspi_get_cycles();
@@ -90,7 +89,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-  passive_counter[byte_id] &= (~bit_cmp);
+  gctx->ne_count_p[byte_id] &= (~bit_cmp);
 
   return GASPI_SUCCESS;
 }

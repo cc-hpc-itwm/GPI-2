@@ -64,7 +64,7 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
     }
 
   eret = pgaspi_dev_passive_send(segment_id_local, offset_local, rank,
-				 size, gctx->ne_count_p, timeout_ms);
+				 size, timeout_ms);
 
   if( eret == GASPI_ERROR )
     {

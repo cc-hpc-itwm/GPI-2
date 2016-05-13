@@ -90,7 +90,6 @@ pgaspi_dev_queue_size(const gaspi_queue_id_t);
 
 gaspi_return_t
 pgaspi_dev_purge (const gaspi_queue_id_t queue,
-		  int * counter,
 		  const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
@@ -105,7 +104,7 @@ pgaspi_dev_read (const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_ran
 
 
 gaspi_return_t
-pgaspi_dev_wait (const gaspi_queue_id_t, int *, const gaspi_timeout_t);
+pgaspi_dev_wait (const gaspi_queue_id_t, const gaspi_timeout_t);
 
 
 gaspi_return_t
@@ -179,7 +178,6 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t,
 			 const gaspi_offset_t,
 			 const gaspi_rank_t,
 			 const gaspi_size_t,
-			 unsigned char *,
 			 const gaspi_timeout_t);
 
 gaspi_return_t

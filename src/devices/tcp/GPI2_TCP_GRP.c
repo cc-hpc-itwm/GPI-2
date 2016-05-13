@@ -22,7 +22,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 int
 pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_addr, int g)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context * const gctx = &glb_gaspi_ctx;
 
   tcp_dev_wr_t wr =
     {
@@ -43,6 +43,8 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
       return 1;
     }
 
+  gctx->ne_count_grp++;
+
   return 0;
 }
 
@@ -50,7 +52,7 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
 int
 pgaspi_dev_poll_groups(void)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context * const gctx = &glb_gaspi_ctx;
 
   const int nr = gctx->ne_count_grp;
   int i, ne = 0;
@@ -77,6 +79,8 @@ pgaspi_dev_poll_groups(void)
 	  return -1;
 	}
     }
+
+  gctx->ne_count_grp -= nr;
 
   return nr;
 }

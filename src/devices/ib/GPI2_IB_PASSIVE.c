@@ -21,8 +21,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 gaspi_return_t
 pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
 			 const gaspi_offset_t offset_local,
-			 const gaspi_rank_t rank, const gaspi_size_t size,
-			 unsigned char *passive_counter,
+			 const gaspi_rank_t rank,
+			 const gaspi_size_t size,
 			 const gaspi_timeout_t timeout_ms)
 {
 
@@ -31,13 +31,13 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
   struct ibv_send_wr swr;
   struct ibv_wc wc_send;
   gaspi_cycles_t s0;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context * const gctx = &glb_gaspi_ctx;
 
   const int byte_id = rank >> 3;
   const int bit_pos = rank - (byte_id * 8);
   const unsigned char bit_cmp = 1 << bit_pos;
 
-  if( passive_counter[byte_id] & bit_cmp )
+  if( gctx->ne_count_p[byte_id] & bit_cmp )
     {
       goto checkL;
     }
@@ -59,7 +59,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
       return GASPI_ERROR;
     }
 
-  passive_counter[byte_id] |= bit_cmp;
+  gctx->ne_count_p[byte_id] |= bit_cmp;
 
  checkL:
 
@@ -89,7 +89,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
       return GASPI_ERROR;
     }
 
-  passive_counter[byte_id] &= (~bit_cmp);
+  gctx->ne_count_p[byte_id] &= (~bit_cmp);
 
   return GASPI_SUCCESS;
 }

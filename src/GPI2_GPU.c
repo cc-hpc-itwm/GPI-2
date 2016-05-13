@@ -283,8 +283,6 @@ pgaspi_gpu_write(const gaspi_segment_id_t segment_id_local,
       goto endL;
     }
 
-  gctx->ne_count_c[queue]++;
-
   /* GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_WRITE, 1); */
   /* GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_BYTES_WRITE, size); */
 
@@ -343,8 +341,6 @@ pgaspi_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
       /* gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT; */
       goto endL;
     }
-
-  gctx->ne_count_c[queue] += 2;
 
   /* GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_WRITE_NOT, 1); */
   /* GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_BYTES_WRITE, size); */

@@ -215,7 +215,7 @@ pgaspi_queue_purge(const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_m
   if(lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
-  eret = pgaspi_dev_purge(queue, &gctx->ne_count_c[queue], timeout_ms);
+  eret = pgaspi_dev_purge(queue, timeout_ms);
 
   unlock_gaspi (&gctx->lockC[queue]);
 
@@ -271,8 +271,6 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
       goto endL;
     }
 
-  gctx->ne_count_c[queue]++;
-
   GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_WRITE, 1);
   GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_BYTES_WRITE, size);
 
@@ -325,8 +323,6 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
       goto endL;
     }
 
-  gctx->ne_count_c[queue]++;
-
   GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_READ, 1);
   GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_BYTES_READ, size);
  endL:
@@ -352,7 +348,7 @@ pgaspi_wait (const gaspi_queue_id_t queue,
   if(lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
-  eret = pgaspi_dev_wait(queue, &gctx->ne_count_c[queue], timeout_ms);
+  eret = pgaspi_dev_wait(queue, timeout_ms);
 
   if( eret != GASPI_SUCCESS )
     {
@@ -427,8 +423,6 @@ pgaspi_write_list (const gaspi_number_t num,
       goto endL;
     }
 
-  gctx->ne_count_c[queue] +=  num;
-
  endL:
   unlock_gaspi (&gctx->lockC[queue]);
   return eret;
@@ -491,8 +485,6 @@ pgaspi_read_list (const gaspi_number_t num,
       goto endL;
     }
 
-  gctx->ne_count_c[queue] += num;
-
  endL:
   unlock_gaspi (&gctx->lockC[queue]);
   return eret;
@@ -545,8 +537,6 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
       gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
-
-  gctx->ne_count_c[queue]++;
 
  endL:
   unlock_gaspi (&gctx->lockC[queue]);
@@ -765,8 +755,6 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
       goto endL;
     }
 
-  gctx->ne_count_c[queue] += 2;
-
   GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_WRITE_NOT, 1);
   GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_BYTES_WRITE, size);
 
@@ -842,8 +830,6 @@ pgaspi_write_list_notify (const gaspi_number_t num,
       gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
-
-  gctx->ne_count_c[queue] += (int) (num + 1);
 
  endL:
   unlock_gaspi (&gctx->lockC[queue]);

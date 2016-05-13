@@ -30,7 +30,7 @@ int
 pgaspi_dev_poll_groups(void)
 {
   int i;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context * const gctx = &glb_gaspi_ctx;
 
   const int pret = ibv_poll_cq( glb_gaspi_ctx_ib.scqGroups,
 				gctx->ne_count_grp,
@@ -53,6 +53,8 @@ pgaspi_dev_poll_groups(void)
       return -1;
     }
 
+  gctx->ne_count_grp -= pret;
+
   return pret;
 }
 
@@ -63,7 +65,7 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
   struct ibv_sge slist;
   struct ibv_send_wr swr;
   struct ibv_send_wr *bad_wr_send;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context * const gctx = &glb_gaspi_ctx;
 
   slist.addr = (uintptr_t) local_addr;
   slist.length = length;
@@ -83,6 +85,8 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
     {
       return 1;
     }
+
+  gctx->ne_count_grp++;
 
   return 0;
 }
