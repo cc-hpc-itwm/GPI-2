@@ -22,10 +22,12 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 int
 pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_addr, int g)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   tcp_dev_wr_t wr =
     {
       .cq_handle   = glb_gaspi_ctx_tcp.scqGroups->num,
-      .source      = glb_gaspi_ctx.rank,
+      .source      = gctx->rank,
       .local_addr  = (uintptr_t) local_addr,
       .length      = length,
       .swap        = 0,
@@ -48,10 +50,12 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
 int
 pgaspi_dev_poll_groups(void)
 {
-  const int nr = glb_gaspi_ctx.ne_count_grp;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
+  const int nr = gctx->ne_count_grp;
   int i, ne = 0;
   tcp_dev_wc_t wc;
-  
+
   for (i = 0; i < nr; i++)
     {
       do
@@ -59,14 +63,14 @@ pgaspi_dev_poll_groups(void)
 	  ne = tcp_dev_return_wc (glb_gaspi_ctx_tcp.scqGroups, &wc);
 	}
       while (ne == 0);
-      
+
       if( (ne < 0) || (wc.status != TCP_WC_SUCCESS) )
 	{
 	  if( !tcp_dev_is_valid_state(wc.wr_id) )
 	    continue;
 
 	  //TODO: for now here, but has to go out of device
-	  glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
+	  gctx->qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
 
 	  gaspi_print_error("Failed request to %lu. Collectives queue might be broken",
 			    wc.wr_id);
@@ -76,4 +80,3 @@ pgaspi_dev_poll_groups(void)
 
   return nr;
 }
-

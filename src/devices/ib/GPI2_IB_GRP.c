@@ -30,19 +30,21 @@ int
 pgaspi_dev_poll_groups(void)
 {
   int i;
-  
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   const int pret = ibv_poll_cq( glb_gaspi_ctx_ib.scqGroups,
-				glb_gaspi_ctx.ne_count_grp,
+				gctx->ne_count_grp,
 				glb_gaspi_ctx_ib.wc_grp_send );
-  
+
   if (pret < 0)
     {
-      for (i = 0; i < glb_gaspi_ctx.ne_count_grp; i++)
+      for (i = 0; i < gctx->ne_count_grp; i++)
 	{
 	  if (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS)
 	    {
-	      //TODO: for now here, but has to go out of device
-	      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
+	      //TODO: for now here because we need to identify the erroneous rank
+	      // but has to go out of device
+	      gctx->qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
 	    }
 	}
 
@@ -57,14 +59,15 @@ pgaspi_dev_poll_groups(void)
 int
 pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_addr, unsigned char group)
 {
-  
+
   struct ibv_sge slist;
   struct ibv_send_wr swr;
   struct ibv_send_wr *bad_wr_send;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   slist.addr = (uintptr_t) local_addr;
   slist.length = length;
-  slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ctx[group].rrcd[glb_gaspi_ctx.rank].mr[0])->lkey;
+  slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ctx[group].rrcd[gctx->rank].mr[0])->lkey;
 
   swr.sg_list = &slist;
   swr.num_sge = 1;
@@ -75,7 +78,7 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
   swr.wr.rdma.remote_addr = (uint64_t) remote_addr;
   swr.wr.rdma.rkey = glb_gaspi_group_ctx[group].rrcd[dst].rkey[0];
   swr.wr_id = dst;
-  
+
   if (ibv_post_send ((struct ibv_qp *) glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
     {
       return 1;

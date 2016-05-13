@@ -115,8 +115,10 @@ pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_
 static void
 pgaspi_dev_print_info()
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   gaspi_printf("<<<<<<<<<<<<<<<< TCP-info >>>>>>>>>>>>>>>>>>>\n");
-  gaspi_printf("  Hostname: %s\n", gaspi_get_hn(glb_gaspi_ctx.rank));
+  gaspi_printf("  Hostname: %s\n", gaspi_get_hn(gctx->rank));
 
   char* ip = tcp_dev_get_local_ip();
   if( ip != NULL )
@@ -136,9 +138,10 @@ int
 pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
 {
   unsigned int c;
-  
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   memset (&glb_gaspi_ctx_tcp, 0, sizeof (gaspi_tcp_ctx));
-  
+
   /* start virtual device (thread) */
   if(pthread_create(&tcp_dev_thread, NULL, tcp_virt_dev, NULL) != 0)
     {
@@ -158,7 +161,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
     }
 
   /* Passive channel (SRQ) */
-  glb_gaspi_ctx_tcp.srqP = gaspi_sn_connect2port("localhost", TCP_DEV_PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
+  glb_gaspi_ctx_tcp.srqP = gaspi_sn_connect2port("localhost", TCP_DEV_PORT + gctx->localSocket, CONN_TIMEOUT);
   if(glb_gaspi_ctx_tcp.srqP == -1)
     {
       gaspi_print_error("Failed to create passive channel connection");
@@ -171,7 +174,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
       gaspi_print_error("Failed to create passive channel.");
       return -1;
     }
-  
+
   /* Completion Queues */
   glb_gaspi_ctx_tcp.scqGroups = tcp_dev_create_cq(gaspi_cfg->queue_depth, NULL);
   if(glb_gaspi_ctx_tcp.scqGroups == NULL)
@@ -179,7 +182,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
       gaspi_print_error("Failed to create groups send completion queue.");
       return -1;
     }
-  
+
   glb_gaspi_ctx_tcp.rcqGroups = tcp_dev_create_cq(gaspi_cfg->queue_depth, NULL);
   if(glb_gaspi_ctx_tcp.rcqGroups == NULL)
     {
@@ -230,7 +233,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
 	  return -1;
 	}
     }
-  
+
   glb_gaspi_ctx_tcp.qpP = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqP,
 						glb_gaspi_ctx_tcp.rcqP);
   if(glb_gaspi_ctx_tcp.qpP == NULL)
@@ -259,6 +262,7 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
   int i, s;
   void *res;
   unsigned int c;
+  gaspi_context * const gctx = &glb_gaspi_ctx;
 
   tcp_dev_stop_device();
 
@@ -278,7 +282,7 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
 	  gaspi_print_error("Failed to close srqP.");
 	}
     }
-  
+
   if(glb_gaspi_ctx_tcp.channelP)
     {
       tcp_dev_destroy_passive_channel(glb_gaspi_ctx_tcp.channelP);
@@ -304,17 +308,17 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
   //TODO: why is this here?
   for(i = 0; i < GASPI_MAX_MSEGS; i++)
     {
-      if(glb_gaspi_ctx.rrmd[i] != NULL)
+      if(gctx->rrmd[i] != NULL)
 	{
-	  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].size)
+	  if(gctx->rrmd[i][gctx->rank].size)
 	    {
-	      free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
-	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf = NULL;
-	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf = NULL;
+	      free (gctx->rrmd[i][gctx->rank].notif_spc.buf);
+	      gctx->rrmd[i][gctx->rank].notif_spc.buf = NULL;
+	      gctx->rrmd[i][gctx->rank].data.buf = NULL;
 	    }
-	  
-	  free (glb_gaspi_ctx.rrmd[i]);
-	  glb_gaspi_ctx.rrmd[i] = NULL;
+
+	  free (gctx->rrmd[i]);
+	  gctx->rrmd[i] = NULL;
 	}
     }
 

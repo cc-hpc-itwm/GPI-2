@@ -35,12 +35,14 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
   gaspi_verify_null_ptr(val_old);
   gaspi_verify_unaligned_off(offset);
 
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   gaspi_return_t eret = GASPI_ERROR;
 
   if(lock_gaspi_tout (&glb_gaspi_group_ctx[0].gl, timeout_ms))
     return GASPI_TIMEOUT;
 
-  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
+  if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
       if ( eret != GASPI_SUCCESS)
@@ -54,11 +56,11 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
   if( eret != GASPI_SUCCESS )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
+      gctx->qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 
-  *val_old = *((gaspi_atomic_value_t *) (glb_gaspi_ctx.nsrc.data.buf));
+  *val_old = *((gaspi_atomic_value_t *) (gctx->nsrc.data.buf));
 
  endL:
   unlock_gaspi (&glb_gaspi_group_ctx[0].gl);
@@ -80,12 +82,13 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
   gaspi_verify_null_ptr(val_old);
   gaspi_verify_unaligned_off(offset);
 
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   gaspi_return_t eret = GASPI_ERROR;
 
   if(lock_gaspi_tout (&glb_gaspi_group_ctx[0].gl, timeout_ms))
     return GASPI_TIMEOUT;
 
-  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
+  if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
       if ( eret != GASPI_SUCCESS)
@@ -98,13 +101,13 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 
   if( eret != GASPI_SUCCESS )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
+      gctx->qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 
-  *val_old = *((gaspi_atomic_value_t *) (glb_gaspi_ctx.nsrc.data.buf));
+  *val_old = *((gaspi_atomic_value_t *) (gctx->nsrc.data.buf));
 
- endL:  
+ endL:
   unlock_gaspi (&glb_gaspi_group_ctx[0].gl);
   return eret;
 }

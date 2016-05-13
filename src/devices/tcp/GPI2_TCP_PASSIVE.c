@@ -25,10 +25,11 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id,
 			 const gaspi_rank_t rank,
 			 const gaspi_size_t size,
 			 unsigned char *passive_counter,
-			 const gaspi_timeout_t timeout_ms) 
+			 const gaspi_timeout_t timeout_ms)
 {
 
   gaspi_cycles_t s0;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   const int byte_id = rank >> 3;
   const int bit_pos = rank - (byte_id * 8);
@@ -43,23 +44,23 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id,
     {
       .wr_id       = rank,
       .cq_handle   = glb_gaspi_ctx_tcp.scqP->num,
-      .source      = glb_gaspi_ctx.rank,
+      .source      = gctx->rank,
       .target      = rank,
-      .local_addr  = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr + offset_local),
+      .local_addr  = (uintptr_t) (gctx->rrmd[segment_id][gctx->rank].data.addr + offset_local),
       .remote_addr = 0UL,
       .length      = size,
       .swap        = 0,
       .compare_add = 0,
       .opcode      = POST_SEND
     } ;
-  
+
   if( write(glb_gaspi_ctx_tcp.qpP->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return GASPI_ERROR;
     }
 
   passive_counter[byte_id] |= bit_cmp;
-  
+
  checkL:
   s0 = gaspi_get_cycles();
 
@@ -75,7 +76,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id,
 	  const gaspi_cycles_t s1 = gaspi_get_cycles ();
 	  const gaspi_cycles_t tdelta = s1 - s0;
 
-	  const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+	  const float ms = (float) tdelta * gctx->cycles_to_msecs;
 	  if( ms > timeout_ms )
 	    {
 	      return GASPI_TIMEOUT;
@@ -90,10 +91,10 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id,
     }
 
   passive_counter[byte_id] &= (~bit_cmp);
-  
+
   return GASPI_SUCCESS;
 }
- 
+
 
 gaspi_return_t
 pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
@@ -103,21 +104,22 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
 {
   fd_set rfds;
   struct timeval tout;
-  
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   tcp_dev_wr_t wr =
     {
-      .wr_id       = glb_gaspi_ctx.rank,
+      .wr_id       = gctx->rank,
       .cq_handle   = glb_gaspi_ctx_tcp.rcqP->num,
-      .source      = glb_gaspi_ctx.rank,
+      .source      = gctx->rank,
       .target      = 0,
-      .local_addr  = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr + offset_local),
+      .local_addr  = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr + offset_local),
       .remote_addr = 0UL,
       .length      = size,
       .swap        = 0,
       .compare_add = 0,
       .opcode      = POST_RECV
     } ;
-  
+
   if( write(glb_gaspi_ctx_tcp.srqP, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return GASPI_ERROR;
@@ -143,7 +145,7 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
       return GASPI_TIMEOUT;
     }
 
-  /* ack returned event */ 
+  /* ack returned event */
   {
     char buf;
     if( read(glb_gaspi_ctx_tcp.channelP->read, &buf, 1) < 0 )
@@ -154,7 +156,7 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
 
   int ne = 0;
   tcp_dev_wc_t wc;
-  
+
   do
     {
       ne = tcp_dev_return_wc (glb_gaspi_ctx_tcp.rcqP, &wc);
@@ -163,12 +165,12 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
 
   if( (ne < 0) || (wc.status != TCP_WC_SUCCESS) )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
+      gctx->qp_state_vec[GASPI_PASSIVE_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
-  
+
   /* set sender rank */
   *rem_rank = (gaspi_rank_t) wc.sender;
-	 
+
   return GASPI_SUCCESS;
 }

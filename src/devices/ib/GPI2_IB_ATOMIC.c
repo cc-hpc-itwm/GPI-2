@@ -29,14 +29,15 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slist;
   struct ibv_send_wr swr;
+  gaspi_context * const gctx = &glb_gaspi_ctx;
 
-  slist.addr = (uintptr_t) (glb_gaspi_ctx.nsrc.data.buf);
+  slist.addr = (uintptr_t) (gctx->nsrc.data.buf);
   slist.length = sizeof(gaspi_atomic_value_t);
-  slist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.nsrc.mr[0])->lkey;
+  slist.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
 
-  swr.wr.atomic.remote_addr = glb_gaspi_ctx.rrmd[segment_id][rank].data.addr + offset;
+  swr.wr.atomic.remote_addr = gctx->rrmd[segment_id][rank].data.addr + offset;
 
-  swr.wr.atomic.rkey = glb_gaspi_ctx.rrmd[segment_id][rank].rkey[0];
+  swr.wr.atomic.rkey = gctx->rrmd[segment_id][rank].rkey[0];
   swr.wr.atomic.compare_add = val_add;
 
   swr.wr_id = rank;
@@ -52,10 +53,10 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
     }
 
   //TODO
-  glb_gaspi_ctx.ne_count_grp++;
+  gctx->ne_count_grp++;
 
   int ne = 0;
-  for (i = 0; i < glb_gaspi_ctx.ne_count_grp; i++)
+  for (i = 0; i < gctx->ne_count_grp; i++)
     {
       do
 	{
@@ -71,7 +72,7 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
     }
 
   //TODO: remove from here
-  glb_gaspi_ctx.ne_count_grp = 0;
+  gctx->ne_count_grp = 0;
 
   return GASPI_SUCCESS;
 }
@@ -83,19 +84,20 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 				const gaspi_rank_t rank,
 				const gaspi_atomic_value_t comparator,
 				const gaspi_atomic_value_t val_new)
-{ 
+{
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slist;
   struct ibv_send_wr swr;
   int i;
+  gaspi_context * const gctx = &glb_gaspi_ctx;
 
-  slist.addr = (uintptr_t) (glb_gaspi_ctx.nsrc.data.buf);
+  slist.addr = (uintptr_t) (gctx->nsrc.data.buf);
   slist.length = sizeof(gaspi_atomic_value_t);
-  slist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.nsrc.mr[0])->lkey;
-  
-  swr.wr.atomic.remote_addr = glb_gaspi_ctx.rrmd[segment_id][rank].data.addr + offset;
+  slist.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
 
-  swr.wr.atomic.rkey = glb_gaspi_ctx.rrmd[segment_id][rank].rkey[0];
+  swr.wr.atomic.remote_addr = gctx->rrmd[segment_id][rank].data.addr + offset;
+
+  swr.wr.atomic.rkey = gctx->rrmd[segment_id][rank].rkey[0];
   swr.wr.atomic.compare_add = comparator;
   swr.wr.atomic.swap = val_new;
 
@@ -111,10 +113,10 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx.ne_count_grp++;
+  gctx->ne_count_grp++;
 
   int ne = 0;
-  for (i = 0; i < glb_gaspi_ctx.ne_count_grp; i++)
+  for (i = 0; i < gctx->ne_count_grp; i++)
     {
       do
 	{
@@ -130,7 +132,7 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
     }
 
   //TODO:
-  glb_gaspi_ctx.ne_count_grp = 0;
-  
+  gctx->ne_count_grp = 0;
+
   return GASPI_SUCCESS;
 }

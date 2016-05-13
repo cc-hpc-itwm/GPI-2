@@ -24,21 +24,21 @@ gaspi_get_system_mem(void)
   FILE *fp;
   char line[1024];
   gaspi_size_t memory = 0;
-        
+
   fp = fopen("/proc/meminfo", "r");
-  if (fp == NULL) 
+  if (fp == NULL)
     {
       gaspi_printf("Cannot open file /proc/meminfo\n");
       return 0;
     }
-        
+
   while (fgets(line, sizeof(line), fp))
     {
       if (!strncmp("MemTotal", line, 8))
-        {
-          strtok(line, ":");
-          memory = strtol((char*) strtok(NULL, " kB\n"), (char**) NULL, 0);
-        }
+	{
+	  strtok(line, ":");
+	  memory = strtol((char*) strtok(NULL, " kB\n"), (char**) NULL, 0);
+	}
     }
 
   fclose(fp);
@@ -49,10 +49,10 @@ gaspi_size_t
 gaspi_get_mem_peak(void)
 {
   struct rusage rusage;
-  
+
   if(getrusage(RUSAGE_SELF, &rusage) != 0)
     return 0UL;
-  
+
   return (gaspi_size_t)(rusage.ru_maxrss * 1024UL);
 }
 

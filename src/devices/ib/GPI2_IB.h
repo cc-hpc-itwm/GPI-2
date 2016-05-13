@@ -31,7 +31,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 /* IB-specific */
 struct ib_ctx_info
 {
-  int lid;  
+  int lid;
   int psn;
   union ibv_gid gid;
   int qpnGroup;

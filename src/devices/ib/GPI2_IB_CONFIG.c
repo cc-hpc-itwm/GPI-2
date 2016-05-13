@@ -22,7 +22,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 gaspi_config_t glb_gaspi_cfg = {
   1,				//logout
-  12121,                        //sn port 
+  12121,                        //sn port
   0,				//netinfo
   -1,				//netdev
   0,				//mtu
@@ -39,7 +39,7 @@ gaspi_config_t glb_gaspi_cfg = {
   GASPI_MAX_TSIZE_P,		//passive_transfer_size_max;
   NEXT_OFFSET,			//allreduce_buf_size;
   255,				//allreduce_elem_max;
-  1				//build_infrastructure;  
+  1				//build_infrastructure;
 };
 
 
@@ -107,12 +107,12 @@ pgaspi_config_set (const gaspi_config_t nconf)
       gaspi_print_error("Invalid value for parameter sn_port ( from 1024 to 65536)");
       return GASPI_ERR_CONFIG;
     }
-  else  
+  else
     glb_gaspi_cfg.sn_port = nconf.sn_port;
-  
+
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.logger = nconf.logger;
   glb_gaspi_cfg.port_check = nconf.port_check;
-  
+
   return GASPI_SUCCESS;
 }

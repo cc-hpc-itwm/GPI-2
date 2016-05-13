@@ -30,5 +30,3 @@ gaspi_size_t gaspi_get_system_mem(void);
 gaspi_size_t gaspi_get_mem_peak(void);
 
 gaspi_size_t gaspi_get_mem_in_use(void);
-
-

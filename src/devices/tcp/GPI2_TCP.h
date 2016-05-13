@@ -30,8 +30,8 @@ typedef struct
 
   /* Groups communication */
   struct tcp_cq *scqGroups, *rcqGroups;
-  struct tcp_queue *qpGroups; 
-  
+  struct tcp_queue *qpGroups;
+
   /* Passive communication */
   int srqP; /* passive comm (local conn) */
   struct tcp_passive_channel *channelP;
@@ -42,7 +42,7 @@ typedef struct
   /* Queues communication */
   struct tcp_cq *scqC[GASPI_MAX_QP];
   struct tcp_queue *qpC[GASPI_MAX_QP];
-  
+
 }  gaspi_tcp_ctx;
 
 gaspi_tcp_ctx glb_gaspi_ctx_tcp;

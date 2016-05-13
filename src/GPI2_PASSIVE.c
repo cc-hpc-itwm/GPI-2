@@ -39,20 +39,22 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 		     const gaspi_size_t size,
 		     const gaspi_timeout_t timeout_ms)
 {
+  gaspi_context * const gctx = &glb_gaspi_ctx;
+
   gaspi_verify_init("gaspi_passive_send");
   gaspi_verify_local_off(offset_local, segment_id_local, size);
   gaspi_verify_comm_size(size, segment_id_local,
-			 segment_id_local, glb_gaspi_ctx.rank, GASPI_MAX_TSIZE_P);
+			 segment_id_local, gctx->rank, GASPI_MAX_TSIZE_P);
   gaspi_verify_rank(rank);
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  if( lock_gaspi_tout (&glb_gaspi_ctx.lockPS, timeout_ms) )
+  if( lock_gaspi_tout (&gctx->lockPS, timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
 
-  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
+  if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
       if( eret != GASPI_SUCCESS )
@@ -62,15 +64,15 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
     }
 
   eret = pgaspi_dev_passive_send(segment_id_local, offset_local, rank,
-				 size, glb_gaspi_ctx.ne_count_p, timeout_ms);
+				 size, gctx->ne_count_p, timeout_ms);
 
   if( eret == GASPI_ERROR )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][rank] = GASPI_STATE_CORRUPT;
+      gctx->qp_state_vec[GASPI_PASSIVE_QP][rank] = GASPI_STATE_CORRUPT;
     }
 
  endL:
-  unlock_gaspi (&glb_gaspi_ctx.lockPS);
+  unlock_gaspi (&gctx->lockPS);
   return eret;
 }
 
@@ -82,14 +84,16 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 			const gaspi_size_t size,
 			const gaspi_timeout_t timeout_ms)
 {
+  gaspi_context * const gctx = &glb_gaspi_ctx;
+
   gaspi_verify_init("gaspi_passive_receive");
   gaspi_verify_local_off(offset_local, segment_id_local, size);
   gaspi_verify_comm_size(size, segment_id_local,
-			 segment_id_local, glb_gaspi_ctx.rank, GASPI_MAX_TSIZE_P);
+			 segment_id_local, gctx->rank, GASPI_MAX_TSIZE_P);
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  if( lock_gaspi_tout (&glb_gaspi_ctx.lockPR, timeout_ms) )
+  if( lock_gaspi_tout (&gctx->lockPR, timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
@@ -97,7 +101,7 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
   eret = pgaspi_dev_passive_receive(segment_id_local, offset_local, rem_rank,
 				    size, timeout_ms);
 
-  unlock_gaspi (&glb_gaspi_ctx.lockPR);
+  unlock_gaspi (&gctx->lockPR);
 
   return eret;
 }

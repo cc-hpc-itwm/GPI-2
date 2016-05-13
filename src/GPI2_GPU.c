@@ -92,6 +92,7 @@ _gaspi_find_GPU_numa_node(int cudevice)
 gaspi_return_t
 gaspi_gpu_init(void)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   int deviceCount;
   cudaError_t cuda_error_id = cudaGetDeviceCount(&deviceCount);
   if( cuda_error_id != cudaSuccess )
@@ -190,8 +191,8 @@ gaspi_gpu_init(void)
       gpus[k].device_id = direct_devices[k];
     }
 
-  glb_gaspi_ctx.gpu_count = gaspi_devices;
-  glb_gaspi_ctx.use_gpus = 1;
+  gctx->gpu_count = gaspi_devices;
+  gctx->use_gpus = 1;
 
   return GASPI_SUCCESS;
 }
@@ -201,14 +202,15 @@ gaspi_gpu_number(gaspi_number_t* num_gpus)
 {
   gaspi_verify_init("gaspi_gpu_number");
   gaspi_verify_null_ptr(num_gpus);
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
-  if( 0 == glb_gaspi_ctx.use_gpus )
+  if( 0 == gctx->use_gpus )
     {
       gaspi_print_error("GPUs are not initialized.");
       return GASPI_ERROR;
     }
 
-  *num_gpus = glb_gaspi_ctx.gpu_count;
+  *num_gpus = gctx->gpu_count;
 
   return GASPI_SUCCESS;
 }
@@ -221,14 +223,16 @@ gaspi_gpu_ids(gaspi_gpu_id_t* gpu_ids)
   gaspi_verify_init("gaspi_gpu_ids");
   gaspi_verify_null_ptr(gpu_ids);
 
-  if( 0 == glb_gaspi_ctx.use_gpus )
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
+  if( 0 == gctx->use_gpus )
     {
       gaspi_print_error("GPUs are not found/initialized.");
       return GASPI_ERROR;
     }
 
   int i;
-  for(i = 0; i < glb_gaspi_ctx.gpu_count; i++)
+  for(i = 0; i < gctx->gpu_count; i++)
     {
       gpu_ids[i] = gpus[i].device_id;
     }
@@ -255,11 +259,12 @@ pgaspi_gpu_write(const gaspi_segment_id_t segment_id_local,
   /* gaspi_verify_queue_depth(glb_gaspi_ctx.ne_count_c[queue]); */
 
   gaspi_return_t eret = GASPI_ERROR;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
-  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
+  if(lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
-  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
+  if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
       if( eret != GASPI_SUCCESS)
@@ -274,17 +279,17 @@ pgaspi_gpu_write(const gaspi_segment_id_t segment_id_local,
 
   if( eret != GASPI_SUCCESS )
     {
-      /* glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT; */
+      /* gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT; */
       goto endL;
     }
 
-  glb_gaspi_ctx.ne_count_c[queue]++;
+  gctx->ne_count_c[queue]++;
 
   /* GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_WRITE, 1); */
   /* GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_BYTES_WRITE, size); */
 
  endL:
-  unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
+  unlock_gaspi (&gctx->lockC[queue]);
   return eret;
 }
 
@@ -315,11 +320,12 @@ pgaspi_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
     }
 
   gaspi_return_t eret = GASPI_ERROR;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
-  if(lock_gaspi_tout (&glb_gaspi_ctx.lockC[queue], timeout_ms))
+  if(lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
 
-  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[rank].cstat )
+  if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
       if ( eret != GASPI_SUCCESS)
@@ -334,17 +340,17 @@ pgaspi_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
 				     queue, timeout_ms);
   if( eret != GASPI_SUCCESS )
     {
-      /* glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT; */
+      /* gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT; */
       goto endL;
     }
 
-  glb_gaspi_ctx.ne_count_c[queue] += 2;
+  gctx->ne_count_c[queue] += 2;
 
   /* GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_WRITE_NOT, 1); */
   /* GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_BYTES_WRITE, size); */
 
  endL:
-  unlock_gaspi (&glb_gaspi_ctx.lockC[queue]);
+  unlock_gaspi (&gctx->lockC[queue]);
   return eret;
 
 }

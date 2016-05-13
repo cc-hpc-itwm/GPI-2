@@ -31,10 +31,10 @@ enum
     GASPI_STATS_TIME_WAIT,                /* Time inside gaspi_wait */
     GASPI_STATS_TIME_WAITSOME,            /* Time inside gaspi_notify_waitsome */
     GASPI_STATS_TIME_ALL,                 /* Time inside gaspi calls */
-    GASPI_STATS_COUNTER_NUM_MAX  
+    GASPI_STATS_COUNTER_NUM_MAX
   };
 
-enum gaspi_timer 
+enum gaspi_timer
   {
     GASPI_BARRIER_TIMER,
     GASPI_WAIT_TIMER,
@@ -43,7 +43,7 @@ enum gaspi_timer
     GASPI_TIMER_MAX
   } ;
 
-typedef struct 
+typedef struct
 {
   gaspi_statistic_argument_t argument; /* the required argument type */
   gaspi_string_t name;                 /* counter name */
@@ -54,7 +54,7 @@ typedef struct
     unsigned long value;          /* the current value of the counter */
     double value_f;
   };
-    
+
 } counter_info_t;
 
 extern counter_info_t gpi2_counter_info[GASPI_STATS_COUNTER_NUM_MAX];
@@ -86,7 +86,7 @@ gaspi_stats_stop_timer(enum gaspi_timer t);
 #define GPI2_STATS_START_TIMER(t) gaspi_stats_start_timer(t)
 #define GPI2_STATS_STOP_TIMER(t) gaspi_stats_stop_timer(t)
 #define GPI2_STATS_GET_TIMER(t) gaspi_stats_get_timer_ms(t)
-  
+
 #else
 
 #define GPI2_STATS_INC_COUNT(counter, val)

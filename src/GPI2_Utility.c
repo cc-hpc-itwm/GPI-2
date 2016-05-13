@@ -46,7 +46,7 @@ _gaspi_sample_cpu_freq(void)
   double sumxy = 0.0f;
   double tx,ty;
   int i;
-  
+
   long x[MEASUREMENTS];
   gaspi_cycles_t y[MEASUREMENTS];
   double beta;
@@ -58,9 +58,9 @@ _gaspi_sample_cpu_freq(void)
 
       if(gettimeofday(&tval1,NULL))
 	{
-#ifdef DEBUG	  
+#ifdef DEBUG
 	  printf("gettimeofday failed.\n");
-#endif	  
+#endif
 	  return 0.0f;
 	}
 
@@ -68,9 +68,9 @@ _gaspi_sample_cpu_freq(void)
 	{
 	  if(gettimeofday(&tval2,NULL))
 	    {
-#ifdef DEBUG	  
+#ifdef DEBUG
 	      printf("gettimeofday failed.\n");
-#endif	      
+#endif
 	      return 0.0f;
 	    }
 	}
@@ -81,7 +81,7 @@ _gaspi_sample_cpu_freq(void)
       x[i] = (tval2.tv_sec - tval1.tv_sec) * 1000000 + tval2.tv_usec - tval1.tv_usec;
       y[i] = gaspi_get_cycles() - start;
     }
-  
+
   for(i = 0;i < MEASUREMENTS; ++i)
     {
       tx = x[i];
@@ -109,7 +109,7 @@ gaspi_get_cpufreq (void)
 {
   float mhz = 0.0f;
   mhz =  _gaspi_sample_cpu_freq();
-  
+
   if(0.0f == mhz )
     {
       FILE *f;
@@ -159,7 +159,7 @@ gaspi_get_cpufreq (void)
 	}
     }
 
-  return mhz;  
+  return mhz;
 }
 
 int
@@ -199,10 +199,10 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 
 	  int found = 0;
 	  unsigned int cpos = 0;
-	  
+
 	  size_t length = strlen(bptr);
 	  size_t j;
-	  
+
 	  for(j = 0;j < length - 1; j++)
 	    {
 	      if(bptr[j]==',')
@@ -248,5 +248,7 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 char *
 gaspi_get_hn (const unsigned int id)
 {
-  return glb_gaspi_ctx.hn_poff + id * 64;
+  //TODO: ctx as arg
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  return gctx->hn_poff + id * 64;
 }

@@ -31,6 +31,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
   struct ibv_send_wr swr;
   struct ibv_wc wc_send;
   gaspi_cycles_t s0;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   const int byte_id = rank >> 3;
   const int bit_pos = rank - (byte_id * 8);
@@ -41,10 +42,10 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
       goto checkL;
     }
 
-  slist.addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr +
+  slist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr +
 			    offset_local);
   slist.length = size;
-  slist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr[0])->lkey;
+  slist.lkey = ((struct ibv_mr *) gctx->rrmd[segment_id_local][gctx->rank].mr[0])->lkey;
 
   swr.sg_list = &slist;
   swr.num_sge = 1;
@@ -74,7 +75,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
 	  const gaspi_cycles_t s1 = gaspi_get_cycles ();
 	  const gaspi_cycles_t tdelta = s1 - s0;
 
-	  const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+	  const float ms = (float) tdelta * gctx->cycles_to_msecs;
 	  if (ms > timeout_ms)
 	    {
 	      return GASPI_TIMEOUT;
@@ -109,12 +110,13 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
   int i;
   fd_set rfds;
   struct timeval tout;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
-  rlist.addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr +
+  rlist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr +
 			    offset_local);
   rlist.length = size;
-  rlist.lkey = ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr[0])->lkey;
-  rwr.wr_id = glb_gaspi_ctx.rank;
+  rlist.lkey = ((struct ibv_mr *) gctx->rrmd[segment_id_local][gctx->rank].mr[0])->lkey;
+  rwr.wr_id = gctx->rank;
   rwr.sg_list = &rlist;
   rwr.num_sge = 1;
   rwr.next = NULL;
@@ -170,14 +172,14 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
   if ((ne < 0) || (wc_recv.status != IBV_WC_SUCCESS))
     {
       //TODO: for now here but has to go up
-      glb_gaspi_ctx.qp_state_vec[GASPI_PASSIVE_QP][wc_recv.wr_id] = GASPI_STATE_CORRUPT;
+      gctx->qp_state_vec[GASPI_PASSIVE_QP][wc_recv.wr_id] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
   *rem_rank = 0xffff;
   do
     {
-      for (i = 0; i < glb_gaspi_ctx.tnc; i++)
+      for (i = 0; i < gctx->tnc; i++)
 	{
 	  /* we need to make sure the QP was already created and valid */
 	  if(glb_gaspi_ctx_ib.qpP != NULL)
@@ -190,6 +192,6 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
 	}
     }
   while(*rem_rank == 0xffff);
-  
+
   return GASPI_SUCCESS;
 }

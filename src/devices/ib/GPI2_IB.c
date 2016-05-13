@@ -353,29 +353,30 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-  glb_gaspi_ctx.nsrc.mr[0] = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
-					glb_gaspi_ctx.nsrc.data.ptr,
-					glb_gaspi_ctx.nsrc.size,
+  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gctx->nsrc.mr[0] = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
+					gctx->nsrc.data.ptr,
+					gctx->nsrc.size,
 					IBV_ACCESS_REMOTE_WRITE
 					| IBV_ACCESS_LOCAL_WRITE
 					| IBV_ACCESS_REMOTE_READ
 					| IBV_ACCESS_REMOTE_ATOMIC);
 
-  if(!glb_gaspi_ctx.nsrc.mr[0])
+  if(!gctx->nsrc.mr[0])
     {
       gaspi_print_error ("Memory registration failed (libibverbs)");
       return -1;
     }
 
-  glb_gaspi_ctx.nsrc.mr[1] = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
-					glb_gaspi_ctx.nsrc.notif_spc.ptr,
-					glb_gaspi_ctx.nsrc.notif_spc_size,
+  gctx->nsrc.mr[1] = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
+					gctx->nsrc.notif_spc.ptr,
+					gctx->nsrc.notif_spc_size,
 					IBV_ACCESS_REMOTE_WRITE
 					| IBV_ACCESS_LOCAL_WRITE
 					| IBV_ACCESS_REMOTE_READ
 					| IBV_ACCESS_REMOTE_ATOMIC);
 
-  if(!glb_gaspi_ctx.nsrc.mr[1])
+  if(!gctx->nsrc.mr[1])
     {
       gaspi_print_error ("Memory registration failed (libibverbs)");
       return -1;
@@ -443,7 +444,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
     }
 
   /* Allocate space for QPs */
-  glb_gaspi_ctx_ib.qpGroups = (struct ibv_qp **) calloc (glb_gaspi_ctx.tnc, sizeof (struct ibv_qp *));
+  glb_gaspi_ctx_ib.qpGroups = (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
   if(!glb_gaspi_ctx_ib.qpGroups)
     {
       return -1;
@@ -451,12 +452,12 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 
   for(c = 0; c < gaspi_cfg->queue_num; c++)
     {
-      glb_gaspi_ctx_ib.qpC[c] = (struct ibv_qp **) calloc (glb_gaspi_ctx.tnc, sizeof (struct ibv_qp *));
+      glb_gaspi_ctx_ib.qpC[c] = (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
       if(!glb_gaspi_ctx_ib.qpC[c])
 	return -1;
     }
 
-  glb_gaspi_ctx_ib.qpP = (struct ibv_qp **) calloc (glb_gaspi_ctx.tnc , sizeof (struct ibv_qp *));
+  glb_gaspi_ctx_ib.qpP = (struct ibv_qp **) calloc (gctx->tnc , sizeof (struct ibv_qp *));
   if(!glb_gaspi_ctx_ib.qpP)
     {
       return -1;
@@ -491,19 +492,19 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 	}
     }
 
-  glb_gaspi_ctx_ib.local_info = (struct ib_ctx_info *) calloc (glb_gaspi_ctx.tnc, sizeof(struct ib_ctx_info));
+  glb_gaspi_ctx_ib.local_info = (struct ib_ctx_info *) calloc (gctx->tnc, sizeof(struct ib_ctx_info));
   if(!glb_gaspi_ctx_ib.local_info)
     {
       return -1;
     }
 
-  glb_gaspi_ctx_ib.remote_info = (struct ib_ctx_info *) calloc (glb_gaspi_ctx.tnc, sizeof(struct ib_ctx_info));
+  glb_gaspi_ctx_ib.remote_info = (struct ib_ctx_info *) calloc (gctx->tnc, sizeof(struct ib_ctx_info));
   if(!glb_gaspi_ctx_ib.remote_info)
     {
       return -1;
     }
 
-  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+  for(i = 0; i < gctx->tnc; i++)
     {
       glb_gaspi_ctx_ib.local_info[i].lid = glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].lid;
 
@@ -589,10 +590,11 @@ int
 pgaspi_dev_comm_queue_delete(const unsigned int id)
 {
   int i;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
-  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+  for(i = 0; i < gctx->tnc; i++)
     {
-      if(glb_gaspi_ctx.ep_conn[i].istat == 0)
+      if(gctx->ep_conn[i].istat == 0)
 	{
 	  continue;
 	}
@@ -638,6 +640,7 @@ pgaspi_dev_comm_queue_delete(const unsigned int id)
 int
 pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_node)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   if( 0 == glb_gaspi_ctx_ib.qpC_cstat[id] )
     {
       /* Completion queue */
@@ -649,7 +652,7 @@ pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_
 	}
 
       /* Queue Pair */
-      glb_gaspi_ctx_ib.qpC[id] = (struct ibv_qp **) malloc (glb_gaspi_ctx.tnc * sizeof (struct ibv_qp *));
+      glb_gaspi_ctx_ib.qpC[id] = (struct ibv_qp **) malloc (gctx->tnc * sizeof (struct ibv_qp *));
       if( glb_gaspi_ctx_ib.qpC[id] == NULL)
 	{
 	  gaspi_print_error ("Failed to memory allocation");
@@ -889,10 +892,11 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 {
   int i;
   unsigned int c;
+  gaspi_context * const gctx = &glb_gaspi_ctx;
 
-  for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+  for(i = 0; i < gctx->tnc; i++)
     {
-      if( GASPI_ENDPOINT_CREATED == glb_gaspi_ctx.ep_conn[i].istat )
+      if( GASPI_ENDPOINT_CREATED == gctx->ep_conn[i].istat )
 	{
 	  if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpGroups[i]))
 	    {
@@ -961,60 +965,60 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
   /*  TODO: to remove from here <<< LOOP*/
   for(i = 0; i < GASPI_MAX_MSEGS; i++)
     {
-      if(glb_gaspi_ctx.rrmd[i] != NULL)
+      if(gctx->rrmd[i] != NULL)
 	{
-	  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].size)
+	  if(gctx->rrmd[i][gctx->rank].size)
 	    {
 #ifdef GPI2_CUDA
-	      if(glb_gaspi_ctx.use_gpus == 0 || glb_gaspi_ctx.gpu_count == 0)
+	      if(gctx->use_gpus == 0 || gctx->gpu_count == 0)
 #endif
 
-		if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].mr[0]))
+		if(ibv_dereg_mr(gctx->rrmd[i][gctx->rank].mr[0]))
 		  {
 		    gaspi_print_error("Failed to de-register memory (libiverbs)");
 		    return -1;
 		  }
-		if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].mr[1]))
+		if(ibv_dereg_mr(gctx->rrmd[i][gctx->rank].mr[1]))
 		  {
 		    gaspi_print_error("Failed to de-register memory (libiverbs)");
 		    return -1;
 		  }
 
 #ifdef GPI2_CUDA
-	      if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cuda_dev_id >= 0)
+	      if(gctx->rrmd[i][gctx->rank].cuda_dev_id >= 0)
 		{
-		  if(ibv_dereg_mr(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_mr))
+		  if(ibv_dereg_mr(gctx->rrmd[i][gctx->rank].host_mr))
 		    {
 		      gaspi_print_error("Failed to de-register memory (libiverbs)\n");
 		      return -1;
 		    }
-		  cudaSetDevice( (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].cuda_dev_id));
-		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf)
-		    cudaFree(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf);
+		  cudaSetDevice( (gctx->rrmd[i][gctx->rank].cuda_dev_id));
+		  if(gctx->rrmd[i][gctx->rank].data.buf)
+		    cudaFree(gctx->rrmd[i][gctx->rank].data.buf);
 
-		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf)
-		    cudaFree(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
+		  if(gctx->rrmd[i][gctx->rank].notif_spc.buf)
+		    cudaFree(gctx->rrmd[i][gctx->rank].notif_spc.buf);
 
-		  if(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_ptr)
-		    cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].host_ptr);
+		  if(gctx->rrmd[i][gctx->rank].host_ptr)
+		    cudaFreeHost(gctx->rrmd[i][gctx->rank].host_ptr);
 		}
-	      else if(glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0)
-		cudaFreeHost(glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
+	      else if(gctx->use_gpus != 0 && gctx->gpu_count > 0)
+		cudaFreeHost(gctx->rrmd[i][gctx->rank].notif_spc.buf);
 	      else
 #endif
-		free (glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf);
-	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].data.buf = NULL;
-	      glb_gaspi_ctx.rrmd[i][glb_gaspi_ctx.rank].notif_spc.buf = NULL;
+		free (gctx->rrmd[i][gctx->rank].notif_spc.buf);
+	      gctx->rrmd[i][gctx->rank].data.buf = NULL;
+	      gctx->rrmd[i][gctx->rank].notif_spc.buf = NULL;
 	    }
 
-	  free (glb_gaspi_ctx.rrmd[i]);
-	  glb_gaspi_ctx.rrmd[i] = NULL;
+	  free (gctx->rrmd[i]);
+	  gctx->rrmd[i] = NULL;
 	}
     }
   /*>>> LOOP */
 
   /* Unregister memory */
-  if(pgaspi_dev_unregister_mem(&(glb_gaspi_ctx.nsrc)) != 0)
+  if(pgaspi_dev_unregister_mem(&(gctx->nsrc)) != 0)
     {
       gaspi_print_error ("Failed to de-register internal memory");
       return -1;
@@ -1024,7 +1028,7 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
     {
       if(glb_gaspi_group_ctx[i].id >= 0)
 	{
-	  if(pgaspi_dev_unregister_mem(&(glb_gaspi_group_ctx[i].rrcd[glb_gaspi_ctx.rank])) != 0)
+	  if(pgaspi_dev_unregister_mem(&(glb_gaspi_group_ctx[i].rrcd[gctx->rank])) != 0)
 	    {
 	      gaspi_print_error ("Failed to de-register group memory");
 	      return -1;

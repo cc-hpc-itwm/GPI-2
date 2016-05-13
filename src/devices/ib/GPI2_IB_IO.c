@@ -38,9 +38,10 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
   struct ibv_sge slist;
   struct ibv_send_wr swr;
   enum ibv_send_flags sf;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
 #ifdef GPI2_CUDA
-  if( glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].cuda_dev_id >= 0 )
+  if( gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id >= 0 )
     {
       sf = IBV_SEND_SIGNALED;
     }
@@ -50,15 +51,15 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
       sf = (size > MAX_INLINE_BYTES) ? IBV_SEND_SIGNALED : IBV_SEND_SIGNALED |	IBV_SEND_INLINE;
     }
 
-  slist.addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr +
+  slist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr +
 			    offset_local);
 
   slist.length = size;
-  slist.lkey =  ((struct ibv_mr *)glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr[0])->lkey;
+  slist.lkey =  ((struct ibv_mr *)gctx->rrmd[segment_id_local][gctx->rank].mr[0])->lkey;
 
-  swr.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].data.addr +  offset_remote);
+  swr.wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote][rank].data.addr +  offset_remote);
 
-  swr.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote][rank].rkey[0];
+  swr.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].rkey[0];
   swr.sg_list = &slist;
   swr.num_sge = 1;
   swr.wr_id = rank;
@@ -86,17 +87,18 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slist;
   struct ibv_send_wr swr;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
-  slist.addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr +
+  slist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr +
 		   offset_local);
 
   slist.length = size;
-  slist.lkey = ((struct ibv_mr *)glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr[0])->lkey;
+  slist.lkey = ((struct ibv_mr *)gctx->rrmd[segment_id_local][gctx->rank].mr[0])->lkey;
 
-  swr.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].data.addr +
+  swr.wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote][rank].data.addr +
 			     offset_remote);
 
-  swr.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote][rank].rkey[0];
+  swr.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].rkey[0];
   swr.sg_list = &slist;
   swr.num_sge = 1;
   swr.wr_id = rank;
@@ -119,6 +121,7 @@ pgaspi_dev_purge (const gaspi_queue_id_t queue,
 {
   int ne = 0, i;
   struct ibv_wc wc;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   const int nr = *counter;
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
@@ -135,7 +138,7 @@ pgaspi_dev_purge (const gaspi_queue_id_t queue,
 	      const gaspi_cycles_t s1 = gaspi_get_cycles ();
 	      const gaspi_cycles_t tdelta = s1 - s0;
 
-	      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+	      const float ms = (float) tdelta * gctx->cycles_to_msecs;
 	      if (ms > timeout_ms)
 		{
 		  return GASPI_TIMEOUT;
@@ -147,7 +150,7 @@ pgaspi_dev_purge (const gaspi_queue_id_t queue,
 
 #ifdef GPI2_CUDA
   int j, k;
-  for(k = 0;k < glb_gaspi_ctx.gpu_count; k++)
+  for(k = 0;k < gctx->gpu_count; k++)
     {
       for(j = 0; j < GASPI_CUDA_EVENTS; j++)
 	gpus[k].events[queue][j].ib_use = 0;
@@ -165,6 +168,7 @@ pgaspi_dev_wait (const gaspi_queue_id_t queue,
 
   int ne = 0, i;
   struct ibv_wc wc;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   const int nr = *counter;
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
@@ -181,7 +185,7 @@ pgaspi_dev_wait (const gaspi_queue_id_t queue,
 	      const gaspi_cycles_t s1 = gaspi_get_cycles ();
 	      const gaspi_cycles_t tdelta = s1 - s0;
 
-	      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+	      const float ms = (float) tdelta * gctx->cycles_to_msecs;
 	      if (ms > timeout_ms)
 		{
 		  return GASPI_TIMEOUT;
@@ -193,8 +197,9 @@ pgaspi_dev_wait (const gaspi_queue_id_t queue,
 
       if ((ne < 0) || (wc.status != IBV_WC_SUCCESS))
 	{
-	  //TODO: for now here, but has to go  out of device
-	  glb_gaspi_ctx.qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
+	  //TODO: for now here because we have to identify the rank
+	  // but should be out of device?
+	  gctx->qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
 	  gaspi_print_error("Failed request to %lu. Queue %d might be broken %s",
 			    wc.wr_id, queue, ibv_wc_status_str(wc.status) );
 
@@ -203,7 +208,7 @@ pgaspi_dev_wait (const gaspi_queue_id_t queue,
     }
 #ifdef GPI2_CUDA
   int j,k;
-  for(k = 0;k < glb_gaspi_ctx.gpu_count; k++)
+  for(k = 0;k < gctx->gpu_count; k++)
     {
       for(j = 0; j < GASPI_CUDA_EVENTS; j++)
 	gpus[k].events[queue][j].ib_use = 0;
@@ -229,19 +234,20 @@ pgaspi_dev_write_list (const gaspi_number_t num,
   struct ibv_sge slist[256];
   struct ibv_send_wr swr[256];
   gaspi_number_t i;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   for (i = 0; i < num; i++)
     {
-      slist[i].addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].data.addr +
+      slist[i].addr = (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +
 				   offset_local[i]);
 
       slist[i].length = size[i];
-      slist[i].lkey = ((struct ibv_mr *)glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].mr[0])->lkey;
+      slist[i].lkey = ((struct ibv_mr *)gctx->rrmd[segment_id_local[i]][gctx->rank].mr[0])->lkey;
 
-      swr[i].wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].data.addr +
+      swr[i].wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote[i]][rank].data.addr +
 				    offset_remote[i]);
 
-      swr[i].wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].rkey[0];
+      swr[i].wr.rdma.rkey = gctx->rrmd[segment_id_remote[i]][rank].rkey[0];
       swr[i].sg_list = &slist[i];
       swr[i].num_sge = 1;
       swr[i].wr_id = rank;
@@ -278,19 +284,20 @@ pgaspi_dev_read_list (const gaspi_number_t num,
   struct ibv_sge slist[256];
   struct ibv_send_wr swr[256];
   gaspi_number_t i;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   for (i = 0; i < num; i++)
     {
-      slist[i].addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].data.addr +
+      slist[i].addr = (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +
 				     offset_local[i]);
 
       slist[i].length = size[i];
-      slist[i].lkey = ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].mr[0])->lkey;
+      slist[i].lkey = ((struct ibv_mr *) gctx->rrmd[segment_id_local[i]][gctx->rank].mr[0])->lkey;
 
-      swr[i].wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].data.addr +
+      swr[i].wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote[i]][rank].data.addr +
 				    offset_remote[i]);
 
-      swr[i].wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].rkey[0];
+      swr[i].wr.rdma.rkey = gctx->rrmd[segment_id_remote[i]][rank].rkey[0];
       swr[i].sg_list = &slist[i];
       swr[i].num_sge = 1;
       swr[i].wr_id = rank;
@@ -321,25 +328,26 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slistN;
   struct ibv_send_wr swrN;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
-  slistN.addr = (uintptr_t) (glb_gaspi_ctx.nsrc.notif_spc.buf + notification_id * sizeof(gaspi_notification_t));
+  slistN.addr = (uintptr_t) (gctx->nsrc.notif_spc.buf + notification_id * sizeof(gaspi_notification_t));
 
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = sizeof(gaspi_notification_t);
-  slistN.lkey = ((struct ibv_mr *) glb_gaspi_ctx.nsrc.mr[0])->lkey;
+  slistN.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
 
 #ifdef GPI2_CUDA
-  if( glb_gaspi_ctx.rrmd[segment_id_remote][rank].cuda_dev_id >= 0)
+  if( gctx->rrmd[segment_id_remote][rank].cuda_dev_id >= 0)
     {
-      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].host_addr + notification_id * sizeof(gaspi_notification_t));
-      swrN.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote][rank].host_rkey;
+      swrN.wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote][rank].host_addr + notification_id * sizeof(gaspi_notification_t));
+      swrN.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].host_rkey;
     }
   else
 #endif
     {
-      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].notif_spc.addr + notification_id * sizeof(gaspi_notification_t));
-      swrN.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote][rank].rkey[1];
+      swrN.wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote][rank].notif_spc.addr + notification_id * sizeof(gaspi_notification_t));
+      swrN.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].rkey[1];
     }
 
   swrN.sg_list = &slistN;
@@ -369,22 +377,21 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
 			 const gaspi_notification_t notification_value,
 			 const gaspi_queue_id_t queue)
 {
-
-
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slist, slistN;
   struct ibv_send_wr swr, swrN;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
-  slist.addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr +
+  slist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr +
 			    offset_local);
 
   slist.length = size;
-  slist.lkey = ((struct ibv_mr *)glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].mr[0])->lkey;
+  slist.lkey = ((struct ibv_mr *)gctx->rrmd[segment_id_local][gctx->rank].mr[0])->lkey;
 
-  swr.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].data.addr +
+  swr.wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote][rank].data.addr +
 			     offset_remote);
 
-  swr.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote][rank].rkey[0];
+  swr.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].rkey[0];
   swr.sg_list = &slist;
   swr.num_sge = 1;
   swr.wr_id = rank;
@@ -392,24 +399,24 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
   swr.send_flags = IBV_SEND_SIGNALED;
   swr.next = &swrN;
 
-  slistN.addr = (uintptr_t) (glb_gaspi_ctx.nsrc.notif_spc.buf + notification_id * sizeof(gaspi_notification_t));
+  slistN.addr = (uintptr_t) (gctx->nsrc.notif_spc.buf + notification_id * sizeof(gaspi_notification_t));
 
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = sizeof(gaspi_notification_t);
-  slistN.lkey = ((struct ibv_mr *) glb_gaspi_ctx.nsrc.mr[0])->lkey;
+  slistN.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
 
 #ifdef GPI2_CUDA
-  if((glb_gaspi_ctx.rrmd[segment_id_remote][rank].cuda_dev_id >= 0))
+  if((gctx->rrmd[segment_id_remote][rank].cuda_dev_id >= 0))
     {
-      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].host_addr + notification_id * sizeof(gaspi_notification_t));
-      swrN.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote][rank].host_rkey;
+      swrN.wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote][rank].host_addr + notification_id * sizeof(gaspi_notification_t));
+      swrN.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].host_rkey;
     }
   else
 #endif
     {
-      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].notif_spc.addr + notification_id * sizeof(gaspi_notification_t));
-      swrN.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote][rank].rkey[1];
+      swrN.wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote][rank].notif_spc.addr + notification_id * sizeof(gaspi_notification_t));
+      swrN.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].rkey[1];
     }
 
   swrN.sg_list = &slistN;
@@ -445,20 +452,21 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
   struct ibv_sge slist[256], slistN;
   struct ibv_send_wr swr[256], swrN;
   gaspi_number_t i;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   for (i = 0; i < num; i++)
     {
 
-      slist[i].addr = (uintptr_t) (glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].data.addr +
+      slist[i].addr = (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +
 				   offset_local[i]);
 
       slist[i].length = size[i];
-      slist[i].lkey = ((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id_local[i]][glb_gaspi_ctx.rank].mr[0])->lkey;
+      slist[i].lkey = ((struct ibv_mr *) gctx->rrmd[segment_id_local[i]][gctx->rank].mr[0])->lkey;
 
-      swr[i].wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].data.addr +
+      swr[i].wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote[i]][rank].data.addr +
 				    offset_remote[i]);
 
-      swr[i].wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote[i]][rank].rkey[0];
+      swr[i].wr.rdma.rkey = gctx->rrmd[segment_id_remote[i]][rank].rkey[0];
       swr[i].sg_list = &slist[i];
       swr[i].num_sge = 1;
       swr[i].wr_id = rank;
@@ -470,25 +478,25 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
 	swr[i].next = &swr[i + 1];
     }
 
-  slistN.addr = (uintptr_t) (glb_gaspi_ctx.nsrc.notif_spc.buf + notification_id * sizeof(gaspi_notification_t));
+  slistN.addr = (uintptr_t) (gctx->nsrc.notif_spc.buf + notification_id * sizeof(gaspi_notification_t));
 
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = sizeof(gaspi_notification_t);
-  slistN.lkey = ((struct ibv_mr *) glb_gaspi_ctx.nsrc.mr[0])->lkey;
+  slistN.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
 
 #ifdef GPI2_CUDA
-  if(glb_gaspi_ctx.rrmd[segment_id_notification][rank].cuda_dev_id >= 0)
+  if(gctx->rrmd[segment_id_notification][rank].cuda_dev_id >= 0)
     {
-      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_notification][rank].host_addr + notification_id * sizeof(gaspi_notification_t));
-      swrN.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_notification][rank].host_rkey;
+      swrN.wr.rdma.remote_addr = (gctx->rrmd[segment_id_notification][rank].host_addr + notification_id * sizeof(gaspi_notification_t));
+      swrN.wr.rdma.rkey = gctx->rrmd[segment_id_notification][rank].host_rkey;
     }
   else
 #endif
     {
-      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_notification][rank].notif_spc.addr +
+      swrN.wr.rdma.remote_addr = (gctx->rrmd[segment_id_notification][rank].notif_spc.addr +
 				  notification_id * sizeof(gaspi_notification_t));
-      swrN.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_notification][rank].rkey[1];
+      swrN.wr.rdma.rkey = gctx->rrmd[segment_id_notification][rank].rkey[1];
     }
 
   swrN.sg_list = &slistN;
@@ -514,8 +522,9 @@ _gaspi_event_send(gaspi_cuda_event_t* event, int queue)
   struct ibv_send_wr swr;
   struct ibv_sge slist;
   struct ibv_send_wr *bad_wr;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
-  swr.wr.rdma.rkey = glb_gaspi_ctx.rrmd[event->segment_remote][event->rank].rkey[0];
+  swr.wr.rdma.rkey = gctx->rrmd[event->segment_remote][event->rank].rkey[0];
   swr.sg_list    = &slist;
   swr.num_sge    = 1;
   swr.wr_id      = event->rank;
@@ -523,17 +532,17 @@ _gaspi_event_send(gaspi_cuda_event_t* event, int queue)
   swr.send_flags = IBV_SEND_SIGNALED;
   swr.next       = NULL;
 
-  slist.addr = (uintptr_t) (char*)(glb_gaspi_ctx.rrmd[event->segment_local][event->rank].host_ptr + NOTIFY_OFFSET + event->offset_local);
+  slist.addr = (uintptr_t) (char*)(gctx->rrmd[event->segment_local][event->rank].host_ptr + NOTIFY_OFFSET + event->offset_local);
 
   slist.length = event->size;
-  slist.lkey = ((struct ibv_mr *)glb_gaspi_ctx.rrmd[event->segment_local][glb_gaspi_ctx.rank].host_mr)->lkey;
+  slist.lkey = ((struct ibv_mr *)gctx->rrmd[event->segment_local][gctx->rank].host_mr)->lkey;
 
-  swr.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[event->segment_remote][event->rank].data.addr + event->offset_remote);
+  swr.wr.rdma.remote_addr = (gctx->rrmd[event->segment_remote][event->rank].data.addr + event->offset_remote);
 
   if( ibv_post_send(glb_gaspi_ctx_ib.qpC[queue][event->rank], &swr, &bad_wr) )
     {
       //TODO:not here
-      glb_gaspi_ctx.qp_state_vec[queue][event->rank] = GASPI_STATE_CORRUPT;
+      gctx->qp_state_vec[queue][event->rank] = GASPI_STATE_CORRUPT;
       return -1;
     }
 
@@ -552,7 +561,9 @@ pgaspi_dev_gpu_write(const gaspi_segment_id_t segment_id_local,
 		 const gaspi_queue_id_t queue,
 		 const gaspi_timeout_t timeout_ms)
 {
-  if( glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].cuda_dev_id < 0 ||
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
+  if( gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id < 0 ||
       size <= GASPI_GPU_DIRECT_MAX )
     {
       return pgaspi_dev_write(segment_id_local, offset_local, rank,
@@ -560,11 +571,11 @@ pgaspi_dev_gpu_write(const gaspi_segment_id_t segment_id_local,
 			     queue);
     }
 
-  char* host_ptr = (char*)(glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].host_ptr + NOTIFY_OFFSET + offset_local);
-  char* device_ptr = (char*)(glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr + offset_local);
+  char* host_ptr = (char*)(gctx->rrmd[segment_id_local][gctx->rank].host_ptr + NOTIFY_OFFSET + offset_local);
+  char* device_ptr = (char*)(gctx->rrmd[segment_id_local][gctx->rank].data.addr + offset_local);
 
   //TODO: look every time for a gpu? why?
-  gaspi_gpu_t* agpu = _gaspi_find_gpu(glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].cuda_dev_id);
+  gaspi_gpu_t* agpu = _gaspi_find_gpu(gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id);
   if( !agpu )
     {
       gaspi_print_error("No GPU found or not initialized.");
@@ -602,7 +613,7 @@ pgaspi_dev_gpu_write(const gaspi_segment_id_t segment_id_local,
 	      return GASPI_ERROR;
 	    }
 	  //TODO: not here
-	  glb_gaspi_ctx.ne_count_c[queue]++;
+	  gctx->ne_count_c[queue]++;
 
 	  /* Keep track of event to query later on */
 	  agpu->events[queue][i].segment_remote = segment_id_remote;
@@ -617,7 +628,7 @@ pgaspi_dev_gpu_write(const gaspi_segment_id_t segment_id_local,
 	  if( err != cudaSuccess )
 	    {
 	      //TODO: not here
-	      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+	      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
 	      return GASPI_ERROR;
 	    }
 
@@ -637,13 +648,13 @@ pgaspi_dev_gpu_write(const gaspi_segment_id_t segment_id_local,
 	      do
 		{
 		  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqC[queue], 1, &wc);
-		  glb_gaspi_ctx.ne_count_c[queue] -= ne; //TODO: this should be done below, when ne > 0
+		  gctx->ne_count_c[queue] -= ne; //TODO: this should be done below, when ne > 0
 		  if( ne == 0 )
 		    {
 		      const gaspi_cycles_t s1 = gaspi_get_cycles ();
 		      const gaspi_cycles_t tdelta = s1 - s0;
 
-		      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+		      const float ms = (float) tdelta * gctx->cycles_to_msecs;
 		      if (ms > timeout_ms)
 			{
 			  return GASPI_TIMEOUT;
@@ -678,7 +689,7 @@ pgaspi_dev_gpu_write(const gaspi_segment_id_t segment_id_local,
 		      const gaspi_cycles_t s1 = gaspi_get_cycles ();
 		      const gaspi_cycles_t tdelta = s1 - s0;
 
-		      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+		      const float ms = (float) tdelta * gctx->cycles_to_msecs;
 		      if( ms > timeout_ms )
 			{
 			  return GASPI_TIMEOUT;
@@ -708,7 +719,9 @@ pgaspi_dev_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
 			    const gaspi_queue_id_t queue,
 			    const gaspi_timeout_t timeout_ms)
 {
-  if( glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].cuda_dev_id < 0 ||
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
+  if( gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id < 0 ||
       size <= GASPI_GPU_DIRECT_MAX )
     {
       return pgaspi_dev_write_notify( segment_id_local, offset_local, rank,
@@ -717,11 +730,11 @@ pgaspi_dev_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
 				 queue);
     }
 
-  char *host_ptr = (char*)(glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].host_ptr + NOTIFY_OFFSET + offset_local);
-  char* device_ptr =(char*)(glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].data.addr + offset_local);
+  char *host_ptr = (char*)(gctx->rrmd[segment_id_local][gctx->rank].host_ptr + NOTIFY_OFFSET + offset_local);
+  char* device_ptr =(char*)(gctx->rrmd[segment_id_local][gctx->rank].data.addr + offset_local);
 
   //TODO: again the look up for the gpu?
-  gaspi_gpu_t* agpu = _gaspi_find_gpu(glb_gaspi_ctx.rrmd[segment_id_local][glb_gaspi_ctx.rank].cuda_dev_id);
+  gaspi_gpu_t* agpu = _gaspi_find_gpu(gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id);
   if( !agpu )
     {
       gaspi_print_error("No GPU found or not initialized.");
@@ -758,7 +771,7 @@ pgaspi_dev_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
 	      return GASPI_ERROR;
 	    }
 	  //TODO: not here?
-	  glb_gaspi_ctx.ne_count_c[queue]++;
+	  gctx->ne_count_c[queue]++;
 
 	  agpu->events[queue][i].segment_remote = segment_id_remote;
 	  agpu->events[queue][i].segment_local = segment_id_local;
@@ -782,13 +795,13 @@ pgaspi_dev_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
 	      do
 		{
 		  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqC[queue], 1, &wc);
-		  glb_gaspi_ctx.ne_count_c[queue] -= ne; //TODO: this should be done below, when ne > 0
+		  gctx->ne_count_c[queue] -= ne; //TODO: this should be done below, when ne > 0
 		  if( ne == 0 )
 		    {
 		      const gaspi_cycles_t s1 = gaspi_get_cycles ();
 		      const gaspi_cycles_t tdelta = s1 - s0;
 
-		      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+		      const float ms = (float) tdelta * gctx->cycles_to_msecs;
 		      if (ms > timeout_ms)
 			{
 			  return GASPI_TIMEOUT;
@@ -829,7 +842,7 @@ pgaspi_dev_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
 		      const gaspi_cycles_t s1 = gaspi_get_cycles ();
 		      const gaspi_cycles_t tdelta = s1 - s0;
 
-		      const float ms = (float) tdelta * glb_gaspi_ctx.cycles_to_msecs;
+		      const float ms = (float) tdelta * gctx->cycles_to_msecs;
 		      if (ms > timeout_ms)
 			{
 			  return GASPI_TIMEOUT;
@@ -849,22 +862,22 @@ pgaspi_dev_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
   struct ibv_sge slistN;
   struct ibv_send_wr swrN;
 
-  slistN.addr = (uintptr_t)(glb_gaspi_ctx.nsrc.notif_spc.buf + notification_id * sizeof(gaspi_notification_id_t));
+  slistN.addr = (uintptr_t)(gctx->nsrc.notif_spc.buf + notification_id * sizeof(gaspi_notification_id_t));
 
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = sizeof(gaspi_notification_id_t);
-  slistN.lkey =((struct ibv_mr *) glb_gaspi_ctx.nsrc.mr)->lkey;
+  slistN.lkey =((struct ibv_mr *) gctx->nsrc.mr)->lkey;
 
-  if( glb_gaspi_ctx.rrmd[segment_id_remote][rank].cuda_dev_id >= 0 )
+  if( gctx->rrmd[segment_id_remote][rank].cuda_dev_id >= 0 )
     {
-      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].host_addr + notification_id * sizeof(gaspi_notification_id_t));
-      swrN.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote][rank].host_rkey;
+      swrN.wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote][rank].host_addr + notification_id * sizeof(gaspi_notification_id_t));
+      swrN.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].host_rkey;
     }
   else
     {
-      swrN.wr.rdma.remote_addr = (glb_gaspi_ctx.rrmd[segment_id_remote][rank].notif_spc.addr + notification_id * sizeof(gaspi_notification_id_t));
-      swrN.wr.rdma.rkey = glb_gaspi_ctx.rrmd[segment_id_remote][rank].rkey[1];
+      swrN.wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote][rank].notif_spc.addr + notification_id * sizeof(gaspi_notification_id_t));
+      swrN.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].rkey[1];
     }
 
   swrN.sg_list = &slistN;
@@ -876,11 +889,11 @@ pgaspi_dev_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
 
   if( ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swrN, &bad_wr) )
     {
-      glb_gaspi_ctx.qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 
-  glb_gaspi_ctx.ne_count_c[queue]++;
+  gctx->ne_count_c[queue]++;
 
   return GASPI_SUCCESS;
 }

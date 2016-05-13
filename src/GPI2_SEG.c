@@ -42,12 +42,14 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 		     const gaspi_rank_t rank,
 		     gaspi_size_t * const size)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   gaspi_verify_init("gaspi_segment_size");
   gaspi_verify_segment(segment_id);
-  gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
+  gaspi_verify_null_ptr(gctx->rrmd[segment_id]);
   gaspi_verify_null_ptr(size);
 
-  gaspi_size_t seg_size = glb_gaspi_ctx.rrmd[segment_id][rank].size;
+  gaspi_size_t seg_size = gctx->rrmd[segment_id][rank].size;
 
   gaspi_verify_segment_size(seg_size);
 
@@ -60,14 +62,16 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   gaspi_verify_init("gaspi_segment_ptr");
   gaspi_verify_segment(segment_id);
-  gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
+  gaspi_verify_null_ptr(gctx->rrmd[segment_id]);
   gaspi_verify_null_ptr(ptr);
 
-  gaspi_verify_segment_size(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size);
+  gaspi_verify_segment_size(gctx->rrmd[segment_id][gctx->rank].size);
 
-  *ptr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf;
+  *ptr = gctx->rrmd[segment_id][gctx->rank].data.buf;
 
   return GASPI_SUCCESS;
 }
@@ -78,18 +82,19 @@ pgaspi_segment_list (const gaspi_number_t num,
 		     gaspi_segment_id_t * const segment_id_list)
 {
   int i, idx = 0;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_segment_list");
   gaspi_verify_null_ptr(segment_id_list);
 
   for (i = 0; i < GASPI_MAX_MSEGS; i++)
     {
-      if(glb_gaspi_ctx.rrmd[(gaspi_segment_id_t) i] != NULL )
-	if(glb_gaspi_ctx.rrmd[(gaspi_segment_id_t) i][glb_gaspi_ctx.rank].trans)
+      if(gctx->rrmd[(gaspi_segment_id_t) i] != NULL )
+	if(gctx->rrmd[(gaspi_segment_id_t) i][gctx->rank].trans)
 	  segment_id_list[idx++] = (gaspi_segment_id_t) i;
     }
 
-  if (idx != glb_gaspi_ctx.mseg_cnt)
+  if (idx != gctx->mseg_cnt)
     {
       return GASPI_ERROR;
     }
@@ -101,10 +106,12 @@ pgaspi_segment_list (const gaspi_number_t num,
 gaspi_return_t
 pgaspi_segment_num (gaspi_number_t * const segment_num)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   gaspi_verify_init("gaspi_segment_num");
   gaspi_verify_null_ptr(segment_num);
 
-  *segment_num = (gaspi_number_t) glb_gaspi_ctx.mseg_cnt;
+  *segment_num = (gaspi_number_t) gctx->mseg_cnt;
   return GASPI_SUCCESS;
 }
 
@@ -173,11 +180,13 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 		      const gaspi_size_t size,
 		      const gaspi_alloc_t alloc_policy)
 {
+  gaspi_context * const gctx = &glb_gaspi_ctx;
+
   gaspi_verify_init("gaspi_segment_alloc");
   gaspi_verify_segment_size(size);
   gaspi_verify_segment(segment_id);
 
-  if (glb_gaspi_ctx.mseg_cnt >= GASPI_MAX_MSEGS)
+  if (gctx->mseg_cnt >= GASPI_MAX_MSEGS)
     {
       return GASPI_ERR_MANY_SEG;
     }
@@ -189,11 +198,11 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
   /*  TODO: for now like this, but we need to change this */
 #ifndef GPI2_CUDA
 
-  if( glb_gaspi_ctx.rrmd[segment_id] == NULL)
+  if( gctx->rrmd[segment_id] == NULL)
     {
-      glb_gaspi_ctx.rrmd[segment_id] = (gaspi_rc_mseg *) calloc (glb_gaspi_ctx.tnc, sizeof (gaspi_rc_mseg));
+      gctx->rrmd[segment_id] = (gaspi_rc_mseg *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg));
 
-      if(!glb_gaspi_ctx.rrmd[segment_id])
+      if(!gctx->rrmd[segment_id])
 	{
 	  eret = GASPI_ERR_MEMALLOC;
 	  goto endL;
@@ -201,7 +210,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     }
 
   /* TODO: not really the right way */
-  if( glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size)
+  if( gctx->rrmd[segment_id][gctx->rank].size)
     {
       eret = GASPI_SUCCESS;
       goto endL;
@@ -215,7 +224,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       goto endL;
     }
 
-  if( posix_memalign ((void **) &glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr,
+  if( posix_memalign ((void **) &gctx->rrmd[segment_id][gctx->rank].data.ptr,
 		      page_size,
 		      size + NOTIFY_OFFSET) != 0)
     {
@@ -224,20 +233,20 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       goto endL;
     }
 
-  memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, 0, NOTIFY_OFFSET);
+  memset (gctx->rrmd[segment_id][gctx->rank].data.ptr, 0, NOTIFY_OFFSET);
 
   if( alloc_policy == GASPI_MEM_INITIALIZED)
     {
-      memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, 0, size + NOTIFY_OFFSET);
+      memset (gctx->rrmd[segment_id][gctx->rank].data.ptr, 0, size + NOTIFY_OFFSET);
     }
 
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size = size;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc_size = NOTIFY_OFFSET;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr += NOTIFY_OFFSET;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].user_provided = 0;
+  gctx->rrmd[segment_id][gctx->rank].size = size;
+  gctx->rrmd[segment_id][gctx->rank].notif_spc_size = NOTIFY_OFFSET;
+  gctx->rrmd[segment_id][gctx->rank].notif_spc.addr = gctx->rrmd[segment_id][gctx->rank].data.addr;
+  gctx->rrmd[segment_id][gctx->rank].data.addr += NOTIFY_OFFSET;
+  gctx->rrmd[segment_id][gctx->rank].user_provided = 0;
 
-  if( pgaspi_dev_register_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank]), size + NOTIFY_OFFSET) < 0 )
+  if( pgaspi_dev_register_mem(&(gctx->rrmd[segment_id][gctx->rank]), size + NOTIFY_OFFSET) < 0 )
     {
       goto endL;
     }
@@ -248,7 +257,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     goto endL;
 #endif /* GPI2_CUDA */
 
-  glb_gaspi_ctx.mseg_cnt++;
+  gctx->mseg_cnt++;
 
   eret = GASPI_SUCCESS;
  endL:
@@ -261,11 +270,13 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 {
+  gaspi_context * const gctx = &glb_gaspi_ctx;
+
   gaspi_verify_init("gaspi_segment_delete");
   gaspi_verify_segment(segment_id);
-  gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
+  gaspi_verify_null_ptr(gctx->rrmd[segment_id]);
 
-  gaspi_verify_segment_size(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size);
+  gaspi_verify_segment_size(gctx->rrmd[segment_id][gctx->rank].size);
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -275,7 +286,7 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 #ifdef GPI2_CUDA
   eret = pgaspi_dev_segment_delete(segment_id);
 #else
-  if(pgaspi_dev_unregister_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank])) < 0)
+  if(pgaspi_dev_unregister_mem(&(gctx->rrmd[segment_id][gctx->rank])) < 0)
     {
       unlock_gaspi (&gaspi_mseg_lock);
       return GASPI_ERR_DEVICE;
@@ -284,30 +295,30 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   /* For both "normal" and user-provided segments, the notif_spc
      points to begin of memory and only the size changes.
   */
-  free (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.buf);
+  free (gctx->rrmd[segment_id][gctx->rank].notif_spc.buf);
 
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf = NULL;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.buf = NULL;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size = 0;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc_size = 0;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].trans = 0;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr[0] = NULL;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr[1] = NULL;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[0] = 0;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[1] = 0;
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].user_provided = 0;
+  gctx->rrmd[segment_id][gctx->rank].data.buf = NULL;
+  gctx->rrmd[segment_id][gctx->rank].notif_spc.buf = NULL;
+  gctx->rrmd[segment_id][gctx->rank].size = 0;
+  gctx->rrmd[segment_id][gctx->rank].notif_spc_size = 0;
+  gctx->rrmd[segment_id][gctx->rank].trans = 0;
+  gctx->rrmd[segment_id][gctx->rank].mr[0] = NULL;
+  gctx->rrmd[segment_id][gctx->rank].mr[1] = NULL;
+  gctx->rrmd[segment_id][gctx->rank].rkey[0] = 0;
+  gctx->rrmd[segment_id][gctx->rank].rkey[1] = 0;
+  gctx->rrmd[segment_id][gctx->rank].user_provided = 0;
 
   /* Reset trans info flag for all ranks */
   int r;
-  for(r = 0; r < glb_gaspi_ctx.tnc; r++)
+  for(r = 0; r < gctx->tnc; r++)
     {
-      glb_gaspi_ctx.rrmd[segment_id][r].trans = 0;
+      gctx->rrmd[segment_id][r].trans = 0;
     }
 
   eret = GASPI_SUCCESS;
 #endif
 
-  glb_gaspi_ctx.mseg_cnt--;
+  gctx->mseg_cnt--;
 
   unlock_gaspi (&gaspi_mseg_lock);
 
@@ -320,16 +331,18 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 			const gaspi_rank_t rank,
 			const gaspi_timeout_t timeout_ms)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   gaspi_verify_init("gaspi_segment_register");
   gaspi_verify_segment(segment_id);
-  gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[segment_id]);
+  gaspi_verify_null_ptr(gctx->rrmd[segment_id]);
   gaspi_verify_rank(rank);
 
-  gaspi_verify_segment_size(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size);
+  gaspi_verify_segment_size(gctx->rrmd[segment_id][gctx->rank].size);
 
-  if( rank == glb_gaspi_ctx.rank)
+  if( rank == gctx->rank)
     {
-      glb_gaspi_ctx.rrmd[segment_id][rank].trans = 1;
+      gctx->rrmd[segment_id][rank].trans = 1;
       return GASPI_SUCCESS;
     }
 
@@ -340,7 +353,7 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 
   gaspi_return_t eret = gaspi_sn_command(GASPI_SN_SEG_REGISTER, rank, timeout_ms, (void *) &segment_id);
 
-  glb_gaspi_ctx.rrmd[segment_id][rank].trans = 1;
+  gctx->rrmd[segment_id][rank].trans = 1;
 
   unlock_gaspi(&glb_gaspi_ctx_lock);
 
@@ -362,6 +375,8 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 		      const gaspi_timeout_t timeout_ms,
 		      const gaspi_alloc_t alloc_policy)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   gaspi_verify_group(group);
 
   gaspi_return_t eret = pgaspi_segment_alloc (segment_id, size, alloc_policy);
@@ -404,15 +419,16 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 		      gaspi_size_t const size,
 		      gaspi_memory_description_t const memory_description)
 {
+  gaspi_context * const gctx = &glb_gaspi_ctx;
+
   gaspi_verify_init("gaspi_segment_bind");
   gaspi_verify_segment_size(size);
   gaspi_verify_segment(segment_id);
 
-  gaspi_context* const ctx = &glb_gaspi_ctx;
-  const int myrank = (int) ctx->rank;
+  const int myrank = (int) gctx->rank;
   long page_size;
 
-  if( ctx->mseg_cnt >= GASPI_MAX_MSEGS )
+  if( gctx->mseg_cnt >= GASPI_MAX_MSEGS )
     {
       return GASPI_ERR_MANY_SEG;
     }
@@ -421,18 +437,18 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  if( ctx->rrmd[segment_id] == NULL )
+  if( gctx->rrmd[segment_id] == NULL )
     {
-      ctx->rrmd[segment_id] = (gaspi_rc_mseg *) calloc (ctx->tnc, sizeof (gaspi_rc_mseg));
+      gctx->rrmd[segment_id] = (gaspi_rc_mseg *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg));
 
-      if( ctx->rrmd[segment_id] == NULL )
+      if( gctx->rrmd[segment_id] == NULL )
 	{
 	  eret = GASPI_ERR_MEMALLOC;
 	  goto endL;
 	}
     }
 
-  if( ctx->rrmd[segment_id][myrank].size)
+  if( gctx->rrmd[segment_id][myrank].size)
     {
       eret = GASPI_SUCCESS;
       goto endL;
@@ -447,7 +463,7 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
       goto endL;
     }
 
-  if( posix_memalign( (void **) &ctx->rrmd[segment_id][myrank].notif_spc.ptr,
+  if( posix_memalign( (void **) &gctx->rrmd[segment_id][myrank].notif_spc.ptr,
 		      page_size,
 		      NOTIFY_OFFSET) != 0 )
     {
@@ -456,27 +472,27 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
       goto endL;
     }
 
-  memset (ctx->rrmd[segment_id][myrank].notif_spc.ptr, 0, NOTIFY_OFFSET);
+  memset (gctx->rrmd[segment_id][myrank].notif_spc.ptr, 0, NOTIFY_OFFSET);
 
   /* Set the segment data pointer and size */
-  ctx->rrmd[segment_id][myrank].data.ptr = pointer;
-  ctx->rrmd[segment_id][myrank].size = size;
-  ctx->rrmd[segment_id][myrank].notif_spc_size = NOTIFY_OFFSET;
+  gctx->rrmd[segment_id][myrank].data.ptr = pointer;
+  gctx->rrmd[segment_id][myrank].size = size;
+  gctx->rrmd[segment_id][myrank].notif_spc_size = NOTIFY_OFFSET;
 
-  ctx->rrmd[segment_id][glb_gaspi_ctx.rank].user_provided = 1;
+  gctx->rrmd[segment_id][glb_gaspi_ctx.rank].user_provided = 1;
 
   /* TODO: what to do with the memory description?? */
-  ctx->rrmd[segment_id][myrank].desc = memory_description;
+  gctx->rrmd[segment_id][myrank].desc = memory_description;
 
   /* Register it with the device */
-  if( pgaspi_dev_register_mem( &(ctx->rrmd[segment_id][myrank]), size) < 0)
+  if( pgaspi_dev_register_mem( &(gctx->rrmd[segment_id][myrank]), size) < 0)
     {
       eret = GASPI_ERR_DEVICE;
       goto endL;
     }
 
 
-  ctx->mseg_cnt++;
+  gctx->mseg_cnt++;
 
   eret = GASPI_SUCCESS;
 

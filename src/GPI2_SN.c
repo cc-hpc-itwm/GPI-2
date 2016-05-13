@@ -247,14 +247,14 @@ gaspi_sn_readn(const int sockfd, const void * data_ptr, const size_t n)
   while( left > 0 )
     {
 /*       if( (ndone = read( sockfd, ptr, left) ) <= 0 ) */
-/* 	{ */
-/* 	  if(ndone < 0 && errno == EAGAIN) */
-/* 	    ndone = 0; */
-/* 	  else */
-/* 	    { */
-/* 	      return (-1); */
-/* 	    } */
-/* 	} */
+/*	{ */
+/*	  if(ndone < 0 && errno == EAGAIN) */
+/*	    ndone = 0; */
+/*	  else */
+/*	    { */
+/*	      return (-1); */
+/*	    } */
+/*	} */
       if( (ndone = read( sockfd, ptr, left) ) < 0 )
 	{
 	  if(ndone < 0 && errno == EAGAIN)
@@ -275,11 +275,12 @@ gaspi_sn_readn(const int sockfd, const void * data_ptr, const size_t n)
 int
 gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   int rank, src, dst, mask;
   int send_val = 1, recv_val = 2;
-  int size = glb_gaspi_ctx.tnc;
+  int size = gctx->tnc;
 
-  rank = glb_gaspi_ctx.rank;
+  rank = gctx->rank;
 
   mask = 0x1;
   while(mask < size)
@@ -287,10 +288,10 @@ gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
       dst = (rank + mask) % size;
       src = (rank - mask + size) % size;
 
-      if(gaspi_sn_writen(glb_gaspi_ctx.sockfd[dst], &send_val, sizeof(send_val)) != sizeof(send_val))
+      if(gaspi_sn_writen(gctx->sockfd[dst], &send_val, sizeof(send_val)) != sizeof(send_val))
 	  return -1;
 
-      if(gaspi_sn_readn(glb_gaspi_ctx.sockfd[src], &recv_val, sizeof(recv_val)) != sizeof(recv_val))
+      if(gaspi_sn_readn(gctx->sockfd[src], &recv_val, sizeof(recv_val)) != sizeof(recv_val))
 	  return -1;
 
       mask <<= 1;
@@ -300,7 +301,7 @@ gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
 }
 
 static int
-gaspi_sn_recv_topology(gaspi_context * const ctx)
+gaspi_sn_recv_topology(gaspi_context * const gctx)
 {
   int i;
   struct sockaddr in_addr;
@@ -322,13 +323,13 @@ gaspi_sn_recv_topology(gaspi_context * const ctx)
     }
 
   listeningAddress.sin_family = AF_INET;
-  listeningAddress.sin_port = htons((glb_gaspi_cfg.sn_port + 64 + ctx->localSocket));
+  listeningAddress.sin_port = htons((glb_gaspi_cfg.sn_port + 64 + gctx->localSocket));
   listeningAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 
   if(bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress)) < 0)
     {
       gaspi_print_error("Failed to bind socket (port %d)",
-			glb_gaspi_cfg.sn_port + 64 + ctx->localSocket);
+			glb_gaspi_cfg.sn_port + 64 + gctx->localSocket);
       close(lsock);
       return -1;
     }
@@ -360,16 +361,16 @@ gaspi_sn_recv_topology(gaspi_context * const ctx)
       return -1;
     }
 
-  ctx->rank = cdh.rank;
-  ctx->tnc  = cdh.tnc;
+  gctx->rank = cdh.rank;
+  gctx->tnc  = cdh.tnc;
   if(cdh.op != GASPI_SN_TOPOLOGY)
     {
       printf("Wrong header %d\n", cdh.op);
       fflush(stdout);
     }
 
-  ctx->hn_poff = (char*) calloc( ctx->tnc, 65 );
-  if( ctx->hn_poff == NULL)
+  gctx->hn_poff = (char*) calloc( gctx->tnc, 65 );
+  if( gctx->hn_poff == NULL)
     {
       gaspi_print_error("Failed to allocate memory.");
       close(lsock);
@@ -377,10 +378,10 @@ gaspi_sn_recv_topology(gaspi_context * const ctx)
       return -1;
     }
 
-  ctx->poff = ctx->hn_poff + glb_gaspi_ctx.tnc * 64;
+  gctx->poff = gctx->hn_poff + gctx->tnc * 64;
 
-  ctx->sockfd = (int *) malloc( ctx->tnc * sizeof(int) );
-  if( ctx->sockfd == NULL )
+  gctx->sockfd = (int *) malloc( gctx->tnc * sizeof(int) );
+  if( gctx->sockfd == NULL )
     {
       gaspi_print_error("Failed to allocate memory.");
       close(lsock);
@@ -389,10 +390,10 @@ gaspi_sn_recv_topology(gaspi_context * const ctx)
     }
 
   /* Read the topology */
-  for(i = 0; i < ctx->tnc; i++)
-    ctx->sockfd[i] = -1;
+  for(i = 0; i < gctx->tnc; i++)
+    gctx->sockfd[i] = -1;
 
-  if( gaspi_sn_readn(nsock, ctx->hn_poff, ctx->tnc * 65 ) != ctx->tnc * 65 )
+  if( gaspi_sn_readn(nsock, gctx->hn_poff, gctx->tnc * 65 ) != gctx->tnc * 65 )
     {
       gaspi_print_error("Failed read.");
       close(lsock);
@@ -413,40 +414,40 @@ gaspi_sn_recv_topology(gaspi_context * const ctx)
 }
 
 static int
-gaspi_sn_send_topology(gaspi_context * const ctx, const int i, const gaspi_timeout_t timeout_ms)
+gaspi_sn_send_topology(gaspi_context * const gctx, const int i, const gaspi_timeout_t timeout_ms)
 {
-  if( (ctx->sockfd[i] =
+  if( (gctx->sockfd[i] =
        gaspi_sn_connect2port(gaspi_get_hn(i),
-			     (glb_gaspi_cfg.sn_port + 64 + ctx->poff[i]),
+			     (glb_gaspi_cfg.sn_port + 64 + gctx->poff[i]),
 			     timeout_ms)) < 0)
     {
       gaspi_print_error("Failed to connect to %d", i);
       return -1;
     }
 
-  if( 0 != gaspi_sn_set_default_opts(ctx->sockfd[i]) )
+  if( 0 != gaspi_sn_set_default_opts(gctx->sockfd[i]) )
     {
       gaspi_print_error("Failed to opts");
-      close(ctx->sockfd[i]);
+      close(gctx->sockfd[i]);
       return -1;
     }
 
   gaspi_cd_header cdh;
   memset(&cdh, 0, sizeof(gaspi_cd_header));
 
-  cdh.op_len = ctx->tnc * 65; //TODO: 65 is magic
+  cdh.op_len = gctx->tnc * 65; //TODO: 65 is magic
   cdh.op = GASPI_SN_TOPOLOGY;
   cdh.rank = i;
-  cdh.tnc = ctx->tnc;
+  cdh.tnc = gctx->tnc;
 
   int retval = 0;
   ssize_t len = sizeof(gaspi_cd_header);
   void * ptr = &cdh;
-  int sockfd = ctx->sockfd[i];
+  int sockfd = gctx->sockfd[i];
 
   if (sockfd < 0 )
     {
-      gaspi_print_error("Wrong fd %d %d", i, ctx->sockfd[i] );
+      gaspi_print_error("Wrong fd %d %d", i, gctx->sockfd[i] );
       retval = -1;
       goto endL;
     }
@@ -459,8 +460,8 @@ gaspi_sn_send_topology(gaspi_context * const ctx, const int i, const gaspi_timeo
     }
 
   /* the de facto topology */
-  ptr = ctx->hn_poff;
-  len = ctx->tnc * 65;
+  ptr = gctx->hn_poff;
+  len = gctx->tnc * 65;
 
   if ( gaspi_sn_writen( sockfd, ptr, len)  != len )
     {
@@ -470,7 +471,7 @@ gaspi_sn_send_topology(gaspi_context * const ctx, const int i, const gaspi_timeo
     }
 
  endL:
-  ctx->sockfd[i] = -1;
+  gctx->sockfd[i] = -1;
   if(gaspi_sn_close( sockfd ) != 0)
     retval = -1;
 
@@ -480,20 +481,20 @@ gaspi_sn_send_topology(gaspi_context * const ctx, const int i, const gaspi_timeo
 /* TODO: deal with timeout */
 /* TODO: remove stuff with env vars */
 int
-gaspi_sn_broadcast_topology(gaspi_context * const ctx, const gaspi_timeout_t timeout_ms)
+gaspi_sn_broadcast_topology(gaspi_context * const gctx, const gaspi_timeout_t timeout_ms)
 {
   int mask = 0x1;
   int dst, src;
 
-  while( mask <= ctx->tnc )
+  while( mask <= gctx->tnc )
     {
-      if( ctx->rank & mask )
+      if( gctx->rank & mask )
 	{
-	  src = ctx->rank - mask;
+	  src = gctx->rank - mask;
 	  if(src < 0)
-	    src += ctx->tnc;
+	    src += gctx->tnc;
 
-	  if(gaspi_sn_recv_topology(ctx) != 0)
+	  if(gaspi_sn_recv_topology(gctx) != 0)
 	    {
 	      gaspi_print_error("Failed to receive topology.");
 	      return -1;
@@ -506,14 +507,14 @@ gaspi_sn_broadcast_topology(gaspi_context * const ctx, const gaspi_timeout_t tim
 
   while (mask > 0)
     {
-      if( ctx->rank + mask < ctx->tnc)
+      if( gctx->rank + mask < gctx->tnc)
 	{
-	  dst = ctx->rank + mask;
+	  dst = gctx->rank + mask;
 
-	  if(dst >= ctx->tnc)
-	    dst -= ctx->tnc;
+	  if(dst >= gctx->tnc)
+	    dst -= gctx->tnc;
 
-	  if(gaspi_sn_send_topology(ctx, dst, timeout_ms) != 0)
+	  if(gaspi_sn_send_topology(gctx, dst, timeout_ms) != 0)
 	    {
 	      gaspi_print_error("Failed to send topology to %d", dst);
 	      return -1;
@@ -528,6 +529,8 @@ gaspi_sn_broadcast_topology(gaspi_context * const ctx, const gaspi_timeout_t tim
 int
 gaspi_sn_segment_register(const gaspi_cd_header snp)
 {
+  gaspi_context * const gctx = &glb_gaspi_ctx;
+
   if(!glb_gaspi_dev_init)
     return -1;
 
@@ -536,12 +539,12 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
 
   lock_gaspi_tout(&gaspi_mseg_lock, GASPI_BLOCK);
 
-  if(glb_gaspi_ctx.rrmd[snp.seg_id] == NULL)
+  if(gctx->rrmd[snp.seg_id] == NULL)
     {
-      glb_gaspi_ctx.rrmd[snp.seg_id] =
-	(gaspi_rc_mseg *) calloc (glb_gaspi_ctx.tnc, sizeof (gaspi_rc_mseg));
+      gctx->rrmd[snp.seg_id] =
+	(gaspi_rc_mseg *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg));
 
-      if( glb_gaspi_ctx.rrmd[snp.seg_id] == NULL )
+      if( gctx->rrmd[snp.seg_id] == NULL )
 	{
 	  unlock_gaspi(&gaspi_mseg_lock);
 	  return -1;
@@ -550,22 +553,22 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
 
   /* TODO: don't allow re-registration? */
   /* for now we allow re-registration */
-  /* if(glb_gaspi_ctx.rrmd[snp.seg_id][snp.rem_rank].size) -> re-registration error case */
+  /* if(gctx->rrmd[snp.seg_id][snp.rem_rank].size) -> re-registration error case */
 
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey[0] = snp.rkey[0];
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey[1] = snp.rkey[1];
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].data.addr = snp.addr;
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].notif_spc.addr = snp.notif_addr;
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].size = snp.size;
+  gctx->rrmd[snp.seg_id][snp.rank].rkey[0] = snp.rkey[0];
+  gctx->rrmd[snp.seg_id][snp.rank].rkey[1] = snp.rkey[1];
+  gctx->rrmd[snp.seg_id][snp.rank].data.addr = snp.addr;
+  gctx->rrmd[snp.seg_id][snp.rank].notif_spc.addr = snp.notif_addr;
+  gctx->rrmd[snp.seg_id][snp.rank].size = snp.size;
 
 #ifdef GPI2_CUDA
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].host_rkey = snp.host_rkey;
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].host_addr = snp.host_addr;
+  gctx->rrmd[snp.seg_id][snp.rank].host_rkey = snp.host_rkey;
+  gctx->rrmd[snp.seg_id][snp.rank].host_addr = snp.host_addr;
 
   if(snp.host_addr != 0 )
-    glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].cuda_dev_id = 1;
+    gctx->rrmd[snp.seg_id][snp.rank].cuda_dev_id = 1;
   else
-    glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].cuda_dev_id = -1;
+    gctx->rrmd[snp.seg_id][snp.rank].cuda_dev_id = -1;
 #endif
 
   unlock_gaspi(&gaspi_mseg_lock);
@@ -575,6 +578,7 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
 gaspi_return_t
 gaspi_sn_connect_to_rank(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   struct timeb t0, t1;
   ftime(&t0);
 
@@ -587,17 +591,17 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, const gaspi_timeout_t timeout_
 #endif
 
   /* TODO: introduce backoff delay? */
-  while(glb_gaspi_ctx.sockfd[rank] == -1)
+  while(gctx->sockfd[rank] == -1)
     {
-      glb_gaspi_ctx.sockfd[rank] =
+      gctx->sockfd[rank] =
 	gaspi_sn_connect2port(gaspi_get_hn(rank),
-			      glb_gaspi_cfg.sn_port + glb_gaspi_ctx.poff[rank],
+			      glb_gaspi_cfg.sn_port + gctx->poff[rank],
 			      timeout_ms);
 
-      if( -2 == glb_gaspi_ctx.sockfd[rank] )
+      if( -2 == gctx->sockfd[rank] )
 	return GASPI_ERR_EMFILE;
 
-      if( -1 == glb_gaspi_ctx.sockfd[rank] )
+      if( -1 == gctx->sockfd[rank] )
 	{
 	  ftime(&t1);
 	  const unsigned int delta_ms = (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
@@ -613,6 +617,7 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, const gaspi_timeout_t timeout_
 static inline int
 _gaspi_sn_connect_command(const gaspi_rank_t rank)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   const int i = (int) rank;
 
   gaspi_cd_header cdh;
@@ -621,19 +626,19 @@ _gaspi_sn_connect_command(const gaspi_rank_t rank)
   const size_t rc_size = pgaspi_dev_get_sizeof_rc();
   cdh.op_len = (int) rc_size;
   cdh.op = GASPI_SN_CONNECT;
-  cdh.rank = glb_gaspi_ctx.rank;
+  cdh.rank = gctx->rank;
 
   /* if we have something to exchange */
   if(rc_size > 0 )
     {
-      ssize_t ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
+      ssize_t ret = gaspi_sn_writen(gctx->sockfd[i], &cdh, sizeof(gaspi_cd_header));
       if(ret != sizeof(gaspi_cd_header))
 	{
 	  gaspi_print_error("Failed to write to %d", i);
 	  return -1;
 	}
 
-      ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
+      ret = gaspi_sn_writen(gctx->sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
       if(ret != (ssize_t) rc_size)
 	{
 	  gaspi_print_error("Failed to write to %d", i);
@@ -642,7 +647,7 @@ _gaspi_sn_connect_command(const gaspi_rank_t rank)
 
       char *remote_info = pgaspi_dev_get_rrcd(i);
 
-      ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], remote_info, rc_size);
+      ssize_t rret = gaspi_sn_readn(gctx->sockfd[i], remote_info, rc_size);
       if( rret != (ssize_t) rc_size )
 	{
 	  gaspi_print_error("Failed to read from %d", i);
@@ -655,6 +660,7 @@ _gaspi_sn_connect_command(const gaspi_rank_t rank)
 static inline int
 _gaspi_sn_queue_create_command(const gaspi_rank_t rank, const void * const arg)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   const int i = (int) rank;
 
   gaspi_cd_header cdh;
@@ -663,20 +669,20 @@ _gaspi_sn_queue_create_command(const gaspi_rank_t rank, const void * const arg)
   const size_t rc_size = pgaspi_dev_get_sizeof_rc();
   cdh.op_len = (int) rc_size;
   cdh.op = GASPI_SN_QUEUE_CREATE;
-  cdh.rank = glb_gaspi_ctx.rank;
+  cdh.rank = gctx->rank;
   cdh.tnc = *((int *) arg);
 
   /* if we have something to exchange */
   if(rc_size > 0 )
     {
-      ssize_t ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
+      ssize_t ret = gaspi_sn_writen(gctx->sockfd[i], &cdh, sizeof(gaspi_cd_header));
       if(ret != sizeof(gaspi_cd_header))
 	{
 	  gaspi_print_error("Failed to write to %d", i);
 	  return -1;
 	}
 
-      ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
+      ret = gaspi_sn_writen(gctx->sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
       if(ret != (ssize_t) rc_size)
 	{
 	  gaspi_print_error("Failed to write to %d", i);
@@ -684,12 +690,12 @@ _gaspi_sn_queue_create_command(const gaspi_rank_t rank, const void * const arg)
 	}
 
       int result = 1;
-      ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], &result, sizeof(int));
+      ssize_t rret = gaspi_sn_readn(gctx->sockfd[i], &result, sizeof(int));
       if( rret != sizeof(int) )
 	{
 	  gaspi_print_error("Failed to read from rank %u (args: %d %p %lu)",
 			    rank,
-			    glb_gaspi_ctx.sockfd[i],
+			    gctx->sockfd[i],
 			    &rret,
 			    sizeof(int));
 	  return -1;
@@ -707,20 +713,21 @@ _gaspi_sn_queue_create_command(const gaspi_rank_t rank, const void * const arg)
 static inline int
 _gaspi_sn_single_command(const gaspi_rank_t rank, const enum gaspi_sn_ops op)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   gaspi_cd_header cdh;
   memset(&cdh, 0, sizeof(gaspi_cd_header));
 
   cdh.op_len = 1;
   cdh.op = op;
   cdh.rank = rank;
-  cdh.tnc = glb_gaspi_ctx.tnc;
+  cdh.tnc = gctx->tnc;
 
-  ssize_t ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
+  ssize_t ret = gaspi_sn_writen(gctx->sockfd[rank], &cdh, sizeof(gaspi_cd_header));
   if( ret != sizeof(gaspi_cd_header) )
     {
       gaspi_print_error("Failed to write to %u  (%d %p %lu)",
 			rank,
-			glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
+			gctx->sockfd[rank], &cdh, sizeof(gaspi_cd_header));
       return -1;
     }
 
@@ -730,6 +737,7 @@ _gaspi_sn_single_command(const gaspi_rank_t rank, const enum gaspi_sn_ops op)
 static inline int
 _gaspi_sn_segment_register_command(const gaspi_rank_t rank, const void * const arg)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   const gaspi_segment_id_t segment_id = * (gaspi_segment_id_t *) arg;
 
   gaspi_cd_header cdh;
@@ -737,25 +745,25 @@ _gaspi_sn_segment_register_command(const gaspi_rank_t rank, const void * const a
 
   cdh.op_len = 0; /* in-place */
   cdh.op = GASPI_SN_SEG_REGISTER;
-  cdh.rank = glb_gaspi_ctx.rank;
+  cdh.rank = gctx->rank;
   cdh.seg_id = segment_id;
-  cdh.rkey[0] = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[0];
-  cdh.rkey[1] = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].rkey[1];
-  cdh.addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr;
-  cdh.notif_addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.addr;
-  cdh.size = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size;
+  cdh.rkey[0] = gctx->rrmd[segment_id][gctx->rank].rkey[0];
+  cdh.rkey[1] = gctx->rrmd[segment_id][gctx->rank].rkey[1];
+  cdh.addr = gctx->rrmd[segment_id][gctx->rank].data.addr;
+  cdh.notif_addr = gctx->rrmd[segment_id][gctx->rank].notif_spc.addr;
+  cdh.size = gctx->rrmd[segment_id][gctx->rank].size;
 
 #ifdef GPI2_CUDA
-  cdh.host_rkey = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_rkey;
-  cdh.host_addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_addr;
+  cdh.host_rkey = gctx->rrmd[segment_id][gctx->rank].host_rkey;
+  cdh.host_addr = gctx->rrmd[segment_id][gctx->rank].host_addr;
 #endif
 
-  ssize_t ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[rank], &cdh, sizeof(gaspi_cd_header));
+  ssize_t ret = gaspi_sn_writen(gctx->sockfd[rank], &cdh, sizeof(gaspi_cd_header));
   if(ret != sizeof(gaspi_cd_header))
     {
       gaspi_print_error("Failed to write to rank %u (args: %d %p %lu)",
 			rank,
-			glb_gaspi_ctx.sockfd[rank],
+			gctx->sockfd[rank],
 			&cdh,
 			sizeof(gaspi_cd_header));
 
@@ -763,12 +771,12 @@ _gaspi_sn_segment_register_command(const gaspi_rank_t rank, const void * const a
     }
 
   int result = 1;
-  ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[rank], &result, sizeof(int));
+  ssize_t rret = gaspi_sn_readn(gctx->sockfd[rank], &result, sizeof(int));
   if( rret != sizeof(int) )
     {
       gaspi_print_error("Failed to read from rank %u (args: %d %p %lu)",
 			rank,
-			glb_gaspi_ctx.sockfd[rank],
+			gctx->sockfd[rank],
 			&rret,
 			sizeof(int));
       return -1;
@@ -790,6 +798,7 @@ struct group_desc
 static inline int
 _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms, const void * const arg)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   struct group_desc *gb = (struct group_desc *) arg;
   struct group_desc rem_gb;
 
@@ -811,19 +820,19 @@ _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms,
     {
       memset(&rem_gb, 0, sizeof(rem_gb));
 
-      ssize_t ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
+      ssize_t ret = gaspi_sn_writen(gctx->sockfd[i], &cdh, sizeof(gaspi_cd_header));
       if(ret != sizeof(gaspi_cd_header) )
 	{
 	  gaspi_print_error("Failed to write (%d %p %lu)",
-			    glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
+			    gctx->sockfd[i], &cdh, sizeof(gaspi_cd_header));
 	  return -1;
 	}
 
-      ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], &rem_gb, sizeof(rem_gb));
+      ssize_t rret = gaspi_sn_readn(gctx->sockfd[i], &rem_gb, sizeof(rem_gb));
       if( rret != sizeof(rem_gb) )
 	{
 	  gaspi_print_error("Failed to read (%d %p %lu)",
-			    glb_gaspi_ctx.sockfd[i],&rem_gb,sizeof(rem_gb));
+			    gctx->sockfd[i],&rem_gb,sizeof(rem_gb));
 	  return -1;
 	}
 
@@ -864,6 +873,7 @@ _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms,
 static inline int
 _gaspi_sn_group_connect(const gaspi_rank_t rank, const void * const arg)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   int i = (int) rank;
   const gaspi_group_t group = *(gaspi_group_t *) arg;
   const gaspi_group_ctx * const group_to_commit = &(glb_gaspi_group_ctx[group]);
@@ -873,28 +883,28 @@ _gaspi_sn_group_connect(const gaspi_rank_t rank, const void * const arg)
 
   cdh.op_len = sizeof(gaspi_rc_mseg);
   cdh.op = GASPI_SN_GRP_CONNECT;
-  cdh.rank = glb_gaspi_ctx.rank;
+  cdh.rank = gctx->rank;
   cdh.ret = group;
 
-  ssize_t ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
+  ssize_t ret = gaspi_sn_writen(gctx->sockfd[i], &cdh, sizeof(gaspi_cd_header));
   if( ret != sizeof(gaspi_cd_header) )
     {
       gaspi_print_error("Failed to write to %u (%ld %d %p %lu)",
 			i,
 			ret,
-			glb_gaspi_ctx.sockfd[i],
+			gctx->sockfd[i],
 			&cdh,
 			sizeof(gaspi_cd_header));
       return -1;
     }
 
-  ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], &group_to_commit->rrcd[i], sizeof(gaspi_rc_mseg));
+  ssize_t rret = gaspi_sn_readn(gctx->sockfd[i], &group_to_commit->rrcd[i], sizeof(gaspi_rc_mseg));
   if( rret != sizeof(gaspi_rc_mseg) )
     {
       gaspi_print_error("Failed to read from %d (%ld %d %p %lu)",
 			i,
 			ret,
-			glb_gaspi_ctx.sockfd[i],
+			gctx->sockfd[i],
 			&group_to_commit->rrcd[i],
 			sizeof(gaspi_rc_mseg));
 
@@ -907,6 +917,7 @@ _gaspi_sn_group_connect(const gaspi_rank_t rank, const void * const arg)
 gaspi_return_t
 gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms, const void * const arg)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   int ret = -1;
   gaspi_return_t eret = GASPI_ERROR;
   const int i = (int) rank;
@@ -965,12 +976,12 @@ gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gasp
   if( 1 == ret )
     eret = GASPI_TIMEOUT;
 
-  if(gaspi_sn_close(glb_gaspi_ctx.sockfd[i]) != 0)
+  if(gaspi_sn_close(gctx->sockfd[i]) != 0)
     {
       gaspi_print_error("Failed to close socket to %d", i);
     }
 
-  glb_gaspi_ctx.sockfd[i] = -1;
+  gctx->sockfd[i] = -1;
 
   return eret;
 }
@@ -990,6 +1001,7 @@ gaspi_sn_backend(void *arg)
   struct epoll_event ev;
   struct epoll_event *ret_ev;
   gaspi_mgmt_header *ev_mgmt, *mgmt;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   signal(SIGSTKFLT, gaspi_sn_cleanup);
   signal(SIGPIPE, SIG_IGN);
@@ -1019,13 +1031,13 @@ gaspi_sn_backend(void *arg)
 
   struct sockaddr_in listeningAddress;
   listeningAddress.sin_family = AF_INET;
-  listeningAddress.sin_port = htons((glb_gaspi_cfg.sn_port + glb_gaspi_ctx.localSocket));
+  listeningAddress.sin_port = htons((glb_gaspi_cfg.sn_port + gctx->localSocket));
   listeningAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 
   if(bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress)) < 0)
     {
       gaspi_print_error("Failed to bind socket (port %d)",
-			glb_gaspi_cfg.sn_port + glb_gaspi_ctx.localSocket);
+			glb_gaspi_cfg.sn_port + gctx->localSocket);
 
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
       gaspi_sn_err = GASPI_ERR_SN_PORT;
@@ -1273,7 +1285,7 @@ gaspi_sn_backend(void *arg)
 				    }
 				  else if(mgmt->cdh.op == GASPI_SN_DISCONNECT)
 				    {
-				      if( GASPI_ENDPOINT_CONNECTED == glb_gaspi_ctx.ep_conn[mgmt->cdh.rank].cstat )
+				      if( GASPI_ENDPOINT_CONNECTED == gctx->ep_conn[mgmt->cdh.rank].cstat )
 					{
 					  if( pgaspi_local_disconnect(mgmt->cdh.rank, GASPI_BLOCK) != GASPI_SUCCESS )
 					    {
@@ -1330,7 +1342,7 @@ gaspi_sn_backend(void *arg)
 
 				      /* TODO: check the pointer */
 				      if(gaspi_sn_writen( mgmt->fd,
-							  &glb_gaspi_group_ctx[mgmt->cdh.ret].rrcd[glb_gaspi_ctx.rank],
+							  &glb_gaspi_group_ctx[mgmt->cdh.ret].rrcd[gctx->rank],
 							  sizeof(gaspi_rc_mseg) ) < 0 )
 					{
 					  gaspi_print_error("Failed to connect group.");

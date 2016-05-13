@@ -68,7 +68,7 @@ gaspi_threads_get_total(gaspi_int *const num)
 
   *num = __gaspi_thread_tnc;
 
-  return GASPI_SUCCESS; 
+  return GASPI_SUCCESS;
 }
 
 
@@ -79,13 +79,13 @@ gaspi_threads_get_num_cores(gaspi_int * const cores)
   cpu_set_t tmask;
 
   gaspi_verify_null_ptr(cores);
-  
+
   if(sched_getaffinity(0, sizeof(cpu_set_t), &tmask) < 0)
-    { 
+    {
       gaspi_printf("sched_getaffinity failed !\n");
       return GASPI_ERROR;
     }
-  
+
   for(i = n = 0;i < CPU_SETSIZE; i++)
     {
       if(CPU_ISSET(i,&tmask))
@@ -169,7 +169,7 @@ gaspi_threads_register(gaspi_int * tid)
   __gaspi_thread_tid = tID;
   __gaspi_thread_tnc = __gaspiThreadsActivated;
 
-  *tid = tID;  
+  *tid = tID;
   return GASPI_SUCCESS;
 }
 
@@ -197,40 +197,40 @@ void
 gaspi_threads_sync(void)
 {
   int i;
-  
+
   const int ID = __gaspi_thread_tid;
   const int MAX = __gaspi_thread_tnc;
-  
+
   if(__gaspiThreadsMode == 0)
-    {     
-      
+    {
+
       if(ID == 0)
 	{
 	  //memset((void*)__gaspiThreadsCount1,0,MAX);
 	  for(i = 0; i < MAX; i++)
 	    __gaspiThreadsCount1[i] = 0;
-    
+
 	  for(i = 1; i < MAX; i++)
 	    {
 	      while(__gaspiThreadsCount0[i] == 0)
 		gaspi_delay();
 	    }
-	  
+
 	  __gaspiThreadsMode  = 1;
 	  __gaspiThreadsFlag1 = 0;
 	  __gaspiThreadsFlag0 = 1;
-	}     
+	}
       else
-	{         
+	{
 	  __gaspiThreadsCount0[ID] = 1;
 	  while(__gaspiThreadsFlag0 == 0)
 	    gaspi_delay();
-	}   
-    }         
+	}
+    }
   else
     {
       if(ID == 0)
-	{ 
+	{
 	  //memset((void*)__gaspiThreadsCount0,0,MAX);
 	  for(i = 0; i < MAX; i++)
 	    {
@@ -242,18 +242,18 @@ gaspi_threads_sync(void)
 	      while(__gaspiThreadsCount1[i] == 0)
 		gaspi_delay();
 	    }
-	
+
 	  __gaspiThreadsMode  = 0;
 	  __gaspiThreadsFlag0 = 0;
 	  __gaspiThreadsFlag1 = 1;
-	}     
+	}
       else
-	{         
+	{
 	  __gaspiThreadsCount1[ID] = 1;
 	  while(__gaspiThreadsFlag1 == 0)
 	    gaspi_delay();
-	}   
-    }         
+	}
+    }
 }
 
 
@@ -264,22 +264,22 @@ gaspi_threads_sync_all(const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   gaspi_return_t ret;
   const int ID = __gaspi_thread_tid;
   const int MAX = __gaspi_thread_tnc;
- 
+
   if(__gaspiThreadsMode == 0)
-    {     
-     
+    {
+
       if(ID == 0)
 	{
 	  //memset((void*)__gaspiThreadsCount1,0,MAX);
 	  for(i = 0; i < MAX; i++)
 	    __gaspiThreadsCount1[i]=0;
-	 
+
 	  for(i = 1; i < MAX; i++)
 	    {
 	      while(__gaspiThreadsCount0[i] == 0)
 		gaspi_delay();
 	    }
-	 
+
 	  ret = gaspi_barrier(g, timeout_ms);
 	  if( ret != GASPI_SUCCESS)
 	    {
@@ -289,17 +289,17 @@ gaspi_threads_sync_all(const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	  __gaspiThreadsMode  = 1;
 	  __gaspiThreadsFlag1 = 0;
 	  __gaspiThreadsFlag0 = 1;
-	}     
+	}
       else
-	{         
+	{
 	  __gaspiThreadsCount0[ID] = 1;
 	  while(__gaspiThreadsFlag0 == 0)
 	    gaspi_delay();
-	}   
-    }         
+	}
+    }
   else
     {
-     
+
       if(ID == 0)
 	{
 	  //memset((void*)__gaspiThreadsCount0,0,MAX);
@@ -315,15 +315,14 @@ gaspi_threads_sync_all(const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	  __gaspiThreadsMode  = 0;
 	  __gaspiThreadsFlag0 = 0;
 	  __gaspiThreadsFlag1 = 1;
-	}     
+	}
       else
-	{         
+	{
 	  __gaspiThreadsCount1[ID] = 1;
 	  while(__gaspiThreadsFlag1 == 0)
 	    gaspi_delay();
-	}   
-    }         
+	}
+    }
 
   return GASPI_SUCCESS;
 }
-

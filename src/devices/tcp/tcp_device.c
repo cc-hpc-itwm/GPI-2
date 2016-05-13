@@ -194,6 +194,7 @@ struct tcp_queue *
 tcp_dev_create_queue(struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
 {
   int handle = -1;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   if(qs_ref_counter >= QP_MAX_NUM)
     {
@@ -204,7 +205,7 @@ tcp_dev_create_queue(struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
   struct tcp_queue *q = (struct tcp_queue *) malloc(sizeof(struct tcp_queue));
   if(q != NULL)
     {
-      handle = gaspi_sn_connect2port("localhost", TCP_DEV_PORT + glb_gaspi_ctx.localSocket, CONN_TIMEOUT);
+      handle = gaspi_sn_connect2port("localhost", TCP_DEV_PORT + gctx->localSocket, CONN_TIMEOUT);
 
       if(handle == -1)
 	{
@@ -348,14 +349,15 @@ tcp_dev_get_local_ip(void)
   struct addrinfo hints, *res;
   struct in_addr addr;
   int err;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   memset(&hints, 0, sizeof(hints));
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_family = AF_INET;
 
-  if ((err = getaddrinfo(gaspi_get_hn(glb_gaspi_ctx.rank), NULL, &hints, &res)) != 0)
+  if ((err = getaddrinfo(gaspi_get_hn(gctx->rank), NULL, &hints, &res)) != 0)
     {
-      gaspi_print_error("Failed to get addr info for %u.", glb_gaspi_ctx.rank);
+      gaspi_print_error("Failed to get addr info for %u.", gctx->rank);
       return NULL;
     }
 
@@ -369,6 +371,8 @@ tcp_dev_get_local_ip(void)
 int
 tcp_dev_connect_to(int i)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   /* no connections state map? */
   if(rank_state == NULL)
     {
@@ -383,7 +387,7 @@ tcp_dev_connect_to(int i)
 
   /* connect to node/rank */
   int conn_sock = gaspi_sn_connect2port(gaspi_get_hn(i),
-				     TCP_DEV_PORT + glb_gaspi_ctx.poff[i],
+				     TCP_DEV_PORT + gctx->poff[i],
 				     CONN_TIMEOUT);
 
   if(conn_sock == -1)
@@ -391,7 +395,7 @@ tcp_dev_connect_to(int i)
       gaspi_print_error("Error connecting to rank %i (%s) on port %i.",
 			i,
 			gaspi_get_hn(i),
-			TCP_DEV_PORT + glb_gaspi_ctx.poff[i]);
+			TCP_DEV_PORT + gctx->poff[i]);
       return 1;
     }
 
@@ -399,9 +403,9 @@ tcp_dev_connect_to(int i)
   tcp_dev_wr_t wr;
   memset(&wr, 0, sizeof(tcp_dev_wr_t));
 
-  wr.wr_id       = glb_gaspi_ctx.tnc;
+  wr.wr_id       = gctx->tnc;
   wr.cq_handle   = CQ_HANDLE_NONE;
-  wr.source      = glb_gaspi_ctx.rank;
+  wr.source      = gctx->rank;
   wr.local_addr  = (uintptr_t) NULL;
   wr.target      = i;
   wr.remote_addr = (uintptr_t) NULL;
@@ -510,6 +514,7 @@ static int
 _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate)
 {
   enum tcp_dev_wc_opcode op;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   if(estate->read.opcode == RECV_HEADER)
     {
@@ -522,8 +527,8 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate)
 
 	  /* set connected */
 	  /* TODO: (ugly) */
-	  glb_gaspi_ctx.ep_conn[estate->rank].cstat = 1;
-  
+	  gctx->ep_conn[estate->rank].cstat = 1;
+
 
 	  _tcp_dev_set_default_read_conn_state(estate);
 
@@ -540,7 +545,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate)
 	    op = TCP_DEV_WC_RDMA_WRITE;
 
 	  /* local operation: do it right away */
-	  if(estate->wr_buff.target == glb_gaspi_ctx.rank)
+	  if(estate->wr_buff.target == gctx->rank)
 	    {
 	      void *src;
 	      void *dest;
@@ -612,7 +617,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate)
 	  else
 	    op = TCP_DEV_WC_CMP_SWAP;
 
-	  if(estate->wr_buff.target == glb_gaspi_ctx.rank)
+	  if(estate->wr_buff.target == gctx->rank)
 	    {
 	      uint64_t *ptr = (uint64_t *) estate->wr_buff.remote_addr;
 	      uint64_t *dest = (uint64_t *) estate->wr_buff.local_addr;
@@ -941,6 +946,7 @@ _tcp_dev_process_sent_data(int pollfd, tcp_dev_conn_state_t *estate)
 static int
 _tcp_dev_process_delayed(int pollfd)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   if(delayedList.count == 0 || rank_state == NULL)
     return 0;
@@ -953,7 +959,7 @@ _tcp_dev_process_delayed(int pollfd)
       tcp_dev_conn_state_t *state = rank_state[element->wr.target];
       tcp_dev_wr_t wr = element->wr;
 
-      if(state == NULL && !(wr.opcode == NOTIFICATION_SEND && wr.target == glb_gaspi_ctx.rank))
+      if(state == NULL && !(wr.opcode == NOTIFICATION_SEND && wr.target == gctx->rank))
 	{
 	  if( _tcp_dev_post_wc(wr.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE, wr.cq_handle) != 0)
 	    {
@@ -963,7 +969,7 @@ _tcp_dev_process_delayed(int pollfd)
 
 	  delete = element;
 	}
-      else if(wr.opcode == NOTIFICATION_SEND && (wr.target == glb_gaspi_ctx.rank))
+      else if(wr.opcode == NOTIFICATION_SEND && (wr.target == gctx->rank))
 	{
 	  if(recvList.count)
 	    {
@@ -1189,8 +1195,9 @@ static void
 _tcp_dev_cleanup_connections(int pollfd)
 {
   int k;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
-  for(k = 0; k < glb_gaspi_ctx.tnc; k++)
+  for(k = 0; k < gctx->tnc; k++)
     {
       if(rank_state == NULL || rank_state[k] == NULL || rank_state[k]->fd < 0)
 	continue;
@@ -1200,14 +1207,14 @@ _tcp_dev_cleanup_connections(int pollfd)
 
       if(shutdown(rank_state[k]->fd, SHUT_RDWR) != 0)
 	{
-	  gaspi_print_error("Rank %u: in shutdown with %d (%d)", glb_gaspi_ctx.rank, k, rank_state[k]->fd);
+	  gaspi_print_error("Rank %u: in shutdown with %d (%d)", gctx->rank, k, rank_state[k]->fd);
 	}
 
       _tcp_dev_wait_outstanding(rank_state[k]->fd);
 
       if(close(rank_state[k]->fd) != 0)
 	{
-	  gaspi_print_error("Rank %u: in close with %d", glb_gaspi_ctx.rank, k);
+	  gaspi_print_error("Rank %u: in close with %d", gctx->rank, k);
 	}
 
       free(rank_state[k]);
@@ -1233,6 +1240,7 @@ _tcp_dev_cleanup_connections(int pollfd)
 void
 tcp_dev_stop_device(void)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   /* finish all operations that are in progress */
   char ready = 0;
@@ -1253,7 +1261,7 @@ tcp_dev_stop_device(void)
 
       /* read / write to remote ranks */
       int i;
-      for(i = 0; i < glb_gaspi_ctx.tnc; i++)
+      for(i = 0; i < gctx->tnc; i++)
 	{
 	  if(!rank_state || !rank_state[i]) continue;
 
@@ -1295,6 +1303,8 @@ gaspi_tcp_dev_status_get(void)
 void *
 tcp_virt_dev(void *args)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
   int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if(listen_sock < 0)
     {
@@ -1325,13 +1335,13 @@ tcp_virt_dev(void *args)
   struct sockaddr_in listenAddr =
     {
       .sin_family = AF_INET,
-      .sin_port = htons (TCP_DEV_PORT + glb_gaspi_ctx.localSocket), /* TODO: glb_gaspi_ctx does not belong here*/
+      .sin_port = htons (TCP_DEV_PORT + gctx->localSocket), /* TODO: glb_gaspi_ctx does not belong here*/
       .sin_addr.s_addr = htonl(INADDR_ANY)
     };
 
   if(bind(listen_sock, (struct sockaddr *) (&listenAddr), sizeof(listenAddr)) < 0)
     {
-      gaspi_print_error("Failed to bind to port %d\n", TCP_DEV_PORT + glb_gaspi_ctx.localSocket); /* TODO: glb_gaspi_ctx does not belong here*/
+      gaspi_print_error("Failed to bind to port %d\n", TCP_DEV_PORT + gctx->localSocket); /* TODO: glb_gaspi_ctx does not belong here*/
       close(listen_sock);
       gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_FAILED);
       return NULL;
@@ -1382,7 +1392,7 @@ tcp_virt_dev(void *args)
       return NULL;
     }
 
-  if( _tcp_dev_alloc_remote_states (glb_gaspi_ctx.tnc) != 0)
+  if( _tcp_dev_alloc_remote_states (gctx->tnc) != 0)
     {
       gaspi_print_error("Failed to allocate states buffer");
       gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_FAILED);

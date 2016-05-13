@@ -24,6 +24,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 gaspi_return_t
 pgaspi_create_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
   const int i = (int) rank;
 
   if( lock_gaspi_tout(&gaspi_create_lock, timeout_ms) )
@@ -31,14 +32,14 @@ pgaspi_create_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout
       return GASPI_TIMEOUT;
     }
 
-  if( GASPI_ENDPOINT_NOT_CREATED == glb_gaspi_ctx.ep_conn[i].istat )
+  if( GASPI_ENDPOINT_NOT_CREATED == gctx->ep_conn[i].istat )
     {
       if( pgaspi_dev_create_endpoint(i) < 0 )
 	{
 	  unlock_gaspi(&gaspi_create_lock);
 	  return GASPI_ERR_DEVICE;
 	}
-      glb_gaspi_ctx.ep_conn[i].istat = GASPI_ENDPOINT_CREATED;
+      gctx->ep_conn[i].istat = GASPI_ENDPOINT_CREATED;
     }
 
   unlock_gaspi(&gaspi_create_lock);
@@ -51,13 +52,14 @@ pgaspi_connect_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeou
 {
   const int i = (int) rank;
   gaspi_return_t eret = GASPI_ERROR;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   if( lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
 
-  if( GASPI_ENDPOINT_CONNECTED == glb_gaspi_ctx.ep_conn[i].cstat )
+  if( GASPI_ENDPOINT_CONNECTED == gctx->ep_conn[i].cstat )
     {
       eret = GASPI_SUCCESS;
     }
@@ -69,7 +71,7 @@ pgaspi_connect_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeou
 	}
       else
 	{
-	  glb_gaspi_ctx.ep_conn[i].cstat = GASPI_ENDPOINT_CONNECTED;
+	  gctx->ep_conn[i].cstat = GASPI_ENDPOINT_CONNECTED;
 	  eret = GASPI_SUCCESS;
 	}
     }
@@ -84,6 +86,7 @@ gaspi_return_t
 pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
   gaspi_return_t eret = GASPI_ERROR;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_connect");
 
@@ -100,7 +103,7 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
       return GASPI_TIMEOUT;
     }
 
-  if( GASPI_ENDPOINT_CONNECTED == glb_gaspi_ctx.ep_conn[i].cstat )
+  if( GASPI_ENDPOINT_CONNECTED == gctx->ep_conn[i].cstat )
     {
       unlock_gaspi(&glb_gaspi_ctx_lock);
       return GASPI_SUCCESS;
@@ -111,7 +114,7 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
     {
       if( GASPI_ERROR == eret)
 	{
-	  glb_gaspi_ctx.qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
+	  gctx->qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
 	}
 
       unlock_gaspi(&glb_gaspi_ctx_lock);
@@ -129,13 +132,14 @@ pgaspi_local_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_m
 {
   const int i = rank;
   gaspi_return_t eret = GASPI_ERROR;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
 
-  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[i].cstat )
+  if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[i].cstat )
     {
       unlock_gaspi(&glb_gaspi_ctx_lock);
       return GASPI_SUCCESS;
@@ -144,8 +148,8 @@ pgaspi_local_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_m
   eret = pgaspi_dev_disconnect_context(i);
   if( eret == GASPI_SUCCESS)
     {
-      glb_gaspi_ctx.ep_conn[i].istat = GASPI_ENDPOINT_NOT_CREATED;
-      glb_gaspi_ctx.ep_conn[i].cstat = GASPI_ENDPOINT_DISCONNECTED;
+      gctx->ep_conn[i].istat = GASPI_ENDPOINT_NOT_CREATED;
+      gctx->ep_conn[i].cstat = GASPI_ENDPOINT_DISCONNECTED;
     }
 
   unlock_gaspi(&glb_gaspi_ctx_lock);
@@ -157,12 +161,13 @@ gaspi_return_t
 pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
   gaspi_return_t eret = GASPI_ERROR;
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_disconnect");
 
   const int i = rank;
 
-  if( GASPI_ENDPOINT_DISCONNECTED == glb_gaspi_ctx.ep_conn[i].cstat )
+  if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[i].cstat )
     {
       return GASPI_SUCCESS;
     }

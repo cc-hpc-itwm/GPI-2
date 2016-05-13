@@ -70,12 +70,12 @@ unsigned char gaspi_atomic_xchg (volatile unsigned char *addr,
 }
 
 #define GASPI_ATOMIC_TRY_LOCK(l) gaspi_atomic_xchg(l, 1)
-#define GASPI_ATOMIC_UNLOCK(l)   gaspi_atomic_xchg(l, 0) 
+#define GASPI_ATOMIC_UNLOCK(l)   gaspi_atomic_xchg(l, 0)
 
 #else //!MIC
 
 #define GASPI_ATOMIC_TRY_LOCK(l) __sync_lock_test_and_set (l, 1)
-#define GASPI_ATOMIC_UNLOCK(l)  __sync_lock_release (l) 
+#define GASPI_ATOMIC_UNLOCK(l)  __sync_lock_release (l)
 
 #endif
 

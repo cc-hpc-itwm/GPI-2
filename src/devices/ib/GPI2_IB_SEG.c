@@ -101,15 +101,17 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 			  const gaspi_size_t size,
 			  const gaspi_alloc_t alloc_policy)
 {
-  if (glb_gaspi_ctx.rrmd[segment_id] == NULL)
-    {
-      glb_gaspi_ctx.rrmd[segment_id] = (gaspi_rc_mseg *) calloc (glb_gaspi_ctx.tnc, sizeof (gaspi_rc_mseg));
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
 
-      if(!glb_gaspi_ctx.rrmd[segment_id])
+  if (gctx->rrmd[segment_id] == NULL)
+    {
+      gctx->rrmd[segment_id] = (gaspi_rc_mseg *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg));
+
+      if(!gctx->rrmd[segment_id])
 	goto errL;
     }
 
-  if (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size)
+  if (gctx->rrmd[segment_id][gctx->rank].size)
     {
       goto okL;
     }
@@ -122,14 +124,14 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 	  goto errL;
 	}
 
-      cudaError_t cuda_error_id = cudaGetDevice(&glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cuda_dev_id);
+      cudaError_t cuda_error_id = cudaGetDevice(&gctx->rrmd[segment_id][gctx->rank].cuda_dev_id);
       if( cuda_error_id != cudaSuccess )
 	{
 	  gaspi_print_error("Failed cudaGetDevice." );
 	  return GASPI_ERROR;
 	}
 
-      gaspi_gpu_t* agpu =  _gaspi_find_gpu(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cuda_dev_id);
+      gaspi_gpu_t* agpu =  _gaspi_find_gpu(gctx->rrmd[segment_id][gctx->rank].cuda_dev_id);
       if( !agpu )
 	{
 	  gaspi_print_error("No GPU found. Maybe forgot to call gaspi_init_GPUs?");
@@ -137,30 +139,30 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 	}
 
       /* Allocate device memory for data */
-      if( cudaMalloc((void**)&glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, size ) != 0)
+      if( cudaMalloc((void**)&gctx->rrmd[segment_id][gctx->rank].data.ptr, size ) != 0)
 	{
 	  gaspi_print_error("GPU memory allocation (cudaMalloc) failed.");
 	  goto errL;
 	}
 
       /* Allocate host memory for data and notifications */
-      if( cudaMallocHost((void**)&glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr, size + NOTIFY_OFFSET ) != 0)
+      if( cudaMallocHost((void**)&gctx->rrmd[segment_id][gctx->rank].host_ptr, size + NOTIFY_OFFSET ) != 0)
 	{
 	  gaspi_print_error("Memory allocattion (cudaMallocHost)  failed.");
 	  goto errL;
 	}
 
-      memset(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr, 0, size + NOTIFY_OFFSET);
+      memset(gctx->rrmd[segment_id][gctx->rank].host_ptr, 0, size + NOTIFY_OFFSET);
 
       /* Register host memory */
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr =
+      gctx->rrmd[segment_id][gctx->rank].host_mr =
 	ibv_reg_mr( glb_gaspi_ctx_ib.pd,
-		    glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr,
+		    gctx->rrmd[segment_id][gctx->rank].host_ptr,
 		    NOTIFY_OFFSET + size,
 		    IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
 		    IBV_ACCESS_REMOTE_READ|IBV_ACCESS_REMOTE_ATOMIC);
 
-      if( glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr == NULL )
+      if( gctx->rrmd[segment_id][gctx->rank].host_mr == NULL )
 	{
 	  gaspi_print_error("Memory registration failed (libibverbs).");
 	  goto errL;
@@ -168,59 +170,59 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 
       if( alloc_policy == GASPI_MEM_INITIALIZED )
 	{
-	  cudaMemset(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, 0, size);
+	  cudaMemset(gctx->rrmd[segment_id][gctx->rank].data.ptr, 0, size);
 	}
 
       /* Register device memory */
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr[0] =
+      gctx->rrmd[segment_id][gctx->rank].mr[0] =
 	ibv_reg_mr( glb_gaspi_ctx_ib.pd,
-		    glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf,
+		    gctx->rrmd[segment_id][gctx->rank].data.buf,
 		    size,
 		    IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
 		    IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
 
-      if( glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr[0] == NULL )
+      if( gctx->rrmd[segment_id][gctx->rank].mr[0] == NULL )
 	{
 	  gaspi_print_error ("Memory registration failed (libibverbs)");
 	  goto errL;
 	}
 
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_rkey =
-	((struct ibv_mr *) glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr)->rkey;
+      gctx->rrmd[segment_id][gctx->rank].host_rkey =
+	((struct ibv_mr *) gctx->rrmd[segment_id][gctx->rank].host_mr)->rkey;
 
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_addr = (uintptr_t)glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr;
+      gctx->rrmd[segment_id][gctx->rank].host_addr = (uintptr_t)gctx->rrmd[segment_id][gctx->rank].host_ptr;
     }
   else
     {
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cuda_dev_id = -1;
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_rkey = 0;
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_addr = 0;
-      if( glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count == 0 )
+      gctx->rrmd[segment_id][gctx->rank].cuda_dev_id = -1;
+      gctx->rrmd[segment_id][gctx->rank].host_rkey = 0;
+      gctx->rrmd[segment_id][gctx->rank].host_addr = 0;
+      if( gctx->use_gpus != 0 && gctx->gpu_count == 0 )
 	{
-	  if( cudaMallocHost((void**)&glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, size + NOTIFY_OFFSET))
+	  if( cudaMallocHost((void**)&gctx->rrmd[segment_id][gctx->rank].data.ptr, size + NOTIFY_OFFSET))
 	    {
 	      gaspi_print_error("Memory allocation (cudaMallocHost) failed.");
 	      goto errL;
 	    }
 	}
 
-      memset( glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr, 0,
+      memset( gctx->rrmd[segment_id][gctx->rank].data.ptr, 0,
 	      NOTIFY_OFFSET);
 
       if( alloc_policy == GASPI_MEM_INITIALIZED )
 	{
-	  memset (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.ptr,
+	  memset (gctx->rrmd[segment_id][gctx->rank].data.ptr,
 		  0,
 		  size + NOTIFY_OFFSET);
 	}
 
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].size = size;
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc_size = NOTIFY_OFFSET;
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].notif_spc.addr = glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr;
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.addr += NOTIFY_OFFSET;
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].user_provided = 0;
+      gctx->rrmd[segment_id][gctx->rank].size = size;
+      gctx->rrmd[segment_id][gctx->rank].notif_spc_size = NOTIFY_OFFSET;
+      gctx->rrmd[segment_id][gctx->rank].notif_spc.addr = gctx->rrmd[segment_id][gctx->rank].data.addr;
+      gctx->rrmd[segment_id][gctx->rank].data.addr += NOTIFY_OFFSET;
+      gctx->rrmd[segment_id][gctx->rank].user_provided = 0;
 
-      if( pgaspi_dev_register_mem(&(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank]), size + NOTIFY_OFFSET) < 0)
+      if( pgaspi_dev_register_mem(&(gctx->rrmd[segment_id][gctx->rank]), size + NOTIFY_OFFSET) < 0)
 	{
 	  goto errL;
 	}
@@ -236,38 +238,40 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_dev_segment_delete (const gaspi_segment_id_t segment_id)
 {
-  if( glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0 )
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
+  if( gctx->use_gpus != 0 && gctx->gpu_count > 0 )
     {
-      if( ibv_dereg_mr (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].mr[0]) )
+      if( ibv_dereg_mr (gctx->rrmd[segment_id][gctx->rank].mr[0]) )
 	{
 	  gaspi_print_error ("Memory de-registration failed (libibverbs)");
 	  goto errL;
 	}
     }
 
-  if( glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].cuda_dev_id >= 0 )
+  if( gctx->rrmd[segment_id][gctx->rank].cuda_dev_id >= 0 )
     {
-      if( ibv_dereg_mr (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_mr) )
+      if( ibv_dereg_mr (gctx->rrmd[segment_id][gctx->rank].host_mr) )
 	{
 	  gaspi_print_error ("Memory de-registration failed (libibverbs)");
 	  goto errL;
 	}
 
-      cudaFreeHost(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr);
-      glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].host_ptr = NULL;
-      cudaFree(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf);
+      cudaFreeHost(gctx->rrmd[segment_id][gctx->rank].host_ptr);
+      gctx->rrmd[segment_id][gctx->rank].host_ptr = NULL;
+      cudaFree(gctx->rrmd[segment_id][gctx->rank].data.buf);
     }
-  else if( glb_gaspi_ctx.use_gpus != 0 && glb_gaspi_ctx.gpu_count > 0 )
+  else if( gctx->use_gpus != 0 && gctx->gpu_count > 0 )
     {
-      cudaFreeHost(glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf);
+      cudaFreeHost(gctx->rrmd[segment_id][gctx->rank].data.buf);
     }
 
-  free (glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf);
-  glb_gaspi_ctx.rrmd[segment_id][glb_gaspi_ctx.rank].data.buf = NULL;
+  free (gctx->rrmd[segment_id][gctx->rank].data.buf);
+  gctx->rrmd[segment_id][gctx->rank].data.buf = NULL;
 
-  memset(glb_gaspi_ctx.rrmd[segment_id], 0, glb_gaspi_ctx.tnc * sizeof (gaspi_rc_mseg));
-  free(glb_gaspi_ctx.rrmd[segment_id]);
-  glb_gaspi_ctx.rrmd[segment_id] = NULL;
+  memset(gctx->rrmd[segment_id], 0, gctx->tnc * sizeof (gaspi_rc_mseg));
+  free(gctx->rrmd[segment_id]);
+  gctx->rrmd[segment_id] = NULL;
 
   return GASPI_SUCCESS;
 
