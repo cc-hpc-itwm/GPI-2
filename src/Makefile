@@ -106,9 +106,9 @@ mic: $(OBJS_MIC) $(OBJS_DBG_MIC)
 	icc -mmic -g -O0 $(INCLUDES) -D_GNU_SOURCE -DGPI2_STATS -DDEBUG -DMIC -c $<  -o $@
 
 clean:
-	$(RM) -r $(OBJ_FORTRAN) $(OBJS) $(OBJS_DBG) *~
+	$(RM) -r $(OBJ_FORTRAN) $(OBJS) $(OBJS_DBG) $(OBJS_STAT) *~
 	$(RM) -r $(OBJS_MIC) $(OBJS_DBG_MIC)
-	$(RM) ../lib64/$(GPI2) ../lib64/$(GPI2_DBG) ../lib64/mic/$(GPI2)
+	$(RM) ../lib64/$(GPI2) ../lib64/$(GPI2_DBG) ../lib64/$(GPI2_STAT) ../lib64/mic/$(GPI2)
 	$(RM) *.mod ../include/gaspi_types.mod ../include/gaspi.mod
 
 depend: $(SRCS)
