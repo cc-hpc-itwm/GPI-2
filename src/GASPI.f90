@@ -111,6 +111,7 @@ module GASPI
 
     type, bind(C) :: gaspi_config_t
       integer (gaspi_int)      :: logger
+      integer (gaspi_int)      :: sn_port
       integer (gaspi_int)      :: net_info
       integer (gaspi_int)      :: netdev_id
       integer (gaspi_int)      :: mtu
