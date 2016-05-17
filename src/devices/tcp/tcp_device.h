@@ -168,6 +168,13 @@ struct tcp_queue
 /* the device */
 pthread_t tcp_dev_thread;
 
+struct tcp_dev_args
+{
+  int peers_num;
+  int id;
+  int port;
+};
+
 struct tcp_cq *
 tcp_dev_create_cq(int, struct tcp_passive_channel *);
 
@@ -199,10 +206,10 @@ int
 tcp_dev_is_valid_state(unsigned short);
 
 int
-tcp_dev_connect_to(int i);
+tcp_dev_connect_to(const int i, char const * const host, const int port);
 
 char*
-tcp_dev_get_local_ip(void);
+tcp_dev_get_local_ip(char const * const host);
 
 char*
 tcp_dev_get_local_if(char* ip);

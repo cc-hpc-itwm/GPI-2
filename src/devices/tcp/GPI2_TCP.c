@@ -65,7 +65,9 @@ pgaspi_dev_disconnect_context(const int i)
 int
 pgaspi_dev_connect_context(const int i)
 {
-  return tcp_dev_connect_to(i);
+  gaspi_context const * const gctx = &glb_gaspi_ctx;
+
+  return tcp_dev_connect_to(i, gaspi_get_hn(i), TCP_DEV_PORT + gctx->poff[i]);
 }
 
 int
@@ -120,7 +122,7 @@ pgaspi_dev_print_info()
   gaspi_printf("<<<<<<<<<<<<<<<< TCP-info >>>>>>>>>>>>>>>>>>>\n");
   gaspi_printf("  Hostname: %s\n", gaspi_get_hn(gctx->rank));
 
-  char* ip = tcp_dev_get_local_ip();
+  char* ip = tcp_dev_get_local_ip(gaspi_get_hn(gctx->rank));
   if( ip != NULL )
     {
       char* iface = tcp_dev_get_local_if(ip);
@@ -137,13 +139,19 @@ pgaspi_dev_print_info()
 int
 pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
 {
-  unsigned int c;
   gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   memset (&glb_gaspi_ctx_tcp, 0, sizeof (gaspi_tcp_ctx));
 
+  struct tcp_dev_args dev_args =
+    {
+      .peers_num = gctx->tnc,
+      .id = gctx->rank,
+      .port = TCP_DEV_PORT + gctx->localSocket
+    };
+
   /* start virtual device (thread) */
-  if(pthread_create(&tcp_dev_thread, NULL, tcp_virt_dev, NULL) != 0)
+  if( pthread_create(&tcp_dev_thread, NULL, tcp_virt_dev, &dev_args) != 0 )
     {
       gaspi_print_error("Failed to open (virtual) device.");
       return -1;
@@ -204,6 +212,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
+  unsigned int c;
   for(c = 0; c < gaspi_cfg->queue_num; c++)
     {
       glb_gaspi_ctx_tcp.scqC[c] = tcp_dev_create_cq(gaspi_cfg->queue_depth, NULL);
