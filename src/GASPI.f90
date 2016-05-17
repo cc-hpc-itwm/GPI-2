@@ -119,7 +119,7 @@ module GASPI
       integer (gaspi_int)      :: user_net
       integer (gaspi_int)      :: network
       integer (gaspi_int)      :: queue_depth
-      integer (gaspi_int)      :: qp_count
+      integer (gaspi_int)      :: queue_num
       integer (gaspi_number_t) :: group_max
       integer (gaspi_number_t) :: segment_max
       integer (gaspi_size_t)   :: transfer_size_max
