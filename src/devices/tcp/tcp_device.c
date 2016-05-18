@@ -291,7 +291,6 @@ _tcp_dev_add_new_conn(int rank, int conn_sock, int pollfd)
 
   if (epoll_ctl(pollfd, EPOLL_CTL_ADD, conn_sock, &nev) == -1)
     {
-      close(conn_sock);
       free(nstate);
       return NULL;
     }
@@ -422,6 +421,7 @@ tcp_dev_connect_to(const int i, char const * const host, const int port)
   nstate = _tcp_dev_add_new_conn(i, conn_sock, epollfd);
   if( nstate == NULL)
     {
+      close(conn_sock);
       gaspi_print_error("Failed to add new connection (%s) to events instance", host);
       return 1;
     }
@@ -1449,6 +1449,7 @@ tcp_virt_dev(void *args)
 
 		  if(_tcp_dev_add_new_conn(-1, conn_sock, epollfd) == NULL)
 		    {
+		      close(conn_sock);
 		      gaspi_print_error("Failed to add to events instance");
 		    }
 		}
