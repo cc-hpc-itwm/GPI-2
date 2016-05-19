@@ -380,7 +380,7 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 		      const gaspi_timeout_t timeout_ms,
 		      const gaspi_alloc_t alloc_policy)
 {
-  //  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  //gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_group(group);
 
@@ -415,7 +415,6 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 /* - GPU case */
 /* - merge common/repetead code from other segment related function (create, alloc, ...) */
 /* - check/deal with alignment issues */
-
 #pragma weak gaspi_segment_bind = pgaspi_segment_bind
 gaspi_return_t
 pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
