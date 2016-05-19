@@ -62,17 +62,17 @@ pgaspi_machine_type (char const machine_type[16])
 
 #pragma weak gaspi_set_socket_affinity = pgaspi_set_socket_affinity
 gaspi_return_t
-pgaspi_set_socket_affinity (const gaspi_uchar socket)
+pgaspi_set_socket_affinity (const gaspi_uchar sock)
 {
   cpu_set_t sock_mask;
 
-  if( socket >= GASPI_MAX_NUMAS )
+  if( sock >= GASPI_MAX_NUMAS )
     {
       gaspi_print_error("GPI-2 only allows up to a maximum of %d NUMA sockets", GASPI_MAX_NUMAS);
       return GASPI_ERROR;
     }
 
-  if( gaspi_get_affinity_mask (socket, &sock_mask) < 0 )
+  if( gaspi_get_affinity_mask (sock, &sock_mask) < 0 )
     {
       gaspi_print_error ("Failed to get affinity mask");
       return GASPI_ERROR;
@@ -91,7 +91,7 @@ pgaspi_set_socket_affinity (const gaspi_uchar socket)
 
 #pragma weak gaspi_numa_socket = pgaspi_numa_socket
 gaspi_return_t
-pgaspi_numa_socket(gaspi_uchar * const socket)
+pgaspi_numa_socket(gaspi_uchar * const sock)
 {
   gaspi_context const * const gctx = &glb_gaspi_ctx;
 
@@ -100,7 +100,7 @@ pgaspi_numa_socket(gaspi_uchar * const socket)
     {
       if(atoi(numaPtr) == 1)
 	{
-	  *socket = (gaspi_uchar) gctx->localSocket;
+	  *sock = (gaspi_uchar) gctx->localSocket;
 
 	  return GASPI_SUCCESS;
 	}
@@ -262,7 +262,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  //read hostnames
 	  char *line = NULL;
 	  size_t len = 0;
-	  int read;
+	  int lsize;
 
 	  FILE *fp = fopen (gctx->mfile, "r");
 	  if( fp == NULL )
@@ -284,10 +284,10 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  gctx->poff = gctx->hn_poff + gctx->tnc * 64;
 
 	  int id = 0;
-	  while((read = getline (&line, &len, fp)) != -1)
+	  while((lsize = getline (&line, &len, fp)) != -1)
 	    {
 	      //we assume a single hostname per line
-	      if((read < 2) || (read >= 64)) continue;
+	      if((lsize < 2) || (lsize >= 64)) continue;
 
 	      int inList = 0;
 
@@ -303,7 +303,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
 	      gctx->poff[id] = inList;
 
-	      strncpy (gctx->hn_poff + id * 64, line, MIN (read - 1, 63));
+	      strncpy (gctx->hn_poff + id * 64, line, MIN (lsize - 1, 63));
 	      id++;
 
 	      if(id >= GASPI_MAX_NODES)

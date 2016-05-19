@@ -505,7 +505,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
   glb_gaspi_group_ctx[g].coll_op = GASPI_BARRIER;
 
-  int index;
+  int buf_index;
 
   const int size = glb_gaspi_group_ctx[g].tnc;
 
@@ -567,9 +567,9 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	}
 
     B0:
-      index = 2 * src + glb_gaspi_group_ctx[g].togle;
+      buf_index = 2 * src + glb_gaspi_group_ctx[g].togle;
 
-      while (rbuf[index] != glb_gaspi_group_ctx[g].barrier_cnt)
+      while (rbuf[buf_index] != glb_gaspi_group_ctx[g].barrier_cnt)
 	{
 	  //here we check for timeout to avoid active polling
 	  const gaspi_cycles_t s1 = gaspi_get_cycles();
