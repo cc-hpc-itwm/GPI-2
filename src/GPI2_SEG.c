@@ -377,12 +377,8 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 }
 
 /* TODO: from the spec: */
-/* 1) If the communication infrastructure was not established */
-/* for all group members beforehand, gaspi_segment_create will accomplish this */
-/* as well. */
-
-/* 2) Creating a new segment with an existing segment ID */
-/* results in undefined behavior */
+/* 2) Creating a new segment with an existing segment ID results in
+   undefined behavior */
 #pragma weak gaspi_segment_create = pgaspi_segment_create
 gaspi_return_t
 pgaspi_segment_create(const gaspi_segment_id_t segment_id,
@@ -410,6 +406,18 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
       eret = pgaspi_segment_register(segment_id,
 				     glb_gaspi_group_ctx[group].rank_grp[i],
 				     timeout_ms);
+      if( eret != GASPI_SUCCESS )
+	{
+	  return eret;
+	}
+    }
+
+  /* as per spec: if the communication infrastructure was not
+     established for all group members beforehand,
+     gaspi_segment_create will accomplish this as well. */
+  for(r = glb_gaspi_group_ctx[group].rank; r < glb_gaspi_group_ctx[group].tnc; r++)
+    {
+      eret = pgaspi_connect(glb_gaspi_group_ctx[group].rank_grp[r], timeout_ms);
       if( eret != GASPI_SUCCESS )
 	{
 	  return eret;
