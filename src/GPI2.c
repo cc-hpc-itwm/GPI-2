@@ -135,7 +135,7 @@ pgaspi_init_core(void)
   /* Set number of "created" communication queues */
   gctx->num_queues = glb_gaspi_cfg.queue_num;
 
-  /* Create internal memory space */
+  /* Create internal memory space (notifications + atomic value placeholder) */
   const unsigned int size = NOTIFY_OFFSET + sizeof(gaspi_atomic_value_t);
   const long page_size = sysconf (_SC_PAGESIZE);
 
@@ -145,7 +145,7 @@ pgaspi_init_core(void)
       return GASPI_ERROR;
     }
 
-  if( posix_memalign ((void **) &gctx->nsrc.data.ptr, page_size, size)!= 0 )
+  if( posix_memalign ((void **) &gctx->nsrc.data.ptr, page_size, size) != 0 )
     {
       gaspi_print_error ("Memory allocation failed.");
       return GASPI_ERR_MEMALLOC;
@@ -163,8 +163,10 @@ pgaspi_init_core(void)
     }
 
   gctx->ep_conn = (gaspi_endpoint_conn_t *) calloc(gctx->tnc, sizeof(gaspi_endpoint_conn_t));
-  if (gctx->ep_conn == NULL)
-    return GASPI_ERR_MEMALLOC;
+  if( gctx->ep_conn == NULL )
+    {
+      return GASPI_ERR_MEMALLOC;
+    }
 
   if( pgaspi_dev_init_core(&glb_gaspi_cfg) != 0 )
     {

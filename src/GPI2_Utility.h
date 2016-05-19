@@ -33,65 +33,79 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define gaspi_delay() _mm_pause()
 #endif
 
-
 #define MAX(a,b)  (((a)<(b)) ? (b) : (a))
 #define MIN(a,b)  (((a)>(b)) ? (b) : (a))
-
-
 
 #ifdef DEBUG
 #include "GPI2.h"
 #define gaspi_print_error(msg, ...)					\
-  int gaspi_debug_errsv = errno;					\
-  if( gaspi_debug_errsv != 0 )						\
-    fprintf(stderr,"[Rank %4u]: Error %d (%s) at (%s:%d):" msg "\n",	\
-	    glb_gaspi_ctx.rank, gaspi_debug_errsv, (char *) strerror(gaspi_debug_errsv), \
-	    __FILE__, __LINE__, ##__VA_ARGS__);				\
-  else									\
-    fprintf(stderr,"[Rank %4u]: Error at (%s:%d):" msg "\n",		\
-	    glb_gaspi_ctx.rank, __FILE__, __LINE__, ##__VA_ARGS__)
-
+  {									\
+    int gaspi_debug_errsv = errno;					\
+    if( gaspi_debug_errsv != 0 )					\
+      {									\
+	fprintf(stderr,"[Rank %4u]: Error %d (%s) at (%s:%d):" msg "\n", \
+		glb_gaspi_ctx.rank, gaspi_debug_errsv, (char *) strerror(gaspi_debug_errsv), \
+		__FILE__, __LINE__, ##__VA_ARGS__);			\
+      }									\
+    else								\
+      {									\
+	fprintf(stderr,"[Rank %4u]: Error at (%s:%d):" msg "\n",	\
+		glb_gaspi_ctx.rank, __FILE__, __LINE__, ##__VA_ARGS__);	\
+      }									\
+  }
 
 #define gaspi_print_warning(msg, ...)					\
-  fprintf(stderr,"[Rank %4u]: Warning:" msg "\n", glb_gaspi_ctx.rank, ##__VA_ARGS__)
-
-#define gaspi_verify_null_ptr(ptr)				\
-  {								\
-  if(ptr == NULL)						\
-    {								\
-      gaspi_print_error ("Passed argument is a NULL pointer");	\
-      return GASPI_ERR_NULLPTR;					\
-    }								\
+  {									\
+    fprintf(stderr,"[Rank %4u]: Warning:" msg "\n", glb_gaspi_ctx.rank, ##__VA_ARGS__);	\
   }
 
-#define gaspi_verify_rank(rank)						\
+#define gaspi_verify_null_ptr(ptr)					\
   {									\
-    if(rank >= glb_gaspi_ctx.tnc)					\
-      return GASPI_ERR_INV_RANK;					\
+    if(ptr == NULL)							\
+      {									\
+	gaspi_print_error ("Passed argument is a NULL pointer");	\
+	return GASPI_ERR_NULLPTR;					\
+      }									\
   }
 
-#define gaspi_verify_queue(queue)					\
-  {									\
-    if(queue > glb_gaspi_ctx.num_queues - 1)				\
-      return GASPI_ERR_INV_QUEUE;					\
+#define gaspi_verify_rank(rank)			\
+  {						\
+    if(rank >= glb_gaspi_ctx.tnc)		\
+      {						\
+	return GASPI_ERR_INV_RANK;		\
+      }						\
   }
 
-#define gaspi_verify_queue_depth(depth)					\
-  {									\
-    if( (unsigned) depth >= glb_gaspi_cfg.queue_depth )			\
-      return GASPI_ERR_MANY_Q_REQS;					\
+#define gaspi_verify_queue(queue)		\
+  {						\
+    if(queue > glb_gaspi_ctx.num_queues - 1)	\
+      {						\
+	return GASPI_ERR_INV_QUEUE;		\
+      }						\
   }
 
-#define gaspi_verify_segment(seg_id)					\
-  {									\
-    if( seg_id >= GASPI_MAX_MSEGS)					\
-      return GASPI_ERR_INV_SEG;						\
+#define gaspi_verify_queue_depth(depth)			\
+  {							\
+    if( (unsigned) depth >= glb_gaspi_cfg.queue_depth )	\
+      {							\
+	return GASPI_ERR_MANY_Q_REQS;			\
+      }							\
   }
 
-#define gaspi_verify_unaligned_off(offset)				\
-  {									\
-    if( offset & 0x7 )							\
-      return GASPI_ERR_UNALIGN_OFF;					\
+#define gaspi_verify_segment(seg_id)		\
+  {						\
+    if( seg_id >= GASPI_MAX_MSEGS)		\
+      {						\
+	return GASPI_ERR_INV_SEG;		\
+      }						\
+  }
+
+#define gaspi_verify_unaligned_off(offset)	\
+  {						\
+    if( offset & 0x7 )				\
+      {						\
+	return GASPI_ERR_UNALIGN_OFF;		\
+      }						\
   }
 
 #define gaspi_verify_local_off(off, seg_id, sz)				\
@@ -99,24 +113,26 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
     gaspi_verify_segment(seg_id);					\
     gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[seg_id]);			\
     if( off >= glb_gaspi_ctx.rrmd[seg_id][glb_gaspi_ctx.rank].size )	\
-      return GASPI_ERR_INV_LOC_OFF;					\
+      {									\
+	return GASPI_ERR_INV_LOC_OFF;					\
+      }									\
     if( off + sz > glb_gaspi_ctx.rrmd[seg_id][glb_gaspi_ctx.rank].size ) \
       {									\
 	return GASPI_ERR_INV_COMMSIZE;					\
       }									\
   }
 
-#define gaspi_verify_remote_off(off, seg_id, rank, sz)			\
-  {									\
-  gaspi_verify_segment(seg_id);						\
-  gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[seg_id]);			\
-  gaspi_verify_rank(rank);						\
-  if( off >= glb_gaspi_ctx.rrmd[seg_id][rank].size )			\
-    return GASPI_ERR_INV_REM_OFF;					\
-  if( off + sz > glb_gaspi_ctx.rrmd[seg_id][rank].size )		\
-    {									\
-      return GASPI_ERR_INV_COMMSIZE;					\
-    }									\
+#define gaspi_verify_remote_off(off, seg_id, rank, sz)		\
+  {								\
+    gaspi_verify_segment(seg_id);				\
+    gaspi_verify_null_ptr(glb_gaspi_ctx.rrmd[seg_id]);		\
+    gaspi_verify_rank(rank);					\
+    if( off >= glb_gaspi_ctx.rrmd[seg_id][rank].size )		\
+      return GASPI_ERR_INV_REM_OFF;				\
+    if( off + sz > glb_gaspi_ctx.rrmd[seg_id][rank].size )	\
+      {								\
+	return GASPI_ERR_INV_COMMSIZE;				\
+      }								\
   }
 
 #define gaspi_verify_comm_size(sz, seg_id_loc, seg_id_rem, rnk, max)	\
@@ -130,32 +146,32 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
       }									\
   }
 
-#define gaspi_verify_segment_size(size)			\
-  {							\
-    if(0 == size)					\
-      {							\
-	return GASPI_ERR_INV_SEGSIZE;			\
-      }							\
+#define gaspi_verify_segment_size(size)		\
+  {						\
+    if( 0 == size )				\
+      {						\
+	return GASPI_ERR_INV_SEGSIZE;		\
+      }						\
   }
 
 #define gaspi_verify_group(group)					\
   {									\
-    if(group >= GASPI_MAX_GROUPS || glb_gaspi_group_ctx[group].id < 0)	\
+    if( group >= GASPI_MAX_GROUPS || glb_gaspi_group_ctx[group].id < 0 ) \
       return GASPI_ERR_INV_GROUP;					\
   }
 
 #define gaspi_verify_init(funcname)					\
   {									\
-    if(!glb_gaspi_init)							\
+    if( !glb_gaspi_init )						\
       {									\
-	gaspi_print_error("Error: Invalid function (%s) before initialization", \
+	gaspi_print_error("Error: Invalixd function (%s) before initialization", \
 			  funcname);					\
-	  return GASPI_ERR_NOINIT;					\
+	return GASPI_ERR_NOINIT;					\
       }									\
   }
 
-
 #else
+
 #define gaspi_print_error(msg, ...)
 #define gaspi_print_warning(msg, ...)
 #define gaspi_verify_null_ptr(ptr)
@@ -170,25 +186,33 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define gaspi_verify_comm_size(size, seg_id_loc, seg_id_rem, rank, max)
 #define gaspi_verify_segment_size(size)
 #define gaspi_verify_init(funcname)
-#endif
+
+#endif //DEBUG
 
 #define gaspi_verify_setup(funcname)					\
   {									\
-    if(glb_gaspi_init)							\
+    if( glb_gaspi_init )						\
       {									\
 	gaspi_print_error("Error: Invalid function (%s) after initialization", \
-		funcname);						\
+			  funcname);					\
 	return GASPI_ERR_INITED;					\
       }									\
   }
 
-ulong gaspi_load_ulong(volatile ulong *ptr);
-float gaspi_get_cpufreq (void);
-int gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset);
+float
+gaspi_get_cpufreq (void);
 
-char * pgaspi_gethostname (const unsigned int id);
+ulong
+gaspi_load_ulong(volatile ulong *ptr);
 
-static inline int gaspi_thread_sleep(int msecs)
+int
+gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset);
+
+char*
+pgaspi_gethostname (const unsigned int id);
+
+static inline int
+gaspi_thread_sleep(int msecs)
 {
   struct timespec sleep_time, rem;
   sleep_time.tv_sec = msecs / 1000;
@@ -197,4 +221,4 @@ static inline int gaspi_thread_sleep(int msecs)
   return nanosleep(&sleep_time, &rem);
 }
 
-#endif
+#endif //GPI2_UTILITY_H

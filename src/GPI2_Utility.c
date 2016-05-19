@@ -28,12 +28,12 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 ulong
 gaspi_load_ulong(volatile ulong *ptr)
 {
-  ulong v=*ptr;
+  ulong v = *ptr;
   asm volatile("" ::: "memory");
   return v;
 }
 
-/* CPU freq through sampling and linear regression */
+/* CPU frequency through sampling and linear regression */
 float
 _gaspi_sample_cpu_freq(void)
 {
@@ -56,21 +56,15 @@ _gaspi_sample_cpu_freq(void)
     {
       start = gaspi_get_cycles();
 
-      if(gettimeofday(&tval1,NULL))
+      if( gettimeofday(&tval1, NULL) )
 	{
-#ifdef DEBUG
-	  printf("gettimeofday failed.\n");
-#endif
 	  return 0.0f;
 	}
 
       do
 	{
-	  if(gettimeofday(&tval2,NULL))
+	  if(gettimeofday(&tval2, NULL))
 	    {
-#ifdef DEBUG
-	      printf("gettimeofday failed.\n");
-#endif
 	      return 0.0f;
 	    }
 	}
@@ -96,8 +90,10 @@ _gaspi_sample_cpu_freq(void)
   corr_2 = (MEASUREMENTS * sumxy - sumx * sumy) * (MEASUREMENTS * sumxy - sumx * sumy)
     / (MEASUREMENTS * sum_sqr_x - sumx * sumx) / (MEASUREMENTS * sum_sqr_y - sumy * sumy);
 
-  if(corr_2 < 0.9)
+  if( corr_2 < 0.9 )
+    {
       return 0.0f;
+    }
 
   beta = (MEASUREMENTS * sumxy - sumx * sumy) / (MEASUREMENTS * sum_sqr_x - sumx * sumx);
 
@@ -105,50 +101,55 @@ _gaspi_sample_cpu_freq(void)
 }
 
 float
-gaspi_get_cpufreq (void)
+gaspi_get_cpufreq(void)
 {
   float mhz = 0.0f;
   mhz =  _gaspi_sample_cpu_freq();
 
-  if(0.0f == mhz )
+  if( 0.0f == mhz )
     {
       FILE *f;
       char buf[256];
 
       f = fopen ("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
-      if (f)
+      if( f )
 	{
-	  if (fgets (buf, sizeof (buf), f))
+	  if( fgets (buf, sizeof (buf), f) )
 	    {
 	      uint m;
 	      int rc;
 
 	      rc = sscanf (buf, "%u", &m);
-	      if (rc == 1)
-		mhz = (float) m;
+	      if( rc == 1 )
+		{
+		  mhz = (float) m;
+		}
 	    }
 
 	  fclose (f);
 	}
 
-      if (mhz > 0.0f)
-	return mhz / 1000.0f;
+      if( mhz > 0.0f )
+	{
+	  return mhz / 1000.0f;
+	}
 
       f = fopen ("/proc/cpuinfo", "r");
-
-      if (f)
+      if( f )
 	{
-	  while (fgets (buf, sizeof (buf), f))
+	  while(fgets (buf, sizeof (buf), f))
 	    {
 	      float m;
 	      int rc;
 
 	      rc = sscanf (buf, "cpu MHz : %f", &m);
 
-	      if (rc != 1)
-		continue;
+	      if( rc != 1 )
+		{
+		  continue;
+		}
 
-	      if (mhz == 0.0f)
+	      if( mhz == 0.0f )
 		{
 		  mhz = m;
 		  continue;
@@ -169,30 +170,28 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
   char buf[1024];
   unsigned int m[256];
   char path[256];
-  FILE *f;
 
   memset (buf, 0, 1024);
   memset (m, 0, 256 * sizeof (unsigned int));
 
   snprintf (path, 256, "/sys/devices/system/node/node%d/cpumap", sock);
 
-  f = fopen (path, "r");
-  if (!f)
+  FILE *f = fopen (path, "r");
+  if( f == NULL )
     {
       return -1;
     }
 
   //read cpumap
   int id = 0;
-
-  if(fgets(buf,sizeof(buf),f))
+  if( fgets(buf, sizeof(buf), f) )
     {
       char *bptr = buf;
 
       while (1)
 	{
 	  int ret = sscanf (bptr, "%x", &m[id]);
-	  if (ret <= 0)
+	  if( ret <= 0 )
 	    {
 	      break;
 	    }
@@ -205,7 +204,7 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 
 	  for(j = 0;j < length - 1; j++)
 	    {
-	      if(bptr[j]==',')
+	      if( bptr[j]==',' )
 		{
 		  found=1;
 		  break;
@@ -213,9 +212,9 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 	      cpos++;
 	    }
 
-	  if(!found)
+	  if( !found )
 	    {
-	      if((cpos+1) > strlen(bptr))
+	      if( (cpos+1) > strlen(bptr) )
 		{
 		  fclose(f);
 		  return -1;
@@ -234,7 +233,7 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
   char *ptr = (char *) cpuset;
   int pos = 0;
 
-  for (i = rc - 1; i >= 0; i--)
+  for(i = rc - 1; i >= 0; i--)
     {
       memcpy (ptr + pos, &m[i], sizeof (unsigned int));
       pos += sizeof (unsigned int);

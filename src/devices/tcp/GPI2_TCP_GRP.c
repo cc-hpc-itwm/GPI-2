@@ -58,7 +58,7 @@ pgaspi_dev_poll_groups(void)
   int i, ne = 0;
   tcp_dev_wc_t wc;
 
-  for (i = 0; i < nr; i++)
+  for(i = 0; i < nr; i++)
     {
       do
 	{
@@ -68,10 +68,15 @@ pgaspi_dev_poll_groups(void)
 
       if( (ne < 0) || (wc.status != TCP_WC_SUCCESS) )
 	{
+	  /* it can be that you encounter an erroneous completion but
+	     from a peer that is gone. For now, we just ignore it by
+	     checking the validity of the state */
 	  if( !tcp_dev_is_valid_state(wc.wr_id) )
-	    continue;
+	    {
+	      continue;
+	    }
 
-	  //TODO: for now here, but has to go out of device
+	  /* TODO: for now here because of id of erroneous rank, but has to go out of device */
 	  gctx->qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
 
 	  gaspi_print_error("Failed request to %lu. Collectives queue might be broken",

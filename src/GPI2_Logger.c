@@ -35,7 +35,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 static pthread_mutex_t gaspi_logger_lock = PTHREAD_MUTEX_INITIALIZER;
 
-
 extern gaspi_config_t glb_gaspi_cfg;
 
 #pragma weak gaspi_printf_to = pgaspi_printf_to
@@ -51,15 +50,17 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
   int gaspi_log_rank = -1;
 
   /* Logger disabled? */
-  if (!glb_gaspi_cfg.logger)
-    return;
+  if( !glb_gaspi_cfg.logger )
+    {
+      return;
+    }
 
   pthread_mutex_lock (&gaspi_logger_lock);
 
   memset (buf, 0, sizeof(buf));
   memset (hn, 0, sizeof(hn));
 
-  if(gethostname (hn, 255) < 0)
+  if( gethostname (hn, 255) < 0 )
     {
       pthread_mutex_unlock (&gaspi_logger_lock);
       return;
@@ -76,14 +77,14 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
       gaspi_log_socket = glb_gaspi_ctx.localSocket;
 #else
       char *socket_num_str = getenv ("GASPI_SOCKET");
-      if (socket_num_str != NULL)
+      if( socket_num_str != NULL )
 	{
 	  gaspi_log_socket = atoi (socket_num_str);
 	}
 #endif
     }
 
-  sprintf (buf, "[%s:%4d:%d] ", hn, gaspi_log_rank, gaspi_log_socket);
+  sprintf(buf, "[%s:%4d:%d] ", hn, gaspi_log_rank, gaspi_log_socket);
   const int sl = strlen (buf);
 
   va_list ap;
@@ -91,7 +92,7 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
   vsnprintf (buf + sl, 1024 - sl, fmt, ap);
   va_end (ap);
 
-  if( ! glb_gaspi_init )
+  if( !glb_gaspi_init )
     {
       fprintf(stdout, "%s", buf);
       fflush (stdout);
@@ -101,22 +102,22 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
     {
       int sockL = socket (AF_INET, SOCK_DGRAM, 0);
       if( sockL < 0 )
-	  goto endL;
+	goto endL;
 
       client.sin_family = AF_INET;
       client.sin_addr.s_addr = htonl (INADDR_ANY);
       client.sin_port = htons (0);
 
-      if (bind (sockL, (struct sockaddr *) &client, sizeof (client)) < 0)
+      if( bind (sockL, (struct sockaddr *) &client, sizeof (client)) < 0 )
 	{
 	  close(sockL);
 	  goto endL;
 	}
 
       char * target_logger = pgaspi_gethostname(log_rank);
-      if(target_logger != NULL)
+      if( target_logger != NULL )
 	{
-	  if ((server_dataL = gethostbyname (target_logger)) == 0)
+	  if( (server_dataL = gethostbyname (target_logger)) == 0 )
 	    {
 	      close(sockL);
 	      goto endL;
@@ -126,10 +127,10 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
 	  serverL.sin_family = AF_INET;
 	  serverL.sin_port = htons (GPI2_PORT_LOGGER);
 
-	  if(connect (sockL, (struct sockaddr *) &serverL, sizeof (serverL)) == 0)
+	  if( connect(sockL, (struct sockaddr *) &serverL, sizeof (serverL)) == 0 )
 	    {
-	      sendto (sockL, buf, strlen(buf), 0, (struct sockaddr *) &serverL,
-		      sizeof (serverL));
+	      sendto(sockL, buf, strlen(buf), 0, (struct sockaddr *) &serverL,
+		     sizeof (serverL));
 	    }
 	}
       close (sockL);
@@ -144,7 +145,6 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
 void
 pgaspi_printf (const char *fmt, ...)
 {
-
   char buf[1024];
   va_list ap;
   va_start (ap, fmt);
@@ -158,38 +158,39 @@ void
 gaspi_print_affinity_mask (void)
 {
   unsigned char mask[64];
-  memset (mask, 0, 64);
-  int j;
   cpu_set_t node_mask;
   char buf[128];
-  int off = 0;
 
+  memset (mask, 0, 64);
   memset (buf, 0, 128);
 
   //simple os view
-  if (sched_getaffinity (0, sizeof (cpu_set_t), &node_mask) != 0)
+  if( sched_getaffinity (0, sizeof (cpu_set_t), &node_mask) != 0)
     {
-      gaspi_print_error ("Failed to get affinity mask");
+      gaspi_print_error("Failed to get affinity mask");
       return;
     }
 
   int len = 64;
 
   unsigned char *p = (unsigned char *) &node_mask;
+  int j;
   for (j = 0; j < len; j++)
     mask[j] = p[j];
 
   //remove all preceding zero bytes
   int found = 0;
-
+  int off = 0;
   unsigned char *ptr = (unsigned char *) mask;
-  for (j = len - 1; j >= 0; j--)
+  for(j = len - 1; j >= 0; j--)
     {
 
-      if ((ptr[j] == 0) && (!found))
-	continue;
+      if( (ptr[j] == 0) && (!found) )
+	{
+	  continue;
+	}
 
-      if (ptr[j] < 16)
+      if( ptr[j] < 16 )
 	{
 	  sprintf (buf + off, "0%x ", ptr[j]);
 	  off += 3;
