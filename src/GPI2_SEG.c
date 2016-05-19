@@ -178,6 +178,23 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
   return GASPI_SUCCESS;
 }
 
+static inline int
+pgaspi_segment_create_desc( gaspi_context * const gctx,
+			    const gaspi_segment_id_t segment_id)
+{
+  if( gctx->rrmd[segment_id] == NULL)
+    {
+      gctx->rrmd[segment_id] = (gaspi_rc_mseg *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg));
+
+      if( gctx->rrmd[segment_id] == NULL)
+	{
+	  return 1;
+	}
+    }
+
+  return 0;
+}
+
 #pragma weak gaspi_segment_alloc = pgaspi_segment_alloc
 gaspi_return_t
 pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
@@ -201,16 +218,10 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 
   /*  TODO: for now like this, but we need to change this */
 #ifndef GPI2_CUDA
-
-  if( gctx->rrmd[segment_id] == NULL)
+  if( pgaspi_segment_create_desc(gctx, segment_id) != 0)
     {
-      gctx->rrmd[segment_id] = (gaspi_rc_mseg *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg));
-
-      if(!gctx->rrmd[segment_id])
-	{
-	  eret = GASPI_ERR_MEMALLOC;
-	  goto endL;
-	}
+      eret = GASPI_ERR_MEMALLOC;
+      goto endL;
     }
 
   /* Already exists?*/
@@ -439,15 +450,10 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  if( gctx->rrmd[segment_id] == NULL )
+  if( pgaspi_segment_create_desc(gctx, segment_id) != 0)
     {
-      gctx->rrmd[segment_id] = (gaspi_rc_mseg *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg));
-
-      if( gctx->rrmd[segment_id] == NULL )
-	{
-	  eret = GASPI_ERR_MEMALLOC;
-	  goto endL;
-	}
+      eret = GASPI_ERR_MEMALLOC;
+      goto endL;
     }
 
   if( gctx->rrmd[segment_id][myrank].size )
