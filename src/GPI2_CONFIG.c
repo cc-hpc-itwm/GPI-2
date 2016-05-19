@@ -45,6 +45,35 @@ gaspi_config_t glb_gaspi_cfg = {
   GASPI_TOPOLOGY_STATIC         //build_infrastructure;
 };
 
+static void
+pgaspi_print_config(gaspi_config_t * const config)
+{
+  printf(" logger %u\nsn_port %u\nnet_info %u\nnetdev_id %d\n mtu %u\n \
+port_check %u\nuser_net %u\nnetwork %d\nqueue_depth %u\nqueue_num %u\n \
+group_max %d\nsegment_max %d\ntransfer_size_max %lu\nnotification_num %u\n \
+passive_queue_size_max %u\npassive_transfer_size_max %u\nallreduce_buf_size %lu\n \
+allreduce_elem_max %u\nbuild_infrastructure %d\n",
+	 config->logger,
+	 config->sn_port,
+	 config->net_info,
+	 config->netdev_id,
+	 config->mtu,
+	 config->port_check,
+	 config->user_net,
+	 config->network,
+	 config->queue_depth,
+	 config->queue_num,
+	 config->group_max,
+	 config->segment_max,
+	 config->transfer_size_max,
+	 config->notification_num,
+	 config->passive_queue_size_max,
+	 config->passive_transfer_size_max,
+	 config->allreduce_buf_size,
+	 config->allreduce_elem_max,
+	 config->build_infrastructure);
+}
+
 #pragma weak gaspi_config_get = pgaspi_config_get
 gaspi_return_t
 pgaspi_config_get (gaspi_config_t * const config)
