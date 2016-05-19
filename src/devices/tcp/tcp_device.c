@@ -141,14 +141,14 @@ tcp_dev_create_cq(int elems, struct tcp_passive_channel *pchannel)
   struct tcp_cq *cq = (struct tcp_cq *) malloc(sizeof(struct tcp_cq));
   if(cq == NULL)
     {
-      printf("Failed to alloc memory for completion queue\n");
+      gaspi_print_error("Failed to alloc memory for completion queue.");
       return NULL;
     }
 
   ringbuffer *rb = (ringbuffer *) malloc(sizeof(ringbuffer));
   if(rb == NULL)
     {
-      printf("Failed to alloc memory for completion queue\n");
+      gaspi_print_error("Failed to alloc memory for completion queue.");
       free(cq);
       return NULL;
     }
