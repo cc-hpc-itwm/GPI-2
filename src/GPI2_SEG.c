@@ -467,7 +467,7 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 		      page_size,
 		      NOTIFY_OFFSET) != 0 )
     {
-      gaspi_print_error ("Memory allocation (posix_memalign) failed");
+      gaspi_print_error ("Memory allocation failed.");
       eret = GASPI_ERR_MEMALLOC;
       goto endL;
     }

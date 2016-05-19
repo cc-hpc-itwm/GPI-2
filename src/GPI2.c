@@ -147,7 +147,7 @@ pgaspi_init_core(void)
 
   if( posix_memalign ((void **) &gctx->nsrc.data.ptr, page_size, size)!= 0 )
     {
-      gaspi_print_error ("Memory allocation (posix_memalign) failed");
+      gaspi_print_error ("Memory allocation failed.");
       return GASPI_ERR_MEMALLOC;
     }
 
