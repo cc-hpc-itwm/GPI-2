@@ -67,7 +67,7 @@ pgaspi_dev_connect_context(const int i)
 {
   gaspi_context const * const gctx = &glb_gaspi_ctx;
 
-  return tcp_dev_connect_to(i, gaspi_get_hn(i), TCP_DEV_PORT + gctx->poff[i]);
+  return tcp_dev_connect_to(i, pgaspi_gethostname(i), TCP_DEV_PORT + gctx->poff[i]);
 }
 
 int
@@ -120,9 +120,9 @@ pgaspi_dev_print_info()
   gaspi_context const * const gctx = &glb_gaspi_ctx;
 
   gaspi_printf("<<<<<<<<<<<<<<<< TCP-info >>>>>>>>>>>>>>>>>>>\n");
-  gaspi_printf("  Hostname: %s\n", gaspi_get_hn(gctx->rank));
+  gaspi_printf("  Hostname: %s\n", pgaspi_gethostname(gctx->rank));
 
-  char* ip = tcp_dev_get_local_ip(gaspi_get_hn(gctx->rank));
+  char* ip = tcp_dev_get_local_ip(pgaspi_gethostname(gctx->rank));
   if( ip != NULL )
     {
       char* iface = tcp_dev_get_local_if(ip);

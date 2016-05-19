@@ -417,7 +417,7 @@ static int
 gaspi_sn_send_topology(gaspi_context * const gctx, const int i, const gaspi_timeout_t timeout_ms)
 {
   if( (gctx->sockfd[i] =
-       gaspi_sn_connect2port(gaspi_get_hn(i),
+       gaspi_sn_connect2port(pgaspi_gethostname(i),
 			     (glb_gaspi_cfg.sn_port + 64 + gctx->poff[i]),
 			     timeout_ms)) < 0)
     {
@@ -583,7 +583,7 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, const gaspi_timeout_t timeout_
   ftime(&t0);
 
 #ifdef DEBUG
-  if( strcmp(gaspi_get_hn(rank), "") == 0 )
+  if( strcmp(pgaspi_gethostname(rank), "") == 0 )
     {
       gaspi_print_error("Failed to obtain hostname for rank %u", rank);
       return GASPI_ERROR;
@@ -594,7 +594,7 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, const gaspi_timeout_t timeout_
   while(gctx->sockfd[rank] == -1)
     {
       gctx->sockfd[rank] =
-	gaspi_sn_connect2port(gaspi_get_hn(rank),
+	gaspi_sn_connect2port(pgaspi_gethostname(rank),
 			      glb_gaspi_cfg.sn_port + gctx->poff[rank],
 			      timeout_ms);
 

@@ -113,7 +113,7 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
 	  goto endL;
 	}
 
-      char * target_logger = gaspi_get_hn(log_rank);
+      char * target_logger = pgaspi_gethostname(log_rank);
       if(target_logger != NULL)
 	{
 	  if ((server_dataL = gethostbyname (target_logger)) == 0)
