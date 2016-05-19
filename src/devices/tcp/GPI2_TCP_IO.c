@@ -28,7 +28,7 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
 		  const gaspi_size_t size,
 		  const gaspi_queue_id_t queue)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   tcp_dev_wr_t wr =
     {
@@ -63,7 +63,7 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
 		 const gaspi_size_t size,
 		 const gaspi_queue_id_t queue)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   tcp_dev_wr_t wr =
     {
@@ -95,7 +95,7 @@ pgaspi_dev_purge (const gaspi_queue_id_t queue,
 {
   int ne = 0, i;
   tcp_dev_wc_t wc;
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   const int nr = gctx->ne_count_c[queue];
 
@@ -130,7 +130,7 @@ gaspi_return_t
 pgaspi_dev_wait (const gaspi_queue_id_t queue,
 		 const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   int ne = 0, i;
   tcp_dev_wc_t wc;
@@ -176,7 +176,7 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
 		   const gaspi_notification_t notification_value,
 		   const gaspi_queue_id_t queue)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_notification_t *not_val_ptr = (gaspi_notification_t *)malloc(sizeof(notification_value));
   *not_val_ptr = notification_value;
@@ -214,7 +214,7 @@ pgaspi_dev_write_list (const gaspi_number_t num,
 		       gaspi_size_t * const size,
 		       const gaspi_queue_id_t queue)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
   gaspi_number_t i;
 
   for (i = 0; i < num; i++)
@@ -254,7 +254,7 @@ pgaspi_dev_read_list (const gaspi_number_t num,
 		      gaspi_size_t * const size,
 		      const gaspi_queue_id_t queue)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
   gaspi_number_t i;
 
   for (i = 0; i < num; i++)

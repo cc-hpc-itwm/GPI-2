@@ -72,7 +72,7 @@ extern volatile enum gaspi_sn_status gaspi_sn_status;
 extern volatile gaspi_return_t gaspi_sn_err;
 
 int
-gaspi_sn_broadcast_topology(gaspi_context * const ctx, const gaspi_timeout_t timeout_ms);
+gaspi_sn_broadcast_topology(gaspi_context_t * const ctx, const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
 gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms, const void * const arg);

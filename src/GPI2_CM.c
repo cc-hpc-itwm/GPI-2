@@ -24,7 +24,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 gaspi_return_t
 pgaspi_create_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   const int i = (int) rank;
 
   if( lock_gaspi_tout(&gaspi_create_lock, timeout_ms) )
@@ -52,7 +52,7 @@ pgaspi_connect_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeou
 {
   const int i = (int) rank;
   gaspi_return_t eret = GASPI_ERROR;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if( lock_gaspi_tout(&gaspi_ccontext_lock, timeout_ms) )
     {
@@ -86,7 +86,7 @@ gaspi_return_t
 pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
   gaspi_return_t eret = GASPI_ERROR;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_connect");
 
@@ -132,7 +132,7 @@ pgaspi_local_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_m
 {
   const int i = rank;
   gaspi_return_t eret = GASPI_ERROR;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
     {
@@ -161,7 +161,7 @@ gaspi_return_t
 pgaspi_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
   gaspi_return_t eret = GASPI_ERROR;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_disconnect");
 

@@ -42,7 +42,7 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 		     const gaspi_rank_t rank,
 		     gaspi_size_t * const size)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_segment_size");
   gaspi_verify_segment(segment_id);
@@ -62,7 +62,7 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_segment_ptr");
   gaspi_verify_segment(segment_id);
@@ -82,7 +82,7 @@ pgaspi_segment_list (const gaspi_number_t num,
 		     gaspi_segment_id_t * const segment_id_list)
 {
   int i, idx = 0;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_segment_list");
   gaspi_verify_null_ptr(segment_id_list);
@@ -110,7 +110,7 @@ pgaspi_segment_list (const gaspi_number_t num,
 gaspi_return_t
 pgaspi_segment_num (gaspi_number_t * const segment_num)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_segment_num");
   gaspi_verify_null_ptr(segment_num);
@@ -179,12 +179,12 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
 }
 
 static inline int
-pgaspi_segment_create_desc( gaspi_context * const gctx,
+pgaspi_segment_create_desc( gaspi_context_t * const gctx,
 			    const gaspi_segment_id_t segment_id)
 {
   if( gctx->rrmd[segment_id] == NULL)
     {
-      gctx->rrmd[segment_id] = (gaspi_rc_mseg *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg));
+      gctx->rrmd[segment_id] = (gaspi_rc_mseg_t *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg_t));
 
       if( gctx->rrmd[segment_id] == NULL)
 	{
@@ -201,7 +201,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 		      const gaspi_size_t size,
 		      const gaspi_alloc_t alloc_policy)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_segment_alloc");
   gaspi_verify_segment_size(size);
@@ -286,7 +286,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_segment_delete");
   gaspi_verify_segment(segment_id);
@@ -347,7 +347,7 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 			const gaspi_rank_t rank,
 			const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_segment_register");
   gaspi_verify_segment(segment_id);
@@ -387,7 +387,7 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 		      const gaspi_timeout_t timeout_ms,
 		      const gaspi_alloc_t alloc_policy)
 {
-  //gaspi_context const * const gctx = &glb_gaspi_ctx;
+  //gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_group(group);
 
@@ -441,7 +441,7 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 		      gaspi_size_t const size,
 		      gaspi_memory_description_t const memory_description)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_segment_bind");
   gaspi_verify_segment_size(size);

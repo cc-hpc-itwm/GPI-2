@@ -353,7 +353,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
   gctx->nsrc.mr[0] = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
 					gctx->nsrc.data.ptr,
 					gctx->nsrc.size,
@@ -590,7 +590,7 @@ int
 pgaspi_dev_comm_queue_delete(const unsigned int id)
 {
   int i;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   for(i = 0; i < gctx->tnc; i++)
     {
@@ -640,7 +640,7 @@ pgaspi_dev_comm_queue_delete(const unsigned int id)
 int
 pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_node)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   if( 0 == glb_gaspi_ctx_ib.qpC_cstat[id] )
     {
       /* Completion queue */
@@ -892,7 +892,7 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 {
   int i;
   unsigned int c;
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   for(i = 0; i < gctx->tnc; i++)
     {

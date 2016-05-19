@@ -39,7 +39,7 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 		     const gaspi_size_t size,
 		     const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_passive_send");
   gaspi_verify_local_off(offset_local, segment_id_local, size);
@@ -84,7 +84,7 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 			const gaspi_size_t size,
 			const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_passive_receive");
   gaspi_verify_local_off(offset_local, segment_id_local, size);

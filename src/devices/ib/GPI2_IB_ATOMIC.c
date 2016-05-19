@@ -29,7 +29,7 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slist;
   struct ibv_send_wr swr;
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   slist.addr = (uintptr_t) (gctx->nsrc.data.buf);
   slist.length = sizeof(gaspi_atomic_value_t);
@@ -89,7 +89,7 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
   struct ibv_sge slist;
   struct ibv_send_wr swr;
   int i;
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   slist.addr = (uintptr_t) (gctx->nsrc.data.buf);
   slist.length = sizeof(gaspi_atomic_value_t);

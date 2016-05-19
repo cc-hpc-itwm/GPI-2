@@ -93,7 +93,7 @@ pgaspi_set_socket_affinity (const gaspi_uchar sock)
 gaspi_return_t
 pgaspi_numa_socket(gaspi_uchar * const sock)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   char * numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
   if( numaPtr )
@@ -115,14 +115,14 @@ pgaspi_numa_socket(gaspi_uchar * const sock)
 static gaspi_return_t
 pgaspi_init_core(void)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( glb_gaspi_dev_init )
     {
       return -1;
     }
 
-  memset(&glb_gaspi_group_ctx, 0, GASPI_MAX_GROUPS * sizeof (gaspi_group_ctx));
+  memset(&glb_gaspi_group_ctx, 0, GASPI_MAX_GROUPS * sizeof (gaspi_group_ctx_t));
 
   int i;
   for(i = 0; i < GASPI_MAX_GROUPS; i++)
@@ -194,7 +194,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   gaspi_return_t eret = GASPI_ERROR;
   int i;
   const int num_queues = (int) glb_gaspi_cfg.queue_num;
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
     {
@@ -211,7 +211,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  gctx->lockC[i].lock = 0;
 	}
 
-      memset (&glb_gaspi_ctx, 0, sizeof (gaspi_context));
+      memset (&glb_gaspi_ctx, 0, sizeof (gaspi_context_t));
 
       struct utsname mbuf;
       if( uname (&mbuf) == 0 )
@@ -409,7 +409,7 @@ static gaspi_return_t
 pgaspi_cleanup_core(void)
 {
   int i;
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( !glb_gaspi_dev_init )
     {
@@ -480,7 +480,7 @@ gaspi_return_t
 pgaspi_proc_term (const gaspi_timeout_t timeout)
 {
   int i;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_proc_term");
 
@@ -583,7 +583,7 @@ pgaspi_proc_rank (gaspi_rank_t * const rank)
   gaspi_verify_init("gaspi_proc_rank");
   gaspi_verify_null_ptr(rank);
 
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   *rank = (gaspi_rank_t) gctx->rank;
 
   return GASPI_SUCCESS;
@@ -596,7 +596,7 @@ pgaspi_proc_num (gaspi_rank_t * const proc_num)
   gaspi_verify_init("gaspi_proc_num");
   gaspi_verify_null_ptr(proc_num);
 
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   *proc_num = (gaspi_rank_t) gctx->tnc;
 
   return GASPI_SUCCESS;
@@ -609,7 +609,7 @@ pgaspi_proc_local_rank(gaspi_rank_t * const local_rank)
   gaspi_verify_init("gaspi_proc_local_rank");
   gaspi_verify_null_ptr(local_rank);
 
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   *local_rank = (gaspi_rank_t) gctx->localSocket;
 
@@ -623,7 +623,7 @@ pgaspi_proc_local_num(gaspi_rank_t * const local_num)
   gaspi_rank_t rank;
   gaspi_verify_init("gaspi_proc_local_num");
   gaspi_verify_null_ptr(local_num);
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if( pgaspi_proc_rank(&rank) != GASPI_SUCCESS )
     {
@@ -665,7 +665,7 @@ gaspi_return_t
 pgaspi_time_get (gaspi_time_t * const wtime)
 {
   gaspi_verify_null_ptr(wtime);
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   float cycles_to_msecs;
 
   if (!glb_gaspi_init)
@@ -689,7 +689,7 @@ gaspi_return_t
 pgaspi_cpu_frequency (gaspi_float * const cpu_mhz)
 {
   gaspi_verify_null_ptr(cpu_mhz);
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if( !glb_gaspi_init )
     {
@@ -783,7 +783,7 @@ pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
   gaspi_verify_null_ptr(state_vector);
   gaspi_verify_init("gaspi_state_vec_get");
 
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   memset (state_vector, 0, (size_t) gctx->tnc);
 

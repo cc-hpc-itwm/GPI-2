@@ -36,7 +36,7 @@ struct  mpi_node_info
 
 /* Try to handle environment if running with MPI */
 static inline int
-_gaspi_handle_env_mpi(gaspi_context *ctx)
+_gaspi_handle_env_mpi(gaspi_context_t *ctx)
 {
   int i;
   int mpi_inited = 0;
@@ -139,7 +139,7 @@ _gaspi_handle_env_mpi(gaspi_context *ctx)
 #endif
 
 inline int
-gaspi_handle_env(gaspi_context *ctx)
+gaspi_handle_env(gaspi_context_t *ctx)
 {
 #ifdef GPI2_WITH_MPI
   if( _gaspi_handle_env_mpi(ctx) == 0 )

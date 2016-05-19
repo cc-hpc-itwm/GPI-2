@@ -24,7 +24,7 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 			     const gaspi_rank_t rank,
 			     const gaspi_atomic_value_t val_add)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   tcp_dev_wr_t wr =
     {
@@ -79,7 +79,7 @@ pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 				const gaspi_atomic_value_t comparator,
 				const gaspi_atomic_value_t val_new)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   tcp_dev_wr_t wr =
     {

@@ -65,7 +65,7 @@ pgaspi_dev_disconnect_context(const int i)
 int
 pgaspi_dev_connect_context(const int i)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   return tcp_dev_connect_to(i, pgaspi_gethostname(i), TCP_DEV_PORT + gctx->poff[i]);
 }
@@ -117,7 +117,7 @@ pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_
 static void
 pgaspi_dev_print_info()
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_printf("<<<<<<<<<<<<<<<< TCP-info >>>>>>>>>>>>>>>>>>>\n");
   gaspi_printf("  Hostname: %s\n", pgaspi_gethostname(gctx->rank));
@@ -139,7 +139,7 @@ pgaspi_dev_print_info()
 int
 pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   memset (&glb_gaspi_ctx_tcp, 0, sizeof (gaspi_tcp_ctx));
 
@@ -271,7 +271,7 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
   int i, s;
   void *res;
   unsigned int c;
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   tcp_dev_stop_device();
 

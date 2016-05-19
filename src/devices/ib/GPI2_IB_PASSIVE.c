@@ -31,7 +31,7 @@ pgaspi_dev_passive_send (const gaspi_segment_id_t segment_id_local,
   struct ibv_send_wr swr;
   struct ibv_wc wc_send;
   gaspi_cycles_t s0;
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   const int byte_id = rank >> 3;
   const int bit_pos = rank - (byte_id * 8);
@@ -110,7 +110,7 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
   int i;
   fd_set rfds;
   struct timeval tout;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   rlist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr +
 			    offset_local);

@@ -33,7 +33,7 @@ const unsigned int glb_gaspi_typ_size[6] = { 4, 4, 4, 8, 8, 8 };
 static inline gaspi_return_t
 _gaspi_release_group_mem(const gaspi_group_t group)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if( glb_gaspi_group_ctx[group].rrcd != NULL )
     {
@@ -68,7 +68,7 @@ pgaspi_group_create (gaspi_group_t * const group)
   const size_t size = NEXT_OFFSET;
   long page_size;
   gaspi_return_t eret = GASPI_ERROR;
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_group_create");
   gaspi_verify_null_ptr(group);
@@ -111,7 +111,7 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   /* TODO: dynamic space (re-)allocation to avoid reservation for all nodes */
   /* or maybe gaspi_group_create should have the number of ranks as input ? */
-  glb_gaspi_group_ctx[id].rrcd = (gaspi_rc_mseg *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg));
+  glb_gaspi_group_ctx[id].rrcd = (gaspi_rc_mseg_t *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg_t));
   if(glb_gaspi_group_ctx[id].rrcd == NULL)
     {
       eret = GASPI_ERR_MEMALLOC;
@@ -179,7 +179,7 @@ pgaspi_group_delete (const gaspi_group_t group)
   gaspi_verify_init("gaspi_group_delete");
   gaspi_verify_group(group);
 
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
   gaspi_return_t eret = GASPI_ERROR;
   if(group == GASPI_GROUP_ALL)
     return GASPI_ERR_INV_GROUP;
@@ -261,7 +261,7 @@ pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms)
   int i;
   gaspi_group_t g0;
   gaspi_return_t eret = GASPI_ERROR;
-  gaspi_context const * const gctx = &glb_gaspi_ctx; //TODO: we can pass this as arg
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx; //TODO: we can pass this as arg
 
   if( (eret = pgaspi_group_create(&g0)) != GASPI_SUCCESS )
     {
@@ -282,7 +282,7 @@ pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms)
 
   glb_gaspi_group_ctx[GASPI_GROUP_ALL].tnc = gctx->tnc;
 
-  gaspi_group_ctx *group_to_commit = &(glb_gaspi_group_ctx[GASPI_GROUP_ALL]);
+  gaspi_group_ctx_t* group_to_commit = &(glb_gaspi_group_ctx[GASPI_GROUP_ALL]);
 
   group_to_commit->rank = gctx->rank;
 
@@ -307,12 +307,12 @@ pgaspi_group_commit (const gaspi_group_t group,
   int i, r;
   gaspi_return_t eret = GASPI_ERROR;
   gaspi_timeout_t delta_tout = timeout_ms;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_group_commit");
   gaspi_verify_group(group);
 
-  gaspi_group_ctx *group_to_commit = &(glb_gaspi_group_ctx[group]);
+  gaspi_group_ctx_t* group_to_commit = &(glb_gaspi_group_ctx[group]);
 
   if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
     return GASPI_TIMEOUT;
@@ -400,7 +400,7 @@ pgaspi_group_num (gaspi_number_t * const group_num)
 {
   gaspi_verify_init("gaspi_group_num");
   gaspi_verify_null_ptr(group_num);
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   *group_num = gctx->group_cnt;
 
@@ -413,7 +413,7 @@ pgaspi_group_size (const gaspi_group_t group,
 		  gaspi_number_t * const group_size)
 {
   gaspi_verify_init("gaspi_group_size");
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if (group < gctx->group_cnt)
     {
@@ -433,7 +433,7 @@ pgaspi_group_ranks (const gaspi_group_t group,
 		   gaspi_rank_t * const group_ranks)
 {
   gaspi_verify_init("gaspi_group_ranks");
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if (group < gctx->group_cnt)
     {
@@ -486,7 +486,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 {
   gaspi_verify_init("gaspi_barrier");
   gaspi_verify_group(g);
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -619,7 +619,7 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
   int mask, tmprank, tmpdst;
 
   gaspi_return_t eret = GASPI_ERROR;
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   const int dsize = r_args->elem_size * elem_cnt;
 

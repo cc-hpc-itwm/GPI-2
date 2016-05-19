@@ -33,7 +33,7 @@ pgaspi_queue_size (const gaspi_queue_id_t queue,
 {
   gaspi_verify_queue(queue);
   gaspi_verify_null_ptr(queue_size);
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   *queue_size = (gaspi_number_t) gctx->ne_count_c[queue];
 
@@ -45,7 +45,7 @@ gaspi_return_t
 pgaspi_queue_num (gaspi_number_t * const queue_num)
 {
   gaspi_verify_null_ptr(queue_num);
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   *queue_num = gctx->num_queues;
 
@@ -120,7 +120,7 @@ pgaspi_queue_create(gaspi_queue_id_t * const queue_id, const gaspi_timeout_t tim
 {
   gaspi_rank_t n;
   gaspi_return_t eret = GASPI_ERROR;
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_null_ptr(queue_id);
 
@@ -185,7 +185,7 @@ pgaspi_queue_create(gaspi_queue_id_t * const queue_id, const gaspi_timeout_t tim
 gaspi_return_t
 pgaspi_queue_delete(const gaspi_queue_id_t queue_id)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   lock_gaspi (&glb_gaspi_ctx_lock);
 
@@ -208,7 +208,7 @@ pgaspi_queue_purge(const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_m
 {
   gaspi_verify_init("gaspi_queue_purge");
   gaspi_verify_queue(queue);
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -238,7 +238,7 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
 	      const gaspi_queue_id_t queue,
 	      const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_write");
   gaspi_verify_local_off(offset_local, segment_id_local, size);
@@ -290,7 +290,7 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
 	     const gaspi_queue_id_t queue,
 	     const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_read");
   gaspi_verify_local_off(offset_local, segment_id_local, size);
@@ -343,7 +343,7 @@ pgaspi_wait (const gaspi_queue_id_t queue,
   GPI2_STATS_START_TIMER(GASPI_WAIT_TIMER);
 
   gaspi_return_t eret = GASPI_ERROR;
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if(lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
@@ -379,7 +379,7 @@ pgaspi_write_list (const gaspi_number_t num,
 		   const gaspi_queue_id_t queue,
 		   const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if(num == 0)
     return GASPI_ERR_INV_NUM;
@@ -440,7 +440,7 @@ pgaspi_read_list (const gaspi_number_t num,
 		  const gaspi_queue_id_t queue,
 		  const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if(num == 0)
     return GASPI_ERR_INV_NUM;
@@ -499,7 +499,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
 	       const gaspi_queue_id_t queue,
 	       const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_notify");
   gaspi_verify_segment(segment_id_remote);
@@ -551,7 +551,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 			gaspi_notification_id_t * const first_id,
 			const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_notify_waitsome");
   gaspi_verify_segment(segment_id_local);
@@ -668,7 +668,7 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
 		     const gaspi_notification_id_t notification_id,
 		     gaspi_notification_t * const old_notification_val)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_notify_reset");
   gaspi_verify_segment(segment_id_local);
@@ -715,7 +715,7 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 		     const gaspi_queue_id_t queue,
 		     const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_write_notify");
   gaspi_verify_local_off(offset_local, segment_id_local, size);
@@ -779,7 +779,7 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 			  const gaspi_queue_id_t queue,
 			  const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if(num == 0)
     return GASPI_ERR_INV_NUM;

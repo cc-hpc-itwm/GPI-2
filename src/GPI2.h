@@ -31,8 +31,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define NEXT_OFFSET       (COLL_MEM_RECV + 73728)
 #define NOTIFY_OFFSET     (65536*4)
 
-gaspi_context glb_gaspi_ctx;
-gaspi_group_ctx glb_gaspi_group_ctx[GASPI_MAX_GROUPS];
+gaspi_context_t glb_gaspi_ctx;
+gaspi_group_ctx_t glb_gaspi_group_ctx[GASPI_MAX_GROUPS];
 
 /* TODO: Move these to context */
 volatile int glb_gaspi_init;         //Is GPI-2 initialized?

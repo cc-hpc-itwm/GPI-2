@@ -87,7 +87,7 @@ typedef struct
   void *host_mr;
   unsigned int host_rkey;
 #endif
-} gaspi_rc_mseg;
+} gaspi_rc_mseg_t;
 
 typedef struct
 {
@@ -115,8 +115,8 @@ typedef struct
   int use_gpus;
 #endif
 
-  gaspi_rc_mseg nsrc;
-  gaspi_rc_mseg *rrmd[GASPI_MAX_MSEGS];
+  gaspi_rc_mseg_t nsrc;
+  gaspi_rc_mseg_t* rrmd[GASPI_MAX_MSEGS];
 
   gaspi_endpoint_conn_t *ep_conn;
 
@@ -128,6 +128,6 @@ typedef struct
   int ne_count_c[GASPI_MAX_QP];
   unsigned char ne_count_p[8192]; //TODO: dynamic size
 
-} gaspi_context;
+} gaspi_context_t;
 
 #endif /* _GPI2_TYPES_H_ */

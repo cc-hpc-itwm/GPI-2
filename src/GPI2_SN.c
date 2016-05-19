@@ -275,7 +275,7 @@ gaspi_sn_readn(const int sockfd, const void * data_ptr, const size_t n)
 int
 gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   int rank, src, dst, mask;
   int send_val = 1, recv_val = 2;
   int size = gctx->tnc;
@@ -301,7 +301,7 @@ gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
 }
 
 static int
-gaspi_sn_recv_topology(gaspi_context * const gctx)
+gaspi_sn_recv_topology(gaspi_context_t * const gctx)
 {
   int i;
   struct sockaddr in_addr;
@@ -414,7 +414,7 @@ gaspi_sn_recv_topology(gaspi_context * const gctx)
 }
 
 static int
-gaspi_sn_send_topology(gaspi_context * const gctx, const int i, const gaspi_timeout_t timeout_ms)
+gaspi_sn_send_topology(gaspi_context_t * const gctx, const int i, const gaspi_timeout_t timeout_ms)
 {
   if( (gctx->sockfd[i] =
        gaspi_sn_connect2port(pgaspi_gethostname(i),
@@ -481,7 +481,7 @@ gaspi_sn_send_topology(gaspi_context * const gctx, const int i, const gaspi_time
 /* TODO: deal with timeout */
 /* TODO: remove stuff with env vars */
 int
-gaspi_sn_broadcast_topology(gaspi_context * const gctx, const gaspi_timeout_t timeout_ms)
+gaspi_sn_broadcast_topology(gaspi_context_t * const gctx, const gaspi_timeout_t timeout_ms)
 {
   int mask = 0x1;
   int dst, src;
@@ -529,7 +529,7 @@ gaspi_sn_broadcast_topology(gaspi_context * const gctx, const gaspi_timeout_t ti
 int
 gaspi_sn_segment_register(const gaspi_cd_header snp)
 {
-  gaspi_context * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if(!glb_gaspi_dev_init)
     return -1;
@@ -542,7 +542,7 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
   if(gctx->rrmd[snp.seg_id] == NULL)
     {
       gctx->rrmd[snp.seg_id] =
-	(gaspi_rc_mseg *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg));
+	(gaspi_rc_mseg_t *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg_t));
 
       if( gctx->rrmd[snp.seg_id] == NULL )
 	{
@@ -578,7 +578,7 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
 gaspi_return_t
 gaspi_sn_connect_to_rank(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   struct timeb t0, t1;
   ftime(&t0);
 
@@ -617,7 +617,7 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, const gaspi_timeout_t timeout_
 static inline int
 _gaspi_sn_connect_command(const gaspi_rank_t rank)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   const int i = (int) rank;
 
   gaspi_cd_header cdh;
@@ -660,7 +660,7 @@ _gaspi_sn_connect_command(const gaspi_rank_t rank)
 static inline int
 _gaspi_sn_queue_create_command(const gaspi_rank_t rank, const void * const arg)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   const int i = (int) rank;
 
   gaspi_cd_header cdh;
@@ -713,7 +713,7 @@ _gaspi_sn_queue_create_command(const gaspi_rank_t rank, const void * const arg)
 static inline int
 _gaspi_sn_single_command(const gaspi_rank_t rank, const enum gaspi_sn_ops op)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   gaspi_cd_header cdh;
   memset(&cdh, 0, sizeof(gaspi_cd_header));
 
@@ -737,7 +737,7 @@ _gaspi_sn_single_command(const gaspi_rank_t rank, const enum gaspi_sn_ops op)
 static inline int
 _gaspi_sn_segment_register_command(const gaspi_rank_t rank, const void * const arg)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   const gaspi_segment_id_t segment_id = * (gaspi_segment_id_t *) arg;
 
   gaspi_cd_header cdh;
@@ -798,7 +798,7 @@ struct group_desc
 static inline int
 _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms, const void * const arg)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   struct group_desc *gb = (struct group_desc *) arg;
   struct group_desc rem_gb;
 
@@ -873,15 +873,15 @@ _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms,
 static inline int
 _gaspi_sn_group_connect(const gaspi_rank_t rank, const void * const arg)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   int i = (int) rank;
   const gaspi_group_t group = *(gaspi_group_t *) arg;
-  const gaspi_group_ctx * const group_to_commit = &(glb_gaspi_group_ctx[group]);
+  const gaspi_group_ctx_t * const group_to_commit = &(glb_gaspi_group_ctx[group]);
 
   gaspi_cd_header cdh;
   memset(&cdh, 0, sizeof(gaspi_cd_header));
 
-  cdh.op_len = sizeof(gaspi_rc_mseg);
+  cdh.op_len = sizeof(gaspi_rc_mseg_t);
   cdh.op = GASPI_SN_GRP_CONNECT;
   cdh.rank = gctx->rank;
   cdh.ret = group;
@@ -898,15 +898,15 @@ _gaspi_sn_group_connect(const gaspi_rank_t rank, const void * const arg)
       return -1;
     }
 
-  ssize_t rret = gaspi_sn_readn(gctx->sockfd[i], &group_to_commit->rrcd[i], sizeof(gaspi_rc_mseg));
-  if( rret != sizeof(gaspi_rc_mseg) )
+  ssize_t rret = gaspi_sn_readn(gctx->sockfd[i], &group_to_commit->rrcd[i], sizeof(gaspi_rc_mseg_t));
+  if( rret != sizeof(gaspi_rc_mseg_t) )
     {
       gaspi_print_error("Failed to read from %d (%ld %d %p %lu)",
 			i,
 			ret,
 			gctx->sockfd[i],
 			&group_to_commit->rrcd[i],
-			sizeof(gaspi_rc_mseg));
+			sizeof(gaspi_rc_mseg_t));
 
       return -1;
     }
@@ -917,7 +917,7 @@ _gaspi_sn_group_connect(const gaspi_rank_t rank, const void * const arg)
 gaspi_return_t
 gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms, const void * const arg)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   int ret = -1;
   gaspi_return_t eret = GASPI_ERROR;
   const int i = (int) rank;
@@ -1001,7 +1001,7 @@ gaspi_sn_backend(void *arg)
   struct epoll_event ev;
   struct epoll_event *ret_ev;
   gaspi_mgmt_header *ev_mgmt, *mgmt;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   signal(SIGSTKFLT, gaspi_sn_cleanup);
   signal(SIGPIPE, SIG_IGN);
@@ -1343,7 +1343,7 @@ gaspi_sn_backend(void *arg)
 				      /* TODO: check the pointer */
 				      if(gaspi_sn_writen( mgmt->fd,
 							  &glb_gaspi_group_ctx[mgmt->cdh.ret].rrcd[gctx->rank],
-							  sizeof(gaspi_rc_mseg) ) < 0 )
+							  sizeof(gaspi_rc_mseg_t) ) < 0 )
 					{
 					  gaspi_print_error("Failed to connect group.");
 					  io_err = 1;

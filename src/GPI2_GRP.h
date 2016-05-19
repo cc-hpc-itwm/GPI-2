@@ -45,8 +45,8 @@ typedef struct
   int pof2_exp;
   int *rank_grp;
   int *committed_rank;
-  gaspi_rc_mseg *rrcd;
-} gaspi_group_ctx;
+  gaspi_rc_mseg_t *rrcd;
+} gaspi_group_ctx_t;
 
 #define GASPI_RESET_GROUP(group_ctx, i)					\
   do {									\

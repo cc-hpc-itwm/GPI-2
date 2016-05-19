@@ -92,7 +92,7 @@ _gaspi_find_GPU_numa_node(int cudevice)
 gaspi_return_t
 gaspi_gpu_init(void)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   int deviceCount;
   cudaError_t cuda_error_id = cudaGetDeviceCount(&deviceCount);
   if( cuda_error_id != cudaSuccess )
@@ -202,7 +202,7 @@ gaspi_gpu_number(gaspi_number_t* num_gpus)
 {
   gaspi_verify_init("gaspi_gpu_number");
   gaspi_verify_null_ptr(num_gpus);
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if( 0 == gctx->use_gpus )
     {
@@ -223,7 +223,7 @@ gaspi_gpu_ids(gaspi_gpu_id_t* gpu_ids)
   gaspi_verify_init("gaspi_gpu_ids");
   gaspi_verify_null_ptr(gpu_ids);
 
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if( 0 == gctx->use_gpus )
     {
@@ -259,7 +259,7 @@ pgaspi_gpu_write(const gaspi_segment_id_t segment_id_local,
   /* gaspi_verify_queue_depth(glb_gaspi_ctx.ne_count_c[queue]); */
 
   gaspi_return_t eret = GASPI_ERROR;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if(lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;
@@ -318,7 +318,7 @@ pgaspi_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
     }
 
   gaspi_return_t eret = GASPI_ERROR;
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if(lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
     return GASPI_TIMEOUT;

@@ -31,10 +31,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GASPI.h"
 #include "GPI2.h"
 #include "GPI2_IB.h"
-#include "GPI2_SN.h"
+/* #include "GPI2_SN.h" */
 
 int
-pgaspi_dev_register_mem(gaspi_rc_mseg *seg, const gaspi_size_t size)
+pgaspi_dev_register_mem(gaspi_rc_mseg_t *seg, const gaspi_size_t size)
 {
   seg->mr[0] = ibv_reg_mr (glb_gaspi_ctx_ib.pd,
 			   seg->data.buf,
@@ -71,7 +71,7 @@ pgaspi_dev_register_mem(gaspi_rc_mseg *seg, const gaspi_size_t size)
 }
 
 int
-pgaspi_dev_unregister_mem(const gaspi_rc_mseg * seg)
+pgaspi_dev_unregister_mem(const gaspi_rc_mseg_t * seg)
 {
   if( seg->mr[0] != NULL)
     {
@@ -101,11 +101,11 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 			  const gaspi_size_t size,
 			  const gaspi_alloc_t alloc_policy)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if (gctx->rrmd[segment_id] == NULL)
     {
-      gctx->rrmd[segment_id] = (gaspi_rc_mseg *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg));
+      gctx->rrmd[segment_id] = (gaspi_rc_mseg_t *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg_t));
 
       if(!gctx->rrmd[segment_id])
 	goto errL;
@@ -238,7 +238,7 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_dev_segment_delete (const gaspi_segment_id_t segment_id)
 {
-  gaspi_context const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   if( gctx->use_gpus != 0 && gctx->gpu_count > 0 )
     {
@@ -269,7 +269,7 @@ pgaspi_dev_segment_delete (const gaspi_segment_id_t segment_id)
   free (gctx->rrmd[segment_id][gctx->rank].data.buf);
   gctx->rrmd[segment_id][gctx->rank].data.buf = NULL;
 
-  memset(gctx->rrmd[segment_id], 0, gctx->tnc * sizeof (gaspi_rc_mseg));
+  memset(gctx->rrmd[segment_id], 0, gctx->tnc * sizeof (gaspi_rc_mseg_t));
   free(gctx->rrmd[segment_id]);
   gctx->rrmd[segment_id] = NULL;
 
