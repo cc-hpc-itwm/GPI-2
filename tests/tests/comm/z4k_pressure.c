@@ -104,13 +104,16 @@ int main(int argc, char *argv[])
     ASSERT (gaspi_notify( 0, (myrank + 1) % highestnode, 0, 1, 0, GASPI_BLOCK));
     gaspi_notification_id_t recv_id;
     ASSERT(gaspi_notify_waitsome(0, 0, 1, &recv_id, GASPI_BLOCK));
+    assert(recv_id == 0);
     gaspi_notification_t notification_val;
     ASSERT( gaspi_notify_reset(0, recv_id, &notification_val));
 
     /* notify remote that data has arrived */
     ASSERT (gaspi_notify( 0, (myrank + highestnode - 1) % highestnode, 1, 1, 0, GASPI_BLOCK));
+
     gaspi_notification_id_t ack_id;
     ASSERT(gaspi_notify_waitsome(0, 1, 1, &ack_id, GASPI_BLOCK));
+    assert(ack_id == 1);
     ASSERT( gaspi_notify_reset(0, ack_id, &notification_val));
 
     /* check if data was written successfully */
