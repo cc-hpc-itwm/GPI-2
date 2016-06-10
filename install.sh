@@ -211,7 +211,7 @@ if [ $GPI2_DEVICE = IB ]; then
 		OFED_PATH=/usr/
 	    else
 		echo "Error: could not find libibverbs."
-		echo "Run this script with the -o option and provide the path to your OFED installation."
+		echo "Run this script with the --with-infiniband=<path> option and provide the path to your OFED installation."
 		echo
 		exit 1
 	    fi
