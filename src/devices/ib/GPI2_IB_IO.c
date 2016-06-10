@@ -341,7 +341,7 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = sizeof(gaspi_notification_t);
-  slistN.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
+  slistN.lkey = ((struct ibv_mr *) gctx->nsrc.mr[1])->lkey;
 
 #ifdef GPI2_CUDA
   if( gctx->rrmd[segment_id_remote][rank].cuda_dev_id >= 0)
@@ -411,7 +411,7 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = sizeof(gaspi_notification_t);
-  slistN.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
+  slistN.lkey = ((struct ibv_mr *) gctx->nsrc.mr[1])->lkey;
 
 #ifdef GPI2_CUDA
   if((gctx->rrmd[segment_id_remote][rank].cuda_dev_id >= 0))
@@ -492,7 +492,7 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
   *((unsigned int *) slistN.addr) = notification_value;
 
   slistN.length = sizeof(gaspi_notification_t);
-  slistN.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
+  slistN.lkey = ((struct ibv_mr *) gctx->nsrc.mr[1])->lkey;
 
 #ifdef GPI2_CUDA
   if(gctx->rrmd[segment_id_notification][rank].cuda_dev_id >= 0)
