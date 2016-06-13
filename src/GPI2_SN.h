@@ -40,8 +40,9 @@ enum gaspi_sn_ops
 
 enum gaspi_sn_status
 {
-  GASPI_SN_STATE_OK = 0,
-  GASPI_SN_STATE_ERROR = 1
+  GASPI_SN_STATE_INIT = 0,
+  GASPI_SN_STATE_OK,
+  GASPI_SN_STATE_ERROR
 };
 
 typedef struct

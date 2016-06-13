@@ -46,7 +46,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
   mgmt->cdh.op = GASPI_SN_RESET;
 
 /* Status and return value of SN thread: mostly for error detection */
-volatile enum gaspi_sn_status gaspi_sn_status = GASPI_SN_STATE_OK;
+volatile enum gaspi_sn_status gaspi_sn_status = GASPI_SN_STATE_INIT;
 volatile gaspi_return_t gaspi_sn_err = GASPI_SUCCESS;
 
 extern gaspi_config_t glb_gaspi_cfg;
@@ -1131,6 +1131,9 @@ gaspi_sn_backend(void *arg)
       close(lsock);
       return NULL;
     }
+
+  /* SN ready to go */
+  gaspi_sn_status = GASPI_SN_STATE_OK;
 
   /* main events loop */
   while(1)
