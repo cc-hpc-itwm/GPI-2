@@ -329,13 +329,15 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	}
     }
 
-  if( (eret = gaspi_sn_broadcast_topology(&glb_gaspi_ctx, timeout_ms)) != GASPI_SUCCESS )
+  eret = gaspi_sn_broadcast_topology(&glb_gaspi_ctx, timeout_ms);
+  if( eret != GASPI_SUCCESS )
     {
       gaspi_print_error("Failed topology broadcast");
       goto errL;
     }
 
-  if( (eret = pgaspi_init_core()) != GASPI_SUCCESS )
+  eret = pgaspi_init_core();
+  if( eret != GASPI_SUCCESS )
     {
       goto errL;
     }
