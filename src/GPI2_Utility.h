@@ -164,7 +164,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
   {									\
     if( !glb_gaspi_init )						\
       {									\
-	gaspi_print_error("Error: Invalixd function (%s) before initialization", \
+	gaspi_print_error("Error: Invalid function (%s) before initialization", \
 			  funcname);					\
 	return GASPI_ERR_NOINIT;					\
       }									\
