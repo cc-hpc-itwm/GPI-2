@@ -70,13 +70,13 @@ gaspi_sn_set_default_opts(const int sockfd)
   int opt = 1;
   if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
     {
-      gaspi_print_error("Failed to set options on socket");
+      gaspi_print_error("Failed to set option on socket");
       return -1;
     }
 
   if(setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)) < 0)
     {
-      gaspi_print_error("Failed to set options on socket");
+      gaspi_print_error("Failed to set option on socket");
       return -1;
     }
 
@@ -156,7 +156,7 @@ gaspi_sn_connect2port_intern(const char * const hn, const unsigned short port)
 
   if( 0 != gaspi_sn_set_default_opts(sockfd) )
     {
-      gaspi_print_error("Failed to set options on socket");
+      gaspi_print_error("Failed to set options on socket.");
       close(sockfd);
       return -1;
     }
@@ -328,8 +328,7 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
 
   if(bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress)) < 0)
     {
-      gaspi_print_error("Failed to bind socket (port %d)",
-			glb_gaspi_cfg.sn_port + 64 + gctx->localSocket);
+      gaspi_print_error("Failed to bind socket (port %d)", glb_gaspi_cfg.sn_port + 64 + gctx->localSocket);
       close(lsock);
       return -1;
     }
@@ -344,7 +343,7 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
   int nsock = accept( lsock, &in_addr, &in_len );
   if(nsock < 0)
     {
-      gaspi_print_error("accept failed");
+      gaspi_print_error("Failed to accept connection.");
       close(lsock);
       close(nsock);
       return -1;
@@ -355,7 +354,7 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
 
   if( gaspi_sn_readn(nsock, &cdh, sizeof(cdh)) != sizeof(cdh) )
     {
-      gaspi_print_error("Failed header read");
+      gaspi_print_error("Failed to read topology header.");
       close(lsock);
       close(nsock);
       return -1;
@@ -365,8 +364,7 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
   gctx->tnc  = cdh.tnc;
   if(cdh.op != GASPI_SN_TOPOLOGY)
     {
-      printf("Wrong header %d\n", cdh.op);
-      fflush(stdout);
+      gaspi_print_error("Received unexpected topology data.");
     }
 
   gctx->hn_poff = (char*) calloc( gctx->tnc, 65 );
@@ -395,7 +393,7 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
 
   if( gaspi_sn_readn(nsock, gctx->hn_poff, gctx->tnc * 65 ) != gctx->tnc * 65 )
     {
-      gaspi_print_error("Failed read.");
+      gaspi_print_error("Failed to read topology data.");
       close(lsock);
       close(nsock);
       return -1;
@@ -403,6 +401,7 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
 
   if( gaspi_sn_close( nsock ) != 0 )
     {
+      gaspi_print_error("Failed to close connection.");
       close(lsock);
       return -1;
     }
@@ -426,7 +425,7 @@ gaspi_sn_send_topology(gaspi_context_t * const gctx, const int i, const gaspi_ti
 
   if( 0 != gaspi_sn_set_default_opts(gctx->sockfd[i]) )
     {
-      gaspi_print_error("Failed to opts");
+      gaspi_print_error("Failed to set socket options");
       close(gctx->sockfd[i]);
       return -1;
     }
@@ -446,14 +445,14 @@ gaspi_sn_send_topology(gaspi_context_t * const gctx, const int i, const gaspi_ti
 
   if (sockfd < 0 )
     {
-      gaspi_print_error("Wrong fd %d %d", i, gctx->sockfd[i] );
+      gaspi_print_error("Connection to %d not set", i );
       retval = -1;
       goto endL;
     }
 
   if ( gaspi_sn_writen( sockfd, ptr, len)  != len )
     {
-      gaspi_print_error("Failed to send topology header to %d.", i);
+      gaspi_print_error("Failed to write topology header to %d.", i);
       retval = -1;
       goto endL;
     }
@@ -464,15 +463,18 @@ gaspi_sn_send_topology(gaspi_context_t * const gctx, const int i, const gaspi_ti
 
   if ( gaspi_sn_writen( sockfd, ptr, len)  != len )
     {
-      gaspi_print_error("Failed to send topology command to %d.", i);
+      gaspi_print_error("Failed to write topology data to %d.", i);
       retval = -1;
       goto endL;
     }
 
  endL:
   gctx->sockfd[i] = -1;
-  if(gaspi_sn_close( sockfd ) != 0)
-    retval = -1;
+  if( gaspi_sn_close( sockfd ) != 0)
+    {
+      gaspi_print_error("Failed to close connection to %d.", i);
+      retval = -1;
+    }
 
   return retval;
 }
