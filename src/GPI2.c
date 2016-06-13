@@ -743,6 +743,7 @@ pgaspi_error_str(gaspi_return_t error_code)
       [GASPI_ERR_UNALIGN_OFF] = "Unaligned (8 bytes) offset",
       [GASPI_ERR_ACTIVE_COLL] = "Other collective is still active",
       [GASPI_ERR_DEVICE] = "Device operation error",
+      [GASPI_ERR_SN] = "SN operation failed",
       [GASPI_ERR_MEMALLOC] = "Memory allocation failed"
     };
 

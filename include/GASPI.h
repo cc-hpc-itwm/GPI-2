@@ -107,7 +107,8 @@ extern "C"
       GASPI_ERR_UNALIGN_OFF = 24,
       GASPI_ERR_ACTIVE_COLL = 25,
       GASPI_ERR_DEVICE = 26,
-      GASPI_ERR_MEMALLOC = 27
+      GASPI_ERR_SN = 27,
+      GASPI_ERR_MEMALLOC = 28
     } gaspi_return_t;
 
   /**
