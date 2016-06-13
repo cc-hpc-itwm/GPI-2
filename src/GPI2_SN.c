@@ -1011,6 +1011,12 @@ gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gasp
   return eret;
 }
 
+enum gaspi_sn_status
+gaspi_sn_status_get(void)
+{
+  return gaspi_sn_status;
+}
+
 void
 gaspi_sn_cleanup(const int sig)
 {
