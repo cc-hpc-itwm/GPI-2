@@ -54,12 +54,16 @@ extern gaspi_config_t glb_gaspi_cfg;
 int gaspi_sn_set_non_blocking(const int sock)
 {
   int sflags = fcntl(sock, F_GETFL, 0);
-  if(sflags < 0)
+  if( sflags < 0 )
+    {
       return -1;
+    }
 
   sflags |= O_NONBLOCK;
-  if(fcntl(sock, F_SETFL, sflags) < 0)
+  if( fcntl(sock, F_SETFL, sflags) < 0 )
+    {
       return -1;
+    }
 
   return 0;
 }
@@ -68,13 +72,13 @@ int
 gaspi_sn_set_default_opts(const int sockfd)
 {
   int opt = 1;
-  if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+  if( setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0 )
     {
       gaspi_print_error("Failed to set option on socket");
       return -1;
     }
 
-  if(setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)) < 0)
+  if( setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt)) < 0 )
     {
       gaspi_print_error("Failed to set option on socket");
       return -1;
@@ -89,11 +93,15 @@ _gaspi_check_set_ofile_limit(void)
 {
   struct rlimit ofiles;
 
-  if(getrlimit ( RLIMIT_NOFILE, &ofiles) != 0)
-    return -1;
+  if( getrlimit ( RLIMIT_NOFILE, &ofiles) != 0 )
+    {
+      return -1;
+    }
 
-  if(ofiles.rlim_cur >= ofiles.rlim_max)
-    return -1;
+  if( ofiles.rlim_cur >= ofiles.rlim_max )
+    {
+      return -1;
+    }
   else
     {
       ofiles.rlim_cur = ofiles.rlim_max;
@@ -110,44 +118,49 @@ gaspi_sn_connect2port_intern(const char * const hn, const unsigned short port)
   int ret;
   int sockfd = -1;
 
-  struct sockaddr_in Host;
-  struct hostent *serverData;
+  struct sockaddr_in host;
+  struct hostent *server_data;
 
   sockfd = socket ( AF_INET, SOCK_STREAM, 0 );
   if( -1 == sockfd )
     {
       /* at least deal with open files limit */
       int errsv = errno;
-      if(errsv == EMFILE)
+      if( errsv == EMFILE )
 	{
 	  if( 0 == _gaspi_check_set_ofile_limit() )
 	    {
 	      sockfd = socket(AF_INET,SOCK_STREAM,0);
-	      if(sockfd == -1)
-		return -1;
+	      if( sockfd == -1 )
+		{
+		  /* still erroneous */
+		  return -1;
+		}
 	    }
-	  else
-	    return -2;
+	  else /* failed to check/set ofile limit */
+	    {
+	      return -2;
+	    }
 	}
       else
 	return -1;
     }
 
-  Host.sin_family = AF_INET;
-  Host.sin_port = htons(port);
+  host.sin_family = AF_INET;
+  host.sin_port = htons(port);
 
-  if((serverData = gethostbyname(hn)) == NULL)
+  if((server_data = gethostbyname(hn)) == NULL)
     {
       close(sockfd);
       return -1;
     }
 
-  memcpy(&Host.sin_addr, serverData->h_addr, serverData->h_length);
+  memcpy(&host.sin_addr, server_data->h_addr, server_data->h_length);
 
   /* TODO: we need to be able to distinguish between an initialization
      connection attemp and a connection attempt during run-time where
      the remote node is gone (FT) */
-  ret = connect( sockfd, (struct sockaddr *) &Host, sizeof(Host) );
+  ret = connect( sockfd, (struct sockaddr *) &host, sizeof(host) );
   if( 0 != ret )
     {
       close( sockfd );
@@ -179,13 +192,14 @@ gaspi_sn_connect2port(const char * const hn, const unsigned short port, const un
       ftime(&t1);
       const unsigned int delta_ms = (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
 
-      if( -1 == sockfd )
+      if( sockfd < 0)
 	{
-	  if(delta_ms > timeout_ms)
+	  if( delta_ms > timeout_ms)
 	    {
 	      return -1;
 	    }
 	}
+
       gaspi_delay();
     }
 
@@ -288,11 +302,15 @@ gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
       dst = (rank + mask) % size;
       src = (rank - mask + size) % size;
 
-      if(gaspi_sn_writen(gctx->sockfd[dst], &send_val, sizeof(send_val)) != sizeof(send_val))
+      if( gaspi_sn_writen(gctx->sockfd[dst], &send_val, sizeof(send_val)) != sizeof(send_val) )
+	{
 	  return -1;
+	}
 
-      if(gaspi_sn_readn(gctx->sockfd[src], &recv_val, sizeof(recv_val)) != sizeof(recv_val))
+      if( gaspi_sn_readn(gctx->sockfd[src], &recv_val, sizeof(recv_val)) != sizeof(recv_val) )
+	{
 	  return -1;
+	}
 
       mask <<= 1;
     }
@@ -326,14 +344,14 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
   listeningAddress.sin_port = htons((glb_gaspi_cfg.sn_port + 64 + gctx->localSocket));
   listeningAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 
-  if(bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress)) < 0)
+  if( bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress)) < 0 )
     {
       gaspi_print_error("Failed to bind socket (port %d)", glb_gaspi_cfg.sn_port + 64 + gctx->localSocket);
       close(lsock);
       return -1;
     }
 
-  if(listen(lsock, SOMAXCONN) < 0)
+  if( listen(lsock, SOMAXCONN) < 0 )
     {
       gaspi_print_error("Failed to listen on socket");
       close(lsock);
@@ -341,7 +359,7 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
     }
 
   int nsock = accept( lsock, &in_addr, &in_len );
-  if(nsock < 0)
+  if( nsock < 0 )
     {
       gaspi_print_error("Failed to accept connection.");
       close(lsock);
@@ -362,7 +380,7 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
 
   gctx->rank = cdh.rank;
   gctx->tnc  = cdh.tnc;
-  if(cdh.op != GASPI_SN_TOPOLOGY)
+  if( cdh.op != GASPI_SN_TOPOLOGY )
     {
       gaspi_print_error("Received unexpected topology data.");
     }
@@ -387,10 +405,12 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
       return -1;
     }
 
-  /* Read the topology */
   for(i = 0; i < gctx->tnc; i++)
-    gctx->sockfd[i] = -1;
+    {
+      gctx->sockfd[i] = -1;
+    }
 
+  /* Read the topology */
   if( gaspi_sn_readn(nsock, gctx->hn_poff, gctx->tnc * 65 ) != gctx->tnc * 65 )
     {
       gaspi_print_error("Failed to read topology data.");
@@ -406,8 +426,7 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
       return -1;
     }
 
-  if( gaspi_sn_close( lsock ) != 0 )
-    return -1;
+  close(lsock);
 
   return 0;
 }
@@ -440,17 +459,17 @@ gaspi_sn_send_topology(gaspi_context_t * const gctx, const int i, const gaspi_ti
 
   int retval = 0;
   ssize_t len = sizeof(gaspi_cd_header);
-  void * ptr = &cdh;
+  void* ptr = &cdh;
   int sockfd = gctx->sockfd[i];
 
-  if (sockfd < 0 )
+  if( sockfd < 0 )
     {
       gaspi_print_error("Connection to %d not set", i );
       retval = -1;
       goto endL;
     }
 
-  if ( gaspi_sn_writen( sockfd, ptr, len)  != len )
+  if( gaspi_sn_writen( sockfd, ptr, len)  != len )
     {
       gaspi_print_error("Failed to write topology header to %d.", i);
       retval = -1;
@@ -461,7 +480,7 @@ gaspi_sn_send_topology(gaspi_context_t * const gctx, const int i, const gaspi_ti
   ptr = gctx->hn_poff;
   len = gctx->tnc * 65;
 
-  if ( gaspi_sn_writen( sockfd, ptr, len)  != len )
+  if( gaspi_sn_writen( sockfd, ptr, len)  != len )
     {
       gaspi_print_error("Failed to write topology data to %d.", i);
       retval = -1;
@@ -490,10 +509,10 @@ gaspi_sn_broadcast_topology(gaspi_context_t * const gctx, const gaspi_timeout_t 
       if( gctx->rank & mask )
 	{
 	  src = gctx->rank - mask;
-	  if(src < 0)
+	  if( src < 0 )
 	    src += gctx->tnc;
 
-	  if(gaspi_sn_recv_topology(gctx) != 0)
+	  if( gaspi_sn_recv_topology(gctx) != 0 )
 	    {
 	      gaspi_print_error("Failed to receive topology.");
 	      return -1;
@@ -510,8 +529,10 @@ gaspi_sn_broadcast_topology(gaspi_context_t * const gctx, const gaspi_timeout_t 
 	{
 	  dst = gctx->rank + mask;
 
-	  if(dst >= gctx->tnc)
-	    dst -= gctx->tnc;
+	  if( dst >= gctx->tnc )
+	    {
+	      dst -= gctx->tnc;
+	    }
 
 	  const int sres = gaspi_sn_send_topology(gctx, dst, timeout_ms);
 	  if( sres == 1)
