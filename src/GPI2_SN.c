@@ -85,7 +85,7 @@ gaspi_sn_set_default_opts(const int sockfd)
 
 /* check open files limit and try to increase */
 static int
-_gaspi_check_ofile_limit(void)
+_gaspi_check_set_ofile_limit(void)
 {
   struct rlimit ofiles;
 
@@ -120,7 +120,7 @@ gaspi_sn_connect2port_intern(const char * const hn, const unsigned short port)
       int errsv = errno;
       if(errsv == EMFILE)
 	{
-	  if( 0 == _gaspi_check_ofile_limit() )
+	  if( 0 == _gaspi_check_set_ofile_limit() )
 	    {
 	      sockfd = socket(AF_INET,SOCK_STREAM,0);
 	      if(sockfd == -1)
@@ -1149,7 +1149,7 @@ gaspi_sn_backend(void *arg)
 		      int errsv = errno;
 		      if(errsv == EMFILE)
 			{
-			  if( 0 == _gaspi_check_ofile_limit() )
+			  if( 0 == _gaspi_check_set_ofile_limit() )
 			    {
 			      nsock = accept( lsock, &in_addr, &in_len );
 			    }
