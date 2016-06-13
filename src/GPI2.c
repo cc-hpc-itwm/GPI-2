@@ -329,10 +329,9 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	}
     }
 
-  if( 0 != gaspi_sn_broadcast_topology(&glb_gaspi_ctx, GASPI_BLOCK) )
+  if( (eret = gaspi_sn_broadcast_topology(&glb_gaspi_ctx, timeout_ms)) != GASPI_SUCCESS )
     {
       gaspi_print_error("Failed topology broadcast");
-      eret = GASPI_ERROR;
       goto errL;
     }
 

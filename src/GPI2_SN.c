@@ -416,13 +416,12 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
 static int
 gaspi_sn_send_topology(gaspi_context_t * const gctx, const int i, const gaspi_timeout_t timeout_ms)
 {
-  if( (gctx->sockfd[i] =
-       gaspi_sn_connect2port(pgaspi_gethostname(i),
-			     (glb_gaspi_cfg.sn_port + 64 + gctx->poff[i]),
-			     timeout_ms)) < 0)
+  if( (gctx->sockfd[i] = gaspi_sn_connect2port( pgaspi_gethostname(i),
+						(glb_gaspi_cfg.sn_port + 64 + gctx->poff[i]),
+						timeout_ms)) < 0 )
     {
       gaspi_print_error("Failed to connect to %d", i);
-      return -1;
+      return 1; //timeout
     }
 
   if( 0 != gaspi_sn_set_default_opts(gctx->sockfd[i]) )
@@ -478,9 +477,7 @@ gaspi_sn_send_topology(gaspi_context_t * const gctx, const int i, const gaspi_ti
   return retval;
 }
 
-/* TODO: deal with timeout */
-/* TODO: remove stuff with env vars */
-int
+gaspi_return_t
 gaspi_sn_broadcast_topology(gaspi_context_t * const gctx, const gaspi_timeout_t timeout_ms)
 {
   int mask = 0x1;
@@ -514,10 +511,15 @@ gaspi_sn_broadcast_topology(gaspi_context_t * const gctx, const gaspi_timeout_t 
 	  if(dst >= gctx->tnc)
 	    dst -= gctx->tnc;
 
-	  if(gaspi_sn_send_topology(gctx, dst, timeout_ms) != 0)
+	  const int sres = gaspi_sn_send_topology(gctx, dst, timeout_ms);
+	  if( sres == 1)
 	    {
-	      gaspi_print_error("Failed to send topology to %d", dst);
-	      return -1;
+	      return GASPI_TIMEOUT;
+	    }
+
+	  if( sres < 0 )
+	    {
+	      return GASPI_ERROR;
 	    }
 	}
       mask >>=1;

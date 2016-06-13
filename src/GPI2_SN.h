@@ -71,7 +71,7 @@ typedef struct
 extern volatile enum gaspi_sn_status gaspi_sn_status;
 extern volatile gaspi_return_t gaspi_sn_err;
 
-int
+gaspi_return_t
 gaspi_sn_broadcast_topology(gaspi_context_t * const ctx, const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
