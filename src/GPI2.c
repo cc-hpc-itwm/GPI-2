@@ -347,6 +347,19 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   gaspi_init_collectives();
 
+  /* Wait for SN to initialize (locally) */
+  enum gaspi_sn_status _sn_status;
+  while( (_sn_status = gaspi_sn_status_get()) == GASPI_SN_STATE_INIT )
+    {
+      gaspi_delay();
+    }
+
+  if( _sn_status != GASPI_SN_STATE_OK )
+    {
+      eret = GASPI_ERR_SN;
+      goto errL;
+    }
+
   glb_gaspi_init = 1;
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
