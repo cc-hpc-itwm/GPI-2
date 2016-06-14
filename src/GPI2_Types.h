@@ -32,7 +32,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_MINOR_VERSION (3)
 #define GASPI_REVISION (0)
 
-#define GASPI_MAX_NODES   (65536)
 #define GASPI_MAX_GROUPS  (32)
 #define GASPI_MAX_MSEGS   (32)
 #define GASPI_MAX_QP      (16)

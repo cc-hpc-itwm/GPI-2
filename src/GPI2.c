@@ -305,9 +305,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
 	      strncpy (gctx->hn_poff + id * 64, line, MIN (lsize - 1, 63));
 	      id++;
-
-	      if(id >= GASPI_MAX_NODES)
-		break;
 	    }
 
 	  fclose (fp);
