@@ -129,7 +129,7 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   glb_gaspi_group_ctx[id].rrcd[gctx->rank].size = size;
 
-  eret = pgaspi_dev_register_mem(&(glb_gaspi_group_ctx[id].rrcd[gctx->rank]), size);
+  eret = pgaspi_dev_register_mem(&(glb_gaspi_group_ctx[id].rrcd[gctx->rank]));
   if(eret != GASPI_SUCCESS)
     {
       eret = GASPI_ERR_DEVICE;

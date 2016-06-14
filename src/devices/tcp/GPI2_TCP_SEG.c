@@ -20,7 +20,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Types.h"
 
 int
-pgaspi_dev_register_mem(gaspi_rc_mseg_t *seg, const gaspi_size_t size)
+pgaspi_dev_register_mem(gaspi_rc_mseg_t *seg)
 {
   return 0;
 }

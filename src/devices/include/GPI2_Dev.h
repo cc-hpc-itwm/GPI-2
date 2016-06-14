@@ -61,7 +61,7 @@ int
 pgaspi_dev_cleanup_core(gaspi_config_t *);
 
 int
-pgaspi_dev_register_mem(gaspi_rc_mseg_t *, const gaspi_size_t);
+pgaspi_dev_register_mem(gaspi_rc_mseg_t *);
 
 int
 pgaspi_dev_unregister_mem(const gaspi_rc_mseg_t *);

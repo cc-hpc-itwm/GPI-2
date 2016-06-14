@@ -174,7 +174,7 @@ pgaspi_init_core(void)
     }
 
   /* Register internal memory */
-  if( pgaspi_dev_register_mem(&(gctx->nsrc), NOTIFY_OFFSET) != 0 )
+  if( pgaspi_dev_register_mem(&(gctx->nsrc)) != 0 )
     {
       gaspi_print_error ("Failed to register internal memory");
       return -1;
