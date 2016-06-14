@@ -40,9 +40,10 @@ gaspi_lock_t gaspi_stats_lock;
 void
 gaspi_stats_start_timer(enum gaspi_timer t)
 {
-
-  if(_timers[t].running)
-    return;
+  if( _timers[t].running )
+    {
+      return;
+    }
 
   lock_gaspi(&gaspi_stats_lock);
 
@@ -55,8 +56,10 @@ gaspi_stats_start_timer(enum gaspi_timer t)
 void
 gaspi_stats_stop_timer(enum gaspi_timer t)
 {
-  if(!_timers[t].running)
-    return;
+  if( !_timers[t].running )
+    {
+      return;
+    }
 
   lock_gaspi(&gaspi_stats_lock);
 
@@ -78,6 +81,7 @@ gaspi_stats_get_timer_ms(enum gaspi_timer t)
   lock_gaspi(&gaspi_stats_lock);
   float f = _timers[t].ttotal_ms;
   unlock_gaspi(&gaspi_stats_lock);
+
   return f;
 }
 
@@ -193,7 +197,7 @@ pgaspi_statistic_counter_info( gaspi_statistic_counter_t counter,
 {
   const gaspi_number_t counter_max = GASPI_STATS_COUNTER_NUM_MAX;
 
-  if (counter < counter_max)
+  if( counter < counter_max )
     {
       *counter_argument = gpi2_counter_info[counter].argument;
       *counter_name = gpi2_counter_info[counter].name;
@@ -210,12 +214,11 @@ pgaspi_statistic_counter_info( gaspi_statistic_counter_t counter,
 gaspi_return_t
 pgaspi_statistic_counter_get ( gaspi_statistic_counter_t counter,
 			       gaspi_statistic_argument_t argument,
-			       unsigned long * value
-			      )
+			       unsigned long * value )
 {
   const gaspi_number_t counter_max = GASPI_STATS_COUNTER_NUM_MAX;
 
-  if (counter < counter_max)
+  if( counter < counter_max )
     {
       *value = gpi2_counter_info[counter].value;
       return GASPI_SUCCESS;
@@ -228,12 +231,11 @@ pgaspi_statistic_counter_get ( gaspi_statistic_counter_t counter,
 gaspi_return_t
 pgaspi_statistic_counter_get_f ( gaspi_statistic_counter_t counter,
 				 gaspi_statistic_argument_t argument,
-				 gaspi_float * value
-				 )
+				 gaspi_float * value )
 {
   const gaspi_number_t counter_max = GASPI_STATS_COUNTER_NUM_MAX;
 
-  if (counter < counter_max)
+  if( counter < counter_max )
     {
       *value = gpi2_counter_info[counter].value_f;
       return GASPI_SUCCESS;
@@ -248,7 +250,7 @@ pgaspi_statistic_counter_reset (gaspi_statistic_counter_t counter)
 {
   const gaspi_number_t counter_max = GASPI_STATS_COUNTER_NUM_MAX;
 
-  if (counter < counter_max)
+  if( counter < counter_max )
     {
       gpi2_counter_info[counter].value = 0;
       return GASPI_SUCCESS;
@@ -277,7 +279,7 @@ pgaspi_statistic_print_counters (void)
   for(r = 0; r < nranks; r++)
     {
       /* It's my turn to print? */
-      if(r == myrank)
+      if( r == myrank )
 	{
 	  for(i = 0; i < GASPI_STATS_COUNTER_NUM_MAX; i++)
 	    {
@@ -323,7 +325,7 @@ pgaspi_statistic_print_counters (void)
 	  fflush(stdout);
 	}
 
-      if(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK) != GASPI_SUCCESS)
+      if( gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK) != GASPI_SUCCESS )
 	{
 	  gaspi_print_error("Failed internal statistics barrier.");
 	  return;
