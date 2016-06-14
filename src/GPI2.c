@@ -135,6 +135,22 @@ pgaspi_init_core(void)
   /* Set number of "created" communication queues */
   gctx->num_queues = glb_gaspi_cfg.queue_num;
 
+  for(i = 0; i < GASPI_MAX_MSEGS; i++)
+    {
+      gctx->rrmd[i] = NULL;
+    }
+
+  gctx->ep_conn = (gaspi_endpoint_conn_t *) calloc(gctx->tnc, sizeof(gaspi_endpoint_conn_t));
+  if( gctx->ep_conn == NULL )
+    {
+      return GASPI_ERR_MEMALLOC;
+    }
+
+  if( pgaspi_dev_init_core(&glb_gaspi_cfg) != 0 )
+    {
+      return GASPI_ERR_DEVICE;
+    }
+
   /* Create internal memory space (notifications + atomic value placeholder) */
   const unsigned int size = NOTIFY_OFFSET + sizeof(gaspi_atomic_value_t);
   const long page_size = sysconf (_SC_PAGESIZE);
@@ -156,22 +172,6 @@ pgaspi_init_core(void)
   gctx->nsrc.notif_spc.addr = gctx->nsrc.data.addr;
   gctx->nsrc.notif_spc_size = NOTIFY_OFFSET;
   gctx->nsrc.data.addr += NOTIFY_OFFSET;
-
-  for(i = 0; i < GASPI_MAX_MSEGS; i++)
-    {
-      gctx->rrmd[i] = NULL;
-    }
-
-  gctx->ep_conn = (gaspi_endpoint_conn_t *) calloc(gctx->tnc, sizeof(gaspi_endpoint_conn_t));
-  if( gctx->ep_conn == NULL )
-    {
-      return GASPI_ERR_MEMALLOC;
-    }
-
-  if( pgaspi_dev_init_core(&glb_gaspi_cfg) != 0 )
-    {
-      return GASPI_ERR_DEVICE;
-    }
 
   /* Register internal memory */
   if( pgaspi_dev_register_mem(&(gctx->nsrc)) != 0 )
