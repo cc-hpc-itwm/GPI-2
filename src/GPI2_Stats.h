@@ -66,6 +66,9 @@ gaspi_stats_start_timer(enum gaspi_timer t);
 void
 gaspi_stats_stop_timer(enum gaspi_timer t);
 
+float
+gaspi_stats_get_timer_ms(enum gaspi_timer t);
+
 #ifdef GPI2_STATS
 
 #define GPI2_STATS_INC_COUNT(counter, val) do {				\
