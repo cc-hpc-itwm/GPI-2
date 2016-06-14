@@ -98,7 +98,7 @@ pgaspi_numa_socket(gaspi_uchar * const sock)
   char * numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
   if( numaPtr )
     {
-      if(atoi(numaPtr) == 1)
+      if( atoi(numaPtr) == 1 )
 	{
 	  *sock = (gaspi_uchar) gctx->localSocket;
 
