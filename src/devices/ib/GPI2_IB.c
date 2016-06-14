@@ -353,35 +353,6 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-  gctx->nsrc.mr[0] = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
-					gctx->nsrc.data.ptr,
-					gctx->nsrc.size,
-					IBV_ACCESS_REMOTE_WRITE
-					| IBV_ACCESS_LOCAL_WRITE
-					| IBV_ACCESS_REMOTE_READ
-					| IBV_ACCESS_REMOTE_ATOMIC);
-
-  if(!gctx->nsrc.mr[0])
-    {
-      gaspi_print_error ("Memory registration failed (libibverbs)");
-      return -1;
-    }
-
-  gctx->nsrc.mr[1] = ibv_reg_mr(glb_gaspi_ctx_ib.pd,
-					gctx->nsrc.notif_spc.ptr,
-					gctx->nsrc.notif_spc_size,
-					IBV_ACCESS_REMOTE_WRITE
-					| IBV_ACCESS_LOCAL_WRITE
-					| IBV_ACCESS_REMOTE_READ
-					| IBV_ACCESS_REMOTE_ATOMIC);
-
-  if(!gctx->nsrc.mr[1])
-    {
-      gaspi_print_error ("Memory registration failed (libibverbs)");
-      return -1;
-    }
-
   memset (&glb_gaspi_ctx_ib.srq_attr, 0, sizeof (struct ibv_srq_init_attr));
 
   glb_gaspi_ctx_ib.srq_attr.attr.max_wr  = gaspi_cfg->queue_depth;
@@ -444,6 +415,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
     }
 
   /* Allocate space for QPs */
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
   glb_gaspi_ctx_ib.qpGroups = (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
   if(!glb_gaspi_ctx_ib.qpGroups)
     {
@@ -962,7 +934,6 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-  /*  TODO: to remove from here <<< LOOP*/
   for(i = 0; i < GASPI_MAX_MSEGS; i++)
     {
       if(gctx->rrmd[i] != NULL)
@@ -1006,22 +977,8 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
 		cudaFreeHost(gctx->rrmd[i][gctx->rank].notif_spc.buf);
 	      else
 #endif
-		free (gctx->rrmd[i][gctx->rank].notif_spc.buf);
-	      gctx->rrmd[i][gctx->rank].data.buf = NULL;
-	      gctx->rrmd[i][gctx->rank].notif_spc.buf = NULL;
 	    }
-
-	  free (gctx->rrmd[i]);
-	  gctx->rrmd[i] = NULL;
 	}
-    }
-  /*>>> LOOP */
-
-  /* Unregister memory */
-  if(pgaspi_dev_unregister_mem(&(gctx->nsrc)) != 0)
-    {
-      gaspi_print_error ("Failed to de-register internal memory");
-      return -1;
     }
 
   for(i = 0; i < GASPI_MAX_GROUPS; i++)

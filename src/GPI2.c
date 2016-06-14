@@ -173,6 +173,13 @@ pgaspi_init_core(void)
       return GASPI_ERR_DEVICE;
     }
 
+  /* Register internal memory */
+  if( pgaspi_dev_register_mem(&(gctx->nsrc), NOTIFY_OFFSET) != 0 )
+    {
+      gaspi_print_error ("Failed to register internal memory");
+      return -1;
+    }
+
   for(i = 0; i < GASPI_MAX_QP + 3; i++)
     {
       gctx->qp_state_vec[i] = (unsigned char *) calloc (gctx->tnc, sizeof(unsigned char));
@@ -442,6 +449,13 @@ pgaspi_cleanup_core(void)
 	}
     }
 
+  /* Unregister internal memory */
+  if( pgaspi_dev_unregister_mem(&(gctx->nsrc)) != 0 )
+    {
+      gaspi_print_error ("Failed to de-register internal memory");
+      return -1;
+    }
+
   if( pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0 )
     {
       return GASPI_ERR_DEVICE;
@@ -467,6 +481,22 @@ pgaspi_cleanup_core(void)
 
 	  free (glb_gaspi_group_ctx[i].rrcd);
 	  glb_gaspi_group_ctx[i].rrcd = NULL;
+	}
+    }
+
+  for(i = 0; i < GASPI_MAX_MSEGS; i++)
+    {
+      if(gctx->rrmd[i] != NULL)
+	{
+	  if(gctx->rrmd[i][gctx->rank].size)
+	    {
+	      free (gctx->rrmd[i][gctx->rank].notif_spc.buf);
+	      gctx->rrmd[i][gctx->rank].notif_spc.buf = NULL;
+	      gctx->rrmd[i][gctx->rank].data.buf = NULL;
+	    }
+
+	  free (gctx->rrmd[i]);
+	  gctx->rrmd[i] = NULL;
 	}
     }
 

@@ -314,22 +314,5 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
       tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.scqC[c]);
     }
 
-  //TODO: why is this here?
-  for(i = 0; i < GASPI_MAX_MSEGS; i++)
-    {
-      if(gctx->rrmd[i] != NULL)
-	{
-	  if(gctx->rrmd[i][gctx->rank].size)
-	    {
-	      free (gctx->rrmd[i][gctx->rank].notif_spc.buf);
-	      gctx->rrmd[i][gctx->rank].notif_spc.buf = NULL;
-	      gctx->rrmd[i][gctx->rank].data.buf = NULL;
-	    }
-
-	  free (gctx->rrmd[i]);
-	  gctx->rrmd[i] = NULL;
-	}
-    }
-
   return 0;
 }
