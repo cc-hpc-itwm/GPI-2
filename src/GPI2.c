@@ -277,7 +277,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  gctx->hn_poff = (char *) calloc (gctx->tnc, 65);
 	  if( gctx->hn_poff == NULL )
 	    {
-	      gaspi_print_error("Debug: Failed to allocate memory");
+	      gaspi_print_error("Failed to allocate memory");
 	      goto errL;
 	    }
 
