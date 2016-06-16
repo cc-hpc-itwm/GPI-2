@@ -71,4 +71,7 @@ typedef struct
 gaspi_return_t
 pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms);
 
+gaspi_return_t
+pgaspi_group_all_delete(void);
+
 #endif /* GPI2_GRP_H_ */

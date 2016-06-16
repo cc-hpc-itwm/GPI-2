@@ -934,65 +934,6 @@ pgaspi_dev_cleanup_core (gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-  for(i = 0; i < GASPI_MAX_MSEGS; i++)
-    {
-      if(gctx->rrmd[i] != NULL)
-	{
-	  if(gctx->rrmd[i][gctx->rank].size)
-	    {
-#ifdef GPI2_CUDA
-	      if(gctx->use_gpus == 0 || gctx->gpu_count == 0)
-#endif
-
-		if(ibv_dereg_mr(gctx->rrmd[i][gctx->rank].mr[0]))
-		  {
-		    gaspi_print_error("Failed to de-register memory (libiverbs)");
-		    return -1;
-		  }
-		if(ibv_dereg_mr(gctx->rrmd[i][gctx->rank].mr[1]))
-		  {
-		    gaspi_print_error("Failed to de-register memory (libiverbs)");
-		    return -1;
-		  }
-
-#ifdef GPI2_CUDA
-	      if(gctx->rrmd[i][gctx->rank].cuda_dev_id >= 0)
-		{
-		  if(ibv_dereg_mr(gctx->rrmd[i][gctx->rank].host_mr))
-		    {
-		      gaspi_print_error("Failed to de-register memory (libiverbs)\n");
-		      return -1;
-		    }
-		  cudaSetDevice( (gctx->rrmd[i][gctx->rank].cuda_dev_id));
-		  if(gctx->rrmd[i][gctx->rank].data.buf)
-		    cudaFree(gctx->rrmd[i][gctx->rank].data.buf);
-
-		  if(gctx->rrmd[i][gctx->rank].notif_spc.buf)
-		    cudaFree(gctx->rrmd[i][gctx->rank].notif_spc.buf);
-
-		  if(gctx->rrmd[i][gctx->rank].host_ptr)
-		    cudaFreeHost(gctx->rrmd[i][gctx->rank].host_ptr);
-		}
-	      else if(gctx->use_gpus != 0 && gctx->gpu_count > 0)
-		cudaFreeHost(gctx->rrmd[i][gctx->rank].notif_spc.buf);
-	      else
-#endif
-	    }
-	}
-    }
-
-  for(i = 0; i < GASPI_MAX_GROUPS; i++)
-    {
-      if(glb_gaspi_group_ctx[i].id >= 0)
-	{
-	  if(pgaspi_dev_unregister_mem(&(glb_gaspi_group_ctx[i].rrcd[gctx->rank])) != 0)
-	    {
-	      gaspi_print_error ("Failed to de-register group memory");
-	      return -1;
-	    }
-	}
-    }
-
   if(ibv_dealloc_pd (glb_gaspi_ctx_ib.pd))
     {
       gaspi_print_error("Failed to de-allocate protection domain (libibverbs)");

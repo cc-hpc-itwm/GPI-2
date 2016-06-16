@@ -299,6 +299,30 @@ pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms)
   return GASPI_SUCCESS;
 }
 
+gaspi_return_t
+pgaspi_group_all_delete(void)
+{
+  gaspi_verify_init("gaspi_group_all_delete");
+
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
+  gaspi_return_t eret = GASPI_ERROR;
+
+  //TODO: do we need the 2 locks?
+  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  lock_gaspi_tout (&glb_gaspi_group_ctx[GASPI_GROUP_ALL].del, GASPI_BLOCK);
+
+  eret = _gaspi_release_group_mem(GASPI_GROUP_ALL);
+
+  GASPI_RESET_GROUP(glb_gaspi_group_ctx, GASPI_GROUP_ALL);
+
+  gctx->group_cnt--;
+
+  unlock_gaspi (&glb_gaspi_group_ctx[GASPI_GROUP_ALL].del);
+  unlock_gaspi (&glb_gaspi_ctx_lock);
+
+  return eret;
+}
+
 #pragma weak gaspi_group_commit = pgaspi_group_commit
 gaspi_return_t
 pgaspi_group_commit (const gaspi_group_t group,

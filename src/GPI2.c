@@ -434,8 +434,7 @@ pgaspi_cleanup_core(void)
       return GASPI_ERROR;
     }
 
-  /* Device clean-up */
-  /* delete extra queues created */
+  /* Delete extra queues created */
   if( gctx->num_queues != glb_gaspi_cfg.queue_num )
     {
       gaspi_uint q;
@@ -449,55 +448,60 @@ pgaspi_cleanup_core(void)
 	}
     }
 
-  /* Unregister internal memory */
+  /* Unregister and release internal memory */
   if( pgaspi_dev_unregister_mem(&(gctx->nsrc)) != 0 )
     {
       gaspi_print_error ("Failed to de-register internal memory");
       return -1;
     }
 
-  if( pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0 )
-    {
-      return GASPI_ERR_DEVICE;
-    }
-
   free(gctx->nsrc.notif_spc.buf);
   gctx->nsrc.notif_spc.buf = NULL;
   gctx->nsrc.data.buf = NULL;
 
-  for(i = 0; i < GASPI_MAX_GROUPS; i++)
+  /* Delete segments */
+  for(i = 0; i < GASPI_MAX_MSEGS; i++)
     {
-      if( glb_gaspi_group_ctx[i].id >= 0 )
+      if( gctx->rrmd[i] != NULL )
 	{
-	  free (glb_gaspi_group_ctx[i].rrcd[gctx->rank].data.buf);
-	  glb_gaspi_group_ctx[i].rrcd[gctx->rank].data.buf = NULL;
-	  glb_gaspi_group_ctx[i].rrcd[gctx->rank].notif_spc.buf = NULL;
+	  if( gctx->rrmd[i][gctx->rank].size )
+	    {
+	      if( pgaspi_segment_delete(i) != GASPI_SUCCESS )
+		{
+		  gaspi_print_error("Failed to delete segment %d", i);
+		}
 
-	  free (glb_gaspi_group_ctx[i].rank_grp);
-	  glb_gaspi_group_ctx[i].rank_grp = NULL;
-
-	  free(glb_gaspi_group_ctx[i].committed_rank);
-	  glb_gaspi_group_ctx[i].committed_rank = NULL;
-
-	  free (glb_gaspi_group_ctx[i].rrcd);
-	  glb_gaspi_group_ctx[i].rrcd = NULL;
+	    }
+	  free(gctx->rrmd[i]);
+	  gctx->rrmd[i] = NULL;
 	}
     }
 
-  for(i = 0; i < GASPI_MAX_MSEGS; i++)
-    {
-      if(gctx->rrmd[i] != NULL)
-	{
-	  if(gctx->rrmd[i][gctx->rank].size)
-	    {
-	      free (gctx->rrmd[i][gctx->rank].notif_spc.buf);
-	      gctx->rrmd[i][gctx->rank].notif_spc.buf = NULL;
-	      gctx->rrmd[i][gctx->rank].data.buf = NULL;
-	    }
+  unlock_gaspi (&glb_gaspi_ctx_lock);
 
-	  free (gctx->rrmd[i]);
-	  gctx->rrmd[i] = NULL;
+  /* Delete groups */
+  for(i = 1; i < GASPI_MAX_GROUPS; i++)
+    {
+      if( glb_gaspi_group_ctx[i].id >= 0 )
+	{
+	  if( pgaspi_group_delete(i) != GASPI_SUCCESS )
+	    {
+	      gaspi_print_error("Failed to delete group %u", i);
+	    }
 	}
+    }
+
+  if( pgaspi_group_all_delete() != GASPI_SUCCESS )
+    {
+      gaspi_print_error("Failed to delete group GASPI_GROUP_ALL.");
+    }
+
+  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+
+  /* Device clean-up */
+  if( pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0 )
+    {
+      return GASPI_ERR_DEVICE;
     }
 
   free (gctx->hn_poff);
