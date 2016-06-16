@@ -184,16 +184,18 @@ pgaspi_group_delete (const gaspi_group_t group)
   if(group == GASPI_GROUP_ALL)
     return GASPI_ERR_INV_GROUP;
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
-  lock_gaspi_tout (&glb_gaspi_group_ctx[group].del, GASPI_BLOCK);
+  lock_gaspi (&glb_gaspi_group_ctx[group].del);
 
   eret = _gaspi_release_group_mem(group);
 
   GASPI_RESET_GROUP(glb_gaspi_group_ctx, group);
 
+  unlock_gaspi (&glb_gaspi_group_ctx[group].del);
+
+  lock_gaspi (&glb_gaspi_ctx_lock);
+
   gctx->group_cnt--;
 
-  unlock_gaspi (&glb_gaspi_group_ctx[group].del);
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
   return eret;
@@ -307,17 +309,18 @@ pgaspi_group_all_delete(void)
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
   gaspi_return_t eret = GASPI_ERROR;
 
-  //TODO: do we need the 2 locks?
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
   lock_gaspi_tout (&glb_gaspi_group_ctx[GASPI_GROUP_ALL].del, GASPI_BLOCK);
 
   eret = _gaspi_release_group_mem(GASPI_GROUP_ALL);
 
   GASPI_RESET_GROUP(glb_gaspi_group_ctx, GASPI_GROUP_ALL);
 
+  unlock_gaspi (&glb_gaspi_group_ctx[GASPI_GROUP_ALL].del);
+
+  lock_gaspi (&glb_gaspi_ctx_lock);
+
   gctx->group_cnt--;
 
-  unlock_gaspi (&glb_gaspi_group_ctx[GASPI_GROUP_ALL].del);
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
   return eret;
