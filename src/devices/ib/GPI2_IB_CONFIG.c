@@ -86,13 +86,13 @@ pgaspi_config_set (const gaspi_config_t nconf)
   else
     glb_gaspi_cfg.queue_num = nconf.queue_num;
 
-  if (nconf.queue_depth > GASPI_MAX_QSIZE || nconf.queue_depth < 1)
+  if (nconf.queue_size_max > GASPI_MAX_QSIZE || nconf.queue_size_max < 1)
     {
-      gaspi_print_error("Invalid value for parameter queue_depth (min=1 and max=GASPI_MAX_QSIZE");
+      gaspi_print_error("Invalid value for parameter queue_size_max (min=1 and max=GASPI_MAX_QSIZE");
       return GASPI_ERR_CONFIG;
     }
   else
-    glb_gaspi_cfg.queue_depth = nconf.queue_depth;
+    glb_gaspi_cfg.queue_size_max = nconf.queue_size_max;
 
   if (nconf.mtu == 0 || nconf.mtu == 1024 || nconf.mtu == 2048 || nconf.mtu == 4096)
     glb_gaspi_cfg.mtu = nconf.mtu;

@@ -84,12 +84,12 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
       }						\
   }
 
-#define gaspi_verify_queue_depth(depth)			\
-  {							\
-    if( (unsigned) depth >= glb_gaspi_cfg.queue_depth )	\
-      {							\
-	return GASPI_ERR_MANY_Q_REQS;			\
-      }							\
+#define gaspi_verify_queue_size_max(depth)			\
+  {								\
+    if( (unsigned) depth >= glb_gaspi_cfg.queue_size_max )	\
+      {								\
+	return GASPI_ERR_MANY_Q_REQS;				\
+      }								\
   }
 
 #define gaspi_verify_segment(seg_id)		\
@@ -178,7 +178,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define gaspi_verify_rank(rank)
 #define gaspi_verify_group(grp)
 #define gaspi_verify_queue(queue)
-#define gaspi_verify_queue_depth(depth)
+#define gaspi_verify_queue_size_max(depth)
 #define gaspi_verify_segment(seg_id)
 #define gaspi_verify_unaligned_off(offset)
 #define gaspi_verify_local_off(off, seg_id, sz)

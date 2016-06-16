@@ -41,7 +41,7 @@ gaspi_config_t glb_gaspi_cfg = {
 #else                           //network type
   GASPI_ETHERNET,
 #endif
-  1024,				//queue depth
+  1024,				//queue size max
   8,				//queue count
   GASPI_MAX_GROUPS,		//group_max;
   GASPI_MAX_MSEGS,		//segment_max;
@@ -58,7 +58,7 @@ static void
 pgaspi_print_config(gaspi_config_t * const config)
 {
   printf(" logger %u\nsn_port %u\nnet_info %u\nnetdev_id %d\n mtu %u\n \
-port_check %u\nuser_net %u\nnetwork %d\nqueue_depth %u\nqueue_num %u\n \
+port_check %u\nuser_net %u\nnetwork %d\nqueue_size_max %u\nqueue_num %u\n \
 group_max %d\nsegment_max %d\ntransfer_size_max %lu\nnotification_num %u\n \
 passive_queue_size_max %u\npassive_transfer_size_max %u\nallreduce_buf_size %lu\n \
 allreduce_elem_max %u\nbuild_infrastructure %d\n",
@@ -70,7 +70,7 @@ allreduce_elem_max %u\nbuild_infrastructure %d\n",
 	 config->port_check,
 	 config->user_net,
 	 config->network,
-	 config->queue_depth,
+	 config->queue_size_max,
 	 config->queue_num,
 	 config->group_max,
 	 config->segment_max,
@@ -133,13 +133,13 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   glb_gaspi_cfg.queue_num = nconf.queue_num;
 
-  if( nconf.queue_depth > GASPI_MAX_QSIZE || nconf.queue_depth < 1 )
+  if( nconf.queue_size_max > GASPI_MAX_QSIZE || nconf.queue_size_max < 1 )
     {
-      gaspi_print_error("Invalid value for parameter queue_depth (min=1 and max=GASPI_MAX_QSIZE");
+      gaspi_print_error("Invalid value for parameter queue_size_max (min=1 and max=GASPI_MAX_QSIZE");
       return GASPI_ERR_CONFIG;
     }
 
-  glb_gaspi_cfg.queue_depth = nconf.queue_depth;
+  glb_gaspi_cfg.queue_size_max = nconf.queue_size_max;
 
   if( nconf.mtu == 0 || nconf.mtu == 1024 || nconf.mtu == 2048 || nconf.mtu == 4096 )
     {

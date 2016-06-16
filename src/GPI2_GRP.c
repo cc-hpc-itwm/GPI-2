@@ -181,8 +181,11 @@ pgaspi_group_delete (const gaspi_group_t group)
 
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
   gaspi_return_t eret = GASPI_ERROR;
+
   if(group == GASPI_GROUP_ALL)
-    return GASPI_ERR_INV_GROUP;
+    {
+      return GASPI_ERR_INV_GROUP;
+    }
 
   lock_gaspi (&glb_gaspi_group_ctx[group].del);
 

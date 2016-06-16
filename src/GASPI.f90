@@ -118,7 +118,7 @@ module GASPI
       integer (gaspi_int)      :: port_check
       integer (gaspi_int)      :: user_net
       integer (gaspi_int)      :: network
-      integer (gaspi_int)      :: queue_depth
+      integer (gaspi_int)      :: queue_size_max
       integer (gaspi_int)      :: queue_num
       integer (gaspi_number_t) :: group_max
       integer (gaspi_number_t) :: segment_max

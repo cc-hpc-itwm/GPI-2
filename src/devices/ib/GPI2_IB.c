@@ -355,7 +355,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 
   memset (&glb_gaspi_ctx_ib.srq_attr, 0, sizeof (struct ibv_srq_init_attr));
 
-  glb_gaspi_ctx_ib.srq_attr.attr.max_wr  = gaspi_cfg->queue_depth;
+  glb_gaspi_ctx_ib.srq_attr.attr.max_wr  = gaspi_cfg->queue_size_max;
   glb_gaspi_ctx_ib.srq_attr.attr.max_sge = 1;
 
   glb_gaspi_ctx_ib.srqP = ibv_create_srq (glb_gaspi_ctx_ib.pd, &glb_gaspi_ctx_ib.srq_attr);
@@ -367,14 +367,14 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 
   /* Create default completion queues */
   /* Groups */
-  glb_gaspi_ctx_ib.scqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_depth, NULL,NULL, 0);
+  glb_gaspi_ctx_ib.scqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_size_max, NULL,NULL, 0);
   if(!glb_gaspi_ctx_ib.scqGroups)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 
-  glb_gaspi_ctx_ib.rcqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_depth, NULL,NULL, 0);
+  glb_gaspi_ctx_ib.rcqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_size_max, NULL,NULL, 0);
   if(!glb_gaspi_ctx_ib.rcqGroups)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
@@ -382,14 +382,14 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
     }
 
   /* Passive */
-  glb_gaspi_ctx_ib.scqP = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_depth, NULL,NULL, 0);
+  glb_gaspi_ctx_ib.scqP = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_size_max, NULL,NULL, 0);
   if(!glb_gaspi_ctx_ib.scqP)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 
-  glb_gaspi_ctx_ib.rcqP = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_depth, NULL, glb_gaspi_ctx_ib.channelP, 0);
+  glb_gaspi_ctx_ib.rcqP = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_size_max, NULL, glb_gaspi_ctx_ib.channelP, 0);
 
   if(!glb_gaspi_ctx_ib.rcqP)
     {
@@ -406,7 +406,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
   /* One-sided Communication */
   for(c = 0; c < gaspi_cfg->queue_num; c++)
     {
-      glb_gaspi_ctx_ib.scqC[c] = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_depth, NULL, NULL, 0);
+      glb_gaspi_ctx_ib.scqC[c] = ibv_create_cq (glb_gaspi_ctx_ib.context, gaspi_cfg->queue_size_max, NULL, NULL, 0);
       if(!glb_gaspi_ctx_ib.scqC[c])
 	{
 	  gaspi_print_error ("Failed to create CQ (libibverbs)");
@@ -511,8 +511,8 @@ _pgaspi_dev_create_qp(struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv
   /* Set initial attributes */
   struct ibv_qp_init_attr qpi_attr;
   memset (&qpi_attr, 0, sizeof (struct ibv_qp_init_attr));
-  qpi_attr.cap.max_send_wr = glb_gaspi_cfg.queue_depth;
-  qpi_attr.cap.max_recv_wr = glb_gaspi_cfg.queue_depth;
+  qpi_attr.cap.max_send_wr = glb_gaspi_cfg.queue_size_max;
+  qpi_attr.cap.max_recv_wr = glb_gaspi_cfg.queue_size_max;
   qpi_attr.cap.max_send_sge = 1;
   qpi_attr.cap.max_recv_sge = 1;
   qpi_attr.cap.max_inline_data = MAX_INLINE_BYTES;
@@ -616,7 +616,7 @@ pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_
   if( 0 == glb_gaspi_ctx_ib.qpC_cstat[id] )
     {
       /* Completion queue */
-      glb_gaspi_ctx_ib.scqC[id] = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_depth, NULL, NULL, 0);
+      glb_gaspi_ctx_ib.scqC[id] = ibv_create_cq (glb_gaspi_ctx_ib.context, glb_gaspi_cfg.queue_size_max, NULL, NULL, 0);
       if(!glb_gaspi_ctx_ib.scqC[id])
 	{
 	  gaspi_print_error ("Failed to create CQ (libibverbs)");

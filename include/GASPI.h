@@ -197,7 +197,7 @@ extern "C"
     gaspi_uint port_check;   /* flag to whether to perform a network check */
     gaspi_uint user_net;     /* */
     gaspi_network_t network; /* network type */
-    gaspi_uint queue_depth;  /* the queue depth (size) to use */
+    gaspi_uint queue_size_max;  /* the queue depth (size) to use */
     gaspi_uint queue_num;    /* the number of queues to use */
     gaspi_number_t group_max;
     gaspi_number_t segment_max;

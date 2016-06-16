@@ -93,7 +93,7 @@ pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_
 {
   if( glb_gaspi_ctx_tcp.scqC[id] == NULL)
     {
-      glb_gaspi_ctx_tcp.scqC[id] = tcp_dev_create_cq(glb_gaspi_cfg.queue_depth, NULL);
+      glb_gaspi_ctx_tcp.scqC[id] = tcp_dev_create_cq(glb_gaspi_cfg.queue_size_max, NULL);
       if(glb_gaspi_ctx_tcp.scqC[id] == NULL)
 	{
 	  gaspi_print_error("Failed to create IO completion queue.");
@@ -184,28 +184,28 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
     }
 
   /* Completion Queues */
-  glb_gaspi_ctx_tcp.scqGroups = tcp_dev_create_cq(gaspi_cfg->queue_depth, NULL);
+  glb_gaspi_ctx_tcp.scqGroups = tcp_dev_create_cq(gaspi_cfg->queue_size_max, NULL);
   if(glb_gaspi_ctx_tcp.scqGroups == NULL)
     {
       gaspi_print_error("Failed to create groups send completion queue.");
       return -1;
     }
 
-  glb_gaspi_ctx_tcp.rcqGroups = tcp_dev_create_cq(gaspi_cfg->queue_depth, NULL);
+  glb_gaspi_ctx_tcp.rcqGroups = tcp_dev_create_cq(gaspi_cfg->queue_size_max, NULL);
   if(glb_gaspi_ctx_tcp.rcqGroups == NULL)
     {
       gaspi_print_error("Failed to create groups receive completion queue.");
       return -1;
     }
 
-  glb_gaspi_ctx_tcp.scqP = tcp_dev_create_cq(gaspi_cfg->queue_depth, NULL);
+  glb_gaspi_ctx_tcp.scqP = tcp_dev_create_cq(gaspi_cfg->queue_size_max, NULL);
   if(glb_gaspi_ctx_tcp.scqP == NULL)
     {
       gaspi_print_error("Failed to create passive send completion queue.");
       return -1;
     }
 
-  glb_gaspi_ctx_tcp.rcqP = tcp_dev_create_cq(gaspi_cfg->queue_depth, glb_gaspi_ctx_tcp.channelP);
+  glb_gaspi_ctx_tcp.rcqP = tcp_dev_create_cq(gaspi_cfg->queue_size_max, glb_gaspi_ctx_tcp.channelP);
   if(glb_gaspi_ctx_tcp.rcqP == NULL)
     {
       gaspi_print_error("Failed to create passive recv completion queue.");
@@ -215,7 +215,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
   unsigned int c;
   for(c = 0; c < gaspi_cfg->queue_num; c++)
     {
-      glb_gaspi_ctx_tcp.scqC[c] = tcp_dev_create_cq(gaspi_cfg->queue_depth, NULL);
+      glb_gaspi_ctx_tcp.scqC[c] = tcp_dev_create_cq(gaspi_cfg->queue_size_max, NULL);
       if(glb_gaspi_ctx_tcp.scqC[c] == NULL)
 	{
 	  gaspi_print_error("Failed to create IO completion queue.");
