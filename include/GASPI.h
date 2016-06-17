@@ -189,26 +189,28 @@ extern "C"
    */
   typedef struct gaspi_config
   {
-    gaspi_uint logger;	     /* flag to set logging */
-    gaspi_uint sn_port;      /* port for internal comm */
-    gaspi_uint net_info;     /* flag to set network information display*/
-    gaspi_int netdev_id;     /* the network device to use */
-    gaspi_uint mtu;	     /* the MTU value to use */
-    gaspi_uint port_check;   /* flag to whether to perform a network check */
-    gaspi_uint user_net;     /* */
-    gaspi_network_t network; /* network type */
-    gaspi_uint queue_size_max;  /* the queue depth (size) to use */
-    gaspi_uint queue_num;    /* the number of queues to use */
-    gaspi_number_t group_max;
-    gaspi_number_t segment_max;
-    gaspi_size_t transfer_size_max;
-    gaspi_number_t notification_num;
-    gaspi_number_t passive_queue_size_max;
-    gaspi_number_t passive_transfer_size_max;
-    gaspi_size_t allreduce_buf_size;
-    gaspi_number_t allreduce_elem_max;
-    gaspi_topology_t build_infrastructure;
-
+    /* GPI-2 only */
+    gaspi_uint logger;	                      /* flag to set logging */
+    gaspi_uint sn_port;                       /* port for internal comm */
+    gaspi_uint net_info;                      /* flag to set network information display*/
+    gaspi_int netdev_id;                      /* the network device to use */
+    gaspi_uint mtu;	                      /* the MTU value to use */
+    gaspi_uint port_check;                    /* flag to whether to perform a network check */
+    gaspi_uint user_net;                      /* flag if user has set the network */
+    /* GASPI specified */
+    gaspi_network_t network;                  /* network type to be used */
+    gaspi_uint queue_size_max;                /* the queue depth (size) to use */
+    gaspi_uint queue_num;                     /* the number of queues to use */
+    gaspi_number_t group_max;                 /* max number of groups that can be created */
+    gaspi_number_t segment_max;               /* max number of segments that can be created */
+    gaspi_size_t transfer_size_max            /* maximum size (bytes) of a single data transfer */;
+    gaspi_number_t notification_num;          /* maximum number of allowed notifications */
+    gaspi_number_t passive_queue_size_max;    /* maximum number of allowed on-going passive requests */
+    gaspi_number_t passive_transfer_size_max; /* maximum size (bytes) of a single passive transfer */
+    gaspi_size_t allreduce_buf_size;          /* size of internal buffer for gaspi_allreduce_user */
+    gaspi_number_t allreduce_elem_max;        /* maximum number of elements in gaspi_allreduce */
+    gaspi_topology_t build_infrastructure;    /* whether and how the topology should be built at initialization */
+    void* user_defined;                       /* user-defined information */
   } gaspi_config_t;
 
   /**
