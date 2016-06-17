@@ -1,5 +1,4 @@
 include make.inc
-include make.inc.dev
 
 ifndef GPI2_DEVICE
 GPI2_DEVICE = IB
