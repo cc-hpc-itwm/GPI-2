@@ -67,7 +67,10 @@ typedef struct
   } notif_spc;
 
   void* mr[2];
+
+#ifdef GPI2_DEVICE_IB
   unsigned int rkey[2];
+#endif
 
   unsigned long size;
   size_t notif_spc_size;

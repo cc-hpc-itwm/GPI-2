@@ -320,8 +320,10 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   gctx->rrmd[segment_id][gctx->rank].trans = 0;
   gctx->rrmd[segment_id][gctx->rank].mr[0] = NULL;
   gctx->rrmd[segment_id][gctx->rank].mr[1] = NULL;
+#ifdef GPI2_DEVICE_IB
   gctx->rrmd[segment_id][gctx->rank].rkey[0] = 0;
   gctx->rrmd[segment_id][gctx->rank].rkey[1] = 0;
+#endif
   gctx->rrmd[segment_id][gctx->rank].user_provided = 0;
 
   /* Reset trans info flag for all ranks */
