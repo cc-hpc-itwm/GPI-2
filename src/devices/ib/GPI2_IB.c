@@ -191,7 +191,7 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
       return -1;
     }
 
-  glb_gaspi_ctx_ib.ib_card_typ = glb_gaspi_ctx_ib.device_attr.vendor_part_id;
+  glb_gaspi_ctx_ib.card_type = glb_gaspi_ctx_ib.device_attr.vendor_part_id;
   glb_gaspi_ctx_ib.max_rd_atomic = glb_gaspi_ctx_ib.device_attr.max_qp_rd_atom;
 
 

@@ -41,7 +41,7 @@ struct ib_ctx_info
 
 typedef struct
 {
-  int ib_card_typ;
+  int card_type;
   int num_dev;
   int max_rd_atomic;
   int ib_port;
