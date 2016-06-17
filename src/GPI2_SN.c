@@ -579,13 +579,13 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
   /* TODO: don't allow re-registration? */
   /* for now we allow re-registration */
   /* if(gctx->rrmd[snp.seg_id][snp.rem_rank].size) -> re-registration error case */
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].data.addr = snp.addr;
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].notif_spc.addr = snp.notif_addr;
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].size = snp.size;
+  gctx->rrmd[snp.seg_id][snp.rank].data.addr = snp.addr;
+  gctx->rrmd[snp.seg_id][snp.rank].notif_spc.addr = snp.notif_addr;
+  gctx->rrmd[snp.seg_id][snp.rank].size = snp.size;
 
 #ifdef GPI2_DEVICE_IB
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey[0] = snp.rkey[0];
-  glb_gaspi_ctx.rrmd[snp.seg_id][snp.rank].rkey[1] = snp.rkey[1];
+  gctx->rrmd[snp.seg_id][snp.rank].rkey[0] = snp.rkey[0];
+  gctx->rrmd[snp.seg_id][snp.rank].rkey[1] = snp.rkey[1];
 #endif
 
 #ifdef GPI2_CUDA
