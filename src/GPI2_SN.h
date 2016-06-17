@@ -67,12 +67,6 @@ typedef struct
   gaspi_cd_header cdh;
 } gaspi_mgmt_header;
 
-/* typedef struct */
-/* { */
-/*   int fd, busy; */
-/*   gaspi_mgmt_header *mgmt; */
-/* } gaspi_rank_data; */
-
 extern volatile enum gaspi_sn_status gaspi_sn_status;
 extern volatile gaspi_return_t gaspi_sn_err;
 
