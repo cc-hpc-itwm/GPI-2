@@ -101,7 +101,7 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 			  const gaspi_size_t size,
 			  const gaspi_alloc_t alloc_policy)
 {
-  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if (gctx->rrmd[segment_id] == NULL)
     {
@@ -222,7 +222,7 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
       gctx->rrmd[segment_id][gctx->rank].data.addr += NOTIFY_OFFSET;
       gctx->rrmd[segment_id][gctx->rank].user_provided = 0;
 
-      if( pgaspi_dev_register_mem(&(gctx->rrmd[segment_id][gctx->rank]), size + NOTIFY_OFFSET) < 0)
+      if( pgaspi_dev_register_mem(&(gctx->rrmd[segment_id][gctx->rank]) ) < 0)
 	{
 	  goto errL;
 	}
@@ -238,7 +238,7 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 gaspi_return_t
 pgaspi_dev_segment_delete (const gaspi_segment_id_t segment_id)
 {
-  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( gctx->use_gpus != 0 && gctx->gpu_count > 0 )
     {

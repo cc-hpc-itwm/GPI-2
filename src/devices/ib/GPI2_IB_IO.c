@@ -574,7 +574,7 @@ pgaspi_dev_gpu_write(const gaspi_segment_id_t segment_id_local,
 		 const gaspi_queue_id_t queue,
 		 const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id < 0 ||
       size <= GASPI_GPU_DIRECT_MAX )
