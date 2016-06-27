@@ -1146,10 +1146,10 @@ extern "C"
    */
   gaspi_return_t
   gaspi_statistic_counter_info( gaspi_statistic_counter_t counter,
-			        gaspi_statistic_argument_t* counter_argument,
-			        gaspi_string_t* counter_name,
+				gaspi_statistic_argument_t* counter_argument,
+				gaspi_string_t* counter_name,
 				gaspi_string_t* counter_description,
-			        gaspi_number_t* verbosity_level);
+				gaspi_number_t* verbosity_level);
 
   /** Get statistical counter.
    *
