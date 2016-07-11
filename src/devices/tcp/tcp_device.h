@@ -173,6 +173,7 @@ struct tcp_dev_args
   int peers_num;
   int id;
   int port;
+  int oob_fd;
 };
 
 struct tcp_cq *

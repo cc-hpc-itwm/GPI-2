@@ -1421,6 +1421,17 @@ tcp_virt_dev(void *args)
       return NULL;
     }
 
+  int tcp_dev_oob_channel = dev_args->oob_fd;
+  struct epoll_event ev;
+  ev.events = EPOLLIN;
+  ev.data.fd = tcp_dev_oob_channel;
+
+  if (epoll_ctl(epollfd, EPOLL_CTL_ADD, dev_args->oob_fd, &ev) == -1)
+    {
+      gaspi_print_error("Failed to add channel.");
+      return NULL;
+    }
+
   /* events loop */
   struct epoll_event *events = calloc(MAX_EVENTS, sizeof(struct epoll_event));
   if( events == NULL )
@@ -1451,6 +1462,12 @@ tcp_virt_dev(void *args)
       int n;
       for(n = 0; n < nfds; ++n)
 	{
+	  if( events[n].data.fd == tcp_dev_oob_channel)
+	    {
+	      //The stop command
+	      continue;
+	    }
+
 	  tcp_dev_conn_state_t *estate = (tcp_dev_conn_state_t *)events[n].data.ptr;
 	  const int event_fd = estate->fd;
 	  const int event_rank = estate->rank;
@@ -1682,6 +1699,7 @@ tcp_virt_dev(void *args)
       events = NULL;
     }
 
+  close(tcp_dev_oob_channel);
   close(listen_sock);
   close(epollfd);
 

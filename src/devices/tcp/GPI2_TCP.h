@@ -43,6 +43,8 @@ typedef struct
   struct tcp_cq *scqC[GASPI_MAX_QP];
   struct tcp_queue *qpC[GASPI_MAX_QP];
 
+  int device_channel;
+
 }  gaspi_tcp_ctx;
 
 gaspi_tcp_ctx glb_gaspi_ctx_tcp;

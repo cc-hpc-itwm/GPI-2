@@ -143,11 +143,21 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
 
   memset (&glb_gaspi_ctx_tcp, 0, sizeof (gaspi_tcp_ctx));
 
+  int pipefd[2];
+  if( pipe(pipefd) == -1 )
+    {
+      gaspi_print_error("Failed to create device channel.");
+      return -1;
+    }
+
+  glb_gaspi_ctx_tcp.device_channel = pipefd[1];
+
   struct tcp_dev_args dev_args =
     {
       .peers_num = gctx->tnc,
       .id = gctx->rank,
-      .port = TCP_DEV_PORT + gctx->localSocket
+      .port = TCP_DEV_PORT + gctx->localSocket,
+      .oob_fd = pipefd[0]
     };
 
   /* start virtual device (thread) */
@@ -297,6 +307,9 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
       tcp_dev_destroy_passive_channel(glb_gaspi_ctx_tcp.channelP);
     }
 
+  char term_flag = 1;
+  write(glb_gaspi_ctx_tcp.device_channel, &term_flag, sizeof(term_flag));
+
   s = pthread_join(tcp_dev_thread, &res);
   if (s != 0)
     {
@@ -313,6 +326,7 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
     {
       tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.scqC[c]);
     }
+  close(glb_gaspi_ctx_tcp.device_channel);
 
   return 0;
 }
