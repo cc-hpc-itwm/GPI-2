@@ -376,8 +376,6 @@ gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
 static int
 gaspi_sn_recv_topology(gaspi_context_t * const gctx)
 {
-  int i;
-
   const int port_to_wait = glb_gaspi_cfg.sn_port + 64 + gctx->localSocket;
   int nsock =  _gaspi_sn_wait_connection(port_to_wait);
   if( nsock < 0 )
@@ -421,6 +419,7 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
       return -1;
     }
 
+  int i;
   for(i = 0; i < gctx->tnc; i++)
     {
       gctx->sockfd[i] = -1;
