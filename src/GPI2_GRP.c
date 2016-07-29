@@ -37,7 +37,6 @@ _gaspi_release_group_mem(const gaspi_group_t group)
 
   if( glb_gaspi_group_ctx[group].rrcd != NULL )
     {
-
       if( pgaspi_dev_unregister_mem(&(glb_gaspi_group_ctx[group].rrcd[gctx->rank]))!= GASPI_SUCCESS)
 	{
 	  return GASPI_ERR_DEVICE;
@@ -75,22 +74,22 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
-  if (gctx->group_cnt >= GASPI_MAX_GROUPS)
+  if( gctx->group_cnt >= GASPI_MAX_GROUPS )
     {
       unlock_gaspi (&glb_gaspi_ctx_lock);
       return GASPI_ERR_MANY_GRP;
     }
 
-  for (i = 0; i < GASPI_MAX_GROUPS; i++)
+  for(i = 0; i < GASPI_MAX_GROUPS; i++)
     {
-      if (glb_gaspi_group_ctx[i].id == -1)
+      if( glb_gaspi_group_ctx[i].id == -1 )
 	{
 	  id = i;
 	  break;
 	}
     }
 
-  if ( id == GASPI_MAX_GROUPS )
+  if( id == GASPI_MAX_GROUPS )
     {
       unlock_gaspi (&glb_gaspi_ctx_lock);
       return GASPI_ERR_MANY_GRP;
@@ -112,14 +111,13 @@ pgaspi_group_create (gaspi_group_t * const group)
   /* TODO: dynamic space (re-)allocation to avoid reservation for all nodes */
   /* or maybe gaspi_group_create should have the number of ranks as input ? */
   glb_gaspi_group_ctx[id].rrcd = (gaspi_rc_mseg_t *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg_t));
-  if(glb_gaspi_group_ctx[id].rrcd == NULL)
+  if( glb_gaspi_group_ctx[id].rrcd == NULL )
     {
       eret = GASPI_ERR_MEMALLOC;
       goto errL;
     }
 
-  if (posix_memalign ((void **) &glb_gaspi_group_ctx[id].rrcd[gctx->rank].data.ptr, page_size, size)
-      != 0)
+  if( posix_memalign ((void **) &glb_gaspi_group_ctx[id].rrcd[gctx->rank].data.ptr, page_size, size) != 0)
     {
       eret = GASPI_ERR_MEMALLOC;
       goto errL;
@@ -130,7 +128,7 @@ pgaspi_group_create (gaspi_group_t * const group)
   glb_gaspi_group_ctx[id].rrcd[gctx->rank].size = size;
 
   eret = pgaspi_dev_register_mem(&(glb_gaspi_group_ctx[id].rrcd[gctx->rank]));
-  if(eret != GASPI_SUCCESS)
+  if( eret != GASPI_SUCCESS )
     {
       eret = GASPI_ERR_DEVICE;
       goto errL;
@@ -138,20 +136,21 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   /* TODO: as above, more dynamic allocation */
   glb_gaspi_group_ctx[id].rank_grp = (int *) malloc (gctx->tnc * sizeof (int));
-  if(!glb_gaspi_group_ctx[id].rank_grp)
+  if( glb_gaspi_group_ctx[id].rank_grp == NULL )
     {
       eret = GASPI_ERR_MEMALLOC;
       goto errL;
     }
 
+  /* TODO: we don't need this */
   glb_gaspi_group_ctx[id].committed_rank = (int *) calloc (gctx->tnc, sizeof (int));
-  if(!glb_gaspi_group_ctx[id].committed_rank)
+  if( glb_gaspi_group_ctx[id].committed_rank == NULL )
     {
       eret = GASPI_ERR_MEMALLOC;
       goto errL;
     }
 
-  for (i = 0; i < gctx->tnc; i++)
+  for(i = 0; i < gctx->tnc; i++)
     {
       glb_gaspi_group_ctx[id].rank_grp[i] = -1;
     }
@@ -221,9 +220,9 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
   lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
 
   int i;
-  for (i = 0; i < glb_gaspi_group_ctx[group].tnc; i++)
+  for(i = 0; i < glb_gaspi_group_ctx[group].tnc; i++)
     {
-      if (glb_gaspi_group_ctx[group].rank_grp[i] == rank)
+      if( glb_gaspi_group_ctx[group].rank_grp[i] == rank )
 	{
 	  unlock_gaspi (&glb_gaspi_ctx_lock);
 	  return GASPI_ERR_INV_RANK;
@@ -231,7 +230,9 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
     }
 
   glb_gaspi_group_ctx[group].rank_grp[glb_gaspi_group_ctx[group].tnc++] = rank;
-  qsort (glb_gaspi_group_ctx[group].rank_grp, glb_gaspi_group_ctx[group].tnc,
+
+  qsort( glb_gaspi_group_ctx[group].rank_grp,
+	 glb_gaspi_group_ctx[group].tnc,
 	 sizeof (int), gaspi_comp_ranks);
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
@@ -257,9 +258,9 @@ _pgaspi_group_commit_to(const gaspi_group_t group,
 }
 
 /* Internal shortcut for GASPI_GROUP_ALL */
-/* Because we know the GROUP_ALL, we avoid checks and initial remote
-   group check and try to do the minimum, mostly to speed-up
-   initialization. */
+/* Because we know the GROUP_ALL, we avoid checks, initial remote
+   group check and connection. Overall try to do the minimum, mostly
+   to speed-up initialization. */
 gaspi_return_t
 pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms)
 {
@@ -273,17 +274,21 @@ pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms)
       return eret;
     }
 
-  if(g0 != GASPI_GROUP_ALL)
+  if( g0 != GASPI_GROUP_ALL )
     {
       return GASPI_ERR_INV_GROUP;
     }
 
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
-    return GASPI_TIMEOUT;
+  if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
+    {
+      return GASPI_TIMEOUT;
+    }
 
   /* Add all ranks to it */
   for(i = 0; i < gctx->tnc; i++)
-    glb_gaspi_group_ctx[GASPI_GROUP_ALL].rank_grp[i]= (gaspi_rank_t) i;
+    {
+      glb_gaspi_group_ctx[GASPI_GROUP_ALL].rank_grp[i] = (gaspi_rank_t) i;
+    }
 
   glb_gaspi_group_ctx[GASPI_GROUP_ALL].tnc = gctx->tnc;
 
@@ -292,7 +297,7 @@ pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms)
   group_to_commit->rank = gctx->rank;
 
   group_to_commit->next_pof2 = 1;
-  while (group_to_commit->next_pof2 <= group_to_commit->tnc)
+  while( group_to_commit->next_pof2 <= group_to_commit->tnc )
     {
       group_to_commit->next_pof2 <<= 1;
     }
@@ -328,7 +333,6 @@ pgaspi_group_all_delete(void)
 
   return eret;
 }
-
 #pragma weak gaspi_group_commit = pgaspi_group_commit
 gaspi_return_t
 pgaspi_group_commit (const gaspi_group_t group,
@@ -344,10 +348,12 @@ pgaspi_group_commit (const gaspi_group_t group,
 
   gaspi_group_ctx_t* group_to_commit = &(glb_gaspi_group_ctx[group]);
 
-  if(lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms))
-    return GASPI_TIMEOUT;
+  if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
+    {
+      return GASPI_TIMEOUT;
+    }
 
-  if (group_to_commit->tnc < 2 && gctx->tnc != 1)
+  if( group_to_commit->tnc < 2 && gctx->tnc != 1 )
     {
       gaspi_print_error("Group must have at least 2 ranks to be committed");
       eret = GASPI_ERR_INV_GROUP;
@@ -356,16 +362,16 @@ pgaspi_group_commit (const gaspi_group_t group,
 
   group_to_commit->rank = -1;
 
-  for (i = 0; i < group_to_commit->tnc; i++)
+  for(i = 0; i < group_to_commit->tnc; i++)
     {
-      if (group_to_commit->rank_grp[i] == gctx->rank)
+      if( group_to_commit->rank_grp[i] == gctx->rank )
 	{
 	  group_to_commit->rank = i;
 	  break;
 	}
     }
 
-  if (group_to_commit->rank == -1)
+  if( group_to_commit->rank == -1 )
     {
       eret = GASPI_ERR_INV_GROUP;
       goto endL;
@@ -373,7 +379,7 @@ pgaspi_group_commit (const gaspi_group_t group,
 
   group_to_commit->next_pof2 = 1;
 
-  while (group_to_commit->next_pof2 <= group_to_commit->tnc)
+  while(group_to_commit->next_pof2 <= group_to_commit->tnc)
     {
       group_to_commit->next_pof2 <<= 1;
     }
@@ -543,6 +549,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
     {
       glb_gaspi_group_ctx[g].barrier_cnt++;
     }
+
 
   unsigned char *barrier_ptr =
     glb_gaspi_group_ctx[g].rrcd[gctx->rank].data.buf + 2 * size + glb_gaspi_group_ctx[g].togle;
