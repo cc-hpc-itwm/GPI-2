@@ -735,10 +735,9 @@ _gaspi_sn_single_command(const gaspi_rank_t rank, const enum gaspi_sn_ops op)
   return 0;
 }
 
-//TODO: rename
 //TODO: refactor with code from recv_topology
 static int
-_gaspi_sn_accept(int port)
+_gaspi_sn_wait_connection(int port)
 {
   struct sockaddr in_addr;
   struct sockaddr_in listeningAddress;
@@ -816,18 +815,18 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
   const int right_rank_port_offset = gctx->poff[right_rank];
   const int my_rank_port_offset = gctx->poff[gctx->rank];
 
-  const int port_to_accept = 23333 + my_rank_port_offset;
+  const int port_to_wait = 23333 + my_rank_port_offset;
   const int port_to_connect = 23333 + right_rank_port_offset;
 
   /* Connect in a ring */
   /* If odd number of ranks, the last rank must connect and then accept */
   if( (grp_ctx->rank % 2) == 0 && !( (grp_ctx->rank == grp_ctx->tnc - 1) && (grp_ctx->tnc % 2 != 0) ))
     {
-      left_sock = _gaspi_sn_accept(port_to_accept);
+      left_sock = _gaspi_sn_wait_connection(port_to_wait);
       if( left_sock < 0 )
 	{
 	  gaspi_print_error("Failed to accept connection on %d(%d).",
-			    port_to_accept, my_rank_port_offset);
+			    port_to_wait, my_rank_port_offset);
 	  return -1;
 	}
 
@@ -850,11 +849,11 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
 	  return -1;
 	}
 
-      left_sock = _gaspi_sn_accept(port_to_accept);
+      left_sock = _gaspi_sn_wait_connection(port_to_wait);
       if( left_sock < 0 )
 	{
 	  gaspi_print_error("Failed to accept connection on %d(%d).",
-			    port_to_accept, my_rank_port_offset);
+			    port_to_wait, my_rank_port_offset);
 	  return -1;
 	}
     }
