@@ -287,6 +287,60 @@ gaspi_sn_readn(const int sockfd, const void * data_ptr, const size_t n)
   return (n - left);
 }
 
+//TODO: refactor with code from recv_topology
+static int
+_gaspi_sn_wait_connection(int port)
+{
+  struct sockaddr in_addr;
+  struct sockaddr_in listeningAddress;
+  socklen_t in_len = sizeof(in_addr);
+
+  int lsock = socket(AF_INET, SOCK_STREAM, 0);
+  if( lsock < 0)
+    {
+      gaspi_print_error("Failed to create socket.");
+      return -1;
+    }
+
+  if( 0 != gaspi_sn_set_default_opts(lsock) )
+    {
+      gaspi_print_error("Failed to set socket opts.");
+      close(lsock);
+      return -1;
+    }
+
+  listeningAddress.sin_family = AF_INET;
+  listeningAddress.sin_port = htons(port);
+  listeningAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+
+  if( bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress)) < 0 )
+    {
+      gaspi_print_error("Failed to bind socket %d", port);
+      close(lsock);
+      return -1;
+    }
+
+  if( listen(lsock, SOMAXCONN) < 0 )
+    {
+      gaspi_print_error("Failed to listen on socket");
+      close(lsock);
+      return -1;
+    }
+
+  int nsock = accept( lsock, &in_addr, &in_len );
+  if( nsock < 0 )
+    {
+      gaspi_print_error("Failed to accept connection.");
+      close(lsock);
+      close(nsock);
+      return -1;
+    }
+
+  close(lsock);
+
+  return nsock;
+}
+
 int
 gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
 {
@@ -323,48 +377,12 @@ static int
 gaspi_sn_recv_topology(gaspi_context_t * const gctx)
 {
   int i;
-  struct sockaddr in_addr;
-  struct sockaddr_in listeningAddress;
-  socklen_t in_len = sizeof(in_addr);
 
-  int lsock = socket(AF_INET, SOCK_STREAM, 0);
-  if( lsock < 0)
-    {
-      gaspi_print_error("Failed to create socket.");
-      return -1;
-    }
-
-  if( 0 != gaspi_sn_set_default_opts(lsock) )
-    {
-      gaspi_print_error("Failed to set socket opts.");
-      close(lsock);
-      return -1;
-    }
-
-  listeningAddress.sin_family = AF_INET;
-  listeningAddress.sin_port = htons((glb_gaspi_cfg.sn_port + 64 + gctx->localSocket));
-  listeningAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-
-  if( bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress)) < 0 )
-    {
-      gaspi_print_error("Failed to bind socket (port %d)", glb_gaspi_cfg.sn_port + 64 + gctx->localSocket);
-      close(lsock);
-      return -1;
-    }
-
-  if( listen(lsock, SOMAXCONN) < 0 )
-    {
-      gaspi_print_error("Failed to listen on socket");
-      close(lsock);
-      return -1;
-    }
-
-  int nsock = accept( lsock, &in_addr, &in_len );
+  const int port_to_wait = glb_gaspi_cfg.sn_port + 64 + gctx->localSocket;
+  int nsock =  _gaspi_sn_wait_connection(port_to_wait);
   if( nsock < 0 )
     {
-      gaspi_print_error("Failed to accept connection.");
-      close(lsock);
-      close(nsock);
+      gaspi_print_error("Failed to wait for connection on %d.", port_to_wait);
       return -1;
     }
 
@@ -374,7 +392,6 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
   if( gaspi_sn_readn(nsock, &cdh, sizeof(cdh)) != sizeof(cdh) )
     {
       gaspi_print_error("Failed to read topology header.");
-      close(lsock);
       close(nsock);
       return -1;
     }
@@ -390,7 +407,6 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
   if( gctx->hn_poff == NULL)
     {
       gaspi_print_error("Failed to allocate memory.");
-      close(lsock);
       close(nsock);
       return -1;
     }
@@ -401,7 +417,6 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
   if( gctx->sockfd == NULL )
     {
       gaspi_print_error("Failed to allocate memory.");
-      close(lsock);
       close(nsock);
       return -1;
     }
@@ -415,7 +430,6 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
   if( gaspi_sn_readn(nsock, gctx->hn_poff, gctx->tnc * 65 ) != gctx->tnc * 65 )
     {
       gaspi_print_error("Failed to read topology data.");
-      close(lsock);
       close(nsock);
       return -1;
     }
@@ -423,11 +437,8 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
   if( gaspi_sn_close( nsock ) != 0 )
     {
       gaspi_print_error("Failed to close connection.");
-      close(lsock);
       return -1;
     }
-
-  close(lsock);
 
   return 0;
 }
@@ -735,59 +746,6 @@ _gaspi_sn_single_command(const gaspi_rank_t rank, const enum gaspi_sn_ops op)
   return 0;
 }
 
-//TODO: refactor with code from recv_topology
-static int
-_gaspi_sn_wait_connection(int port)
-{
-  struct sockaddr in_addr;
-  struct sockaddr_in listeningAddress;
-  socklen_t in_len = sizeof(in_addr);
-
-  int lsock = socket(AF_INET, SOCK_STREAM, 0);
-  if( lsock < 0)
-    {
-      gaspi_print_error("Failed to create socket.");
-      return -1;
-    }
-
-  if( 0 != gaspi_sn_set_default_opts(lsock) )
-    {
-      gaspi_print_error("Failed to set socket opts.");
-      close(lsock);
-      return -1;
-    }
-
-  listeningAddress.sin_family = AF_INET;
-  listeningAddress.sin_port = htons(port);
-  listeningAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-
-  if( bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress)) < 0 )
-    {
-      gaspi_print_error("Failed to bind socket %d", port);
-      close(lsock);
-      return -1;
-    }
-
-  if( listen(lsock, SOMAXCONN) < 0 )
-    {
-      gaspi_print_error("Failed to listen on socket");
-      close(lsock);
-      return -1;
-    }
-
-  int nsock = accept( lsock, &in_addr, &in_len );
-  if( nsock < 0 )
-    {
-      gaspi_print_error("Failed to accept connection.");
-      close(lsock);
-      close(nsock);
-      return -1;
-    }
-
-  close(lsock);
-
-  return nsock;
-}
 
 /*
   An allgather operation: each rank in group contributes with its part
