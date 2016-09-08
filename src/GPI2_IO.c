@@ -661,7 +661,6 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
   return GASPI_SUCCESS;
 }
 
-
 #pragma weak gaspi_notify_reset = pgaspi_notify_reset
 gaspi_return_t
 pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
@@ -693,7 +692,9 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
 
   volatile unsigned int *p = (volatile unsigned int *) segPtr;
 
-  const unsigned int res = __sync_val_compare_and_swap (&p[notification_id], p[notification_id], 0);
+  // TODO: one way to make sure people don't com to reset without waitsome assert(p[notification_id] != 0);
+  const volatile unsigned int res = __sync_val_compare_and_swap (&p[notification_id], p[notification_id], 0);
+  //TODO: at this point, p[notification_id] should be 0 or something is wrong. And it cannot be the same as res
 
   if(old_notification_val != NULL)
     *old_notification_val = res;
