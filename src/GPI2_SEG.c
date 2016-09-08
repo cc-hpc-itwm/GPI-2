@@ -26,6 +26,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_SN.h"
 #include "GPI2_SEG.h"
 
+extern gaspi_config_t glb_gaspi_cfg;
+
 #pragma weak gaspi_segment_max = pgaspi_segment_max
 gaspi_return_t
 pgaspi_segment_max (gaspi_number_t * const segment_max)
@@ -523,12 +525,24 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
     {
       return eret;
     }
-
   eret = pgaspi_segment_register_group(gctx, segment_id, group, timeout_ms);
   if( eret != GASPI_SUCCESS )
     {
       unlock_gaspi(&glb_gaspi_ctx_lock);
       return eret;
+    }
+
+  if( GASPI_TOPOLOGY_STATIC == glb_gaspi_cfg.build_infrastructure )
+    {
+      int r;
+      for(r = glb_gaspi_group_ctx[group].rank; r < glb_gaspi_group_ctx[group].tnc; r++)
+	{
+	  eret = pgaspi_connect(glb_gaspi_group_ctx[group].rank_grp[r], timeout_ms);
+	  if( eret != GASPI_SUCCESS )
+	    {
+	      return eret;
+	    }
+	}
     }
 
   eret = pgaspi_barrier(group, timeout_ms);
