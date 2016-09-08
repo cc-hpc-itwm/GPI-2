@@ -9,6 +9,8 @@
 
 #define _4GB 4294967296
 #define _2GB 2147483648
+#define _1GB 1073741824
+#define _1MB 1048576
 #define _2MB 2097152
 #define _8MB 8388608
 #define _128MB 134217728  
