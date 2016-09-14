@@ -1,4 +1,4 @@
- /*
+/*
 Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2016
 
 This file is part of GPI-2.
@@ -24,6 +24,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Dev.h"
 #include "GPI2_Utility.h"
 #include "GPI2_SN.h"
+#include "GPI2_SEG.h"
 
 #pragma weak gaspi_segment_max = pgaspi_segment_max
 gaspi_return_t
@@ -378,7 +379,131 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
   return eret;
 }
 
+//TODO: need a better name
+int
+gaspi_segment_set(const gaspi_segment_descriptor_t snp)
+{
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
+
+  if( !glb_gaspi_dev_init )
+    {
+      return -1;
+    }
+
+  if( snp.seg_id < 0 || snp.seg_id >= GASPI_MAX_MSEGS )
+    {
+      return -1;
+    }
+
+  lock_gaspi_tout(&gaspi_mseg_lock, GASPI_BLOCK);
+
+  //TODO: use segment_create_desc
+  if( gctx->rrmd[snp.seg_id] == NULL )
+    {
+      gctx->rrmd[snp.seg_id] = (gaspi_rc_mseg_t *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg_t));
+
+      if( gctx->rrmd[snp.seg_id] == NULL )
+	{
+	  unlock_gaspi(&gaspi_mseg_lock);
+	  return -1;
+	}
+    }
+
+  /* TODO: don't allow re-registration? */
+  /* for now we allow re-registration */
+  /* if(gctx->rrmd[snp.seg_id][snp.rem_rank].size) -> re-registration error case */
+  gctx->rrmd[snp.seg_id][snp.rank].data.addr = snp.addr;
+  gctx->rrmd[snp.seg_id][snp.rank].notif_spc.addr = snp.notif_addr;
+  gctx->rrmd[snp.seg_id][snp.rank].size = snp.size;
+
+#ifdef GPI2_DEVICE_IB
+  gctx->rrmd[snp.seg_id][snp.rank].rkey[0] = snp.rkey[0];
+  gctx->rrmd[snp.seg_id][snp.rank].rkey[1] = snp.rkey[1];
+#endif
+
+#ifdef GPI2_CUDA
+  gctx->rrmd[snp.seg_id][snp.rank].host_rkey = snp.host_rkey;
+  gctx->rrmd[snp.seg_id][snp.rank].host_addr = snp.host_addr;
+
+  if(snp.host_addr != 0 )
+    gctx->rrmd[snp.seg_id][snp.rank].cuda_dev_id = 1;
+  else
+    gctx->rrmd[snp.seg_id][snp.rank].cuda_dev_id = -1;
+#endif
+
+  unlock_gaspi(&gaspi_mseg_lock);
+  return 0;
+}
+
+static gaspi_return_t
+pgaspi_segment_register_group(gaspi_context_t const * const gctx,
+			      const gaspi_segment_id_t segment_id,
+			      const gaspi_group_t group,
+			      const gaspi_timeout_t timeout_ms)
+{
+  if( lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms) )
+    {
+      return GASPI_TIMEOUT;
+    }
+
+  //prepare my segment info
+  gaspi_segment_descriptor_t cdh;
+  memset(&cdh, 0, sizeof(cdh));
+
+  gaspi_rc_mseg_t const * const mseg_info = &(gctx->rrmd[segment_id][gctx->rank]);
+
+  cdh.rank = gctx->rank;
+  cdh.seg_id = segment_id;
+  cdh.addr = mseg_info->data.addr;
+  cdh.notif_addr = mseg_info->notif_spc.addr;
+  cdh.size = mseg_info->size;
+
+#ifdef GPI2_CUDA
+  cdh.host_rkey = mseg_info->host_rkey;
+  cdh.host_addr = mseg_info->host_addr;
+#endif
+
+#ifdef GPI2_DEVICE_IB
+  cdh.rkey[0] = mseg_info->rkey[0];
+  cdh.rkey[1] = mseg_info->rkey[1];
+#endif
+
+  gaspi_segment_descriptor_t* result = calloc(glb_gaspi_group_ctx[group].tnc, sizeof(gaspi_segment_descriptor_t));
+  if( result == NULL )
+    {
+      unlock_gaspi(&glb_gaspi_ctx_lock);
+      return GASPI_ERR_MEMALLOC;
+    }
+
+  if( gaspi_sn_allgather(&glb_gaspi_ctx, &cdh, result, sizeof(gaspi_segment_descriptor_t), group, timeout_ms) != 0 )
+    {
+      free(result);
+      unlock_gaspi(&glb_gaspi_ctx_lock);
+      return GASPI_ERROR;
+    }
+
+  int r;
+  for(r = 0; r < glb_gaspi_group_ctx[group].tnc; r++)
+    {
+      if( gaspi_segment_set(result[r]) < 0 )
+	{
+	  free(result);
+	  unlock_gaspi(&glb_gaspi_ctx_lock);
+	  return GASPI_ERROR;
+	}
+
+      gctx->rrmd[segment_id][r].trans = 1;
+    }
+
+  free(result);
+
+  unlock_gaspi(&glb_gaspi_ctx_lock);
+
+  return GASPI_SUCCESS;
+}
+
 /* TODO: from the spec: */
+/* 1) connect all in group => maybe remove this from spec instead ?*/
 /* 2) Creating a new segment with an existing segment ID results in
    undefined behavior */
 #pragma weak gaspi_segment_create = pgaspi_segment_create
@@ -389,7 +514,7 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 		      const gaspi_timeout_t timeout_ms,
 		      const gaspi_alloc_t alloc_policy)
 {
-  //gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_group(group);
 
@@ -399,31 +524,11 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
       return eret;
     }
 
-  /* register segment to all other group members */
-  int r;
-  for(r = 1; r <= glb_gaspi_group_ctx[group].tnc; r++)
+  eret = pgaspi_segment_register_group(gctx, segment_id, group, timeout_ms);
+  if( eret != GASPI_SUCCESS )
     {
-      int i = (glb_gaspi_group_ctx[group].rank + r) % glb_gaspi_group_ctx[group].tnc;
-
-      eret = pgaspi_segment_register(segment_id,
-				     glb_gaspi_group_ctx[group].rank_grp[i],
-				     timeout_ms);
-      if( eret != GASPI_SUCCESS )
-	{
-	  return eret;
-	}
-    }
-
-  /* as per spec: if the communication infrastructure was not
-     established for all group members beforehand,
-     gaspi_segment_create will accomplish this as well. */
-  for(r = glb_gaspi_group_ctx[group].rank; r < glb_gaspi_group_ctx[group].tnc; r++)
-    {
-      eret = pgaspi_connect(glb_gaspi_group_ctx[group].rank_grp[r], timeout_ms);
-      if( eret != GASPI_SUCCESS )
-	{
-	  return eret;
-	}
+      unlock_gaspi(&glb_gaspi_ctx_lock);
+      return eret;
     }
 
   eret = pgaspi_barrier(group, timeout_ms);
@@ -528,44 +633,19 @@ pgaspi_segment_use ( gaspi_segment_id_t const segment_id,
 		     gaspi_timeout_t const timeout,
 		     gaspi_memory_description_t const memory_description)
 {
-  gaspi_return_t ret = pgaspi_segment_bind(segment_id, pointer, size, memory_description );
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+
+  gaspi_return_t ret = pgaspi_segment_bind(segment_id, pointer, size, memory_description);
   if( GASPI_SUCCESS != ret )
     {
       return ret;
     }
 
-  gaspi_number_t group_size;
-  ret = pgaspi_group_size( group, &group_size );
-  if( GASPI_SUCCESS != ret )
+  gaspi_return_t eret = pgaspi_segment_register_group(gctx, segment_id, group, timeout);
+  if( eret != GASPI_SUCCESS )
     {
-      return ret;
+      return eret;
     }
-
-  gaspi_rank_t *group_ranks = malloc( group_size * sizeof(gaspi_rank_t) );
-  if( group_ranks == NULL )
-    {
-      return GASPI_ERR_MEMALLOC;
-    }
-
-  ret = gaspi_group_ranks (group, group_ranks);
-  if( GASPI_SUCCESS != ret )
-    {
-      free(group_ranks);
-      return ret;
-    }
-
-  gaspi_rank_t i;
-  for(i = 0; i < group_size; i++ )
-    {
-      ret = pgaspi_segment_register( segment_id, group_ranks[i], timeout);
-      if ( GASPI_SUCCESS != ret )
-	{
-	  free(group_ranks);
-	  return ret;
-	}
-    }
-
-  free(group_ranks);
 
   return gaspi_barrier( group, timeout);
 }
