@@ -166,6 +166,17 @@ extern "C"
 				     const gaspi_rank_t rank,
 				     gaspi_size_t * const size);
 
+  /** Get the maximum number of elements allowed in list (read, write)
+   * operations.
+   *
+   *
+   * @param elem_max Output parameter with the maximum number of elements.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_rw_list_elem_max (gaspi_number_t * const elem_max);
+
+
 #ifdef __cplusplus
 }
 #endif

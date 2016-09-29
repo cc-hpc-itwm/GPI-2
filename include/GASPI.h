@@ -1041,16 +1041,6 @@ extern "C"
    */
   gaspi_return_t gaspi_allreduce_elem_max (gaspi_number_t * const elem_max);
 
-  /** Get the maximum number of elements allowed in list (read, write)
-   * operations.
-   *
-   *
-   * @param elem_max Output parameter with the maximum number of elements.
-   *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
-   */
-  gaspi_return_t gaspi_rw_list_elem_max (gaspi_number_t * const elem_max);
-
   /** Get the maximum number of queues that may be used.
    * It is the maximum of initialized queues plus dynamically created queues.
    *
