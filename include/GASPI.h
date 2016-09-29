@@ -606,7 +606,7 @@ extern "C"
   /** List of writes.
    *
    *
-   * @param num The number of list elements.
+   * @param num The number of list elements (see also gaspi_rw_list_elem_max)
    * @param segment_id_local List of local segments with data to be written.
    * @param offset_local List of local offsets with data to be written.
    * @param rank Rank to which will be written.
