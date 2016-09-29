@@ -1573,7 +1573,7 @@ gaspi_sn_backend(void *arg)
 				  /* just ack back */
 				  if(gaspi_sn_writen( mgmt->fd, &rret, sizeof(int) ) < 0 )
 				    {
-				      gaspi_print_error("Failed response to segment register.");
+				      gaspi_print_error("Failed ack queue creation.");
 				      io_err = 1;
 					  break;
 				    }
