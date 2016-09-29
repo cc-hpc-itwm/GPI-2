@@ -1578,7 +1578,7 @@ gaspi_sn_backend(void *arg)
 					  break;
 				    }
 
-				  GASPI_SN_RESET_EVENT( mgmt, mgmt->cdh.op_len, mgmt->cdh.op );
+				  GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
 				}
 			      else
 				{
