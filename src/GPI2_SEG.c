@@ -134,7 +134,6 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
       return GASPI_ERROR;
     }
 
-  //fast path
   if( num_segs == 0 )
     {
       *avail_seg_id = 0;
