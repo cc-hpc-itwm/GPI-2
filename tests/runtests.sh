@@ -1,7 +1,8 @@
 #!/bin/sh
 
-GASPI_RUN="../bin/gaspi_run -m machines"
-GASPI_CLEAN="../bin/gaspi_cleanup -m machines"
+GPI2_TSUITE_MFILE=machines
+GASPI_RUN="../bin/gaspi_run"
+GASPI_CLEAN="../bin/gaspi_cleanup"
 TESTS=`ls bin`
 NUM_TESTS=0
 TESTS_FAIL=0
@@ -14,7 +15,7 @@ LOG_FILE=runtests_$(date -Idate).log
 exit_timeout(){
     echo "Stop this program"
     trap - TERM INT QUIT
-    $GASPI_CLEAN
+    $GASPI_CLEAN  -m ${GPI2_TSUITE_MFILE}
     kill -9 $TPID > /dev/null 2>&1
     killall -9 sleep > /dev/null 2>&1
     sleep 1
@@ -24,28 +25,28 @@ exit_timeout(){
 run_test(){
     TEST_ARGS=""
     #check definitions file for particular test
-    F="${1%.*}"                                                                                                   
-    if [ -r defs/${F}.def ]; then                                                                                     
+    F="${1%.*}"
+    if [ -r defs/${F}.def ]; then
 	printf "%45s: " "$1 [${F}.def]"
 	TEST_ARGS=`gawk 'BEGIN{FS="="} /ARGS/{print $2}' defs/${F}.def`
     else
 
     #check definitions file (default)
-	if [ -r defs/default.def ]; then                                                                                     
+	if [ -r defs/default.def ]; then
 	    printf "%45s: " "$1 [default.def]"
 	    TEST_ARGS=`gawk 'BEGIN{FS="="} /NETWORK/{print $2}' defs/default.def`
 	    TEST_ARGS="$TEST_ARGS "" `gawk 'BEGIN{FS="="} /TOPOLOGY/{print $2}' defs/default.def`"
 	else
 	    printf "%45s: " "$1"
-	fi                                
+	fi
     fi
 
     if [ $Results = 0 ] ; then
-	$GASPI_RUN $PWD/bin/$1 > results/$1-$(date -Idate).dat 2>&1 &
+	$GASPI_RUN -m ${GPI2_TSUITE_MFILE} $PWD/bin/$1 > results/$1-$(date -Idate).dat 2>&1 &
 	PID=$!
     else
 	echo "=================================== $1 ===================================" >> $LOG_FILE 2>&1 &
-	$GASPI_RUN $PWD/bin/$1 $TEST_ARGS >> $LOG_FILE 2>&1 &
+	$GASPI_RUN -m ${GPI2_TSUITE_MFILE} $PWD/bin/$1 $TEST_ARGS >> $LOG_FILE 2>&1 &
 	PID=$!
     fi
 
@@ -58,17 +59,17 @@ run_test(){
     fi
 
     if [ $? = 0 ]; then
-    	TESTS_PASS=$(($TESTS_PASS+1))
-        printf '\033[32m'"PASSED\n"
+	TESTS_PASS=$(($TESTS_PASS+1))
+	printf '\033[32m'"PASSED\n"
     else
-    	TESTS_FAIL=$(($TESTS_FAIL+1))
-	        printf '\033[31m'"FAILED\n"
-	$GASPI_CLEAN
-    fi     
+	TESTS_FAIL=$(($TESTS_FAIL+1))
+		printf '\033[31m'"FAILED\n"
+	$GASPI_CLEAN -m ${GPI2_TSUITE_MFILE}
+    fi
 
    #reset terminal to normal
     tput sgr0
-    
+
     if [ $Time = 1 ] ; then
 	kill $TPID > /dev/null 2>&1
     fi
@@ -77,24 +78,34 @@ run_test(){
 trap exit_timeout TERM INT QUIT
 
 #Script starts here
-while getopts "vtn:" o ; do  
-    case $o in  
+OPTERR=0
+while getopts "vtn:m:o:" option ; do
+    case $option in
 	v ) Results=1;opts_used=$(($opts_used + 1));echo "" > $LOG_FILE ;;
 	t ) Time=0;;
 	n ) GASPI_RUN="${GASPI_RUN} -n ${OPTARG}";opts_used=$(($opts_used + 2));;
-    esac  
+	m ) GPI2_TSUITE_MFILE=${OPTARG};opts_used=$(($opts_used + 2));;
+	o ) LOG_FILE=${OPTARG};opts_used=$(($opts_used + 2));;
+	\?) FAILED_OPTION=$(($OPTIND-1));echo;echo "Unknown option (${!FAILED_OPTION})";echo;exit 1;;
+    esac
 done
 
 #want to run particular tests
 if [ $(($# - $opts_used)) != 0 ]; then
-    TESTS=$@
+FIRST_TEST=$(($# - $(($# - $opts_used)) + 1))
+TESTS="${!FIRST_TEST}"
+for ((i=$FIRST_TEST+1;i<=$#;i++));
+do
+    TESTS="$TESTS ${!i}"
+done
 fi
 
 #check machine file
-if [ ! -r machines ]; then
+if [ ! -r $GPI2_TSUITE_MFILE ]; then
     echo
-    echo "No machine file found."
-    echo "You need to create a machine file called *machines* in the same directory of this script."
+    echo "File ($GPI2_TSUITE_MFILE) not found."
+    echo "You can create a machine file called *machines* in the same directory of this script."
+    echo "OR provide a valid machinefile using the (-m) option."
     echo
     exit 1
 fi
@@ -119,8 +130,8 @@ do
     if [ "$i" = "-v" ]; then
 	continue
     fi
-    if [ `find $PWD/bin/ -iname $i ` ]; then 
-	run_test $i 
+    if [ `find $PWD/bin/ -iname $i ` ]; then
+	run_test $i
 	NUM_TESTS=$(($NUM_TESTS+1))
 	sleep 1
     else
