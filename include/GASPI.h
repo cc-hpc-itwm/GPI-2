@@ -699,7 +699,7 @@ extern "C"
 				  gaspi_pointer_t const buffer_receive,
 				  const gaspi_number_t num,
 				  const gaspi_operation_t operation,
-				  const gaspi_datatype_t datatyp,
+				  const gaspi_datatype_t datatype,
 				  const gaspi_group_t group,
 				  const gaspi_timeout_t timeout_ms);
 
