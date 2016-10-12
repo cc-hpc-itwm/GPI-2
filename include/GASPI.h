@@ -178,7 +178,7 @@ extern "C"
    */
   typedef enum
     {
-      GASPI_TOPOLOGY_NONE = 0,    /* No connection will be established (application) */
+      GASPI_TOPOLOGY_NONE = 0,    /* No connection will be established. GASPI_GROUP_ALL is not set.  */
       GASPI_TOPOLOGY_STATIC = 1,  /* Statically connect everyone (all-to-all) */
       GASPI_TOPOLOGY_DYNAMIC = 2  /* Dynamically connect peers (as needed) */
     } gaspi_topology_t;
