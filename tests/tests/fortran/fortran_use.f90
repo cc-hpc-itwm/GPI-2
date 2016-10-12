@@ -32,7 +32,6 @@ program main
   integer :: seg_int_size, recvmsgs, i
 
   !capabilities
-  write(*,*) "--------- VALUES --------------"  
   ret = gaspi_transfer_size_min(transfer)
   write(*,*) "Min transfer: ", transfer
 
@@ -65,8 +64,6 @@ program main
   write(*,*) "GASPI_BLOCK", GASPI_BLOCK
   write(*,*) "GASPI_TEST", GASPI_TEST
 
-  write(*,*) "-----------------------------"  
-
   !init
   ret = gaspi_proc_init(GASPI_BLOCK)
   if(ret .ne. GASPI_SUCCESS) then
@@ -81,7 +78,6 @@ program main
   seg_size = 4 * 1024 * 1024 * 1024
   seg_int_size = 4 * 1024 * 1024 * 1024
 
-  write(*,*) "seg size ", seg_size
   seg_alloc = GASPI_MEM_UNINITIALIZED
   ret = gaspi_segment_create(INT(0,1),seg_size ,GASPI_GROUP_ALL, GASPI_BLOCK, seg_alloc) !GASPI_MEM_INITIALIZED)
   if(ret .ne. GASPI_SUCCESS) then
@@ -98,22 +94,9 @@ program main
   call c_f_pointer(seg_ptr, arr, shape=[seg_size/sizeof(rank)])
 
   arr_size = seg_size/sizeof(rank)
+
   !set data
   arr(:) = (rank)
-
-  write(*,*) "sizeof ", sizeof(integer), sizeof(rank), seg_size/sizeof(rank), arr_size
-
-  write(istr,'(i12,i4)'), 0 + (rank * sizeof(rank)), arr(1)
-  out_str = 'data at 0      '//trim(istr)//C_NEW_LINE//C_NULL_CHAR
-  call gaspi_printf(out_str)
-
-  write(istr,'(i12, i4)'), (seg_size / 2 ) + (rank * sizeof(rank)), arr(arr_size / 2) + (rank * sizeof(rank))
-  out_str = 'data at middle '//trim(istr)//C_NEW_LINE//C_NULL_CHAR
-  call gaspi_printf(out_str)
-
-  write(istr,'(i12,i4)'), seg_size - sizeof(rank) - (rank * sizeof(rank)), arr(arr_size-sizeof(rank))
-  out_str = 'data at end    '//trim(istr)//C_NEW_LINE//C_NULL_CHAR
-  call gaspi_printf(out_str)
 
   !barrier
   ret = gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK)
@@ -129,17 +112,8 @@ program main
   queue = 0
   tsize = sizeof(rank)
 
-  write(istr, '(i4)'), remoteRank
-  out_str = 'remoteRank'//trim(istr)//C_NEW_LINE//C_NULL_CHAR
-  call gaspi_printf(out_str)
-
-  write(istr, '(i12, i12)'), localOff, remoteOff
-  out_str = 'offsets'//trim(istr)//C_NEW_LINE//C_NULL_CHAR
-  call gaspi_printf(out_str)
-
-
   ret = gaspi_write(seg_id, localOff, remoteRank, &
-       & seg_id, remoteOff,tsize, queue, GASPI_BLOCK) 
+       & seg_id, remoteOff,tsize, queue, GASPI_BLOCK)
   if(ret .ne. GASPI_SUCCESS) then
      write(*,*) "gaspi_write faile1d"
      call exit(-1)
@@ -147,12 +121,9 @@ program main
 
   localOff = seg_size - sizeof(rank) - (rank * sizeof(rank))
   remoteOff = seg_size - sizeof(rank) - (rank * sizeof(rank))
-  write(istr, '(i12, i12)'), localOff, remoteOff
-  out_str = 'offsets'//trim(istr)//C_NEW_LINE//C_NULL_CHAR
-  call gaspi_printf(out_str)
 
   ret = gaspi_write(seg_id, localOff, remoteRank, &
-       & seg_id, remoteOff,tsize, queue, GASPI_BLOCK) 
+       & seg_id, remoteOff,tsize, queue, GASPI_BLOCK)
   if(ret .ne. GASPI_SUCCESS) then
      write(*,*) "gaspi_write failed"
      call exit(-1)
@@ -160,12 +131,9 @@ program main
 
   localOff = (seg_size / 2 ) + (rank * sizeof(rank))
   remoteOff = (seg_size / 2 ) + (rank * sizeof(rank))
-  write(istr, '(i12, i12)'), localOff, remoteOff
-  out_str = 'offsets'//trim(istr)//C_NEW_LINE//C_NULL_CHAR
-  call gaspi_printf(out_str)
 
   ret = gaspi_write(seg_id, localOff, remoteRank, &
-       & seg_id, remoteOff,tsize, queue, GASPI_BLOCK) 
+       & seg_id, remoteOff, tsize, queue, GASPI_BLOCK)
   if(ret .ne. GASPI_SUCCESS) then
      write(*,*) "gaspi_write failed"
      call exit(-1)
@@ -190,25 +158,17 @@ program main
      call exit(-1)
   end if
 
-
   ret = gaspi_notify_waitsome(seg_id, start, 1, recv_notf, GASPI_BLOCK)
   if(ret .ne. GASPI_SUCCESS) then
      write(*,*) "gaspi_notify_waitsome failed"
      call exit(-1)
   end if
-  
-  
-  write(istr, '(i8,a,i8)'), start," ",recv_notf
-  out_str = 'notification '//trim(istr)//C_NEW_LINE//C_NULL_CHAR
-  call gaspi_printf(out_str)
-  
+
   ret = gaspi_notify_reset(seg_id, recv_notf, recv_val )
   if(ret .ne. GASPI_SUCCESS) then
      write(*,*) "gaspi_notify_reset failed"
      call exit(-1)
   end if
-  write(*,*) "notification value", recv_val
-
 
   !barrier
   ret = gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK)
@@ -224,44 +184,35 @@ program main
   end if
 
   !check data
-  write(istr,'(i12, i2)'), 1+remoteRank, arr(1+remoteRank)
-  out_str = 'data at 0   '//trim(istr)//C_NEW_LINE//C_NULL_CHAR
-  call gaspi_printf(out_str)
-
-  write(istr,'(i12,i2)'), 1 + arr_size/2 + remoteRank, arr(arr_size/2 + remoteRank+1)
-  out_str = 'data middle '//trim(istr)//C_NEW_LINE//C_NULL_CHAR
-  call gaspi_printf(out_str)
-
-  write(istr,'(i12,i2)'), (arr_size - remoteRank ), &
-       & arr(arr_size- (remoteRank))
-  out_str = 'data end    '//trim(istr)//C_NEW_LINE//C_NULL_CHAR
-  call gaspi_printf(out_str)
- 
-
+  do i = 1, seg_size/sizeof(rank)
+     if( arr(i) .ne. remoteRank) then
+        write(*,*) "data is wrong"
+        call exit(-1)
+     end if
+  end do
   !passive
   localOff = 0
   tsize = 8
   if(rank .eq. 0) then
      do recvmsgs = 1, nprocs - 1
-        ret = gaspi_passive_receive(seg_id, localOff, remoteRank, tsize, GASPI_BLOCK)
-        if(ret .ne. GASPI_SUCCESS) then
-           write(*,*) "gaspi_passive_receive failed"
-           call exit(-1)
-        end if
-        write (*, *) "passive msg from ", remoteRank, "magic :", arr(1)
-        if (arr(1) .ne. 42) then
-           write(*, *), "Wrong magic number"
-        end if
+	ret = gaspi_passive_receive(seg_id, localOff, remoteRank, tsize, GASPI_BLOCK)
+	if(ret .ne. GASPI_SUCCESS) then
+	   write(*,*) "gaspi_passive_receive failed"
+	   call exit(-1)
+	end if
+	if (arr(1) .ne. 42) then
+	   write(*, *), "Wrong magic number"
+	end if
      end do
   else
      remoteRank = 0
      arr(1) = 42
      ret = gaspi_passive_send(seg_id, localOff, remoteRank, tsize, GASPI_BLOCK)
      if(ret .ne. GASPI_SUCCESS) then
-        write(*,*) "gaspi_passive_send failed"
-        call exit(-1)
+	write(*,*) "gaspi_passive_send failed"
+	call exit(-1)
      end if
-     
+
   endif
 
   ret = gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK)
@@ -272,7 +223,7 @@ program main
 
   !lists
   arr(:) = (rank)
-  num = 255 
+  num = 255
   tsize = sizeof(rank)
   remoteRank = modulo(rank + 1, nprocs)
   do i = 1, num
@@ -307,9 +258,9 @@ program main
 
   do i = 1, num
      if( arr(i+255) .ne. remoteRank) then
-        write(istr,'(i4)'),  arr(i)
-        out_str = 'wrong data '//trim(istr)//C_NEW_LINE//C_NULL_CHAR
-        call gaspi_printf(out_str)
+	write(istr,'(i4)'),  arr(i)
+	out_str = 'wrong data '//trim(istr)//C_NEW_LINE//C_NULL_CHAR
+	call gaspi_printf(out_str)
      end if
   end do
   ret = gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK)
@@ -337,11 +288,11 @@ program main
   if(rank .eq. 0) then
      ret = gaspi_atomic_fetch_add(seg_id, localOff, remoteRank, INT(0,8), atom_value, GASPI_BLOCK)
      if(ret .ne. GASPI_SUCCESS) then
-        write(*,*) "gaspi_atomic_fetch_add failed"
-        call exit(-1)
+	write(*,*) "gaspi_atomic_fetch_add failed"
+	call exit(-1)
      end if
      if(atom_value .eq. nprocs) then
-        write(*,*), "Correct atomic value: ", atom_value
+	write(*,*), "Correct atomic value: ", atom_value
      end if
   end if
   !term
@@ -350,7 +301,5 @@ program main
      write(*,*) "gaspi_proc_term failed"
      call exit(-1)
   end if
-
-  call gaspi_printf("Finish!"//C_NEW_LINE//C_NULL_CHAR)
 
 end program main

@@ -1,21 +1,12 @@
-#include <stdlib.h>
-#include <stdio.h>
-
 #include <test_utils.h>
 
 int main(int argc, char *argv[])
 {
-  gaspi_rank_t numranks, myrank;
-  gaspi_rank_t rankSend;
-  const  gaspi_offset_t localOff= 0;
-  const gaspi_offset_t remOff = 0;
-  gaspi_number_t queueSize, qmax;
-  gaspi_size_t commSize ;
-
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
+  gaspi_rank_t numranks, myrank;
   ASSERT (gaspi_proc_num(&numranks));
   ASSERT (gaspi_proc_rank(&myrank));
 
@@ -23,14 +14,17 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
+  gaspi_number_t queueSize, qmax;
   ASSERT (gaspi_queue_size_max(&qmax));
 
+  const  gaspi_offset_t localOff= 0;
+  const gaspi_offset_t remOff = 0;
+  gaspi_size_t commSize ;
   for(commSize= 1; commSize <= _8MB; commSize*=2 )
     {
+      gaspi_rank_t rankSend;
       for(rankSend = 0; rankSend < numranks; rankSend++)
 	{
-	  gaspi_printf("rank to send: %d - %lu bytes\n", rankSend, commSize);
-
 	  gaspi_queue_size(1, &queueSize);
 	  if (queueSize > qmax - 24)
 	    ASSERT (gaspi_wait(1, GASPI_BLOCK));

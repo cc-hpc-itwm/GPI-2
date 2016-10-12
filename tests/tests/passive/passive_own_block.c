@@ -1,13 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
 #include <GASPI_Threads.h>
 #include <test_utils.h>
 
 #define RECV_OFF 1024
 
-void * recvThread(void * arg)
+/* Test passive communiction to own rank with extra receiving thread
+   USING GASPI_BLOCK in recv */
+void*
+recvThread(void * arg)
 {
   gaspi_rank_t sender;
   gaspi_offset_t recvPos = (RECV_OFF / sizeof(int));
@@ -17,20 +16,12 @@ void * recvThread(void * arg)
   int tid;
   ASSERT (gaspi_threads_register(&tid));
 
-  do
-    {
-      ret = gaspi_passive_receive(0, RECV_OFF, &sender, sizeof(int), GASPI_BLOCK);
-      assert (ret != GASPI_ERROR);
-      sleep(1);
-    }
-  while(ret != GASPI_SUCCESS);
+  ASSERT(gaspi_passive_receive(0, RECV_OFF, &sender, sizeof(int), GASPI_BLOCK));
 
-  gaspi_printf("Received msg from %d\n", sender);
-  if( memArray[recvPos] != 11223344 )
-    gaspi_printf("Wrong value!\n");
+  assert(memArray[recvPos] == 11223344);
 
   gaspi_threads_sync();
-  
+
   return NULL;
 }
 
@@ -64,17 +55,9 @@ int main(int argc, char *argv[])
 
   int_GlbMem[0] = 11223344;
 
-  //send to myself (need trick to avoid blocking)
-  gaspi_return_t ret = GASPI_ERROR;
-  do
-    {
-      ret = gaspi_passive_send(0, 0, myrank, sizeof(int), GASPI_BLOCK);
-      assert (ret != GASPI_ERROR);
-      sleep(1);
-    }
-  while (ret != GASPI_SUCCESS);
+  ASSERT(gaspi_passive_send(0, 0, myrank, sizeof(int), GASPI_BLOCK));
 
-  gaspi_threads_sync();  
+  gaspi_threads_sync();
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 

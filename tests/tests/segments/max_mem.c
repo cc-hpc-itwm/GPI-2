@@ -1,11 +1,10 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include <test_utils.h>
 
-int main(int argc, char *argv[])
+/* Test allocates 45% of system memory and creates a segment that
+   large or if several ranks per node exist, divided among that
+   number */
+int
+main(int argc, char *argv[])
 {
   gaspi_size_t mem;
 
@@ -13,10 +12,13 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
+  gaspi_rank_t local_procs;
+  ASSERT(gaspi_proc_local_num(&local_procs));
+  
   mem = gaspi_get_system_mem();
-  if(mem > 0)
+  if( mem > 0 )
     {
-      mem *= 1024; //to bytes
+      mem *= 1024;//to bytes
       mem *= 45; //45%
       mem /= 100;
     }
@@ -25,9 +27,10 @@ int main(int argc, char *argv[])
       gaspi_printf("Failed to get mem (%lu)\n", mem);
       exit(-1);
     }
-  
-  gaspi_printf("Segment size %lu MB\n", mem / 1024 / 1024);
 
+  /* Divide it among the number of procs in node */
+  mem /= local_procs;
+  
   ASSERT( gaspi_segment_create(0, mem, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_UNINITIALIZED));
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));

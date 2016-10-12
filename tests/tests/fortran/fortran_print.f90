@@ -15,7 +15,6 @@ program main
      call exit(-1)
   end if
 
-
   write(c,'(a)') "test_string"
 
   call gaspi_printf(trim(adjustl(c))//C_NEW_LINE//C_NULL_CHAR)

@@ -3,10 +3,10 @@
 
 #include <test_utils.h>
 
-#define LOOP 1000
-
 int main(int argc, char *argv[])
 {
+  const int ntimes = 1000;
+  
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_segment_create(0, _2MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
   gaspi_atomic_value_t val;
-  for(m = 0; m < LOOP; m++)
+  for(m = 0; m < ntimes; m++)
     for(n = 0; n < numranks; n++)
       {
 	gaspi_return_t ret;
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
   gaspi_atomic_value_t *end_val;
   end_val = (gaspi_atomic_value_t *)_vptr;
 
-  assert(*end_val == (numranks * LOOP));
+  assert(*end_val == (numranks * ntimes));
 
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));

@@ -23,7 +23,6 @@ program main
   seg_size = 4 * 1024 * 1024 * 1024
 
   !create segment
-  write(*,*) "seg size ", seg_size
   seg_alloc_policy = GASPI_MEM_UNINITIALIZED
   ret = gaspi_segment_create(INT(0,1), seg_size ,GASPI_GROUP_ALL, GASPI_BLOCK, seg_alloc_policy)
   if(ret .ne. GASPI_SUCCESS) then
@@ -54,7 +53,5 @@ program main
      write(*,*) "gaspi_proc_term failed"
      call exit(-1)
   end if
-
-  call gaspi_printf("Finish!"//C_NEW_LINE//C_NULL_CHAR)
 
 end program main

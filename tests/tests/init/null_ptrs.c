@@ -1,17 +1,14 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <test_utils.h>
 
-
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
-  gaspi_rank_t *rank = NULL;
-  gaspi_rank_t *num = NULL;
+  gaspi_rank_t* rank = NULL;
+  gaspi_rank_t* num = NULL;
 
   EXPECT_FAIL (gaspi_proc_rank(NULL));
   EXPECT_FAIL (gaspi_proc_num(NULL));

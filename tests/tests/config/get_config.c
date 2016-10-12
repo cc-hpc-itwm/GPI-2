@@ -5,13 +5,12 @@
 
 int main(int argc, char *argv[])
 {
-  gaspi_config_t default_conf;
-
   TSUITE_INIT(argc, argv);
 
+  gaspi_config_t default_conf;
   ASSERT (gaspi_config_get(&default_conf));
 
-  gaspi_printf("logger %u\nnet_info %u\nnetdev_info %u\nmtu %u\nport_check %u\nuser_net %u\nnetwork %u\n",
+  gaspi_printf("logger %u\nnet_info %u\nnet_info %d\nmtu %u\nport_check %u\nuser_net %u\nnetwork %u\n",
 	       default_conf.logger,
 	       default_conf.net_info,
 	       default_conf.netdev_id,
@@ -19,7 +18,7 @@ int main(int argc, char *argv[])
 	       default_conf.port_check,
 	       default_conf.user_net,
 	       default_conf.network);
-  
+
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
   ASSERT (gaspi_proc_term(GASPI_BLOCK));

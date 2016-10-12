@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <test_utils.h>
 
+/* Commit GASPI_GROUP_ALL */
 int main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);

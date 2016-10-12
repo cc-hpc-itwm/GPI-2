@@ -1,13 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <test_utils.h>
 
 /* in a loop: */
 /* create a segment, use it, delete it (two times) */
 /* repeat ntimes */
-
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
   int ntimes = 10;
 

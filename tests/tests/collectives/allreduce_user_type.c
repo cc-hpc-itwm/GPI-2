@@ -28,7 +28,6 @@ gaspi_return_t my_fun (struct elem * const a,
     {
       r[i].a = MY_MAX(a[i].a, b[i].a);
     }
-  
 
   return GASPI_SUCCESS;
 }
@@ -47,14 +46,8 @@ int main(int argc, char *argv[])
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT(gaspi_proc_rank(&myrank));
   
-  ASSERT(gaspi_allreduce_buf_size ( &buf_size));
+  ASSERT(gaspi_allreduce_buf_size (&buf_size));
   ASSERT(gaspi_allreduce_elem_max (&elem_max));
-
-  if(myrank == 0)
-    {
-      printf("Max buf size %lu max elem %d elem size %lu (will allow %lu elems).\n",
-	     buf_size, elem_max, sizeof(struct elem), buf_size / sizeof(struct elem));
-    }
 
   struct elem * a = (struct elem *) calloc(elem_max, sizeof(struct elem) );
   struct elem * b = (struct elem *) calloc(elem_max, sizeof(struct elem));
@@ -92,7 +85,6 @@ int main(int argc, char *argv[])
 	}
     }
 
-  //sync                                                                                                  
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   free(a);
   free(b);

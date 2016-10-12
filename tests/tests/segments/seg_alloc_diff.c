@@ -1,10 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <test_utils.h>
 
-//alloc a segment of different size
-int main(int argc, char *argv[])
+/* Test allocation of a segment of different size in rank 0 and other
+   ranks and register it with all other ranks. Then delete it. */
+int
+main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
 
@@ -12,30 +11,28 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  gaspi_rank_t rank, nprocs, i;
-  gaspi_size_t seg_size;
-
+  gaspi_rank_t rank, nprocs;
   ASSERT (gaspi_proc_num(&nprocs));
   ASSERT (gaspi_proc_rank(&rank));
 
   if (rank == 0)
-    { ASSERT (gaspi_segment_alloc(0, 1024, GASPI_MEM_INITIALIZED)); }
+    {
+      ASSERT (gaspi_segment_alloc(0, 1024, GASPI_MEM_INITIALIZED));
+    }
   else
-    ASSERT (gaspi_segment_alloc(0, 2048, GASPI_MEM_INITIALIZED));
+    {
+      ASSERT (gaspi_segment_alloc(0, 2048, GASPI_MEM_INITIALIZED));
+    }
 
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  ASSERT(gaspi_segment_size(0, rank, &seg_size));  
-
+  gaspi_rank_t i;
   for (i = 0; i < nprocs; i++)
     {
-      gaspi_printf("register seg of size %lu with %u\n", seg_size, i);
-      
       if(i == rank)
 	continue;
 
       ASSERT( gaspi_segment_register(0, i, GASPI_BLOCK));
-      //      sleep(1);
     }
 
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));

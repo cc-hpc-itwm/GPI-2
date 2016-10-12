@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_proc_rank(&rank));
 
   ASSERT(gaspi_segment_max(&seg_max));
-  
+
   assert(seg_max == 32);
 
   for( s = 0; s < seg_max; s++ )
@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     }
 
   EXPECT_FAIL( gaspi_segment_avail_local(&seg_avail) );
-  
+
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   for( s = 0; s < seg_max; s++ )
@@ -45,8 +45,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_segment_create(0,
 			       1024,
 			       GASPI_GROUP_ALL,
-			       GASPI_BLOCK,GASPI_MEM_UNINITIALIZED)
-	  );
+			       GASPI_BLOCK,GASPI_MEM_UNINITIALIZED));
 
   ASSERT( gaspi_segment_avail_local(&seg_avail) );
   assert(seg_avail == 1);
@@ -54,8 +53,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_segment_create(2,
 			       1024,
 			       GASPI_GROUP_ALL,
-			       GASPI_BLOCK,GASPI_MEM_UNINITIALIZED)
-	  );
+			       GASPI_BLOCK,GASPI_MEM_UNINITIALIZED));
 
   ASSERT( gaspi_segment_avail_local(&seg_avail) );
   assert(seg_avail == 1);
@@ -63,8 +61,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_segment_create(1,
 			       1024,
 			       GASPI_GROUP_ALL,
-			       GASPI_BLOCK,GASPI_MEM_UNINITIALIZED)
-	  );
+			       GASPI_BLOCK,GASPI_MEM_UNINITIALIZED));
 
   ASSERT( gaspi_segment_avail_local(&seg_avail) );
   assert(seg_avail == 3);

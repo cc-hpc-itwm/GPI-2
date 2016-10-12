@@ -4,12 +4,14 @@
 #include <test_utils.h>
 
 #include <GASPI_Ext.h>
-int main(int argc, char *argv[])
+
+int
+main(int argc, char *argv[])
 {
   gaspi_rank_t rank, nprocs;
   gaspi_number_t queue_number;
   gaspi_notification_id_t id;
-  
+
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
@@ -45,11 +47,11 @@ int main(int argc, char *argv[])
 
   for (new_queue = 0; new_queue < q_max; new_queue++)
     {
-      ASSERT(gaspi_write(0, 0, right,
-			 0, 0, 8,
-			 new_queue, GASPI_BLOCK));
+      ASSERT(gaspi_write_notify(0, 0, right,
+				0, 0, 8,
+				0, 1,
+				new_queue, GASPI_BLOCK));
 
-      ASSERT(gaspi_notify(0, right, 0, 1, new_queue, GASPI_BLOCK));
       ASSERT(gaspi_notify_waitsome(0, 0, 1, &id, GASPI_BLOCK));
       ASSERT(gaspi_wait(new_queue, GASPI_BLOCK));
 

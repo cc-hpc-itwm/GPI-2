@@ -1,16 +1,14 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <test_utils.h>
 
-int main(int argc, char *argv[])
+/* Test different msg sizes (4 - 8KB) with passive comm */
+int
+main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
   gaspi_rank_t P, myrank;
-
   ASSERT (gaspi_proc_num(&P));
   ASSERT (gaspi_proc_rank(&myrank));
 
@@ -24,27 +22,33 @@ int main(int argc, char *argv[])
 
   int_GlbMem = ( int *) _vptr;
 
-  gaspi_size_t msgSize;
   gaspi_size_t i;
+  gaspi_size_t msgSize;
   for(msgSize = 4; msgSize < 8192; msgSize *=2)
     if(myrank == 0)
       {
-
 	for(i = 0; i < msgSize / sizeof(int); i++)
-	  int_GlbMem[i] = (int) msgSize;
+	  {
+	    int_GlbMem[i] = (int) msgSize;
+	  }
 
 	gaspi_rank_t n;
 	for(n = 1; n < P; n++)
-	  ASSERT(gaspi_passive_send(0, 0, n, msgSize, GASPI_BLOCK));
+	  {
+	    ASSERT(gaspi_passive_send(0, 0, n, msgSize, GASPI_BLOCK));
+	  }
       }
     else
       {
 	gaspi_rank_t sender;
 	ASSERT(gaspi_passive_receive(0, 0, &sender, msgSize, GASPI_BLOCK));
 	for(i = 0; i < msgSize / sizeof(int); i++)
-	  assert( int_GlbMem[i] == (int) msgSize );
+	  {
+	    assert( int_GlbMem[i] == (int) msgSize );
+	    assert(sender == 0);
+	  }
       }
-  
+
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 

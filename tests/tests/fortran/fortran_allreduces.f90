@@ -98,8 +98,8 @@ program allreduce
      write (*,*) "Wrong result"
      call exit(-1)
   end if
-! allreduce_user
 
+  ! allreduce_user
   buffer_send(1)  = rank
   buffer_recv(1)  = -1
   reduce_state(1) =  0

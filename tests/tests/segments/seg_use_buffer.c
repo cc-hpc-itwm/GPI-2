@@ -1,30 +1,25 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <test_utils.h>
 
-/* DESCRIPTION: Test gaspi_segment_use using a application buffer */
+/* Test gaspi_segment_use using a application buffer */
 /* STEPS: */
 /* - We create a buffer */
 /* - Use created buffer as segment (id 0) */
 /* - Create a segment as usual (id 1) */
 /* - Fill in application buffer with rank value */
-/* - write, notify and wait for notification (with right neighbour) */
+/* - write_notify and wait for notification (with right neighbour) */
 /* - check that received data equals left neighbour */
 /* - clean-up */
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
-  int i;
-  gaspi_rank_t rank, nprocs;
-  gaspi_notification_id_t id;
-
   const int num_elems = 1024;
 
   TSUITE_INIT( argc, argv );
 
   ASSERT( gaspi_proc_init(GASPI_BLOCK) );
 
+  gaspi_rank_t rank, nprocs;
   ASSERT( gaspi_proc_num(&nprocs) );
   ASSERT( gaspi_proc_rank(&rank) );
 
@@ -35,6 +30,7 @@ int main(int argc, char *argv[])
   int  * const buf = (int *) malloc(num_elems * sizeof(int));
   assert( buf != NULL);
 
+  int i;
   for (i = 0; i < num_elems; i++)
     {
       buf[i] = rank;
@@ -50,16 +46,17 @@ int main(int argc, char *argv[])
 
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  /* write data to neighbour */
-  ASSERT( gaspi_write( 0, 0, right,
-		       1, 0, num_elems * sizeof(int),
-		       0, GASPI_BLOCK) );
+  /* write data to neighbour ( from seg 0 to seg 1) */
+  ASSERT( gaspi_write_notify( 0, 0, right,
+			      1, 0, num_elems * sizeof(int),
+			      0, 1,
+			      0, GASPI_BLOCK) );
 
-  ASSERT( gaspi_notify( 1, right, 0, 1, 0, GASPI_BLOCK ) );
+  gaspi_notification_id_t id;
   ASSERT( gaspi_notify_waitsome( 1, 0, 1, &id, GASPI_BLOCK ) );
   ASSERT( gaspi_wait( 0, GASPI_BLOCK ) );
 
-  /* Check data */
+  /* Check data as segment */
   gaspi_pointer_t seg1_ptr;
   ASSERT( gaspi_segment_ptr( 1, &seg1_ptr ) );
   int * recv_buf = (int *) seg1_ptr;
@@ -72,6 +69,7 @@ int main(int argc, char *argv[])
   ASSERT( gaspi_segment_delete(0));
   ASSERT( gaspi_segment_delete(1));
 
+  /* Check data in buffer */  
   for (i = 0; i < num_elems; i++)
     {
       assert(buf[i] == rank);

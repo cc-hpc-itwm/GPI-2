@@ -1,10 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <test_utils.h>
 
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
 
@@ -14,7 +12,6 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_proc_num(&numranks));
   ASSERT (gaspi_proc_rank(&myrank));
-
 
   ASSERT (gaspi_segment_create(0, _128MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
@@ -36,7 +33,7 @@ int main(int argc, char *argv[])
 
   //construct list of n elems
   gaspi_number_t queue_size = 0;
- 
+
   const gaspi_number_t nListElems = 255;
   gaspi_number_t n;
 
@@ -47,7 +44,7 @@ int main(int argc, char *argv[])
   gaspi_segment_id_t remSegs[nListElems];
   gaspi_offset_t remOffs[nListElems];
   gaspi_size_t sizes[nListElems];
-  
+
   const unsigned int bytes = sizeof(int);
   gaspi_offset_t initLocOff = 0;
   gaspi_offset_t initRemOff = (bytes * nListElems + 64);
@@ -60,7 +57,7 @@ int main(int argc, char *argv[])
       localSegs[n] = 0;
       localOffs[n] = initLocOff;
       initLocOff += bytes;
-      
+
       remSegs[n] = 0;
       remOffs[n] = initRemOff;
       initRemOff += bytes;
@@ -69,7 +66,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_write_list(nListElems,
 			   localSegs, localOffs, rank2send,
 			   remSegs, remOffs, sizes, 0, GASPI_BLOCK));
-  
+
   ASSERT (gaspi_queue_size(0, &queue_size));
   assert (queue_size == nListElems);
 
@@ -85,7 +82,6 @@ int main(int argc, char *argv[])
 
   assert(notification_val == 1);
 
-  //sync  
   ASSERT( gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK) );
 
   //check
@@ -95,12 +91,12 @@ int main(int argc, char *argv[])
   mem = (int *) (chPtr + off2check);
 
   for(l = 0; l < nListElems; l++)
+    {
       assert(mem[l] == (int) rank2recv);
+    }
 
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 
   return EXIT_SUCCESS;
 }
-
-

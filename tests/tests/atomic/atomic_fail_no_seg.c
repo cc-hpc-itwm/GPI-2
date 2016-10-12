@@ -3,7 +3,7 @@
 
 #include <test_utils.h>
 
-
+/* Test atomic operations without segment -> should fail */
 int main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
@@ -17,11 +17,11 @@ int main(int argc, char *argv[])
 
   gaspi_atomic_value_t val;
   for(n = 0; n < numranks; n++)
-    EXPECT_FAIL(gaspi_atomic_fetch_add(0, 0, n, 1, &val, GASPI_TEST));
-
-  gaspi_pointer_t _vptr;
-  EXPECT_FAIL (gaspi_segment_ptr(0, &_vptr));
-
+    {
+      EXPECT_FAIL(gaspi_atomic_fetch_add(0, 0, n, 1, &val, GASPI_TEST));
+      EXPECT_FAIL(gaspi_atomic_compare_swap(0, 0, n, 1, (gaspi_atomic_value_t) 42, &val, GASPI_BLOCK));
+    }
+  
   //sync to make sure everyone did it
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 

@@ -1,6 +1,6 @@
 F90CC:=$(shell which $(CF))
 
-BIN =  fortran_use.bin fortran_print.bin allreduce_user.bin fortran_seg_ptr.bin
+BIN =  fortran_use.bin fortran_allreduces.bin fortran_seg_ptr.bin
 
 CFLAGS+=-fno-range-check
 

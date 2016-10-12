@@ -33,9 +33,11 @@ int main(int argc, char *argv[])
 
   gaspi_atomic_value_t *end_val;
   end_val = (gaspi_atomic_value_t *)_vptr;
-
   assert(*end_val == numranks);
 
+  end_val = (gaspi_atomic_value_t *) ((char *) _vptr + 8);
+  assert(*end_val == numranks);
+  
   ASSERT(gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 

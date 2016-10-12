@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 	}
     }
 
-  n=0; //re-start counter
+  n = 0; //re-start counter
 
   do
     {

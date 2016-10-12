@@ -1,28 +1,21 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <test_utils.h>
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
-  const unsigned long N = (1 << 10);
   gaspi_rank_t P, myrank;
-
   ASSERT (gaspi_proc_num(&P));
   ASSERT (gaspi_proc_rank(&myrank));
 
-  if(P < 2 )
+  if( P < 2 )
     {
       gaspi_printf("Must have more than 1 procs\n");
       return EXIT_FAILURE;
     }
-
-  gaspi_printf("P = %d N = %lu\n", P, N);
-  
   ASSERT(gaspi_segment_create(0,
 			      _8MB,
 			      GASPI_GROUP_ALL,
@@ -34,14 +27,13 @@ int main(int argc, char *argv[])
 
   gaspi_number_t qmax ;
   ASSERT (gaspi_queue_size_max(&qmax));
-  gaspi_printf("Queue max: %lu\n", qmax);
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   unsigned long i;
   gaspi_number_t queueSize;
   int rankSend = (myrank + 1) % P;
-  gaspi_printf("rank to: %d\n", rankSend);
+  const unsigned long N = (1 << 10);
 
   for (i = 0; i < 2 * N; i ++)
     {
@@ -67,8 +59,6 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
-  printf("Rank %d: Finish\n", myrank);
-  fflush(stdout);
 
   return EXIT_SUCCESS;
 }

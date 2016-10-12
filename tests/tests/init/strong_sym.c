@@ -1,10 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <PGASPI.h>
 #include <test_utils.h>
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
   gaspi_rank_t rank, num;
 

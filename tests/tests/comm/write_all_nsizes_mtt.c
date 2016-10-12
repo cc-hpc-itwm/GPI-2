@@ -1,6 +1,3 @@
-#include <stdlib.h>
-#include <stdio.h>
-
 #include <test_utils.h>
 
 #include <GASPI_Threads.h>
@@ -20,8 +17,6 @@ void work(int tid)
   for(commSize= 1; commSize < _500MB; commSize*=2 )
     for(rankSend = 0; rankSend < numranks; rankSend++)
       {
-	gaspi_printf("thread %d rank to send: %d - %lu bytes\n", tid, rankSend, commSize);
-	
 	gaspi_queue_size(1, &queueSize);
 	if (queueSize > qmax - 100)
   	  ASSERT (gaspi_wait(1, GASPI_BLOCK));
@@ -47,13 +42,10 @@ void * thread_fun(void *args)
 
 int main(int argc, char *argv[])
 {
-  int i;
-  int num_threads = 0;
-  gaspi_size_t segSize;
-
   TSUITE_INIT(argc, argv);
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
+  int num_threads = 0;
   ASSERT(gaspi_threads_init(&num_threads));
 
   ASSERT (gaspi_proc_num(&numranks));
@@ -61,8 +53,7 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_segment_create(0, _2GB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
-  ASSERT( gaspi_segment_size(0, myrank, &segSize));
-
+  int i;
   for(i = 1; i < num_threads; i++)
     ASSERT(gaspi_threads_run(thread_fun, NULL));
 

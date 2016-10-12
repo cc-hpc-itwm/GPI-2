@@ -1,20 +1,17 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <test_utils.h>
 
-/* DESCRIPTION: Tests gaspi_segment_bind using a previously created
+/* Tests gaspi_segment_bind using a previously created
    segment */
 
 /* STEPS: */
 /* - We create a larger segment (seg_id 0) */
-/* - Create segment 1 by binding it to segment 0's buffer  but using a smaller part of it (lower par) */
-/* - Create segment 2 by binding it to segment 0's buffer but using a smaller part of it (upper par) */
+/* - Create segment 1 by binding it to segment 0's buffer  but using a smaller part of it (lower part) */
+/* - Create segment 2 by binding it to segment 0's buffer but using a smaller part of it (upper part) */
 /* ------------------------------------------ */
 /* ||- lower-||-upper-||----rest unused-----| */
 /* ------------------------------------------ */
 /* - Fill in lower part with rank value */
-/* - write, notify and wait for notification (with right neighbour) */
+/* - write_notify and wait for notification (with right neighbour) */
 /* - check that received data equals left neighbour */
 /* - clean-up */
 
@@ -74,11 +71,11 @@ int main(int argc, char *argv[])
 
   ASSERT( gaspi_barrier( GASPI_GROUP_ALL, GASPI_BLOCK) );
 
-  ASSERT( gaspi_write( segment_id_lower, 0, right,
-		       segment_id_upper, 0, num_elems * sizeof(int),
-		       0, GASPI_BLOCK ) );
+  ASSERT( gaspi_write_notify( segment_id_lower, 0, right,
+			      segment_id_upper, 0, num_elems * sizeof(int),
+			      0, 1,
+			      0, GASPI_BLOCK ) );
 
-  ASSERT( gaspi_notify( segment_id_upper, right, 0, 1, 0, GASPI_BLOCK ) );
   ASSERT( gaspi_notify_waitsome( segment_id_upper, 0, 1, &id, GASPI_BLOCK ) );
   ASSERT( gaspi_wait( 0, GASPI_BLOCK ) );
 
@@ -91,7 +88,6 @@ int main(int argc, char *argv[])
       assert(recv_buf[i] == left);
     }
 
-  /* Sync (we need this barrier) */
   ASSERT( gaspi_barrier( GASPI_GROUP_ALL, GASPI_BLOCK ) );
 
   ASSERT( gaspi_proc_term(GASPI_BLOCK ) );

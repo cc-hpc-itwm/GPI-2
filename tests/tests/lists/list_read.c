@@ -1,10 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <test_utils.h>
 
-
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
 
@@ -14,7 +11,6 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_proc_num(&numranks));
   ASSERT (gaspi_proc_rank(&myrank));
-
 
   ASSERT (gaspi_segment_create(0, _128MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
@@ -51,7 +47,6 @@ int main(int argc, char *argv[])
   gaspi_offset_t initLocOff = 0;
   gaspi_offset_t initRemOff = (bytes * nListElems + 64);
 
-
   for(n = 0; n < nListElems; n++)
     {
       sizes[n] = bytes;
@@ -72,9 +67,6 @@ int main(int argc, char *argv[])
   assert (queue_size == nListElems);
 
   ASSERT (gaspi_wait(0, GASPI_BLOCK));
-
-  //sync  
-  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   //check
   gaspi_number_t l;

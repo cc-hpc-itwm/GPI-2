@@ -1,17 +1,14 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <test_utils.h>
 
 /* Test that sends passive messages without blocking (GASPI_TEST) */
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
   gaspi_rank_t P, myrank;
-
   ASSERT (gaspi_proc_num(&P));
   ASSERT (gaspi_proc_rank(&myrank));
 
@@ -24,7 +21,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   const gaspi_size_t msgSize = 4;
-  if(P > 1)
+  if( P > 1 )
     {
       
       if(myrank == 1)

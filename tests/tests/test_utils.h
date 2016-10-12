@@ -2,6 +2,7 @@
 #ifndef _TEST_UTILS_H_
 #define _TEST_UTILS_H_
 
+#include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include <GASPI.h>
@@ -12,6 +13,7 @@
 #define _1GB 1073741824
 #define _1MB 1048576
 #define _2MB 2097152
+#define _4MB 4194304
 #define _8MB 8388608
 #define _128MB 134217728  
 #define _500MB 524288000

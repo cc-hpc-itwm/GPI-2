@@ -17,26 +17,47 @@ int main(int argc, char *argv[])
   gaspi_config_set(conf);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
-  gaspi_rank_t rank, num;
 
-  ASSERT (gaspi_proc_rank(&rank));
+  gaspi_rank_t myrank, num;
+  ASSERT (gaspi_proc_rank(&myrank));
   ASSERT (gaspi_proc_num(&num));
 
-  int i;
-  for (i = 0; i < num; i++)
+  gaspi_group_t g;
+  ASSERT(gaspi_group_create(&g));
+
+  int n;
+  for(n = 0; n < num; n++)
     {
-      printf("Rank %u: connect to %d\n", rank, i);
+      ASSERT(gaspi_group_add(g, n));
+    }
+
+  ASSERT(gaspi_group_commit(g, GASPI_BLOCK));
+
+  ASSERT(gaspi_segment_create(0,
+			      _2MB,
+			      g,
+			      GASPI_BLOCK,
+			      GASPI_MEM_INITIALIZED));
+
+  gaspi_rank_t rankSend = (myrank + 1) % num;
+
+  //EXPECT_FAIL( gaspi_write(0, 0, rankSend, 0, 0, 2, 0, GASPI_BLOCK) );
+
+  int i;
+  for(i = 0; i < num; i++)
+    {
       ASSERT(gaspi_connect(i, GASPI_BLOCK));
     }
+
+  ASSERT( gaspi_write(0, 0, rankSend, 0, 0, 2, 0, GASPI_BLOCK) );
   for (i = 0; i < num; i++)
     {
-      printf("Rank %u: disconnect to %d\n", rank, i);
-      gaspi_disconnect(i, GASPI_BLOCK);
+      ASSERT(gaspi_disconnect(i, GASPI_BLOCK));
     }
+
+  ASSERT (gaspi_barrier(g, GASPI_BLOCK));
 
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 
-  printf("Finished!\n");
-  
   return EXIT_SUCCESS;
 }

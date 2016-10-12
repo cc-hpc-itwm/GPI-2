@@ -1,5 +1,5 @@
-BIN =  seg_alloc_one.bin seg_alloc_all.bin max_mem.bin seg_reuse.bin\
-	seg_alloc_diff.bin seg_id_list.bin seg_create_all.bin seg_create_same.bin \
+BIN = seg_alloc_all.bin max_mem.bin seg_reuse.bin seg_alloc_diff.bin	\
+	seg_id_list.bin seg_create_all.bin seg_create_same.bin		\
 	seg_use_buffer.bin seg_subsegments.bin seg_shmem.bin
 
 CFLAGS+=-I../

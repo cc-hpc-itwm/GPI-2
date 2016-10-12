@@ -18,15 +18,15 @@ int main(int argc, char *argv[])
 
   ASSERT(gaspi_proc_num(&nprocs));
   
-  ASSERT(gaspi_group_size(GASPI_GROUP_ALL,&gsize));
+  ASSERT(gaspi_group_size(GASPI_GROUP_ALL, &gsize));
 
   partners = malloc(gsize * sizeof(gaspi_rank_t));
-  ASSERT(gaspi_group_ranks(GASPI_GROUP_ALL,partners));
+  ASSERT(gaspi_group_ranks(GASPI_GROUP_ALL, partners));
   
-  gaspi_printf("%d partners\n", gsize);
-  for(n=0; n < gsize; n++)
-    gaspi_printf("%d ", partners[n]);
-  gaspi_printf("\n");
+  for(n = 0; n < gsize; n++)
+    {
+      assert(partners[n] == n);
+    }
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   

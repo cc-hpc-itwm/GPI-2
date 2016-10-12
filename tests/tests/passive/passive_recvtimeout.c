@@ -1,9 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <test_utils.h>
 
-int main(int argc, char *argv[])
+/* Test timeout in passive_receive without sender */
+int
+main(int argc, char *argv[])
 {
   TSUITE_INIT(argc, argv);
 
@@ -18,7 +17,7 @@ int main(int argc, char *argv[])
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   const gaspi_size_t msgSize = 4;
-  if(myrank != 0)
+  if( myrank != 0 )
     {
       gaspi_rank_t sender;
       EXPECT_TIMEOUT(gaspi_passive_receive(0, 0, &sender, msgSize, 2000));

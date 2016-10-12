@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
 	      ASSERT(testOP(op, type, n, GASPI_GROUP_ALL));
 	}
     }
-  gaspi_printf("done\n");
+
   //sync                                                                                                  
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
