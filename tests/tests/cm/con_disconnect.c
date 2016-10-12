@@ -50,12 +50,13 @@ int main(int argc, char *argv[])
     }
 
   ASSERT( gaspi_write(0, 0, rankSend, 0, 0, 2, 0, GASPI_BLOCK) );
+
   for (i = 0; i < num; i++)
     {
       ASSERT(gaspi_disconnect(i, GASPI_BLOCK));
     }
 
-  ASSERT (gaspi_barrier(g, GASPI_BLOCK));
+  //  ASSERT (gaspi_barrier(g, GASPI_BLOCK));
 
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 
