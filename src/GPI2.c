@@ -590,6 +590,10 @@ pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
     }
 
   eret = gaspi_sn_command(GASPI_SN_PROC_PING, rank, timeout_ms, NULL);
+  if( GASPI_ERROR == eret )
+    {
+      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
+    }
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return eret;
@@ -616,6 +620,10 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
     }
 
   eret = gaspi_sn_command(GASPI_SN_PROC_KILL, rank, timeout_ms, NULL);
+  if( GASPI_ERROR == eret )
+    {
+      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
+    }
 
   unlock_gaspi(&glb_gaspi_ctx_lock);
   return eret;
