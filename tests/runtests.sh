@@ -11,6 +11,9 @@ Results=1 #if we want to look at the results/output
 Time=1
 opts_used=0
 LOG_FILE=runtests_$(date -Idate).log
+
+MAX_TIME=600
+
 #Functions
 exit_timeout(){
     echo "Stop this program"
@@ -52,7 +55,7 @@ run_test(){
 
     if [ $Time = 1 ] ; then
 	export PID
-	(sleep 3600; kill -9 $PID;) &
+	(sleep $MAX_TIME; kill -9 $PID;) &
 	TPID=$!
    #wait test to finish
        wait $PID
@@ -79,8 +82,9 @@ trap exit_timeout TERM INT QUIT
 
 #Script starts here
 OPTERR=0
-while getopts "vtn:m:o:" option ; do
+while getopts "e:vtn:m:o:" option ; do
     case $option in
+	e ) MAX_TIME=${OPTARG}; opts_used=$(($opts_used + 2));;
 	v ) Results=1;opts_used=$(($opts_used + 1));echo "" > $LOG_FILE ;;
 	t ) Time=0;;
 	n ) GASPI_RUN="${GASPI_RUN} -n ${OPTARG}";opts_used=$(($opts_used + 2));;
