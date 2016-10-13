@@ -60,9 +60,10 @@ run_test(){
 	(sleep $MAX_TIME; kill -9 $PID;) &
 	TPID=$!
    #wait test to finish
-	wait $PID 2>/dev/null || let "TIMEDOUT=1"
+	wait $PID 2>/dev/null
     fi
     TEST_RESULT=$?
+    kill -0 $TPID || let "TIMEDOUT=1"
     if [ $TIMEDOUT = 1 ];then
 	TESTS_TIMEOUT=$(($TESTS_TIMEOUT+1))
 	printf '\033[33m'"TIMEOUT\n"
