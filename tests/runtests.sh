@@ -7,6 +7,7 @@ TESTS=`ls bin`
 NUM_TESTS=0
 TESTS_FAIL=0
 TESTS_PASS=0
+TESTS_TIMEOUT=0
 Results=1 #if we want to look at the results/output
 Time=1
 opts_used=0
@@ -53,28 +54,37 @@ run_test(){
 	PID=$!
     fi
 
+    TIMEDOUT=0
     if [ $Time = 1 ] ; then
 	export PID
 	(sleep $MAX_TIME; kill -9 $PID;) &
 	TPID=$!
    #wait test to finish
-       wait $PID
+	wait $PID 2>/dev/null || let "TIMEDOUT=1"
     fi
-
-    if [ $? = 0 ]; then
-	TESTS_PASS=$(($TESTS_PASS+1))
-	printf '\033[32m'"PASSED\n"
-    else
-	TESTS_FAIL=$(($TESTS_FAIL+1))
-		printf '\033[31m'"FAILED\n"
+    TEST_RESULT=$?
+    if [ $TIMEDOUT = 1 ];then
+	TESTS_TIMEOUT=$(($TESTS_TIMEOUT+1))
+	printf '\033[33m'"TIMEOUT\n"
 	$GASPI_CLEAN -m ${GPI2_TSUITE_MFILE}
+    else
+	if [ $TEST_RESULT = 0 ]; then
+	    TESTS_PASS=$(($TESTS_PASS+1))
+	    printf '\033[32m'"PASSED\n"
+	else
+	    TESTS_FAIL=$(($TESTS_FAIL+1))
+	    printf '\033[31m'"FAILED\n"
+	    $GASPI_CLEAN -m ${GPI2_TSUITE_MFILE}
+	fi
     fi
 
    #reset terminal to normal
     tput sgr0
 
     if [ $Time = 1 ] ; then
-	kill $TPID > /dev/null 2>&1
+	if [ $TIMEDOUT = 0 ];then
+	    kill $TPID  > /dev/null 2>&1
+	fi
     fi
 }
 
@@ -143,9 +153,9 @@ do
     fi
 done
 
-killall sleep
+killall sleep 2>/dev/null
 
 echo
-echo "Run $NUM_TESTS tests: $TESTS_PASS passed, $TESTS_FAIL failed."
+echo "Run $NUM_TESTS tests: $TESTS_PASS passed, $TESTS_FAIL failed, $TESTS_TIMEOUT timed-out ($MAX_TIME secs)."
 echo
 exit 0
