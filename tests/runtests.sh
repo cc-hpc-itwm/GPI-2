@@ -24,7 +24,15 @@ exit_timeout(){
     kill -9 $TPID > /dev/null 2>&1
     killall -9 sleep > /dev/null 2>&1
     sleep 1
+
     trap exit_timeout TERM INT QUIT
+    TESTS_FAIL=$(($TESTS_FAIL+1))
+    printf '\033[31m'"KILLED\n"
+
+    #reset terminal to normal
+    tput sgr0
+
+    exit -1
 }
 
 run_test(){
@@ -72,6 +80,7 @@ run_test(){
    #wait test to finish
 	wait $PID 2>/dev/null
     fi
+
     TEST_RESULT=$?
     kill -0 $TPID || let "TIMEDOUT=1"
     if [ $TIMEDOUT = 1 ];then
