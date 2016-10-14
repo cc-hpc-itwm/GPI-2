@@ -20,8 +20,8 @@ main(int argc, char *argv[])
 
   gaspi_size_t min_msg_size;
   ASSERT( gaspi_transfer_size_min (&min_msg_size));
-  
-  ASSERT( gaspi_segment_create(0, max_msg_size, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_UNINITIALIZED));
+
+  ASSERT( gaspi_segment_create(0, max_msg_size * 2, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
@@ -34,34 +34,43 @@ main(int argc, char *argv[])
   /* initialize data */
   gaspi_pointer_t _seg_ptr;
   ASSERT(gaspi_segment_ptr(0, &_seg_ptr));
-  int *seg_byte_ptr = (int *) _seg_ptr;
+  unsigned char *seg_byte_ptr = (unsigned char *) _seg_ptr;
 
-  int byte_off;
-  for(byte_off = 0; byte_off < (max_msg_size/ sizeof(int)); byte_off++)
-    {
-      seg_byte_ptr[byte_off] = (int)myrank;
-    }
+  memset(seg_byte_ptr, 255, max_msg_size);
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   /* communicate with max size */
-  ASSERT(gaspi_read(0, 0, rank2send, 0, 0, max_msg_size, 0, GASPI_BLOCK));
+  ASSERT(gaspi_read(0, max_msg_size, rank2send, 0, 0, max_msg_size, 0, GASPI_BLOCK));
   ASSERT(gaspi_wait(0, GASPI_BLOCK));
-  
-  for(byte_off = 0; byte_off < (max_msg_size/ sizeof(int)); byte_off++)
+
+  int elem;
+  for(elem = 0; elem < max_msg_size * 2; elem++)
     {
-      assert(seg_byte_ptr[byte_off] == (int) rank2send);
+      assert(seg_byte_ptr[elem] == 255 );
     }
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
+  /* reset data */
+  memset(seg_byte_ptr, 254, max_msg_size);
+
+  ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
+
   /* write back */
-  ASSERT(gaspi_write(0, 0, rank2send, 0, 0, max_msg_size, 0, GASPI_BLOCK));
+  ASSERT(gaspi_write_notify(0, 0, rank2send, 0, max_msg_size, max_msg_size, 0, 1, 0, GASPI_BLOCK));
   ASSERT(gaspi_wait(0, GASPI_BLOCK));
-  
-  for(byte_off = 0; byte_off < (max_msg_size/ sizeof(int)); byte_off++)
+
+  gaspi_notification_id_t id;
+  ASSERT(gaspi_notify_waitsome(0, 0, 1, &id, GASPI_BLOCK));
+
+  gaspi_notification_t val;
+  ASSERT(gaspi_notify_reset(0, id, &val));
+  assert(val == 1);
+
+  for(elem = 0; elem < max_msg_size * 2; elem++)
     {
-      assert(seg_byte_ptr[byte_off] == (int) myrank);
+      assert(seg_byte_ptr[elem] == 254);
     }
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
