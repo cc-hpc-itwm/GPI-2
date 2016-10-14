@@ -8,6 +8,7 @@ NUM_TESTS=0
 TESTS_FAIL=0
 TESTS_PASS=0
 TESTS_TIMEOUT=0
+TESTS_SKIPPED=0
 Results=1 #if we want to look at the results/output
 Time=1
 opts_used=0
@@ -32,6 +33,15 @@ run_test(){
     F="${1%.*}"
     if [ -r defs/${F}.def ]; then
 	printf "%45s: " "$1 [${F}.def]"
+	SKIP=`gawk '/SKIP/{print 1}' defs/${F}.def`
+	if [ -n "$SKIP" ]; then
+	    printf '\033[34m'"SKIPPED\n"
+	    TESTS_SKIPPED=$((TESTS_SKIPPED+1))
+   #reset terminal to normal
+	    tput sgr0
+	    return
+	fi
+
 	TEST_ARGS=`gawk 'BEGIN{FS="="} /ARGS/{print $2}' defs/${F}.def`
     else
 
@@ -157,6 +167,6 @@ done
 killall sleep 2>/dev/null
 
 echo
-echo "Run $NUM_TESTS tests: $TESTS_PASS passed, $TESTS_FAIL failed, $TESTS_TIMEOUT timed-out ($MAX_TIME secs)."
-echo
+echo -e "Run $NUM_TESTS tests:\n$TESTS_PASS passed\n$TESTS_FAIL failed\n$TESTS_TIMEOUT timed-out\n$TESTS_SKIPPED skipped\nTimeout $MAX_TIME (secs)\n"
+
 exit 0
