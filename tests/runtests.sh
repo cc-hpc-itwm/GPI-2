@@ -31,8 +31,6 @@ exit_timeout(){
 
     #reset terminal to normal
     tput sgr0
-
-    exit -1
 }
 
 run_test(){
