@@ -263,7 +263,7 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
     }
 
   eret = pgaspi_dev_write(segment_id_local, offset_local, rank,
-			  segment_id_remote,offset_remote, (unsigned int) size,
+			  segment_id_remote,offset_remote, size,
 			  queue);
 
   if( eret != GASPI_SUCCESS )
@@ -315,7 +315,7 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
     }
 
   eret = pgaspi_dev_read(segment_id_local, offset_local, rank,
-			 segment_id_remote,offset_remote, (unsigned int) size,
+			 segment_id_remote,offset_remote, size,
 			 queue);
 
   if( eret != GASPI_SUCCESS )
