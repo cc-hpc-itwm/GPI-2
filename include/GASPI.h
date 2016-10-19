@@ -1003,11 +1003,12 @@ extern "C"
   gaspi_return_t gaspi_transfer_size_max (gaspi_size_t *
 					  const transfer_size_max);
 
-  /** Get the number of available notifications.
+  /** Get the number of available notification ids. Important to note
+   * is that the allowed ids are in [ 0, notification_num ) .
    *
    *
    * @param notification_num Output parameter with the number of
-   * available notifications.
+   * available notifications ids.
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
