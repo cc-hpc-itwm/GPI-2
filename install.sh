@@ -478,7 +478,7 @@ Cflags: -I\${includedir}
 Libs: -L\${libdir} -lGPI2
 PKG
 if [ $GPI2_DEVICE = IB ]; then
-    echo "Libs.private: -libverbs -lpthread" >> GPI2.pc
+    echo "Libs.private: ${OFED_PATH}/lib64 -libverbs -lpthread" >> GPI2.pc
 else
     echo "Libs.private: -lrt -lpthread" >> GPI2.pc
 fi
