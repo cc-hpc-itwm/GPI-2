@@ -10,8 +10,8 @@ main(int argc, char *argv[])
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
-  gaspi_notification_id_t n = 0;
-  gaspi_number_t notif_num;
+  gaspi_notification_id_t notif = 0;
+  gaspi_number_t notif_num, n;
   gaspi_rank_t rank, nprocs, i;
   const  gaspi_segment_id_t seg_id = 0;
 
@@ -38,7 +38,8 @@ main(int argc, char *argv[])
 	      if(queue_size > queue_max - 1)
 		ASSERT (gaspi_wait(0, GASPI_BLOCK));
 
-	      ASSERT (gaspi_notify( seg_id, i, n, i, 0, GASPI_BLOCK));
+	      notif = (gaspi_notification_id_t) n;
+	      ASSERT (gaspi_notify( seg_id, i, notif, i, 0, GASPI_BLOCK));
 	    }
 	}
     }
