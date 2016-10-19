@@ -88,7 +88,8 @@ pgaspi_notification_num (gaspi_number_t * const notification_num)
 {
   gaspi_verify_null_ptr(notification_num);
 
-  *notification_num = ((1 << 16) - 1);
+  *notification_num = GASPI_MAX_NOTIFICATION;
+
   return GASPI_SUCCESS;
 }
 
