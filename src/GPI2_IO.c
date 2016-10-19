@@ -564,8 +564,25 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
   GPI2_STATS_START_TIMER(GASPI_WAITSOME_TIMER);
 
 #ifdef DEBUG
-  if( num >= GASPI_MAX_NOTIFICATION)
-    return GASPI_ERR_INV_NUM;
+  if( num > GASPI_MAX_NOTIFICATION )
+    {
+      return GASPI_ERR_INV_NUM;
+    }
+
+  if( num == 0 )
+    {
+      gaspi_print_warning("Waiting for 0 notifications (gaspi_notify_waitsome).");
+    }
+
+  if( notification_begin >= GASPI_MAX_NOTIFICATION )
+    {
+      return GASPI_ERR_INV_NOTIF_ID;
+    }
+
+  if( notification_begin + (gaspi_notification_id_t) num >= GASPI_MAX_NOTIFICATION )
+    {
+      return GASPI_ERR_INV_NOTIF_ID;
+    }
 #endif
 
   volatile unsigned char *segPtr;
