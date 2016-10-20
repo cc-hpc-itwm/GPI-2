@@ -234,6 +234,12 @@ if [ $GPI2_DEVICE = IB ]; then
     sed -i  "s,OFED_PATH = /usr,OFED_PATH = $OFED_PATH,g" src/make.inc
     sed -i  "s,OFED_PATH = /usr,OFED_PATH = $OFED_PATH,g" tests/make.defines
 
+    if [ -n "$GPI2_EXTRA_CFLAGS" ]; then
+	echo "###### added by install script" >> src/make.inc
+	echo "CFLAGS += ${GPI2_EXTRA_CFLAGS}" >> src/make.inc
+	echo "DBG_CFLAGS += ${GPI2_EXTRA_CFLAGS}" >> src/make.inc
+	echo "export" >> src/make.inc
+    fi
 else
     sed -i  "s,-libverbs,,g" tests/make.defines
     echo "###### added by install script" >> src/make.inc
