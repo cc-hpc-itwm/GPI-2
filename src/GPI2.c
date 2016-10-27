@@ -525,7 +525,7 @@ gaspi_return_t
 pgaspi_proc_term (const gaspi_timeout_t timeout)
 {
   int i;
-  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_proc_term");
 
@@ -548,6 +548,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
 	}
 
       free(gctx->sockfd);
+      gctx->sockfd = NULL;
     }
 
 #ifdef GPI2_WITH_MPI
