@@ -51,6 +51,8 @@ volatile gaspi_return_t gaspi_sn_err = GASPI_SUCCESS;
 
 extern gaspi_config_t glb_gaspi_cfg;
 
+volatile int _gaspi_sn_stop = 0;
+
 int
 gaspi_sn_set_blocking(const int sock)
 {
@@ -1162,8 +1164,10 @@ void
 gaspi_sn_cleanup(const int sig)
 {
   /* TODO: proper cleanup */
-  if(sig == SIGSTKFLT)
-    pthread_exit(NULL);
+  if( sig == SIGSTKFLT )
+    {
+      _gaspi_sn_stop = 1;
+    }
 }
 
 void *
@@ -1284,7 +1288,7 @@ gaspi_sn_backend(void *arg)
   gaspi_sn_status = GASPI_SN_STATE_OK;
 
   /* main events loop */
-  while(1)
+  while( !_gaspi_sn_stop )
     {
       n = epoll_wait(esock,ret_ev, GASPI_EPOLL_MAX_EVENTS, -1);
 
