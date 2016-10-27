@@ -278,17 +278,18 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
 int
 pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
 {
-  int i, s;
-  void *res;
-  unsigned int c;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  tcp_dev_stop_device();
+  if( tcp_dev_stop_device(glb_gaspi_ctx_tcp.device_channel) != 0 )
+    {
+      gaspi_print_error("Failed to stop device.");
+    }
 
   /* Destroy posting queues and associated channels */
   tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpGroups);
   tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpP);
 
+  unsigned int c;
   for(c = 0; c < gaspi_cfg->queue_num; c++)
     {
       tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpC[c]);
@@ -305,15 +306,6 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
   if(glb_gaspi_ctx_tcp.channelP)
     {
       tcp_dev_destroy_passive_channel(glb_gaspi_ctx_tcp.channelP);
-    }
-
-  char term_flag = 1;
-  write(glb_gaspi_ctx_tcp.device_channel, &term_flag, sizeof(term_flag));
-
-  s = pthread_join(tcp_dev_thread, &res);
-  if (s != 0)
-    {
-      gaspi_print_error("Failed to wait device.");
     }
 
   /* Now we can destroy the resources for completion and incoming data */

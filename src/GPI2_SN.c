@@ -52,6 +52,25 @@ volatile gaspi_return_t gaspi_sn_err = GASPI_SUCCESS;
 extern gaspi_config_t glb_gaspi_cfg;
 
 int
+gaspi_sn_set_blocking(const int sock)
+{
+  int flags = fcntl(sock, F_GETFL, 0);
+  if( flags == -1 )
+    {
+      return -1;
+    }
+
+  flags &= ~O_NONBLOCK;
+
+  if( fcntl(sock, F_SETFL, flags)  == -1 )
+    {
+      return -1;
+    }
+
+  return 0;
+}
+
+int
 gaspi_sn_set_non_blocking(const int sock)
 {
   int sflags = fcntl(sock, F_GETFL, 0);

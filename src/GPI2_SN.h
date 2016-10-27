@@ -95,7 +95,11 @@ gaspi_sn_cleanup(const int sig);
 void *
 gaspi_sn_backend(void *arg);
 
-int gaspi_sn_set_non_blocking(const int sock);
+int
+gaspi_sn_set_non_blocking(const int sock);
+
+int
+gaspi_sn_set_blocking(const int sock);
 
 int
 gaspi_sn_connect2port(const char *hn, const unsigned short port, const unsigned long timeout_ms);

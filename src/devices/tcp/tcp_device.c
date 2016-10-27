@@ -65,8 +65,6 @@ list recvList =
 int cq_ref_counter = 0;
 int qs_ref_counter = 0;
 
-volatile int valid_state = 1;
-
 int epollfd;
 
 struct tcp_cq *cqs_map[CQ_MAX_NUM];
@@ -1210,99 +1208,24 @@ _tcp_dev_wait_outstanding(int fd)
 }
 
 static void
-_tcp_dev_cleanup_connections(int pollfd, int tnc)
+_tcp_dev_wait_outstanding_out(int fd)
 {
-  int k;
-
-  for(k = 0; k < tnc; k++)
+  for(;;)
     {
-      if( rank_state == NULL || rank_state[k] == NULL || rank_state[k]->fd < 0 )
+      int outstanding_out = 0;
+
+      if( fd > 0 )
 	{
-	  continue;
+	 ioctl(fd, SIOCOUTQ, &outstanding_out);
 	}
 
-      struct epoll_event ev;
-      epoll_ctl(pollfd, EPOLL_CTL_DEL, rank_state[k]->fd, &ev);
-
-      if( shutdown(rank_state[k]->fd, SHUT_RDWR) != 0 )
+      if( !outstanding_out )
 	{
-	  gaspi_print_error("Shutdown with %d (%d)", k, rank_state[k]->fd);
+	  break;
 	}
 
-      _tcp_dev_wait_outstanding(rank_state[k]->fd);
-
-      if( close(rank_state[k]->fd) != 0 )
-	{
-	  gaspi_print_error("Close with %d", k);
-	}
-
-      free(rank_state[k]);
-      rank_state[k] = NULL;
+      usleep(1000);
     }
-
-  if( rank_state )
-    {
-      free(rank_state);
-      rank_state = NULL;
-    }
-
-  if( delayedList.count > 0 )
-    {
-      fprintf(stderr, "Warning: Still delayed wrs %d.\n", delayedList.count);
-      fflush(stderr);
-    }
-
-  list_clear(&delayedList);
-}
-
-void
-tcp_dev_stop_device(void)
-{
-  /* finish all operations that are in progress */
-  char ready = 0;
-  volatile int count;
-  volatile int ropcode;
-  volatile int wopcode;
-
-  while(!ready)
-    {
-      ready = 1;
-
-      /* delayed operations */
-      count = delayedList.count;
-      if( count )
-	{
-	  ready = 0;
-	}
-
-      /* read / write to remote ranks */
-      int i;
-      for(i = 0; i < tcp_dev_num_peers; i++)
-	{
-	  if(!rank_state || !rank_state[i]) continue;
-
-	  ropcode = rank_state[i]->read.opcode;
-	  if( ropcode != RECV_HEADER )
-	    {
-	      ready = 0;
-	    }
-
-	  wopcode = rank_state[i]->write.opcode;
-	  if( wopcode != SEND_DISABLED )
-	    {
-	      ready = 0;
-	    }
-
-	  _tcp_dev_wait_outstanding(rank_state[i]->fd);
-	}
-
-      if( !ready )
-	{
-	  gaspi_delay();
-	}
-    }
-
-  __sync_sub_and_fetch(&valid_state, 1);
 }
 
 static inline void
@@ -1315,6 +1238,183 @@ gaspi_tcp_dev_status_t
 gaspi_tcp_dev_status_get(void)
 {
   return gaspi_tcp_dev_status;
+}
+
+#define TCP_DEV_DEBUG 1
+
+static void
+_tcp_dev_bring_down(int pollfd, int num_peers)
+{
+#ifdef TCP_DEV_DEBUG
+  int tcp_dev_active_closed_connections = 0;
+  int tcp_dev_passive_closed_connections = 0;
+#endif
+
+  int p;
+  for(p = 0; p < num_peers; p++)
+    {
+      if( p == tcp_dev_id )
+	{
+	  continue;
+	}
+
+      /* sanity checks */
+      if( rank_state == NULL || rank_state[p] == NULL || rank_state[p]->fd < 0 )
+	{
+#ifdef TCP_DEV_DEBUG
+	  tcp_dev_passive_closed_connections++;
+#endif
+	  continue;
+	}
+
+      /*
+	Note: proper termination can be tricky. In order to get here,
+	we processed all pending events.  However, in the meanwhile
+	maybe this has changed:
+
+	a) a peer still wants to communicate with us
+	b) a peer closed the connection
+
+	We leave it up to the application to achieve synchronization
+	properly. One issue with this apprach is that we can never be
+	completely sure that something won't arrive when we try to
+	destroy the connection.
+      */
+
+      int tot_outstanding = 0;
+      int outstanding_in  = 0;
+      int outstanding_out = 0;
+
+      tot_outstanding = _tcp_dev_get_outstanding( rank_state[p]->fd,
+						  &outstanding_in,
+						  &outstanding_out );
+      /* Something is still pending? */
+      if( tot_outstanding )
+	{
+	  if( outstanding_out )
+	    {
+	      /* we sort of assume the outgoing request(s) just needs
+		 to be "flushed" so we wait for them. In principle, we
+		 should never get here if the application is still
+		 posting requests (didn't invoke termination). */
+
+	      _tcp_dev_wait_outstanding_out(rank_state[p]->fd);
+	    }
+
+	  if( outstanding_in )
+	    {
+	      /* If we see something coming in, it's
+		 more... complicated. It might hint at a
+		 synchronization issue at application level (which we
+		 avoid to do here). Still, we emit a warning... */
+
+	      gaspi_print_warning("%d incoming request(s) from %d during device shutdown.",
+				  outstanding_in, p);
+	    }
+	}
+
+      struct epoll_event ev;
+      epoll_ctl(pollfd, EPOLL_CTL_DEL, rank_state[p]->fd, &ev);
+
+      /* we close connection to peers with higher id */
+      if( p > tcp_dev_id )
+	{
+	  if( shutdown(rank_state[p]->fd, SHUT_RDWR) != 0 )
+	    {
+	      gaspi_print_error("Shutdown with %d (%d)", p, rank_state[p]->fd );
+	    }
+
+	  if( close(rank_state[p]->fd) != 0 )
+	    {
+	      gaspi_print_error("Close with %d", p);
+	    }
+#ifdef TCP_DEV_DEBUG
+	  tcp_dev_active_closed_connections++;
+#endif
+	}
+      else /* they close it */
+	{
+	  if( gaspi_sn_set_blocking(rank_state[p]->fd) )
+	    {
+	      gaspi_print_error("Failed to set as blocking.");
+	    }
+
+	  ssize_t final_read = -1;
+	  char final_request[64];
+
+	  final_read = read(rank_state[p]->fd, &final_request, 64);
+	  if( final_read != 0 )
+	    {
+	      gaspi_print_error("Unexpected incoming data from %d (%ld)", p, final_read);
+	    }
+#ifdef TCP_DEV_DEBUG
+	  tcp_dev_passive_closed_connections++;
+#endif
+	}
+
+      free(rank_state[p]);
+      rank_state[p] = NULL;
+    }
+
+#ifdef TCP_DEV_DEBUG
+  if( (tcp_dev_active_closed_connections + tcp_dev_passive_closed_connections) != (num_peers - 1) )
+    {
+      gaspi_print_error("Detected mismatch of closed connections (%d + %d = %d -> %d %d ).",
+			tcp_dev_active_closed_connections,
+			tcp_dev_passive_closed_connections,
+			num_peers - 1,
+			(num_peers - 1 ) - tcp_dev_id,
+			tcp_dev_id - 1 );
+    }
+#endif
+
+  if( rank_state )
+    {
+      free(rank_state);
+      rank_state = NULL;
+    }
+
+  if( delayedList.count > 0 )
+    {
+      gaspi_print_warning("Still delayed wrs %d.\n", delayedList.count);
+    }
+
+  list_clear(&delayedList);
+
+  gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_DOWN);
+}
+
+static inline void
+gaspi_tcp_dev_status_set(gaspi_tcp_dev_status_t status)
+{
+  __sync_fetch_and_add(&gaspi_tcp_dev_status, status);
+}
+
+int
+tcp_dev_stop_device(int device_channel)
+{
+  /* write stop command */
+  char term_flag = 1;
+  if( write(device_channel, &term_flag, sizeof(term_flag)) != sizeof(term_flag) )
+    {
+      return -1;
+    }
+
+  while( GASPI_TCP_DEV_STATUS_UP == gaspi_tcp_dev_status_get()  )
+    {
+      gaspi_delay();
+    }
+
+  int s;
+  void *res;
+  s = pthread_join(tcp_dev_thread, &res);
+  if( s != 0 )
+    {
+      gaspi_print_error("Failed to wait device.");
+      return -1;
+    }
+
+  return 0;
 }
 
 /* virtual device thread body */
@@ -1444,19 +1544,12 @@ tcp_virt_dev(void *args)
   /* Device is ready */
   gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_UP);
 
-  while(valid_state)
+  while( GASPI_TCP_DEV_STATUS_UP == gaspi_tcp_dev_status_get() )
     {
-      /* TODO: if thread is in epoll_wait, all events were processed */
-      /* (io, closes,...)  but the main thread hasn't yet set the */
-      /* valid_state to false, the program will hang in epoll_wait */
-      /* while the main thread will wait in pthread_join */
-
       int nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
       if( nfds < 0 )
 	{
-	  /* is time to stop */
-	  if(!valid_state)
-	    break;
+	  gaspi_print_error("Event handler error.");
 	}
 
       int n;
@@ -1464,7 +1557,17 @@ tcp_virt_dev(void *args)
 	{
 	  if( events[n].data.fd == tcp_dev_oob_channel)
 	    {
-	      //The stop command
+	      char flag = 0;
+	      ssize_t flag_size = read(tcp_dev_oob_channel, &flag, sizeof(flag));
+
+	      if( 0 == flag )
+		{
+		  gaspi_print_error("Detected inconsistency.");
+		}
+
+	      gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_GOING_DOWN);
+
+	      /* there maybe something else pending to be handled */
 	      continue;
 	    }
 
@@ -1687,11 +1790,10 @@ tcp_virt_dev(void *args)
       if( _tcp_dev_process_delayed(epollfd) > 0 )
 	{
 	  /* gaspi_print_error("Failed to process delayed events."); */
-	  /* valid_state = 0; */
 	}
     } /* device event loop */
 
-  _tcp_dev_cleanup_connections(epollfd, tcp_dev_num_peers);
+  _tcp_dev_bring_down(epollfd, tcp_dev_num_peers);
 
   if( events )
     {

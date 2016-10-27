@@ -41,7 +41,8 @@ typedef enum
   {
     GASPI_TCP_DEV_STATUS_DOWN = 0,
     GASPI_TCP_DEV_STATUS_UP = 1,
-    GASPI_TCP_DEV_STATUS_FAILED = 2
+    GASPI_TCP_DEV_STATUS_FAILED = 2,
+    GASPI_TCP_DEV_STATUS_GOING_DOWN = 3
   } gaspi_tcp_dev_status_t;
 
 /* TODO: minimize sizes */
@@ -200,8 +201,8 @@ tcp_dev_return_wc(struct tcp_cq *, tcp_dev_wc_t *);
 void *
 tcp_virt_dev(void *);
 
-void
-tcp_dev_stop_device(void);
+int
+tcp_dev_stop_device(int);
 
 int
 tcp_dev_is_valid_state(unsigned short);
