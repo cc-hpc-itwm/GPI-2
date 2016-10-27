@@ -1831,6 +1831,7 @@ tcp_virt_dev(void *args)
       events = NULL;
     }
 
+  free(lstate);
   close(tcp_dev_oob_channel);
   close(listen_sock);
   close(epollfd);
