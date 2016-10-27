@@ -1048,9 +1048,8 @@ _tcp_dev_process_delayed(int pollfd)
 
 	      if( bytes_sent <= 0 && !(errno == EAGAIN || errno == EWOULDBLOCK) )
 		{
-		  {
-		    gaspi_print_error("writing to node %d.", wr.target);
-		  }
+		  gaspi_print_error("writing to %d (total %lu sent %ld remain %lu).",
+				    wr.target, element->wr.length, done, sizeof(tcp_dev_wr_t) - done);
 
 		  if( _tcp_dev_post_wc(wr.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE, wr.cq_handle) != 0 )
 		    {
@@ -1080,9 +1079,8 @@ _tcp_dev_process_delayed(int pollfd)
 
 		  if( bytes_sent <= 0 && !(errno == EAGAIN || errno == EWOULDBLOCK) )
 		    {
-		      {
-			gaspi_print_error("writing to node %d.", wr.target);
-		      }
+		      gaspi_print_error("writing to %d (total %lu sent %ld remain %lu).",
+					wr.target, element->wr.length, sdone, element->wr.length - sdone);
 
 		      if( _tcp_dev_post_wc(wr.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE, wr.cq_handle) != 0 )
 			{
@@ -1675,8 +1673,8 @@ tcp_virt_dev(void *args)
 			}
 		      else if( bytesReceived <= 0 )
 			{
-			  gaspi_print_error("reading from node %d.",
-					    event_rank);
+			  gaspi_print_error("reading from %d (total %lu recvd %ld remain %lu).",
+					    event_rank, estate->read.length, bytesReceived, bytesRemaining);
 			  io_err = 1;
 			  break;
 			}
@@ -1725,8 +1723,8 @@ tcp_virt_dev(void *args)
 			}
 		      else if( bytesSent <= 0 )
 			{
-			  gaspi_print_error("writing to node %d", event_rank);
-
+			  gaspi_print_error("writing to %d (total %lu sent %ld remain %lu).",
+					    event_rank, estate->write.length, bytesSent, bytesRemaining);
 			  io_err = 1;
 			  break;
 			}
