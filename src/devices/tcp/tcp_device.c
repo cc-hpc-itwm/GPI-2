@@ -1639,7 +1639,7 @@ tcp_virt_dev(void *args)
 		    {
 		      /* TODO: catch NULL-ptr */
 		      const int bytesRemaining = estate->read.length - estate->read.done;
-		      int bytesReceived;
+		      ssize_t bytesReceived;
 
 		      /* we need to deal with read's byte granularity and */
 		      /* and make sure some things (e.g. a
