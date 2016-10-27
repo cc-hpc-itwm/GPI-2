@@ -198,8 +198,8 @@ tcp_dev_destroy_passive_channel(struct tcp_passive_channel *);
 int
 tcp_dev_return_wc(struct tcp_cq *, tcp_dev_wc_t *);
 
-void *
-tcp_virt_dev(void *);
+int
+tcp_dev_init_device(struct tcp_dev_args *args);
 
 int
 tcp_dev_stop_device(int);

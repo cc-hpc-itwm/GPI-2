@@ -69,6 +69,9 @@ int epollfd;
 
 struct tcp_cq *cqs_map[CQ_MAX_NUM];
 
+/* device thread function forward declaration */
+void* tcp_virt_dev(void *);
+
 struct tcp_passive_channel *
 tcp_dev_create_passive_channel(void)
 {
@@ -1384,10 +1387,26 @@ _tcp_dev_bring_down(int pollfd, int num_peers)
   gaspi_tcp_dev_status_set(GASPI_TCP_DEV_STATUS_DOWN);
 }
 
-static inline void
-gaspi_tcp_dev_status_set(gaspi_tcp_dev_status_t status)
+int
+tcp_dev_init_device(struct tcp_dev_args* dev_args)
 {
-  __sync_fetch_and_add(&gaspi_tcp_dev_status, status);
+  int pipefd[2];
+  if( pipe(pipefd) == -1 )
+    {
+      gaspi_print_error("Failed to create device channel.");
+      return -1;
+    }
+
+  dev_args->oob_fd = pipefd[0];
+
+  /* start virtual device (thread) */
+  if( pthread_create(&tcp_dev_thread, NULL, tcp_virt_dev, dev_args) != 0 )
+    {
+      gaspi_print_error("Failed to open (virtual) device.");
+      return -1;
+    }
+
+  return pipefd[1];
 }
 
 int

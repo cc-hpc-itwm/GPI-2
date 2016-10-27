@@ -143,27 +143,22 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
 
   memset (&glb_gaspi_ctx_tcp, 0, sizeof (gaspi_tcp_ctx));
 
-  int pipefd[2];
-  if( pipe(pipefd) == -1 )
+  struct tcp_dev_args* dev_args = malloc(sizeof(struct tcp_dev_args));
+  if( NULL == dev_args )
     {
-      gaspi_print_error("Failed to create device channel.");
+      gaspi_print_error("Failed to allocate memory.");
       return -1;
     }
 
-  glb_gaspi_ctx_tcp.device_channel = pipefd[1];
+  dev_args->peers_num = gctx->tnc;
+  dev_args->id = gctx->rank;
+  dev_args->port = TCP_DEV_PORT + gctx->localSocket;
 
-  struct tcp_dev_args dev_args =
-    {
-      .peers_num = gctx->tnc,
-      .id = gctx->rank,
-      .port = TCP_DEV_PORT + gctx->localSocket,
-      .oob_fd = pipefd[0]
-    };
+  glb_gaspi_ctx_tcp.device_channel = tcp_dev_init_device(dev_args);
 
-  /* start virtual device (thread) */
-  if( pthread_create(&tcp_dev_thread, NULL, tcp_virt_dev, &dev_args) != 0 )
+  if( glb_gaspi_ctx_tcp.device_channel < 0 )
     {
-      gaspi_print_error("Failed to open (virtual) device.");
+      gaspi_print_error("Failed to initialize device.");
       return -1;
     }
 
@@ -270,7 +265,11 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
     }
 
   if( GASPI_TCP_DEV_STATUS_FAILED == _dev_status )
-    return -1;
+    {
+      return -1;
+    }
+
+  free(dev_args);
 
   return 0;
 }
