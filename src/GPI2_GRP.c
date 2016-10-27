@@ -630,6 +630,12 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       mask <<= 1;
     } //while...
 
+  /* Note: at this point, it can happen that no or only some
+     completions are polled. So far no problems have been observed but
+     theoretically it is possible for the queue to become broken
+     e.g. with a small, user-defined queue size and a large number of
+     ranks. */
+
   const int pret = pgaspi_dev_poll_groups();
   if (pret < 0)
     {
