@@ -94,7 +94,7 @@ pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_
   if( glb_gaspi_ctx_tcp.scqC[id] == NULL)
     {
       glb_gaspi_ctx_tcp.scqC[id] = tcp_dev_create_cq(glb_gaspi_cfg.queue_size_max, NULL);
-      if(glb_gaspi_ctx_tcp.scqC[id] == NULL)
+      if( glb_gaspi_ctx_tcp.scqC[id] == NULL )
 	{
 	  gaspi_print_error("Failed to create IO completion queue.");
 	  return -1;
@@ -104,7 +104,7 @@ pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_
   if( glb_gaspi_ctx_tcp.qpC[id] == NULL)
     {
       glb_gaspi_ctx_tcp.qpC[id] = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqC[id], NULL);
-      if(glb_gaspi_ctx_tcp.qpC[id] == NULL)
+      if( glb_gaspi_ctx_tcp.qpC[id] == NULL )
 	{
 	  gaspi_print_error("Failed to create queue %d for IO.", id);
 	  return -1;
@@ -168,21 +168,21 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
       gaspi_cfg->network = GASPI_ETHERNET;
     }
 
-  if (gaspi_cfg->net_info)
+  if( gaspi_cfg->net_info )
     {
       pgaspi_dev_print_info();
     }
 
   /* Passive channel (SRQ) */
   glb_gaspi_ctx_tcp.srqP = gaspi_sn_connect2port("localhost", TCP_DEV_PORT + gctx->localSocket, CONN_TIMEOUT);
-  if(glb_gaspi_ctx_tcp.srqP == -1)
+  if( glb_gaspi_ctx_tcp.srqP == -1 )
     {
       gaspi_print_error("Failed to create passive channel connection");
       return -1;
     }
 
   glb_gaspi_ctx_tcp.channelP = tcp_dev_create_passive_channel();
-  if(glb_gaspi_ctx_tcp.channelP == NULL)
+  if( glb_gaspi_ctx_tcp.channelP == NULL )
     {
       gaspi_print_error("Failed to create passive channel.");
       return -1;
@@ -190,28 +190,28 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
 
   /* Completion Queues */
   glb_gaspi_ctx_tcp.scqGroups = tcp_dev_create_cq(gaspi_cfg->queue_size_max, NULL);
-  if(glb_gaspi_ctx_tcp.scqGroups == NULL)
+  if( glb_gaspi_ctx_tcp.scqGroups == NULL )
     {
       gaspi_print_error("Failed to create groups send completion queue.");
       return -1;
     }
 
   glb_gaspi_ctx_tcp.rcqGroups = tcp_dev_create_cq(gaspi_cfg->queue_size_max, NULL);
-  if(glb_gaspi_ctx_tcp.rcqGroups == NULL)
+  if( glb_gaspi_ctx_tcp.rcqGroups == NULL )
     {
       gaspi_print_error("Failed to create groups receive completion queue.");
       return -1;
     }
 
   glb_gaspi_ctx_tcp.scqP = tcp_dev_create_cq(gaspi_cfg->queue_size_max, NULL);
-  if(glb_gaspi_ctx_tcp.scqP == NULL)
+  if( glb_gaspi_ctx_tcp.scqP == NULL )
     {
       gaspi_print_error("Failed to create passive send completion queue.");
       return -1;
     }
 
   glb_gaspi_ctx_tcp.rcqP = tcp_dev_create_cq(gaspi_cfg->queue_size_max, glb_gaspi_ctx_tcp.channelP);
-  if(glb_gaspi_ctx_tcp.rcqP == NULL)
+  if( glb_gaspi_ctx_tcp.rcqP == NULL )
     {
       gaspi_print_error("Failed to create passive recv completion queue.");
       return -1;
@@ -221,7 +221,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
   for(c = 0; c < gaspi_cfg->queue_num; c++)
     {
       glb_gaspi_ctx_tcp.scqC[c] = tcp_dev_create_cq(gaspi_cfg->queue_size_max, NULL);
-      if(glb_gaspi_ctx_tcp.scqC[c] == NULL)
+      if( glb_gaspi_ctx_tcp.scqC[c] == NULL )
 	{
 	  gaspi_print_error("Failed to create IO completion queue.");
 	  return -1;
@@ -231,7 +231,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
   /* Queues (QPs) */
   glb_gaspi_ctx_tcp.qpGroups = tcp_dev_create_queue(glb_gaspi_ctx_tcp.scqGroups,
 						    glb_gaspi_ctx_tcp.rcqGroups);
-  if(glb_gaspi_ctx_tcp.qpGroups == NULL)
+  if( glb_gaspi_ctx_tcp.qpGroups == NULL )
     {
       gaspi_print_error("Failed to create queue for groups.");
       return -1;
@@ -241,7 +241,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
     {
       glb_gaspi_ctx_tcp.qpC[c] = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqC[c],
 						       NULL);
-      if(glb_gaspi_ctx_tcp.qpC[c] == NULL)
+      if( glb_gaspi_ctx_tcp.qpC[c] == NULL )
 	{
 	  gaspi_print_error("Failed to create queue %d for IO.", c);
 	  return -1;
@@ -250,7 +250,7 @@ pgaspi_dev_init_core(gaspi_config_t *gaspi_cfg)
 
   glb_gaspi_ctx_tcp.qpP = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqP,
 						glb_gaspi_ctx_tcp.rcqP);
-  if(glb_gaspi_ctx_tcp.qpP == NULL)
+  if( glb_gaspi_ctx_tcp.qpP == NULL )
     {
       gaspi_print_error("Failed to create queue for passive.");
       return -1;
@@ -294,15 +294,15 @@ pgaspi_dev_cleanup_core(gaspi_config_t *gaspi_cfg)
       tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpC[c]);
     }
 
-  if(glb_gaspi_ctx_tcp.srqP)
+  if( glb_gaspi_ctx_tcp.srqP )
     {
-      if(close(glb_gaspi_ctx_tcp.srqP) < 0)
+      if( close(glb_gaspi_ctx_tcp.srqP ) < 0 )
 	{
 	  gaspi_print_error("Failed to close srqP.");
 	}
     }
 
-  if(glb_gaspi_ctx_tcp.channelP)
+  if( glb_gaspi_ctx_tcp.channelP )
     {
       tcp_dev_destroy_passive_channel(glb_gaspi_ctx_tcp.channelP);
     }

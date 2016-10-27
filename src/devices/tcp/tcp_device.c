@@ -28,7 +28,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <linux/if_link.h>
 #include <ifaddrs.h>
 
-
 #ifdef __linux__
 #include <linux/sockios.h>
 #endif
@@ -78,8 +77,10 @@ tcp_dev_create_passive_channel(void)
   int pipefd[2];
   struct tcp_passive_channel * channel = NULL;
 
-  if(pipe(pipefd) < 0)
-    return NULL;
+  if( pipe(pipefd) < 0 )
+    {
+      return NULL;
+    }
 
   channel = (struct tcp_passive_channel *) malloc (sizeof(struct tcp_passive_channel));
   if( channel != NULL )
@@ -91,20 +92,24 @@ tcp_dev_create_passive_channel(void)
   return channel;
 }
 
-/* TODO: rename function */
+/* TODO: rename function. re-think it */
 int
 tcp_dev_is_valid_state(gaspi_rank_t i)
 {
   if( i < tcp_dev_num_peers )
     {
-      if(rank_state != NULL)
+      if( rank_state != NULL )
 	{
-	  if(rank_state[i] != NULL)
+	  if( rank_state[i] != NULL )
 	    {
-	      if(rank_state[i]->fd < 0)
-		return 0;
+	      if( rank_state[i]->fd < 0 )
+		{
+		  return 0;
+		}
 	      else
-		return 1;
+		{
+		  return 1;
+		}
 	    }
 	}
     }
@@ -336,7 +341,7 @@ tcp_dev_get_local_if(char *ip)
 	  if( strcmp(ip, host) == 0 )
 	    {
 	      char *myifa = malloc(8);
-	      if( myifa != NULL)
+	      if( myifa != NULL )
 		{
 		  sprintf(myifa, "%-8s", ifa->ifa_name);
 		}
@@ -800,10 +805,10 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate)
 	      op = TCP_DEV_WC_FETCH_ADD;
 	    }
 
-	  if(_tcp_dev_post_wc(estate->wr_buff.wr_id,
-			      TCP_WC_SUCCESS,
+	  if( _tcp_dev_post_wc(estate->wr_buff.wr_id,
+			       TCP_WC_SUCCESS,
 			      op,
-			      estate->wr_buff.cq_handle) != 0)
+			       estate->wr_buff.cq_handle) != 0 )
 	    {
 	      return 1;
 	    }
@@ -878,12 +883,12 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate)
 	} /* switch opcode */
     } /* if RECV_HEADER*/
 
-  else if(estate->read.opcode == RECV_RDMA_WRITE)
+  else if( estate->read.opcode == RECV_RDMA_WRITE )
     {
       _tcp_dev_set_default_read_conn_state(estate);
     }
 
-  else if(estate->read.opcode == RECV_RDMA_READ)
+  else if( estate->read.opcode == RECV_RDMA_READ )
     {
       if( _tcp_dev_post_wc(estate->read.wr_id,
 			   TCP_WC_SUCCESS,
@@ -896,7 +901,7 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate)
       _tcp_dev_set_default_read_conn_state(estate);
     }
 
-  else if(estate->read.opcode == RECV_SEND)
+  else if( estate->read.opcode == RECV_SEND )
     {
       if( _tcp_dev_post_wc(estate->read.wr_id,
 			   TCP_WC_SUCCESS,
@@ -921,12 +926,12 @@ _tcp_dev_process_recv_data(tcp_dev_conn_state_t *estate)
 static int
 _tcp_dev_process_sent_data(int pollfd, tcp_dev_conn_state_t *estate)
 {
-  if(estate->write.opcode == SEND_RDMA_WRITE)
+  if( estate->write.opcode == SEND_RDMA_WRITE )
     {
-      if(_tcp_dev_post_wc(estate->write.wr_id,
-			  TCP_WC_SUCCESS,
-			  TCP_DEV_WC_RDMA_WRITE,
-			  estate->write.cq_handle) != 0)
+      if( _tcp_dev_post_wc(estate->write.wr_id,
+			   TCP_WC_SUCCESS,
+			   TCP_DEV_WC_RDMA_WRITE,
+			   estate->write.cq_handle) != 0 )
 	{
 	  return 1;
 	}
@@ -938,7 +943,7 @@ _tcp_dev_process_sent_data(int pollfd, tcp_dev_conn_state_t *estate)
       .events = EPOLLIN | EPOLLRDHUP
     };
 
-  if(epoll_ctl(pollfd, EPOLL_CTL_MOD, estate->fd, &ev) < 0)
+  if( epoll_ctl(pollfd, EPOLL_CTL_MOD, estate->fd, &ev) < 0 )
     {
       gaspi_print_error("Failed to modify events instance.");
       return 1;
@@ -980,7 +985,7 @@ _tcp_dev_process_delayed(int pollfd)
 
 	  delete = element;
 	}
-      else if(wr.opcode == NOTIFICATION_SEND && (wr.target == tcp_dev_id) )
+      else if( wr.opcode == NOTIFICATION_SEND && (wr.target == tcp_dev_id) )
 	{
 	  if( recvList.count )
 	    {
@@ -1116,11 +1121,11 @@ _tcp_dev_process_delayed(int pollfd)
 	      if( !found_error )
 		{
 		  /* enable write notification */
-		  if(wr.opcode == NOTIFICATION_RDMA_WRITE)
+		  if( wr.opcode == NOTIFICATION_RDMA_WRITE )
 		    {
 		      state->write.opcode = SEND_RDMA_WRITE;
 		    }
-		  else if(wr.opcode == RESPONSE_RDMA_READ)
+		  else if( wr.opcode == RESPONSE_RDMA_READ )
 		    {
 		      state->write.opcode = SEND_RDMA_READ;
 		    }
@@ -1152,6 +1157,7 @@ _tcp_dev_process_delayed(int pollfd)
 	  delete = element;
 	}
 
+
       element = element->next;
       if( delete )
 	{
@@ -1166,23 +1172,22 @@ _tcp_dev_process_delayed(int pollfd)
 static int
 _tcp_dev_get_outstanding(int fd, int *in, int *out)
 {
-
   int tot_outstanding = 0;
   int outstanding_in = 0;
   int outstanding_out = 0;
 
-  if(fd > 0)
+  if( fd > 0 )
     {
       ioctl(fd, SIOCOUTQ, &outstanding_out);
       ioctl(fd, SIOCINQ, &outstanding_in);
 
-      if(outstanding_in > 0)
+      if( outstanding_in > 0 )
 	{
 	  tot_outstanding += outstanding_in;
 	  *in = outstanding_in;
 	}
 
-      if(outstanding_out > 0)
+      if( outstanding_out > 0 )
 	{
 	  tot_outstanding += outstanding_out;
 	  *out = outstanding_out;
@@ -1203,8 +1208,10 @@ _tcp_dev_wait_outstanding(int fd)
 
       tot_outstanding = _tcp_dev_get_outstanding(fd, &outstanding_in, &outstanding_out);
 
-      if(!tot_outstanding)
-	break;
+      if( !tot_outstanding )
+	{
+	  break;
+	}
 
       usleep(1000);
     }
@@ -1611,8 +1618,10 @@ tcp_virt_dev(void *args)
 		  int conn_sock = accept(listen_sock, (struct sockaddr *) &local, &addrlen);
 		  if( conn_sock < 0 )
 		    {
-		      if(errno == EAGAIN || errno == EWOULDBLOCK)
-			break;
+		      if( errno == EAGAIN || errno == EWOULDBLOCK )
+			{
+			  break;
+			}
 
 		      gaspi_print_error("Failed to accept connection.");
 		      continue;
@@ -1693,10 +1702,12 @@ tcp_virt_dev(void *args)
 			      gaspi_print_error("Failed to process received data.");
 			      /* TODO: better error? exit? */
 			    }
+
 			  break;
 			}
 		    }
 		}
+
 	      /* write data */
 	      if( !io_err && (events[n].events & EPOLLOUT) )
 		{

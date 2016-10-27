@@ -540,9 +540,11 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
     {
       for(i = 0;i < gctx->tnc; i++)
 	{
-	  shutdown(gctx->sockfd[i],2);
-	  if(gctx->sockfd[i] > 0)
-	    close(gctx->sockfd[i]);
+	  shutdown(gctx->sockfd[i], 2);
+	  if( gctx->sockfd[i] > 0 )
+	    {
+	      close(gctx->sockfd[i]);
+	    }
 	}
 
       free(gctx->sockfd);

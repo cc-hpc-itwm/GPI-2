@@ -46,11 +46,11 @@ typedef enum
   } gaspi_tcp_dev_status_t;
 
 /* TODO: minimize sizes */
-typedef struct 
+typedef struct
 {
   uint64_t wr_id;
   uint32_t cq_handle; // specifies remote CQ
-  enum 
+  enum
     {
       REGISTER_PEER,
 
@@ -81,41 +81,41 @@ typedef struct
   uint32_t length;
 } tcp_dev_wr_t;
 
-typedef struct 
+typedef struct
 {
   int fd, rank;
 
-  struct 
+  struct
   {
     uint64_t wr_id;
     uint32_t cq_handle;
 
-    enum 
+    enum
       {
 	RECV_HEADER, RECV_TOPOLOGY, RECV_RDMA_WRITE, RECV_RDMA_READ, RECV_SEND
       } opcode;
-    
+
     uint64_t addr;
     uint32_t length, done;
   } read;
-  
-  struct 
+
+  struct
   {
     uint64_t wr_id;
     uint32_t cq_handle;
 
-    enum 
+    enum
       {
 	SEND_DISABLED, SEND_RDMA_WRITE, SEND_RDMA_READ, SEND_SEND
       } opcode;
 
     uint64_t addr;
     uint32_t length, done;
-    
+
   } write;
 
   /* work requests buffer (async) */
-  tcp_dev_wr_t wr_buff; 
+  tcp_dev_wr_t wr_buff;
 
 } tcp_dev_conn_state_t;
 
@@ -135,7 +135,7 @@ enum tcp_dev_wc_opcode
     TCP_DEV_WC_FETCH_ADD,
     TCP_DEV_WC_RECV
   };
-  
+
 typedef struct
 {
   uint64_t wr_id;

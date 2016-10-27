@@ -528,12 +528,12 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
   GPI2_STATS_START_TIMER(GASPI_BARRIER_TIMER);
 
-  if(lock_gaspi_tout (&glb_gaspi_group_ctx[g].gl, timeout_ms))
+  if( lock_gaspi_tout (&glb_gaspi_group_ctx[g].gl, timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
 
-  if(!(glb_gaspi_group_ctx[g].coll_op & GASPI_BARRIER))
+  if( !(glb_gaspi_group_ctx[g].coll_op & GASPI_BARRIER) )
     {
       unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
       return GASPI_ERR_ACTIVE_COLL;
@@ -545,7 +545,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
   const int size = glb_gaspi_group_ctx[g].tnc;
 
-  if(glb_gaspi_group_ctx[g].lastmask == 0x1)
+  if( glb_gaspi_group_ctx[g].lastmask == 0x1 )
     {
       glb_gaspi_group_ctx[g].barrier_cnt++;
     }
@@ -556,33 +556,38 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
   barrier_ptr[0] = glb_gaspi_group_ctx[g].barrier_cnt;
 
-  volatile unsigned char *rbuf =
+  volatile unsigned char* rbuf =
     (volatile unsigned char *) (glb_gaspi_group_ctx[g].rrcd[gctx->rank].data.buf);
 
   const int rank = glb_gaspi_group_ctx[g].rank;
 
-  int mask = glb_gaspi_group_ctx[g].lastmask&0x7fffffff;
-  int jmp = glb_gaspi_group_ctx[g].lastmask>>31;
+  int mask = glb_gaspi_group_ctx[g].lastmask & 0x7fffffff;
+
+  //TODO: comment to explain this
+  int jmp = glb_gaspi_group_ctx[g].lastmask >> 31;
 
   const gaspi_cycles_t s0 = gaspi_get_cycles();
 
-  while (mask < size)
+  while( mask < size )
     {
       const int dst = glb_gaspi_group_ctx[g].rank_grp[(rank + mask) % size];
       const int src = (rank - mask + size) % size;
 
-      if(jmp)
+      if( jmp )
 	{
 	  jmp = 0;
 	  goto B0;
 	}
+
       if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[dst].cstat )
-	if( ( eret = pgaspi_connect((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS )
-	  {
-	    gaspi_print_error("Failed to connect to rank %u", dst);
-	    unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
-	    return eret;
-	  }
+	{
+	  if( ( eret = pgaspi_connect((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS )
+	    {
+	      gaspi_print_error("Failed to connect to rank %u", dst);
+	      unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
+	      return eret;
+	    }
+	}
 
       if( !glb_gaspi_group_ctx[g].committed_rank[dst] )
 	{
@@ -593,10 +598,10 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	      return eret;
 	    }
 	}
-
-      if(pgaspi_dev_post_group_write((void *)barrier_ptr, 1, dst,
-				     (void *) (glb_gaspi_group_ctx[g].rrcd[dst].data.addr + (2 * rank + glb_gaspi_group_ctx[g].togle)),
-				     g) != 0)
+      //TODO: make constant remote_offset = (2 * rank + glb_gaspi_group_ctx[g].togle) -> spare some ALU ops
+      if( pgaspi_dev_post_group_write((void *)barrier_ptr, 1, dst,
+				      (void *) (glb_gaspi_group_ctx[g].rrcd[dst].data.addr + (2 * rank + glb_gaspi_group_ctx[g].togle)),
+				      g) != 0)
 	{
 	  gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	  unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
@@ -615,7 +620,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
 	  if(ms > timeout_ms)
 	    {
-	      glb_gaspi_group_ctx[g].lastmask = mask|0x80000000;
+	      glb_gaspi_group_ctx[g].lastmask = mask | 0x80000000;
 	      unlock_gaspi (&glb_gaspi_group_ctx[g].gl);
 	      return GASPI_TIMEOUT;
 	    }
