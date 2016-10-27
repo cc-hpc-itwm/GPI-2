@@ -1630,7 +1630,7 @@ tcp_virt_dev(void *args)
 		  if( _tcp_dev_add_new_conn(-1, conn_sock, epollfd) == NULL )
 		    {
 		      close(conn_sock);
-		      gaspi_print_error("Failed to add to events instance");
+		      gaspi_print_error("Failed to add connection to events instance");
 		    }
 		}
 	      continue;
@@ -1773,7 +1773,7 @@ tcp_virt_dev(void *args)
 		{
 		  if( _tcp_dev_post_wc(estate->write.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE, estate->write.cq_handle) != 0 )
 		    {
-		      gaspi_print_error("Failed to post completion error.");
+		      gaspi_print_error("Failed to post completion.");
 		    }
 
 		  estate->write.wr_id     = 0;
@@ -1791,14 +1791,14 @@ tcp_virt_dev(void *args)
 		    {
 		      if( _tcp_dev_post_wc(estate->read.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_READ, estate->read.cq_handle) != 0 )
 			{
-			  gaspi_print_error("Failed to post completion error.");
+			  gaspi_print_error("Failed to post completion.");
 			}
 		    }
 
 		  if( estate->read.opcode == RECV_SEND )
 		    if( _tcp_dev_post_wc(estate->read.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RECV, estate->read.cq_handle) != 0 )
 		      {
-			gaspi_print_error("Failed to post completion error.");
+			gaspi_print_error("Failed to post completion.");
 		      }
 		}
 
