@@ -52,6 +52,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 	fprintf(stderr,"[Rank %4u]: Error at (%s:%d):" msg "\n",	\
 		glb_gaspi_ctx.rank, __FILE__, __LINE__, ##__VA_ARGS__);	\
       }									\
+    fflush(stderr);							\
   }
 
 #define gaspi_print_warning(msg, ...)					\
