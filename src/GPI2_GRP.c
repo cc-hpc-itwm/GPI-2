@@ -544,6 +544,14 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   if( grp_ctx->lastmask == 0x1 )
     {
       grp_ctx->barrier_cnt++;
+
+      /* We need to take care of the wraparound of the barrier_cnt. By
+	 increasing the counter we avoid seeing the same counter value
+	 in the same togle position. */
+      if( grp_ctx->barrier_cnt == 0 )
+	{
+	  grp_ctx->barrier_cnt++;
+	}
     }
 
   const int toggle_size = 2;
@@ -670,6 +678,12 @@ _gaspi_allreduce (const gaspi_pointer_t buf_send,
   if( glb_gaspi_group_ctx[g].level == 0 )
     {
       glb_gaspi_group_ctx[g].barrier_cnt++;
+
+      /* We need to take care of wraparound of the barrier_cnt */
+      if( glb_gaspi_group_ctx[g].barrier_cnt == 0 )
+	{
+	  glb_gaspi_group_ctx[g].barrier_cnt++;
+	}
     }
 
   const int size = glb_gaspi_group_ctx[g].tnc;
