@@ -36,6 +36,8 @@ struct redux_args
 {
   redux_type_t f_type;
   gaspi_size_t elem_size;
+  gaspi_number_t elem_cnt;
+
   union
   {
     struct

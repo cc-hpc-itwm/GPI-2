@@ -370,7 +370,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   if( glb_gaspi_cfg.build_infrastructure )
     {
-      eret = pgaspi_group_all_local_create(timeout_ms);
+      eret = pgaspi_group_all_local_create(gctx, timeout_ms);
       if( eret != GASPI_SUCCESS )
 	{
 	  gaspi_print_error("Failed to create GASPI_GROUP_ALL.");
@@ -491,7 +491,7 @@ pgaspi_cleanup_core(void)
 	}
     }
 
-  if( pgaspi_group_all_delete() != GASPI_SUCCESS )
+  if( pgaspi_group_all_delete(gctx) != GASPI_SUCCESS )
     {
       gaspi_print_error("Failed to delete group GASPI_GROUP_ALL.");
     }

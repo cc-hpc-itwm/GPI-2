@@ -69,9 +69,10 @@ typedef struct
   }  while(0);
 
 gaspi_return_t
-pgaspi_group_all_local_create(const gaspi_timeout_t timeout_ms);
+pgaspi_group_all_local_create(gaspi_context_t const * const gctx,
+			      const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
-pgaspi_group_all_delete(void);
+pgaspi_group_all_delete(gaspi_context_t * const gctx);
 
 #endif /* GPI2_GRP_H_ */
