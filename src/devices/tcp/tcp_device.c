@@ -23,9 +23,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <sys/un.h>
 #include <unistd.h>
-#include <linux/if_link.h>
 #include <ifaddrs.h>
 
 #ifdef __linux__
