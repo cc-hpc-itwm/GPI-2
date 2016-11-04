@@ -68,7 +68,6 @@ main(int argc, char *argv[])
 				   0, GASPI_BLOCK));
 
   ASSERT( gaspi_queue_size(0, &queue_size) );
-  assert( queue_size == nListElems + 1);
 
   ASSERT (gaspi_wait(0, GASPI_BLOCK));
 
