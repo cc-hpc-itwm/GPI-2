@@ -930,7 +930,7 @@ _gaspi_allreduce (gaspi_context_t * const gctx,
 	}
       else
 	{
-	  if( _gaspi_sync_wait(gctx, GPI2_GRP_SYNC_POLL_ADDR(grp_ctx, rank_in_grp), grp_ctx->barrier_cnt, timeout_ms)  != GASPI_SUCCESS )
+	  if( _gaspi_sync_wait(gctx, GPI2_GRP_SYNC_POLL_ADDR(grp_ctx, (rank_in_grp + 1)), grp_ctx->barrier_cnt, timeout_ms)  != GASPI_SUCCESS )
 	    {
 	      return GASPI_TIMEOUT;
 	    }
