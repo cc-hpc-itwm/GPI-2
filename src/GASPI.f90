@@ -359,7 +359,7 @@ module GASPI
 &         result( res ) bind(C, name="gaspi_segment_bind")
         import
         integer(gaspi_segment_id_t), value :: segment_id
-        type(c_ptr) :: ptr
+        type(c_ptr), value :: ptr
         integer(gaspi_size_t), value :: size
         integer(gaspi_memory_description_t), value :: desc
         integer(gaspi_return_t) :: res
@@ -371,7 +371,7 @@ module GASPI
 &         result( res ) bind(C, name="gaspi_segment_use")
         import
         integer(gaspi_segment_id_t), value :: segment_id
-        type(c_ptr) :: ptr
+        type(c_ptr), value :: ptr
         integer(gaspi_size_t), value :: size
         integer(gaspi_group_t), value :: group
         integer(gaspi_timeout_t), value :: timeout_ms
