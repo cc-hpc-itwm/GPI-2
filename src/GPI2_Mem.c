@@ -82,3 +82,21 @@ gaspi_get_mem_in_use(void)
 
   return (gaspi_size_t) (rss * page_size);
 }
+
+int
+pgaspi_alloc_page_aligned(void** ptr, size_t size)
+{
+  const long page_size = sysconf (_SC_PAGESIZE);
+
+  if( page_size < 0 )
+    {
+      return -1;
+    }
+
+  if( posix_memalign ((void **) ptr, page_size, size) != 0 )
+    {
+      return -1;
+    }
+
+  return 0;
+}

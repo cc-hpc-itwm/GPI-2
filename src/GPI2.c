@@ -144,15 +144,8 @@ pgaspi_init_core(gaspi_context_t * const gctx)
 
   /* Create internal memory space (notifications + atomic value placeholder) */
   const unsigned int size = NOTIFY_OFFSET + sizeof(gaspi_atomic_value_t);
-  const long page_size = sysconf (_SC_PAGESIZE);
 
-  if( page_size < 0 )
-    {
-      gaspi_print_error ("Failed to get system's page size.");
-      return GASPI_ERROR;
-    }
-
-  if( posix_memalign ((void **) &gctx->nsrc.data.ptr, page_size, size) != 0 )
+  if( pgaspi_alloc_page_aligned(&gctx->nsrc.data.ptr, size) != 0 )
     {
       gaspi_print_error ("Memory allocation failed.");
       return GASPI_ERR_MEMALLOC;

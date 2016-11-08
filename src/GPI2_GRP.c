@@ -68,7 +68,6 @@ pgaspi_group_create (gaspi_group_t * const group)
 {
   int i, id = GASPI_MAX_GROUPS;
   const size_t size = NEXT_OFFSET;
-  long page_size;
   gaspi_return_t eret = GASPI_ERROR;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
@@ -98,14 +97,6 @@ pgaspi_group_create (gaspi_group_t * const group)
       return GASPI_ERR_MANY_GRP;
     }
 
-  page_size = sysconf(_SC_PAGESIZE);
-
-  if( page_size < 0 )
-    {
-      gaspi_print_error ("Failed to get system's page size.");
-      goto errL;
-    }
-
   GASPI_RESET_GROUP(glb_gaspi_group_ctx, id);
 
   gaspi_group_ctx_t * const new_grp_ctx = &(glb_gaspi_group_ctx[id]);
@@ -122,10 +113,10 @@ pgaspi_group_create (gaspi_group_t * const group)
       goto errL;
     }
 
-  if( posix_memalign ((void **) &(new_grp_ctx->rrcd[gctx->rank].data.ptr), (size_t) page_size, size) != 0 )
+  if( pgaspi_alloc_page_aligned(&(new_grp_ctx->rrcd[gctx->rank].data.ptr), size) != 0 )
     {
-      eret = GASPI_ERR_MEMALLOC;
-      goto errL;
+      gaspi_print_error ("Memory allocation failed.");
+      return GASPI_ERR_MEMALLOC;
     }
 
   memset(new_grp_ctx->rrcd[gctx->rank].data.buf, 0, size);
