@@ -47,6 +47,7 @@ _gaspi_handle_env_mpi(gaspi_context_t *ctx)
 
   if(MPI_Initialized(&mpi_inited) != MPI_SUCCESS)
     {
+      gaspi_print_error("GPI-2 mixed-mode: MPI needs to be initialized first.");
       return -1;
     }
 
