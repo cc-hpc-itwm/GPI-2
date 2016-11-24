@@ -646,7 +646,7 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, const gaspi_timeout_t timeout_
 }
 
 static inline int
-_gaspi_sn_send_recv_cmd(const gaspi_rank_t target_rank,
+gaspi_sn_send_recv_cmd(const gaspi_rank_t target_rank,
 			enum gaspi_sn_ops op,
 			void* send_buf, size_t send_size,
 			void* recv_buf, size_t recv_size)
@@ -691,9 +691,9 @@ _gaspi_sn_connect_command(const gaspi_rank_t rank)
   const size_t rc_size = pgaspi_dev_get_sizeof_rc();
   if( rc_size > 0 )
     {
-      return _gaspi_sn_send_recv_cmd(rank, GASPI_SN_CONNECT,
-				     pgaspi_dev_get_lrcd((int) rank), rc_size,
-				     pgaspi_dev_get_rrcd((int) rank), rc_size);
+      return gaspi_sn_send_recv_cmd(rank, GASPI_SN_CONNECT,
+				    pgaspi_dev_get_lrcd((int) rank), rc_size,
+				    pgaspi_dev_get_rrcd((int) rank), rc_size);
     }
 
   return 0;
@@ -706,9 +706,9 @@ _gaspi_sn_queue_create_command(const gaspi_rank_t rank, const void * const arg)
   if( rc_size > 0 )
     {
       int result = 1;
-      return _gaspi_sn_send_recv_cmd(rank, GASPI_SN_QUEUE_CREATE,
-				     pgaspi_dev_get_lrcd((int) rank), rc_size,
-				     &result, sizeof(int));
+      return gaspi_sn_send_recv_cmd(rank, GASPI_SN_QUEUE_CREATE,
+				    pgaspi_dev_get_lrcd((int) rank), rc_size,
+				    &result, sizeof(int));
     }
 
   return 0;
