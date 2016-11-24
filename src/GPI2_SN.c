@@ -646,95 +646,69 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, const gaspi_timeout_t timeout_
 }
 
 static inline int
-_gaspi_sn_connect_command(const gaspi_rank_t rank)
+_gaspi_sn_send_recv_cmd(const gaspi_rank_t target_rank,
+			enum gaspi_sn_ops op,
+			void* send_buf, size_t send_size,
+			void* recv_buf, size_t recv_size)
 {
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
-  const int i = (int) rank;
+  const int sockfd = gctx->sockfd[(int) target_rank];
 
   gaspi_cd_header cdh;
   memset(&cdh, 0, sizeof(gaspi_cd_header));
 
-  const size_t rc_size = pgaspi_dev_get_sizeof_rc();
-  cdh.op_len = (int) rc_size;
-  cdh.op = GASPI_SN_CONNECT;
+  cdh.op_len = (int) send_size;
+  cdh.op = op;
   cdh.rank = gctx->rank;
 
-  /* if we have something to exchange */
-  if(rc_size > 0 )
+  ssize_t wret = gaspi_sn_writen(sockfd, &cdh, sizeof(gaspi_cd_header));
+  if( wret != sizeof(gaspi_cd_header) )
     {
-      ssize_t ret = gaspi_sn_writen(gctx->sockfd[i], &cdh, sizeof(gaspi_cd_header));
-      if(ret != sizeof(gaspi_cd_header))
-	{
-	  gaspi_print_error("Failed to write to %d", i);
-	  return -1;
-	}
+      gaspi_print_error("Failed to write to %u", target_rank);
+      return -1;
+    }
 
-      ret = gaspi_sn_writen(gctx->sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
-      if(ret != (ssize_t) rc_size)
-	{
-	  gaspi_print_error("Failed to write to %d", i);
-	  return -1;
-	}
+  wret = gaspi_sn_writen(sockfd, send_buf, send_size);
+  if( wret != (ssize_t) send_size )
+    {
+      gaspi_print_error("Failed to write to %u", target_rank);
+      return -1;
+    }
 
-      char *remote_info = pgaspi_dev_get_rrcd(i);
-
-      ssize_t rret = gaspi_sn_readn(gctx->sockfd[i], remote_info, rc_size);
-      if( rret != (ssize_t) rc_size )
-	{
-	  gaspi_print_error("Failed to read from %d", i);
-	  return -1;
-	}
+  ssize_t rret = gaspi_sn_readn(sockfd, recv_buf, recv_size);
+  if( rret != (ssize_t) recv_size )
+    {
+      gaspi_print_error("Failed to read from %u", target_rank);
+      return -1;
     }
 
   return 0;
 }
+
+static inline int
+_gaspi_sn_connect_command(const gaspi_rank_t rank)
+{
+  const size_t rc_size = pgaspi_dev_get_sizeof_rc();
+  if( rc_size > 0 )
+    {
+      return _gaspi_sn_send_recv_cmd(rank, GASPI_SN_CONNECT,
+				     pgaspi_dev_get_lrcd((int) rank), rc_size,
+				     pgaspi_dev_get_rrcd((int) rank), rc_size);
+    }
+
+  return 0;
+}
+
 static inline int
 _gaspi_sn_queue_create_command(const gaspi_rank_t rank, const void * const arg)
 {
-  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
-  const int i = (int) rank;
-
-  gaspi_cd_header cdh;
-  memset(&cdh, 0, sizeof(gaspi_cd_header));
-
   const size_t rc_size = pgaspi_dev_get_sizeof_rc();
-  cdh.op_len = (int) rc_size;
-  cdh.op = GASPI_SN_QUEUE_CREATE;
-  cdh.rank = gctx->rank;
-  cdh.tnc = *((int *) arg);
-
-  /* if we have something to exchange */
-  if(rc_size > 0 )
+  if( rc_size > 0 )
     {
-      ssize_t ret = gaspi_sn_writen(gctx->sockfd[i], &cdh, sizeof(gaspi_cd_header));
-      if(ret != sizeof(gaspi_cd_header))
-	{
-	  gaspi_print_error("Failed to write to %d", i);
-	  return -1;
-	}
-
-      ret = gaspi_sn_writen(gctx->sockfd[i], pgaspi_dev_get_lrcd(i), rc_size);
-      if(ret != (ssize_t) rc_size)
-	{
-	  gaspi_print_error("Failed to write to %d", i);
-	  return -1;
-	}
-
       int result = 1;
-      ssize_t rret = gaspi_sn_readn(gctx->sockfd[i], &result, sizeof(int));
-      if( rret != sizeof(int) )
-	{
-	  gaspi_print_error("Failed to read from rank %u (args: %d %p %lu)",
-			    rank,
-			    gctx->sockfd[i],
-			    &rret,
-			    sizeof(int));
-	  return -1;
-	}
-
-      /* failed on the remote side */
-      if( result != 0)
-	return -1;
+      return _gaspi_sn_send_recv_cmd(rank, GASPI_SN_QUEUE_CREATE,
+				     pgaspi_dev_get_lrcd((int) rank), rc_size,
+				     &result, sizeof(int));
     }
 
   return 0;
