@@ -446,7 +446,7 @@ pgaspi_group_commit (const gaspi_group_t group,
     {
       int rg = (group_to_commit->rank + r) % gb.tnc;
 
-      if(group_to_commit->rank_grp[rg] == gctx->rank)
+      if( group_to_commit->rank_grp[rg] == gctx->rank )
 	{
 	  continue;
 	}

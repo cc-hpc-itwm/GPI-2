@@ -993,12 +993,12 @@ _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms,
 	{
 	  ftime(&t1);
 	  const unsigned int delta_ms = (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
-	  if(delta_ms > timeout_ms)
+	  if( delta_ms > timeout_ms )
 	    {
 	      return 1;
 	    }
 
-	  if(gaspi_thread_sleep(250) < 0)
+	  if( gaspi_thread_sleep(250) < 0 )
 	    {
 	      gaspi_printf("gaspi_thread_sleep Error %d: (%s)\n",ret, (char*)strerror(errno));
 	    }
