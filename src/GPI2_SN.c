@@ -47,7 +47,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 /* Status and return value of SN thread: mostly for error detection */
 volatile enum gaspi_sn_status gaspi_sn_status = GASPI_SN_STATE_INIT;
-volatile gaspi_return_t gaspi_sn_err = GASPI_SUCCESS;
 
 extern gaspi_config_t glb_gaspi_cfg;
 
@@ -1178,7 +1177,6 @@ gaspi_sn_backend(void *arg)
     {
       gaspi_print_error("Failed to create socket");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      gaspi_sn_err = GASPI_ERROR;
       return NULL;
     }
 
@@ -1186,7 +1184,6 @@ gaspi_sn_backend(void *arg)
     {
       gaspi_print_error("Failed to modify socket");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      gaspi_sn_err = GASPI_ERROR;
       close(lsock);
       return NULL;
     }
@@ -1204,7 +1201,6 @@ gaspi_sn_backend(void *arg)
 			glb_gaspi_cfg.sn_port + gctx->localSocket);
 
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      gaspi_sn_err = GASPI_ERR_SN_PORT;
       close(lsock);
       return NULL;
     }
@@ -1213,7 +1209,6 @@ gaspi_sn_backend(void *arg)
     {
       gaspi_print_error("Failed to set socket");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      gaspi_sn_err = GASPI_ERROR;
       close(lsock);
       return NULL;
     }
@@ -1222,7 +1217,6 @@ gaspi_sn_backend(void *arg)
     {
       gaspi_print_error("Failed to listen on socket");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      gaspi_sn_err = GASPI_ERROR;
       close(lsock);
       return NULL;
     }
@@ -1232,7 +1226,6 @@ gaspi_sn_backend(void *arg)
     {
       gaspi_print_error("Failed to create IO event facility");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      gaspi_sn_err = GASPI_ERROR;
       close(lsock);
       return NULL;
     }
@@ -1243,7 +1236,6 @@ gaspi_sn_backend(void *arg)
     {
       gaspi_print_error("Failed to allocate memory");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      gaspi_sn_err = GASPI_ERROR;
       close(lsock);
       return NULL;
     }
@@ -1256,7 +1248,6 @@ gaspi_sn_backend(void *arg)
     {
       gaspi_print_error("Failed to modify IO event facility");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      gaspi_sn_err = GASPI_ERROR;
       close(lsock);
       return NULL;
     }
@@ -1266,7 +1257,6 @@ gaspi_sn_backend(void *arg)
     {
       gaspi_print_error("Failed to allocate memory");
       gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      gaspi_sn_err = GASPI_ERROR;
       close(lsock);
       return NULL;
     }
@@ -1325,7 +1315,6 @@ gaspi_sn_backend(void *arg)
 			{
 			  gaspi_print_error( "Failed to accept connection." );
 			  gaspi_sn_status = GASPI_SN_STATE_ERROR;
-			  gaspi_sn_err = GASPI_ERROR;
 			  close(lsock);
 			  return NULL;
 			}
@@ -1337,7 +1326,6 @@ gaspi_sn_backend(void *arg)
 		{
 		  gaspi_print_error( "Failed to set socket options." );
 		  gaspi_sn_status = GASPI_SN_STATE_ERROR;
-		  gaspi_sn_err = GASPI_ERROR;
 		  close(nsock);
 		  return NULL;
 		}
@@ -1348,7 +1336,6 @@ gaspi_sn_backend(void *arg)
 		{
 		  gaspi_print_error("Failed to allocate memory.");
 		  gaspi_sn_status = GASPI_SN_STATE_ERROR;
-		  gaspi_sn_err = GASPI_ERROR;
 		  close(nsock);
 		  return NULL;
 		}
@@ -1364,7 +1351,6 @@ gaspi_sn_backend(void *arg)
 		{
 		  gaspi_print_error("Failed to modify IO event facility");
 		  gaspi_sn_status = GASPI_SN_STATE_ERROR;
-		  gaspi_sn_err = GASPI_ERROR;
 		  close(nsock);
 		  return NULL;
 		}
