@@ -940,7 +940,8 @@ struct group_desc
 static inline int
 _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms, const void * const arg)
 {
-  gaspi_context_t const * const gctx = &glb_gaspi_ctx;  struct group_desc *gb = (struct group_desc *) arg;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+  struct group_desc *gb = (struct group_desc *) arg;
   struct group_desc rem_gb;
 
   int i = (int) rank;
