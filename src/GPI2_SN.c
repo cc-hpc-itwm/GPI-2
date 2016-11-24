@@ -985,7 +985,7 @@ _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms,
       if( rret != sizeof(rem_gb) )
 	{
 	  gaspi_print_error("Failed to read from %u (%d %p %lu)",
-			    gctx->sockfd[i],&rem_gb,sizeof(rem_gb));
+			    i, gctx->sockfd[i], &rem_gb, sizeof(rem_gb));
 	  return 1;
 	}
 
