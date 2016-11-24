@@ -965,7 +965,8 @@ _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms,
       ssize_t ret = gaspi_sn_writen(gctx->sockfd[i], &cdh, sizeof(gaspi_cd_header));
       if(ret != sizeof(gaspi_cd_header) )
 	{
-	  gaspi_print_error("Failed to write (%d %p %lu)",
+	  gaspi_print_error("Failed to write to %u (%d %p %lu)",
+			    rank,
 			    gctx->sockfd[i], &cdh, sizeof(gaspi_cd_header));
 	  return 1;
 	}
@@ -973,7 +974,7 @@ _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms,
       ssize_t rret = gaspi_sn_readn(gctx->sockfd[i], &rem_gb, sizeof(rem_gb));
       if( rret != sizeof(rem_gb) )
 	{
-	  gaspi_print_error("Failed to read (%d %p %lu)",
+	  gaspi_print_error("Failed to read from %u (%d %p %lu)",
 			    gctx->sockfd[i],&rem_gb,sizeof(rem_gb));
 	  return 1;
 	}
