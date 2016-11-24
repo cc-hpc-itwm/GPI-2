@@ -946,18 +946,13 @@ _gaspi_sn_segment_register_command(const gaspi_rank_t rank, const void * const a
   return 0;
 }
 
-struct group_desc
-{
-  gaspi_group_t group;
-  int tnc, cs, ret;
-};
-
 static inline int
 _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms, const void * const arg)
 {
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
-  struct group_desc *gb = (struct group_desc *) arg;
-  struct group_desc rem_gb;
+
+  gaspi_group_exch_info_t *gb = (gaspi_group_exch_info_t *) arg;
+  gaspi_group_exch_info_t rem_gb;
 
   int i = (int) rank;
 
@@ -1471,60 +1466,32 @@ gaspi_sn_backend(void *arg)
 
 				      GASPI_SN_RESET_EVENT( mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
 				    }
-
 				  else if( mgmt->cdh.op == GASPI_SN_GRP_CHECK )
 				    {
-				      struct{gaspi_group_t group;int tnc, cs, ret;} gb;
-				      memset(&gb, 0, sizeof(gb));
+				      gaspi_group_exch_info_t* gb = pgaspi_group_create_exch_info(mgmt->cdh.rank, mgmt->cdh.tnc);
 
-				      gb.ret = -1;
-				      gb.cs = 0;
-
-				      const int group = mgmt->cdh.rank;
-				      const int tnc = mgmt->cdh.tnc;
-
-				      lock_gaspi_tout (&glb_gaspi_group_ctx[group].del, GASPI_BLOCK);
-
-				      if( glb_gaspi_group_ctx[group].id >= 0 )
-					{
-					  if( glb_gaspi_group_ctx[group].tnc == tnc )
-					    {
-					      int rg;
-					      gb.ret = 0;
-					      gb.tnc = tnc;
-
-					      for(rg = 0; rg < tnc; rg++)
-						{
-						  if( NULL != glb_gaspi_group_ctx[group].rank_grp )
-						    {
-						      gb.cs ^= glb_gaspi_group_ctx[group].rank_grp[rg];
-						    }
-						}
-					    }
-					}
-
-				      unlock_gaspi (&glb_gaspi_group_ctx[group].del);
-
-				      if( gaspi_sn_writen( mgmt->fd, &gb, sizeof(gb) ) < 0 )
+				      if( gaspi_sn_writen( mgmt->fd, gb, sizeof(*gb) ) < 0 )
 					{
 					  gaspi_print_error("Failed response to group check.");
+					  free(gb);
 					  io_err = 1;
 					  break;
 					}
+				      free(gb);
 
 				      GASPI_SN_RESET_EVENT(mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER );
 				    }
 				  else if( mgmt->cdh.op == GASPI_SN_GRP_CONNECT )
 				    {
-				      while( !glb_gaspi_dev_init || (glb_gaspi_group_ctx[mgmt->cdh.ret].id == -1) )
+				      const gaspi_group_ctx_t* grp_to_connect = &(glb_gaspi_group_ctx[mgmt->cdh.ret]);
+
+				      while( !glb_gaspi_dev_init || (grp_to_connect->id == -1) )
 					{
 					  gaspi_delay();
 					}
 
 				      /* TODO: check the pointer */
-				      if( gaspi_sn_writen( mgmt->fd,
-							   &glb_gaspi_group_ctx[mgmt->cdh.ret].rrcd[gctx->rank],
-							   sizeof(gaspi_rc_mseg_t) ) < 0 )
+				      if( gaspi_sn_writen(mgmt->fd, &(grp_to_connect->rrcd[gctx->rank]), sizeof(gaspi_rc_mseg_t)) < 0 )
 					{
 					  gaspi_print_error("Failed to connect group.");
 					  io_err = 1;

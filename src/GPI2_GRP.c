@@ -340,6 +340,43 @@ pgaspi_group_all_delete(gaspi_context_t * const gctx)
   return eret;
 }
 
+gaspi_group_exch_info_t*
+pgaspi_group_create_exch_info(gaspi_group_t group, int tnc)
+{
+  gaspi_group_exch_info_t* grp_info = calloc(1, sizeof(gaspi_group_exch_info_t));
+  if( NULL != grp_info )
+    {
+      grp_info->ret = -1;
+      grp_info->cs = 0;
+
+      gaspi_group_ctx_t* group_to_exch = &(glb_gaspi_group_ctx[group]);
+
+      lock_gaspi_tout(&(group_to_exch->del), GASPI_BLOCK);
+
+      if( group_to_exch->id >= 0 )
+	{
+	  if( group_to_exch->tnc == tnc )
+	    {
+	      grp_info->ret = 0;
+	      grp_info->tnc = tnc;
+
+	      int rg;
+	      if( NULL != group_to_exch->rank_grp )
+		{
+		  for(rg = 0; rg < tnc; rg++)
+		    {
+		      grp_info->cs ^= group_to_exch->rank_grp[rg];
+		    }
+		}
+	    }
+	}
+
+      unlock_gaspi(&(group_to_exch->del));
+    }
+
+  return grp_info;
+}
+
 #pragma weak gaspi_group_commit = pgaspi_group_commit
 gaspi_return_t
 pgaspi_group_commit (const gaspi_group_t group,
@@ -394,11 +431,7 @@ pgaspi_group_commit (const gaspi_group_t group,
   group_to_commit->next_pof2 >>= 1;
   group_to_commit->pof2_exp = (__builtin_clz (group_to_commit->next_pof2) ^ 31U);
 
-  struct
-  {
-    gaspi_group_t group;
-    int tnc, cs, ret;
-  } gb;
+  gaspi_group_exch_info_t gb;
 
   gb.group = group;
   gb.cs = 0;
