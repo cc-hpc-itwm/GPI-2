@@ -308,7 +308,6 @@ gaspi_sn_readn(const int sockfd, const void * data_ptr, const size_t n)
   return (n - left);
 }
 
-//TODO: refactor with code from recv_topology
 static int
 _gaspi_sn_wait_connection(int port)
 {
