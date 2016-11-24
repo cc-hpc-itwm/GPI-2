@@ -583,7 +583,7 @@ gaspi_sn_broadcast_topology(gaspi_context_t * const gctx, const gaspi_timeout_t 
   return 0;
 }
 
-int
+static int
 gaspi_sn_segment_register(const gaspi_cd_header snp)
 {
   gaspi_segment_descriptor_t seg_desc;
@@ -607,7 +607,7 @@ gaspi_sn_segment_register(const gaspi_cd_header snp)
   return gaspi_segment_set(seg_desc);
 }
 
-gaspi_return_t
+static gaspi_return_t
 gaspi_sn_connect_to_rank(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
