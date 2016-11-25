@@ -203,7 +203,7 @@ extern "C"
     gaspi_uint queue_num;                     /* the number of queues to use */
     gaspi_number_t group_max;                 /* max number of groups that can be created */
     gaspi_number_t segment_max;               /* max number of segments that can be created */
-    gaspi_size_t transfer_size_max            /* maximum size (bytes) of a single data transfer */;
+    gaspi_size_t transfer_size_max;           /* maximum size (bytes) of a single data transfer */
     gaspi_number_t notification_num;          /* maximum number of allowed notifications */
     gaspi_number_t passive_queue_size_max;    /* maximum number of allowed on-going passive requests */
     gaspi_number_t passive_transfer_size_max; /* maximum size (bytes) of a single passive transfer */

@@ -126,8 +126,10 @@ _gaspi_check_set_ofile_limit(void)
   else
     {
       ofiles.rlim_cur = ofiles.rlim_max;
-      if(setrlimit(RLIMIT_NOFILE, &ofiles) != 0)
-	return -1;
+      if( setrlimit(RLIMIT_NOFILE, &ofiles) != 0 )
+	{
+	  return -1;
+	}
     }
 
   return 0;
@@ -140,7 +142,7 @@ gaspi_sn_connect2port_intern(const char * const hn, const unsigned short port)
   int sockfd = -1;
 
   struct sockaddr_in host;
-  struct hostent *server_data;
+  struct hostent* server_data;
 
   sockfd = socket ( AF_INET, SOCK_STREAM, 0 );
   if( -1 == sockfd )
@@ -1276,17 +1278,17 @@ gaspi_sn_backend(void *arg)
   /* main events loop */
   while( !_gaspi_sn_stop )
     {
-      n = epoll_wait(esock,ret_ev, GASPI_EPOLL_MAX_EVENTS, -1);
+      n = epoll_wait(esock, ret_ev, GASPI_EPOLL_MAX_EVENTS, -1);
 
       /* loop over all triggered events */
       for( i = 0; i < n; i++ )
 	{
 	  mgmt = ret_ev[i].data.ptr;
 
-	  if( (ret_ev[i].events & EPOLLERR)  || (ret_ev[i].events & EPOLLHUP)  ||
+	  if( (ret_ev[i].events & EPOLLERR)  || (ret_ev[i].events & EPOLLHUP) ||
 	      !((ret_ev[i].events & EPOLLIN) || (ret_ev[i].events & EPOLLOUT )) )
 	    {
-	      /* an error has occured on this fd. close it => removed from event list. */
+	      /* an error has occured on this fd. close it => remove from event list. */
 	      gaspi_print_error( "Erroneous event." );
 	      shutdown(mgmt->fd, SHUT_RDWR);
 	      close(mgmt->fd);
@@ -1300,7 +1302,7 @@ gaspi_sn_backend(void *arg)
 	      socklen_t in_len = sizeof(in_addr);
 	      int nsock = accept( lsock, &in_addr, &in_len );
 
-	      if(nsock < 0)
+	      if( nsock < 0 )
 		{
 		  if( (errno == EAGAIN) || (errno == EWOULDBLOCK) )
 		    {
@@ -1404,7 +1406,7 @@ gaspi_sn_backend(void *arg)
 				  else if( (mgmt->cdh.op == GASPI_SN_CONNECT) || (mgmt->cdh.op == GASPI_SN_QUEUE_CREATE) )
 				    {
 				      /* For these ops, we have an extra step (below).
-					 => we modify the required parameters for the event reset. */
+					 => we modify the required parameters for the event. */
 				      _op_len = mgmt->cdh.op_len;
 				      _op = mgmt->cdh.op;
 				    }
