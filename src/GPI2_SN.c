@@ -1154,6 +1154,21 @@ gaspi_sn_cleanup(const int sig)
     }
 }
 
+static void
+gaspi_sn_fatal_error(int close_sockfd, enum gaspi_sn_status status, char* msg)
+{
+  fprintf(stderr,"[Rank %4u]: Error at (%s:%d): %s\n",
+	  glb_gaspi_ctx.rank, __FILE__, __LINE__, msg);
+
+  gaspi_sn_status = status;
+
+  if( close_sockfd > 0 )
+    {
+      close(close_sockfd);
+    }
+}
+
+
 void *
 gaspi_sn_backend(void *arg)
 {
@@ -1175,16 +1190,13 @@ gaspi_sn_backend(void *arg)
   lsock = socket(AF_INET, SOCK_STREAM, 0);
   if( lsock < 0 )
     {
-      gaspi_print_error("Failed to create socket");
-      gaspi_sn_status = GASPI_SN_STATE_ERROR;
+      gaspi_sn_fatal_error(-1, GASPI_SN_STATE_ERROR, "Failed to create socket.");
       return NULL;
     }
 
   if( 0 != gaspi_sn_set_default_opts(lsock) )
     {
-      gaspi_print_error("Failed to modify socket");
-      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      close(lsock);
+      gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to modify socket.");
       return NULL;
     }
 
@@ -1197,36 +1209,26 @@ gaspi_sn_backend(void *arg)
 
   if( bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress) ) < 0)
     {
-      gaspi_print_error("Failed to bind socket (port %d)",
-			glb_gaspi_cfg.sn_port + gctx->localSocket);
-
-      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      close(lsock);
+      gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to bind to port.");
       return NULL;
     }
 
   if ( 0 != gaspi_sn_set_non_blocking(lsock) )
     {
-      gaspi_print_error("Failed to set socket");
-      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      close(lsock);
+      gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to set socket options.");
       return NULL;
     }
 
   if( listen(lsock, SOMAXCONN) < 0 )
     {
-      gaspi_print_error("Failed to listen on socket");
-      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      close(lsock);
+      gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to listen on socket.");
       return NULL;
     }
 
   esock = epoll_create(GASPI_EPOLL_CREATE);
   if( esock < 0 )
     {
-      gaspi_print_error("Failed to create IO event facility");
-      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      close(lsock);
+      gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to create IO event facility.");
       return NULL;
     }
 
@@ -1234,9 +1236,7 @@ gaspi_sn_backend(void *arg)
   ev.data.ptr = malloc( sizeof(gaspi_mgmt_header) );
   if( ev.data.ptr == NULL )
     {
-      gaspi_print_error("Failed to allocate memory");
-      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      close(lsock);
+      gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to allocate memory.");
       return NULL;
     }
 
@@ -1246,18 +1246,14 @@ gaspi_sn_backend(void *arg)
 
   if( epoll_ctl(esock, EPOLL_CTL_ADD, lsock, &ev) < 0 )
     {
-      gaspi_print_error("Failed to modify IO event facility");
-      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      close(lsock);
+      gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to modify IO event facility.");
       return NULL;
     }
 
   ret_ev = calloc(GASPI_EPOLL_MAX_EVENTS, sizeof(ev));
   if( ret_ev == NULL )
     {
-      gaspi_print_error("Failed to allocate memory");
-      gaspi_sn_status = GASPI_SN_STATE_ERROR;
-      close(lsock);
+      gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to allocate memory.");
       return NULL;
     }
 
@@ -1313,9 +1309,7 @@ gaspi_sn_backend(void *arg)
 		      /* still erroneous? => makes no sense to continue */
 		      if( nsock < 0 )
 			{
-			  gaspi_print_error( "Failed to accept connection." );
-			  gaspi_sn_status = GASPI_SN_STATE_ERROR;
-			  close(lsock);
+			  gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to accept connection." );
 			  return NULL;
 			}
 		    }
@@ -1324,9 +1318,7 @@ gaspi_sn_backend(void *arg)
 	      /* new socket */
 	      if( 0 != gaspi_sn_set_non_blocking( nsock ) )
 		{
-		  gaspi_print_error( "Failed to set socket options." );
-		  gaspi_sn_status = GASPI_SN_STATE_ERROR;
-		  close(nsock);
+		  gaspi_sn_fatal_error(nsock, GASPI_SN_STATE_ERROR, "Failed to set socket options." );
 		  return NULL;
 		}
 
@@ -1334,9 +1326,7 @@ gaspi_sn_backend(void *arg)
 	      ev.data.ptr = malloc( sizeof(gaspi_mgmt_header) );
 	      if( ev.data.ptr == NULL )
 		{
-		  gaspi_print_error("Failed to allocate memory.");
-		  gaspi_sn_status = GASPI_SN_STATE_ERROR;
-		  close(nsock);
+		  gaspi_sn_fatal_error(nsock, GASPI_SN_STATE_ERROR, "Failed to allocate memory.");
 		  return NULL;
 		}
 
@@ -1349,9 +1339,7 @@ gaspi_sn_backend(void *arg)
 
 	      if( epoll_ctl( esock, EPOLL_CTL_ADD, nsock, &ev ) < 0 )
 		{
-		  gaspi_print_error("Failed to modify IO event facility");
-		  gaspi_sn_status = GASPI_SN_STATE_ERROR;
-		  close(nsock);
+		  gaspi_sn_fatal_error(nsock, GASPI_SN_STATE_ERROR, "Failed to modify IO event facility.");
 		  return NULL;
 		}
 
