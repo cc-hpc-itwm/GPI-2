@@ -1356,19 +1356,14 @@ gaspi_sn_backend(void *arg)
 		    {
 		      int rcount = 0;
 		      int rsize = mgmt->blen - mgmt->bdone;
-		      char *ptr = NULL;
+		      char* ptr = (char *) &mgmt->cdh;
 
-		      if( mgmt->op == GASPI_SN_HEADER )
-			{
-			  /* TODO: is it valid? */
-			  ptr = (char *) &mgmt->cdh;
-			  rcount = read(mgmt->fd, ptr + mgmt->bdone, rsize);
-			}
-		      else if( mgmt->op == GASPI_SN_CONNECT || (mgmt->op == GASPI_SN_QUEUE_CREATE) )
+		      if( mgmt->op == GASPI_SN_CONNECT || (mgmt->op == GASPI_SN_QUEUE_CREATE) )
 			{
 			  ptr = pgaspi_dev_get_rrcd(mgmt->cdh.rank);
-			  rcount = read(mgmt->fd, ptr + mgmt->bdone, rsize);
 			}
+
+		      rcount = read(mgmt->fd, ptr + mgmt->bdone, rsize);
 
 		      /* errno==EAGAIN => we have read all data */
 		      int errsv = errno;
