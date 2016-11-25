@@ -1168,14 +1168,39 @@ gaspi_sn_fatal_error(int close_sockfd, enum gaspi_sn_status status, char* msg)
     }
 }
 
+static int
+gaspi_sn_add_fd_for_events(int fd, int eventsfd)
+{
+  struct epoll_event ev;
+  gaspi_mgmt_header *ev_mgmt;
+
+  ev.data.ptr = malloc( sizeof(gaspi_mgmt_header) );
+  if( ev.data.ptr == NULL )
+    {
+      return -1;
+    }
+
+  ev_mgmt = ev.data.ptr;
+  ev_mgmt->fd = fd;
+  ev_mgmt->blen = sizeof(gaspi_cd_header);
+  ev_mgmt->bdone = 0;
+  ev_mgmt->op = GASPI_SN_HEADER;
+  ev.events = EPOLLIN;
+
+  if( epoll_ctl(eventsfd, EPOLL_CTL_ADD, fd, &ev) < 0 )
+    {
+      return -1;
+    }
+
+  return 0;
+}
 
 void *
 gaspi_sn_backend(void *arg)
 {
   int esock, lsock, n, i;
-  struct epoll_event ev;
   struct epoll_event *ret_ev;
-  gaspi_mgmt_header *ev_mgmt, *mgmt;
+  gaspi_mgmt_header *mgmt;
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   signal(SIGSTKFLT, gaspi_sn_cleanup);
@@ -1232,25 +1257,13 @@ gaspi_sn_backend(void *arg)
       return NULL;
     }
 
-  /* add lsock to epoll instance */
-  ev.data.ptr = malloc( sizeof(gaspi_mgmt_header) );
-  if( ev.data.ptr == NULL )
+  if( gaspi_sn_add_fd_for_events(lsock, esock) != 0 )
     {
-      gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to allocate memory.");
+      gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to add fd to IO event facility.");
       return NULL;
     }
 
-  ev_mgmt = ev.data.ptr;
-  ev_mgmt->fd = lsock;
-  ev.events = EPOLLIN;
-
-  if( epoll_ctl(esock, EPOLL_CTL_ADD, lsock, &ev) < 0 )
-    {
-      gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to modify IO event facility.");
-      return NULL;
-    }
-
-  ret_ev = calloc(GASPI_EPOLL_MAX_EVENTS, sizeof(ev));
+  ret_ev = calloc(GASPI_EPOLL_MAX_EVENTS, sizeof(*ret_ev));
   if( ret_ev == NULL )
     {
       gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to allocate memory.");
@@ -1322,24 +1335,9 @@ gaspi_sn_backend(void *arg)
 		  return NULL;
 		}
 
-	      /* add nsock */
-	      ev.data.ptr = malloc( sizeof(gaspi_mgmt_header) );
-	      if( ev.data.ptr == NULL )
+	      if( gaspi_sn_add_fd_for_events(nsock, esock) != 0 )
 		{
-		  gaspi_sn_fatal_error(nsock, GASPI_SN_STATE_ERROR, "Failed to allocate memory.");
-		  return NULL;
-		}
-
-	      ev_mgmt = ev.data.ptr;
-	      ev_mgmt->fd = nsock;
-	      ev_mgmt->blen = sizeof(gaspi_cd_header);
-	      ev_mgmt->bdone = 0;
-	      ev_mgmt->op = GASPI_SN_HEADER;
-	      ev.events = EPOLLIN ; /* read only */
-
-	      if( epoll_ctl( esock, EPOLL_CTL_ADD, nsock, &ev ) < 0 )
-		{
-		  gaspi_sn_fatal_error(nsock, GASPI_SN_STATE_ERROR, "Failed to modify IO event facility.");
+		  gaspi_sn_fatal_error(nsock, GASPI_SN_STATE_ERROR, "Failed to add fd to IO event facility.");
 		  return NULL;
 		}
 
