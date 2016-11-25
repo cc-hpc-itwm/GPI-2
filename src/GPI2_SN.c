@@ -1366,11 +1366,6 @@ gaspi_sn_backend(void *arg)
 			}
 		      else if( mgmt->op == GASPI_SN_CONNECT || (mgmt->op == GASPI_SN_QUEUE_CREATE) )
 			{
-			  while( !glb_gaspi_dev_init )
-			    {
-			      gaspi_delay();
-			    }
-
 			  ptr = pgaspi_dev_get_rrcd(mgmt->cdh.rank);
 			  rcount = read(mgmt->fd, ptr + mgmt->bdone, rsize);
 			}
@@ -1489,12 +1484,6 @@ gaspi_sn_backend(void *arg)
 
 				  if( mgmt->op == GASPI_SN_CONNECT )
 				    {
-				      /* TODO: to remove */
-				      while( !glb_gaspi_dev_init )
-					{
-					  gaspi_delay();
-					}
-
 				      const size_t len = pgaspi_dev_get_sizeof_rc();
 				      char *lrcd_ptr = NULL;
 
