@@ -1430,45 +1430,52 @@ gaspi_sn_backend(void *arg)
 					    }
 					}
 				    }
-				  else if( mgmt->cdh.op == GASPI_SN_GRP_CHECK )
+				  else
 				    {
-				      gaspi_group_exch_info_t* gb = pgaspi_group_create_exch_info(mgmt->cdh.rank, mgmt->cdh.tnc);
+				      /* These commands require a response (data or ack) */
+				      void* response;
+				      size_t response_size;
+				      int response_free = 0;
+				      int ack;
 
-				      if( gaspi_sn_writen( mgmt->fd, gb, sizeof(*gb) ) < 0 )
+				      if( mgmt->cdh.op == GASPI_SN_GRP_CHECK )
 					{
-					  gaspi_print_error("Failed response to group check.");
-					  free(gb);
-					  io_err = 1;
-					  break;
+					  gaspi_group_exch_info_t* gb = pgaspi_group_create_exch_info(mgmt->cdh.rank, mgmt->cdh.tnc);
+
+					  response = gb;
+					  response_size = sizeof(*gb);
+					  response_free = 1;
 					}
-				      free(gb);
-
-				    }
-				  else if( mgmt->cdh.op == GASPI_SN_GRP_CONNECT )
-				    {
-				      const gaspi_group_ctx_t* grp_to_connect = &(glb_gaspi_group_ctx[mgmt->cdh.ret]);
-
-				      while( !glb_gaspi_dev_init || (grp_to_connect->id == -1) )
+				      else if( mgmt->cdh.op == GASPI_SN_GRP_CONNECT )
 					{
-					  gaspi_delay();
+					  const gaspi_group_ctx_t* grp_to_connect = &(glb_gaspi_group_ctx[mgmt->cdh.ret]);
+
+					  //TODO: to remove?
+					  while( (grp_to_connect->id == -1) )
+					    {
+					      gaspi_delay();
+					    }
+
+					  response =  &(grp_to_connect->rrcd[gctx->rank]);
+					  response_size =  sizeof(gaspi_rc_mseg_t);
+					}
+				      else if( mgmt->cdh.op == GASPI_SN_SEG_REGISTER )
+					{
+					  ack = gaspi_sn_segment_register(mgmt->cdh);
+
+					  response = &ack;
+					  response_size = sizeof(int);
 					}
 
-				      /* TODO: check the pointer */
-				      if( gaspi_sn_writen(mgmt->fd, &(grp_to_connect->rrcd[gctx->rank]), sizeof(gaspi_rc_mseg_t)) < 0 )
+				      ssize_t wbytes = gaspi_sn_writen( mgmt->fd, response, response_size );
+				      if( response_free )
 					{
-					  gaspi_print_error("Failed to connect group.");
-					  io_err = 1;
-					  break;
+					  free(response);
 					}
-				    }
-				  else if( mgmt->cdh.op == GASPI_SN_SEG_REGISTER )
-				    {
-				      int rret = gaspi_sn_segment_register(mgmt->cdh);
 
-				      /* write back result of registration */
-				      if( gaspi_sn_writen( mgmt->fd, &rret, sizeof(int) ) < 0 )
+				      if( wbytes < 0 )
 					{
-					  gaspi_print_error("Failed response to segment register.");
+					  gaspi_print_error("Failed response to %u (%u).", mgmt->cdh.rank, mgmt->cdh.op);
 					  io_err = 1;
 					  break;
 					}
