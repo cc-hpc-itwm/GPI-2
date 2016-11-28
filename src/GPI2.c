@@ -285,6 +285,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  if( gctx->hn_poff == NULL )
 	    {
 	      gaspi_print_error("Failed to allocate memory");
+	      fclose(fp);
 	      goto errL;
 	    }
 
