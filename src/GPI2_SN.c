@@ -818,6 +818,7 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
       left_sock = _gaspi_sn_wait_connection(port_to_wait);
       if( left_sock < 0 )
 	{
+	  close(right_sock);
 	  gaspi_print_error("Failed to accept connection on %d(%d).",
 			    port_to_wait, my_rank_port_offset);
 	  return -1;
@@ -827,6 +828,7 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
   if( 0 != gaspi_sn_set_non_blocking(left_sock) )
     {
       gaspi_print_error("Failed to set socket");
+      close(right_sock);
       close(left_sock);
       return -1;
     }
@@ -835,6 +837,7 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
     {
       gaspi_print_error("Failed to set socket");
       close(right_sock);
+      close(left_sock);
       return -1;
     }
 
@@ -842,6 +845,8 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
   if( ret != size )
     {
       gaspi_print_error("Failed to write to %u.", right_rank);
+      close(right_sock);
+      close(left_sock);
       return -1;
     }
 
@@ -858,6 +863,8 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
       if( rret != size )
 	{
 	  gaspi_print_error("Failed to read from peer (%u).", grp_ctx->rank_grp[r]);
+	  close(right_sock);
+	  close(left_sock);
 	  return -1;
 	}
 
@@ -865,6 +872,8 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
       if( ret != size )
 	{
 	  gaspi_print_error("Failed to write to peer (%u).", grp_ctx->rank_grp[r]);
+	  close(right_sock);
+	  close(left_sock);
 	  return -1;
 	}
 
