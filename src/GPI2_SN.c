@@ -1555,5 +1555,7 @@ gaspi_sn_backend(void *arg)
 	} /* for each event */
     }/* event loop while(1) */
 
+  free(ret_ev);
+
   return NULL;
 }
