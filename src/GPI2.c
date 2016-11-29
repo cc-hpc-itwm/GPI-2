@@ -54,8 +54,10 @@ pgaspi_machine_type (char const machine_type[16])
 {
   gaspi_verify_null_ptr(machine_type);
 
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+
   memset ((void *) machine_type, 0, 16);
-  snprintf ((char *) machine_type, 16, "%s", glb_gaspi_ctx.mtyp);
+  snprintf ((char *) machine_type, 16, "%s", gctx->mtyp);
 
   return GASPI_SUCCESS;
 }
@@ -271,7 +273,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       return GASPI_TIMEOUT;
     }
 
-  if( glb_gaspi_ctx.sn_init == 0 )
+  if( gctx->sn_init == 0 )
     {
       struct utsname mbuf;
       if( uname (&mbuf) == 0 )
@@ -289,8 +291,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
       gctx->cycles_to_msecs = 1.0f / (gctx->mhz * 1000.0f);
 
-      //handle environment
-      if( gaspi_handle_env(&glb_gaspi_ctx) )
+      if( gaspi_handle_env(gctx) )
 	{
 	  gaspi_print_error("Failed to handle environment");
 	  eret = GASPI_ERR_ENV;
@@ -304,13 +305,13 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  goto errL;
 	}
 
-      glb_gaspi_ctx.sn_init = 1;
+      gctx->sn_init = 1;
 
     }//glb_gaspi_sn_init
 
   if( gctx->rank == 0 )
     {
-      if( glb_gaspi_ctx.dev_init == 0 )
+      if( gctx->dev_init == 0 )
 	{
 	  if( pgaspi_parse_machinefile(gctx) != 0 )
 	    {
@@ -320,7 +321,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	}
     }
 
-  eret = gaspi_sn_broadcast_topology(&glb_gaspi_ctx, timeout_ms);
+  eret = gaspi_sn_broadcast_topology(gctx, timeout_ms);
   if( eret != GASPI_SUCCESS )
     {
       gaspi_print_error("Failed topology broadcast");
@@ -405,7 +406,9 @@ pgaspi_initialized (gaspi_number_t *initialized)
 {
   gaspi_verify_null_ptr(initialized);
 
-  *initialized = (glb_gaspi_ctx.init != 0);
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
+
+  *initialized = (gctx->init != 0);
 
   return GASPI_SUCCESS;
 }
@@ -583,7 +586,7 @@ pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   eret = gaspi_sn_command(GASPI_SN_PROC_PING, rank, timeout_ms, NULL);
   if( GASPI_ERROR == eret )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
+      gctx->qp_state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
     }
 
   unlock_gaspi (&(gctx->ctx_lock));
@@ -600,7 +603,7 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   gaspi_verify_init("gaspi_proc_kill");
   gaspi_verify_rank(rank);
 
-  if( rank == glb_gaspi_ctx.rank )
+  if( rank == gctx->rank )
     {
       gaspi_print_error("Invalid rank to kill");
       return GASPI_ERR_INV_RANK;
@@ -614,7 +617,7 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   eret = gaspi_sn_command(GASPI_SN_PROC_KILL, rank, timeout_ms, NULL);
   if( GASPI_ERROR == eret )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
+      gctx->qp_state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
     }
 
   unlock_gaspi(&(gctx->ctx_lock));
