@@ -265,7 +265,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 {
   gaspi_return_t eret = GASPI_ERROR;
   int i;
-  const int num_queues = (int) glb_gaspi_cfg.queue_num;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( lock_gaspi_tout (&(gctx->ctx_lock), timeout_ms) )
