@@ -197,6 +197,7 @@ extern "C"
     gaspi_uint mtu;	                      /* the MTU value to use */
     gaspi_uint port_check;                    /* flag to whether to perform a network check */
     gaspi_uint user_net;                      /* flag if user has set the network */
+    gaspi_int sn_persistent;                  /* flag whether sn connection is persistent */
     /* GASPI specified */
     gaspi_network_t network;                  /* network type to be used */
     gaspi_uint queue_size_max;                /* the queue depth (size) to use */

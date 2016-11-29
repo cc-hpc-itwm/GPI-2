@@ -741,6 +741,7 @@ _gaspi_sn_single_command(const gaspi_rank_t rank, const enum gaspi_sn_ops op)
   cdh.tnc = gctx->tnc;
 
   ssize_t ret = gaspi_sn_writen(gctx->sockfd[rank], &cdh, sizeof(gaspi_cd_header));
+
   if( ret != sizeof(gaspi_cd_header) )
     {
       gaspi_print_error("Failed to write to %u  (%d %p %lu)",
@@ -1182,12 +1183,17 @@ gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gasp
   if( 1 == ret )
     eret = GASPI_TIMEOUT;
 
-/*   if(gaspi_sn_close(gctx->sockfd[i]) != 0) */
-/*     { */
-/*       gaspi_print_error("Failed to close socket to %d", i); */
-/*     } */
+  if( !glb_gaspi_cfg.sn_persistent )
+    {
+      gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-/*   gctx->sockfd[i] = -1; */
+      if( gaspi_sn_close(gctx->sockfd[rank]) != 0 )
+	{
+	  gaspi_print_error("Failed to close sn connection to %u", rank);
+	}
+
+      gctx->sockfd[rank] = -1;
+    }
 
   return eret;
 }

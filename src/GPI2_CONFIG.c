@@ -36,6 +36,7 @@ gaspi_config_t glb_gaspi_cfg = {
   0,				//mtu
   1,				//port check
   0,				//user selected network
+  1,                            //sn persistent
 #ifdef GPI2_DEVICE_IB
   GASPI_IB,
 #else                           //network type
@@ -58,7 +59,7 @@ static void
 pgaspi_print_config(gaspi_config_t * const config)
 {
   printf(" logger %u\nsn_port %u\nnet_info %u\nnetdev_id %d\n mtu %u\n \
-port_check %u\nuser_net %u\nnetwork %d\nqueue_size_max %u\nqueue_num %u\n \
+port_check %u\nuser_net %u\nsn persistent %d\nnetwork %d\nqueue_size_max %u\nqueue_num %u\n \
 group_max %d\nsegment_max %d\ntransfer_size_max %lu\nnotification_num %u\n \
 passive_queue_size_max %u\npassive_transfer_size_max %u\nallreduce_buf_size %lu\n \
 allreduce_elem_max %u\nbuild_infrastructure %d\n",
@@ -69,6 +70,7 @@ allreduce_elem_max %u\nbuild_infrastructure %d\n",
 	 config->mtu,
 	 config->port_check,
 	 config->user_net,
+	 config->sn_persistent,
 	 config->network,
 	 config->queue_size_max,
 	 config->queue_num,
@@ -158,6 +160,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
     }
 
   glb_gaspi_cfg.sn_port = nconf.sn_port;
+  glb_gaspi_cfg.sn_persistent = nconf.sn_persistent;
 
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.logger = nconf.logger;

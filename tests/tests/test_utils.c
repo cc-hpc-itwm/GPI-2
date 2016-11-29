@@ -17,13 +17,14 @@ static gaspi_config_t tsuite_default_config =
     12121,                //sn port
     0,			  //netinfo
     -1,			  //netdev
-    0,  		  //mtu
+    0,            	  //mtu
     1,			  //port check
     0,			  //user selected network
+    1,                    //sn persistent
     GASPI_IB,		  //network typ
     1024,		  //queue depth
     8,			  //queue count
-    32,	 	          //group_max
+    32,                   //group_max
     32,		          //segment_max
     ((1ul<<31ul)-1ul),	  //transfer_size_max
     65536,	          //notification_num
@@ -114,8 +115,10 @@ void tsuite_init(int argc, char *argv[])
 	    tsuite_default_config.build_infrastructure = GASPI_TOPOLOGY_DYNAMIC;
 	  if(strcmp(argv[i], "NO_TOPO") == 0)
 	    tsuite_default_config.build_infrastructure = GASPI_TOPOLOGY_NONE;
-
-
+	  if(strcmp(argv[i], "SN_PERSIST_TRUE") == 0)
+	    tsuite_default_config.sn_persistent = 1;
+	  if(strcmp(argv[i], "SN_PERSIST_FALSE") == 0)
+	    tsuite_default_config.sn_persistent = 0;
 	}
       ASSERT(gaspi_config_set(tsuite_default_config));
     }
@@ -135,7 +138,7 @@ void must_fail ( const char* file, const int line, const gaspi_return_t ec)
   if (ec == GASPI_SUCCESS || ec == GASPI_TIMEOUT)
     {
       gaspi_printf ("Non-expected success in %s[%i]\n", file, line);
-      
+
       exit (EXIT_FAILURE);
     }
 }
@@ -145,7 +148,7 @@ void must_timeout ( const char* file, const int line, const gaspi_return_t ec)
   if (ec != GASPI_TIMEOUT)
     {
       gaspi_printf ("Expected timeout but got %d in %s[%i]\n", ec, file, line);
-      
+
       exit (EXIT_FAILURE);
     }
 }
@@ -162,6 +165,6 @@ exit_safely(void)
       for( i = 1; i < nprocs; i++)
 	ASSERT(gaspi_proc_kill(i, GASPI_BLOCK));
     }
-  
+
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 }
