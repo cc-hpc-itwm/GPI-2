@@ -957,6 +957,45 @@ _gaspi_sn_segment_register_command(const gaspi_rank_t rank, const void * const a
 }
 
 static inline int
+_gaspi_sn_ping_command(const gaspi_rank_t rank)
+{
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+
+  gaspi_cd_header cdh;
+  memset(&cdh, 0, sizeof(gaspi_cd_header));
+
+  cdh.op_len = 0; /* in-place */
+  cdh.op = GASPI_SN_PROC_PING;
+  cdh.rank = gctx->rank;
+
+  ssize_t ret = gaspi_sn_writen(gctx->sockfd[rank], &cdh, sizeof(gaspi_cd_header));
+  if( ret != sizeof(gaspi_cd_header) )
+    {
+      gaspi_print_error("Failed to write to rank %u (args: %d %p %lu)",
+			rank,
+			gctx->sockfd[rank],
+			&cdh,
+			sizeof(gaspi_cd_header));
+      return -1;
+    }
+
+  int pong = 1;
+  ssize_t rret = gaspi_sn_readn(gctx->sockfd[rank], &pong, sizeof(int));
+  if( rret != sizeof(int) )
+    {
+      gaspi_print_error("Failed to read from rank %u (args: %d %p %lu)",
+			rank,
+			gctx->sockfd[rank],
+			&rret,
+			sizeof(int));
+      return -1;
+    }
+
+  return 0;
+}
+
+
+static inline int
 _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms, const void * const arg)
 {
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
@@ -1100,10 +1139,14 @@ gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gasp
 	break;
       }
     case GASPI_SN_DISCONNECT:
-    case GASPI_SN_PROC_PING:
     case GASPI_SN_PROC_KILL:
       {
 	ret = _gaspi_sn_single_command(rank, op);
+	break;
+      }
+    case GASPI_SN_PROC_PING:
+      {
+	ret = _gaspi_sn_ping_command(rank);
 	break;
       }
     case GASPI_SN_SEG_REGISTER:
@@ -1462,6 +1505,12 @@ gaspi_sn_backend(void *arg)
 					{
 					  ack = gaspi_sn_segment_register(mgmt->cdh);
 
+					  response = &ack;
+					  response_size = sizeof(int);
+					}
+				      else if( mgmt->cdh.op == GASPI_SN_PROC_PING )
+					{
+					  ack = 0;
 					  response = &ack;
 					  response_size = sizeof(int);
 					}
