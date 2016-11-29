@@ -327,20 +327,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	      eret = GASPI_ERR_ENV;
 	      goto errL;
 	    }
-
-	  free(gctx->sockfd);
-	  gctx->sockfd = (int *) malloc (gctx->tnc * sizeof (int));
-	  if( gctx->sockfd == NULL )
-	    {
-	      gaspi_print_error("Failed to allocate memory");
-	      eret = GASPI_ERR_MEMALLOC;
-	      goto errL;
-	    }
-
-	  for(i = 0; i < gctx->tnc; i++)
-	    {
-	      gctx->sockfd[i] = -1;
-	    }
 	}
     }
 

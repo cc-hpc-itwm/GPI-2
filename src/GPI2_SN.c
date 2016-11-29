@@ -442,20 +442,6 @@ gaspi_sn_recv_topology(gaspi_context_t * const gctx)
 
   gctx->poff = gctx->hn_poff + gctx->tnc * 64;
 
-  gctx->sockfd = (int *) malloc( gctx->tnc * sizeof(int) );
-  if( gctx->sockfd == NULL )
-    {
-      gaspi_print_error("Failed to allocate memory.");
-      close(nsock);
-      return -1;
-    }
-
-  int i;
-  for(i = 0; i < gctx->tnc; i++)
-    {
-      gctx->sockfd[i] = -1;
-    }
-
   /* Read the topology */
   if( gaspi_sn_readn(nsock, gctx->hn_poff, gctx->tnc * 65 ) != gctx->tnc * 65 )
     {
@@ -545,6 +531,21 @@ gaspi_sn_broadcast_topology(gaspi_context_t * const gctx, const gaspi_timeout_t 
 {
   int mask = 0x1;
   int dst, src;
+
+  free(gctx->sockfd);
+
+  gctx->sockfd = (int *) malloc( gctx->tnc * sizeof(int) );
+  if( gctx->sockfd == NULL )
+    {
+      gaspi_print_error("Failed to allocate memory.");
+      return GASPI_ERR_MEMALLOC;
+    }
+
+  int i;
+  for(i = 0; i < gctx->tnc; i++)
+    {
+      gctx->sockfd[i] = -1;
+    }
 
   while( mask <= gctx->tnc )
     {
