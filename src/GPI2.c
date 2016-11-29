@@ -273,16 +273,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   if( glb_gaspi_ctx.sn_init == 0 )
     {
-      gctx->lockPS.lock = 0;
-      gctx->lockPR.lock = 0;
-
-      for(i = 0; i < num_queues; i++)
-	{
-	  gctx->lockC[i].lock = 0;
-	}
-
-      memset (&glb_gaspi_ctx, 0, sizeof (gaspi_context_t));
-
       struct utsname mbuf;
       if( uname (&mbuf) == 0 )
 	{
