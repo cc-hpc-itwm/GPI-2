@@ -104,6 +104,11 @@ typedef struct
   char *poff;
   int group_cnt;
 
+  volatile int init;         //Is GPI-2 initialized?
+  volatile int sn_init;      //Is the SN up?
+  volatile int dev_init;     //Is device initialized?
+  volatile int master_topo_data; //Do we have topology info from master?
+
   int mseg_cnt;
   unsigned char *qp_state_vec[GASPI_MAX_QP + 3];
   char mtyp[64];

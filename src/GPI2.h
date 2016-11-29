@@ -34,12 +34,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 gaspi_context_t glb_gaspi_ctx;
 gaspi_group_ctx_t glb_gaspi_group_ctx[GASPI_MAX_GROUPS];
 
-/* TODO: Move these to context */
-volatile int glb_gaspi_init;         //Is GPI-2 initialized?
-volatile int glb_gaspi_sn_init;      //Is the SN up?
-volatile int glb_gaspi_dev_init;     //Is device initialized?
-volatile int gaspi_master_topo_data; //Do we have topology info from master?
-
 //locks
 gaspi_lock_t glb_gaspi_ctx_lock;
 gaspi_lock_t gaspi_create_lock;

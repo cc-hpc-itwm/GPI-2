@@ -386,7 +386,7 @@ gaspi_segment_set(const gaspi_segment_descriptor_t snp)
 {
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  if( !glb_gaspi_dev_init )
+  if( !(gctx->dev_init) )
     {
       return -1;
     }

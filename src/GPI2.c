@@ -117,7 +117,7 @@ pgaspi_init_core(void)
 {
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  if( glb_gaspi_dev_init )
+  if( gctx->dev_init )
     {
       return -1;
     }
@@ -189,7 +189,7 @@ pgaspi_init_core(void)
 	}
     }
 
-  glb_gaspi_dev_init = 1;
+  gctx->dev_init = 1;
 
   return GASPI_SUCCESS;
 }
@@ -271,7 +271,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       return GASPI_TIMEOUT;
     }
 
-  if( glb_gaspi_sn_init == 0 )
+  if( glb_gaspi_ctx.sn_init == 0 )
     {
       gctx->lockPS.lock = 0;
       gctx->lockPR.lock = 0;
@@ -314,13 +314,13 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	  goto errL;
 	}
 
-      glb_gaspi_sn_init = 1;
+      glb_gaspi_ctx.sn_init = 1;
 
     }//glb_gaspi_sn_init
 
   if( gctx->rank == 0 )
     {
-      if( glb_gaspi_dev_init == 0 )
+      if( glb_gaspi_ctx.dev_init == 0 )
 	{
 	  if( pgaspi_parse_machinefile(gctx) != 0 )
 	    {
@@ -344,7 +344,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
     }
 
   /* Unleash SN thread */
-  __sync_fetch_and_add( &gaspi_master_topo_data, 1);
+  __sync_fetch_and_add( &(gctx->master_topo_data), 1);
 
   gaspi_init_collectives();
 
@@ -361,7 +361,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       goto errL;
     }
 
-  glb_gaspi_init = 1;
+  gctx->init = 1;
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
 
@@ -415,7 +415,7 @@ pgaspi_initialized (gaspi_number_t *initialized)
 {
   gaspi_verify_null_ptr(initialized);
 
-  *initialized = (glb_gaspi_init != 0);
+  *initialized = (glb_gaspi_ctx.init != 0);
 
   return GASPI_SUCCESS;
 }
@@ -426,7 +426,7 @@ pgaspi_cleanup_core(void)
   int i;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  if( !glb_gaspi_dev_init )
+  if( !(gctx->dev_init) )
     {
       return GASPI_ERROR;
     }
@@ -565,7 +565,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
       goto errL;
     }
 
-  glb_gaspi_init = 0;
+  gctx->init = 0;
 
   unlock_gaspi (&glb_gaspi_ctx_lock);
   return GASPI_SUCCESS;
@@ -721,7 +721,7 @@ pgaspi_time_get (gaspi_time_t * const wtime)
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   float cycles_to_msecs;
 
-  if (!glb_gaspi_init)
+  if (!(gctx->init) )
     {
       const float cpu_mhz = gaspi_get_cpufreq ();
       cycles_to_msecs = 1.0f / (cpu_mhz * 1000.0f);
@@ -744,7 +744,7 @@ pgaspi_cpu_frequency (gaspi_float * const cpu_mhz)
   gaspi_verify_null_ptr(cpu_mhz);
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
-  if( !glb_gaspi_init )
+  if( !(gctx->init) )
     {
       *cpu_mhz = gaspi_get_cpufreq ();
     }

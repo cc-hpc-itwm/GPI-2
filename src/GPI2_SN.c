@@ -1268,7 +1268,7 @@ gaspi_sn_backend(void *arg)
   signal(SIGPIPE, SIG_IGN);
 
   //TODO: still needed? why?
-  while(gaspi_master_topo_data == 0)
+  while(gctx->master_topo_data == 0)
     {
       gaspi_delay();
     }

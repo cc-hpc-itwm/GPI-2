@@ -163,7 +163,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define gaspi_verify_init(funcname)					\
   {									\
-    if( !glb_gaspi_init )						\
+    if( !glb_gaspi_ctx.init )						\
       {									\
 	gaspi_print_error("Error: Invalid function (%s) before initialization", \
 			  funcname);					\
@@ -192,7 +192,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define gaspi_verify_setup(funcname)					\
   {									\
-    if( glb_gaspi_init )						\
+    if( glb_gaspi_ctx.init )						\
       {									\
 	gaspi_print_error("Error: Invalid function (%s) after initialization", \
 			  funcname);					\

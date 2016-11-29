@@ -66,7 +66,7 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
       return;
     }
 
-  if( glb_gaspi_init )
+  if( glb_gaspi_ctx.init )
     {
       gaspi_log_socket = glb_gaspi_ctx.localSocket;
       gaspi_log_rank = glb_gaspi_ctx.rank;
@@ -92,7 +92,7 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
   vsnprintf (buf + sl, 1024 - sl, fmt, ap);
   va_end (ap);
 
-  if( !glb_gaspi_init )
+  if( !glb_gaspi_ctx.init )
     {
       fprintf(stdout, "%s", buf);
       fflush (stdout);
