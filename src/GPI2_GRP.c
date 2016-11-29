@@ -75,11 +75,11 @@ pgaspi_group_create (gaspi_group_t * const group)
   gaspi_verify_init("gaspi_group_create");
   gaspi_verify_null_ptr(group);
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  lock_gaspi_tout (&(gctx->ctx_lock), GASPI_BLOCK);
 
   if( gctx->group_cnt >= GASPI_MAX_GROUPS )
     {
-      unlock_gaspi (&glb_gaspi_ctx_lock);
+      unlock_gaspi (&(gctx->ctx_lock));
       return GASPI_ERR_MANY_GRP;
     }
 
@@ -94,7 +94,7 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   if( id == GASPI_MAX_GROUPS )
     {
-      unlock_gaspi (&glb_gaspi_ctx_lock);
+      unlock_gaspi (&(gctx->ctx_lock));
       return GASPI_ERR_MANY_GRP;
     }
 
@@ -164,12 +164,12 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   new_grp_ctx->id = id;
 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
   return GASPI_SUCCESS;
 
  errL:
   _gaspi_release_group_mem(gctx, id);
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
 
   return eret;
 }
@@ -200,11 +200,11 @@ pgaspi_group_delete (const gaspi_group_t group)
 
   unlock_gaspi (&(grp_ctx->del));
 
-  lock_gaspi (&glb_gaspi_ctx_lock);
+  lock_gaspi (&(gctx->ctx_lock));
 
   gctx->group_cnt--;
 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
 
   return eret;
 }
@@ -224,15 +224,16 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
   gaspi_verify_group(group);
 
   gaspi_group_ctx_t * const grp_ctx = &(glb_gaspi_group_ctx[group]);
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  lock_gaspi_tout (&(gctx->ctx_lock), GASPI_BLOCK);
 
   int i;
   for(i = 0; i < grp_ctx->tnc; i++)
     {
       if( grp_ctx->rank_grp[i] == rank )
 	{
-	  unlock_gaspi (&glb_gaspi_ctx_lock);
+	  unlock_gaspi (&(gctx->ctx_lock));
 	  return GASPI_ERR_INV_RANK;
 	}
     }
@@ -241,7 +242,7 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
 
   qsort(grp_ctx->rank_grp, grp_ctx->tnc, sizeof (int), gaspi_comp_ranks);
 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
   return GASPI_SUCCESS;
 }
 
@@ -268,7 +269,7 @@ _pgaspi_group_commit_to(const gaspi_group_t group,
    group check and connection. Overall try to do the minimum, mostly
    to speed-up initialization. */
 gaspi_return_t
-pgaspi_group_all_local_create(gaspi_context_t const * const gctx,
+pgaspi_group_all_local_create(gaspi_context_t * const gctx,
 			      const gaspi_timeout_t timeout_ms)
 {
   int i;
@@ -285,7 +286,7 @@ pgaspi_group_all_local_create(gaspi_context_t const * const gctx,
       return GASPI_ERR_INV_GROUP;
     }
 
-  if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
+  if( lock_gaspi_tout (&(gctx->ctx_lock), timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
@@ -312,7 +313,7 @@ pgaspi_group_all_local_create(gaspi_context_t const * const gctx,
   grp_all_ctx->next_pof2 >>= 1;
   grp_all_ctx->pof2_exp = (__builtin_clz (grp_all_ctx->next_pof2) ^ 31U);
 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
   return GASPI_SUCCESS;
 }
 
@@ -331,11 +332,11 @@ pgaspi_group_all_delete(gaspi_context_t * const gctx)
 
   unlock_gaspi (&glb_gaspi_group_ctx[GASPI_GROUP_ALL].del);
 
-  lock_gaspi (&glb_gaspi_ctx_lock);
+  lock_gaspi (&(gctx->ctx_lock));
 
   gctx->group_cnt--;
 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
 
   return eret;
 }
@@ -385,14 +386,14 @@ pgaspi_group_commit (const gaspi_group_t group,
   int i, r;
   gaspi_return_t eret = GASPI_ERROR;
   gaspi_timeout_t delta_tout = timeout_ms;
-  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_group_commit");
   gaspi_verify_group(group);
 
   gaspi_group_ctx_t* group_to_commit = &(glb_gaspi_group_ctx[group]);
 
-  if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
+  if( lock_gaspi_tout (&(gctx->ctx_lock), timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
@@ -468,7 +469,7 @@ pgaspi_group_commit (const gaspi_group_t group,
   eret = GASPI_SUCCESS;
 
  endL:
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
   return eret;
 }
 

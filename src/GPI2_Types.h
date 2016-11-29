@@ -112,9 +112,16 @@ typedef struct
   int mseg_cnt;
   unsigned char *qp_state_vec[GASPI_MAX_QP + 3];
   char mtyp[64];
+
+  //locks
+  gaspi_lock_t ctx_lock;
+  gaspi_lock_t create_lock;
+  gaspi_lock_t ccontext_lock;
+  gaspi_lock_t mseg_lock;
   gaspi_lock_t lockPS;
   gaspi_lock_t lockPR;
   gaspi_lock_t lockC[GASPI_MAX_QP];
+
   pthread_t snt;
 
 #ifdef GPI2_CUDA

@@ -128,7 +128,7 @@ pgaspi_queue_create(gaspi_queue_id_t * const queue_id, const gaspi_timeout_t tim
   if( GASPI_MAX_QP == gctx->num_queues )
     return GASPI_ERROR; /* TODO: proper error code */
 
-  if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
+  if( lock_gaspi_tout (&(gctx->ctx_lock), timeout_ms) )
     return GASPI_TIMEOUT;
 
   gaspi_number_t next_avail_q = __sync_fetch_and_add( & (gctx->num_queues), 0);
@@ -153,7 +153,7 @@ pgaspi_queue_create(gaspi_queue_id_t * const queue_id, const gaspi_timeout_t tim
 		  gctx->qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
 		}
 
-	      unlock_gaspi(&glb_gaspi_ctx_lock);
+	      unlock_gaspi(&(gctx->ctx_lock));
 	      return eret;
 	    }
 	}
@@ -177,7 +177,7 @@ pgaspi_queue_create(gaspi_queue_id_t * const queue_id, const gaspi_timeout_t tim
 
   *queue_id = (gaspi_queue_id_t) next_avail_q;
 
-  unlock_gaspi(&glb_gaspi_ctx_lock);
+  unlock_gaspi(&(gctx->ctx_lock));
 
   return GASPI_SUCCESS;
 }
@@ -188,18 +188,18 @@ pgaspi_queue_delete(const gaspi_queue_id_t queue_id)
 {
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  lock_gaspi (&glb_gaspi_ctx_lock);
+  lock_gaspi (&(gctx->ctx_lock));
 
   if( pgaspi_dev_comm_queue_delete(queue_id) != 0 )
     {
-      unlock_gaspi(&glb_gaspi_ctx_lock);
+      unlock_gaspi(&(gctx->ctx_lock));
       return GASPI_ERR_DEVICE;
     }
 
   /* Decrement queue counter */
   __sync_fetch_and_sub( &(gctx->num_queues), 1);
 
-  unlock_gaspi(&glb_gaspi_ctx_lock);
+  unlock_gaspi(&(gctx->ctx_lock));
   return GASPI_SUCCESS;
 }
 

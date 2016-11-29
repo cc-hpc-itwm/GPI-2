@@ -214,7 +214,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       return GASPI_ERR_MANY_SEG;
     }
 
-  lock_gaspi_tout (&gaspi_mseg_lock, GASPI_BLOCK);
+  lock_gaspi_tout (&(gctx->mseg_lock), GASPI_BLOCK);
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -279,7 +279,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 
   eret = GASPI_SUCCESS;
  endL:
-  unlock_gaspi (&gaspi_mseg_lock);
+  unlock_gaspi (&(gctx->mseg_lock));
   return eret;
 
 }
@@ -298,7 +298,7 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  lock_gaspi_tout(&gaspi_mseg_lock, GASPI_BLOCK);
+  lock_gaspi_tout(&(gctx->mseg_lock), GASPI_BLOCK);
 
   /*  TODO: for now like this but we need a better solution */
 #ifdef GPI2_CUDA
@@ -306,7 +306,7 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 #else
   if(pgaspi_dev_unregister_mem(&(gctx->rrmd[segment_id][gctx->rank])) < 0)
     {
-      unlock_gaspi (&gaspi_mseg_lock);
+      unlock_gaspi (&(gctx->mseg_lock));
       return GASPI_ERR_DEVICE;
     }
 
@@ -340,7 +340,7 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 
   gctx->mseg_cnt--;
 
-  unlock_gaspi (&gaspi_mseg_lock);
+  unlock_gaspi (&(gctx->mseg_lock));
 
   return eret;
 }
@@ -351,7 +351,7 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 			const gaspi_rank_t rank,
 			const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_segment_register");
   gaspi_verify_segment(segment_id);
@@ -366,7 +366,7 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
       return GASPI_SUCCESS;
     }
 
-  if(lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms))
+  if( lock_gaspi_tout(&(gctx->ctx_lock), timeout_ms))
     {
       return GASPI_TIMEOUT;
     }
@@ -375,7 +375,7 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
 
   gctx->rrmd[segment_id][rank].trans = 1;
 
-  unlock_gaspi(&glb_gaspi_ctx_lock);
+  unlock_gaspi(&(gctx->ctx_lock));
 
   return eret;
 }
@@ -396,7 +396,7 @@ gaspi_segment_set(const gaspi_segment_descriptor_t snp)
       return -1;
     }
 
-  lock_gaspi_tout(&gaspi_mseg_lock, GASPI_BLOCK);
+  lock_gaspi_tout(&(gctx->mseg_lock), GASPI_BLOCK);
 
   //TODO: use segment_create_desc
   if( gctx->rrmd[snp.seg_id] == NULL )
@@ -405,7 +405,7 @@ gaspi_segment_set(const gaspi_segment_descriptor_t snp)
 
       if( gctx->rrmd[snp.seg_id] == NULL )
 	{
-	  unlock_gaspi(&gaspi_mseg_lock);
+	  unlock_gaspi(&(gctx->mseg_lock));
 	  return -1;
 	}
     }
@@ -432,17 +432,17 @@ gaspi_segment_set(const gaspi_segment_descriptor_t snp)
     gctx->rrmd[snp.seg_id][snp.rank].cuda_dev_id = -1;
 #endif
 
-  unlock_gaspi(&gaspi_mseg_lock);
+  unlock_gaspi(&(gctx->mseg_lock));
   return 0;
 }
 
 static gaspi_return_t
-pgaspi_segment_register_group(gaspi_context_t const * const gctx,
+pgaspi_segment_register_group(gaspi_context_t * const gctx,
 			      const gaspi_segment_id_t segment_id,
 			      const gaspi_group_t group,
 			      const gaspi_timeout_t timeout_ms)
 {
-  if( lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms) )
+  if( lock_gaspi_tout(&(gctx->ctx_lock), timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
@@ -451,7 +451,7 @@ pgaspi_segment_register_group(gaspi_context_t const * const gctx,
   gaspi_segment_descriptor_t cdh;
   memset(&cdh, 0, sizeof(cdh));
 
-  gaspi_rc_mseg_t const * const mseg_info = &(gctx->rrmd[segment_id][gctx->rank]);
+  gaspi_rc_mseg_t * const mseg_info = &(gctx->rrmd[segment_id][gctx->rank]);
 
   cdh.rank = gctx->rank;
   cdh.seg_id = segment_id;
@@ -472,14 +472,14 @@ pgaspi_segment_register_group(gaspi_context_t const * const gctx,
   gaspi_segment_descriptor_t* result = calloc(glb_gaspi_group_ctx[group].tnc, sizeof(gaspi_segment_descriptor_t));
   if( result == NULL )
     {
-      unlock_gaspi(&glb_gaspi_ctx_lock);
+      unlock_gaspi(&(gctx->ctx_lock));
       return GASPI_ERR_MEMALLOC;
     }
 
   if( gaspi_sn_allgather(&glb_gaspi_ctx, &cdh, result, sizeof(gaspi_segment_descriptor_t), group, timeout_ms) != 0 )
     {
       free(result);
-      unlock_gaspi(&glb_gaspi_ctx_lock);
+      unlock_gaspi(&(gctx->ctx_lock));
       return GASPI_ERROR;
     }
 
@@ -489,7 +489,7 @@ pgaspi_segment_register_group(gaspi_context_t const * const gctx,
       if( gaspi_segment_set(result[r]) < 0 )
 	{
 	  free(result);
-	  unlock_gaspi(&glb_gaspi_ctx_lock);
+	  unlock_gaspi(&(gctx->ctx_lock));
 	  return GASPI_ERROR;
 	}
 
@@ -498,7 +498,7 @@ pgaspi_segment_register_group(gaspi_context_t const * const gctx,
 
   free(result);
 
-  unlock_gaspi(&glb_gaspi_ctx_lock);
+  unlock_gaspi(&(gctx->ctx_lock));
 
   return GASPI_SUCCESS;
 }
@@ -515,7 +515,7 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 		      const gaspi_timeout_t timeout_ms,
 		      const gaspi_alloc_t alloc_policy)
 {
-  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_group(group);
 
@@ -527,7 +527,7 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
   eret = pgaspi_segment_register_group(gctx, segment_id, group, timeout_ms);
   if( eret != GASPI_SUCCESS )
     {
-      unlock_gaspi(&glb_gaspi_ctx_lock);
+      unlock_gaspi(&(gctx->ctx_lock));
       return eret;
     }
 
@@ -574,7 +574,7 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
       return GASPI_ERR_MANY_SEG;
     }
 
-  lock_gaspi_tout (&gaspi_mseg_lock, GASPI_BLOCK);
+  lock_gaspi_tout (&(gctx->mseg_lock), GASPI_BLOCK);
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -633,7 +633,7 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
   eret = GASPI_SUCCESS;
 
  endL:
-  unlock_gaspi (&gaspi_mseg_lock);
+  unlock_gaspi (&(gctx->mseg_lock));
   return eret;
 }
 
@@ -646,7 +646,7 @@ pgaspi_segment_use ( gaspi_segment_id_t const segment_id,
 		     gaspi_timeout_t const timeout,
 		     gaspi_memory_description_t const memory_description)
 {
-  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_return_t ret = pgaspi_segment_bind(segment_id, pointer, size, memory_description);
   if( GASPI_SUCCESS != ret )

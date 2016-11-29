@@ -76,7 +76,7 @@ typedef struct
   }  while(0);
 
 gaspi_return_t
-pgaspi_group_all_local_create(gaspi_context_t const * const gctx,
+pgaspi_group_all_local_create(gaspi_context_t * const gctx,
 			      const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t

@@ -266,7 +266,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   const int num_queues = (int) glb_gaspi_cfg.queue_num;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
+  if( lock_gaspi_tout (&(gctx->ctx_lock), timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
@@ -363,7 +363,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   gctx->init = 1;
 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
 
   if( glb_gaspi_cfg.build_infrastructure )
     {
@@ -404,7 +404,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   return eret;
 
  errL:
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
 
   return eret;
 }
@@ -474,7 +474,7 @@ pgaspi_cleanup_core(void)
 	}
     }
 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
 
   /* Delete groups */
   for(i = 1; i < GASPI_MAX_GROUPS; i++)
@@ -493,7 +493,7 @@ pgaspi_cleanup_core(void)
       gaspi_print_error("Failed to delete group GASPI_GROUP_ALL.");
     }
 
-  lock_gaspi_tout (&glb_gaspi_ctx_lock, GASPI_BLOCK);
+  lock_gaspi_tout (&(gctx->ctx_lock), GASPI_BLOCK);
 
   /* Device clean-up */
   if( pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0 )
@@ -526,7 +526,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
 
   gaspi_verify_init("gaspi_proc_term");
 
-  if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout) )
+  if( lock_gaspi_tout (&(gctx->ctx_lock), timeout) )
     {
       return GASPI_TIMEOUT;
     }
@@ -567,11 +567,11 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
 
   gctx->init = 0;
 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
   return GASPI_SUCCESS;
 
  errL:
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
   return GASPI_ERROR;
 }
 
@@ -580,11 +580,12 @@ gaspi_return_t
 pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 {
   gaspi_return_t eret = GASPI_ERROR;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_proc_ping");
   gaspi_verify_rank(rank);
 
-  if( lock_gaspi_tout (&glb_gaspi_ctx_lock, timeout_ms) )
+  if( lock_gaspi_tout (&(gctx->ctx_lock), timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
@@ -595,7 +596,7 @@ pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
       glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
     }
 
-  unlock_gaspi (&glb_gaspi_ctx_lock);
+  unlock_gaspi (&(gctx->ctx_lock));
   return eret;
 }
 
@@ -604,6 +605,7 @@ gaspi_return_t
 pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 {
   gaspi_return_t eret = GASPI_ERROR;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   gaspi_verify_init("gaspi_proc_kill");
   gaspi_verify_rank(rank);
@@ -614,7 +616,7 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
       return GASPI_ERR_INV_RANK;
     }
 
-  if( lock_gaspi_tout(&glb_gaspi_ctx_lock, timeout_ms) )
+  if( lock_gaspi_tout(&(gctx->ctx_lock), timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
@@ -625,7 +627,7 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
       glb_gaspi_ctx.qp_state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
     }
 
-  unlock_gaspi(&glb_gaspi_ctx_lock);
+  unlock_gaspi(&(gctx->ctx_lock));
   return eret;
 }
 
