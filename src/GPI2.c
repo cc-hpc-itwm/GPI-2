@@ -194,6 +194,69 @@ pgaspi_init_core(void)
   return GASPI_SUCCESS;
 }
 
+static int
+pgaspi_parse_machinefile(gaspi_context_t * const gctx)
+{
+  if( access (gctx->mfile, R_OK) == -1 )
+    {
+      gaspi_print_error ("Incorrect permissions of machinefile");
+      return -1;
+    }
+
+  //read hostnames
+  char *line = NULL;
+  size_t len = 0;
+  int lsize;
+
+  FILE *fp = fopen (gctx->mfile, "r");
+  if( fp == NULL )
+    {
+      gaspi_print_error("Failed to open machinefile");
+      return -1;
+    }
+
+  free (gctx->hn_poff);
+
+  gctx->hn_poff = (char *) calloc (gctx->tnc, 65);
+  if( gctx->hn_poff == NULL )
+    {
+      gaspi_print_error("Failed to allocate memory");
+      fclose(fp);
+      return -1;
+    }
+
+  gctx->poff = gctx->hn_poff + gctx->tnc * 64;
+
+  int id = 0;
+  while((lsize = getline (&line, &len, fp)) != -1)
+    {
+      //we assume a single hostname per line
+      if((lsize < 2) || (lsize >= 64)) continue;
+
+      int inList = 0;
+      int i;
+      for(i = 0; i < id; i++)
+	{
+	  //already in list ?
+	  const int hnlen = MAX (strlen (gctx->hn_poff + i * 64), MIN (strlen (line) - 1, 63));
+	  if(strncmp (gctx->hn_poff + i * 64, line, hnlen) == 0)
+	    {
+	      inList++;
+	    }
+	}
+
+      gctx->poff[id] = inList;
+
+      strncpy (gctx->hn_poff + id * 64, line, MIN (lsize - 1, 63));
+      id++;
+    }
+
+  fclose (fp);
+  free (line);
+
+  return 0;
+}
+
 #pragma weak gaspi_proc_init = pgaspi_proc_init
 gaspi_return_t
 pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
@@ -259,66 +322,13 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
     {
       if( glb_gaspi_dev_init == 0 )
 	{
-	  if( access (gctx->mfile, R_OK) == -1 )
+	  if( pgaspi_parse_machinefile(gctx) != 0 )
 	    {
-	      gaspi_print_error ("Incorrect permissions of machinefile");
 	      eret = GASPI_ERR_ENV;
 	      goto errL;
 	    }
 
-	  //read hostnames
-	  char *line = NULL;
-	  size_t len = 0;
-	  int lsize;
-
-	  FILE *fp = fopen (gctx->mfile, "r");
-	  if( fp == NULL )
-	    {
-	      gaspi_print_error("Failed to open machinefile");
-	      eret = GASPI_ERR_ENV;
-	      goto errL;
-	    }
-
-	  free (gctx->hn_poff);
-
-	  gctx->hn_poff = (char *) calloc (gctx->tnc, 65);
-	  if( gctx->hn_poff == NULL )
-	    {
-	      gaspi_print_error("Failed to allocate memory");
-	      fclose(fp);
-	      goto errL;
-	    }
-
-	  gctx->poff = gctx->hn_poff + gctx->tnc * 64;
-
-	  int id = 0;
-	  while((lsize = getline (&line, &len, fp)) != -1)
-	    {
-	      //we assume a single hostname per line
-	      if((lsize < 2) || (lsize >= 64)) continue;
-
-	      int inList = 0;
-
-	      for(i = 0; i < id; i++)
-		{
-		  //already in list ?
-		  const int hnlen = MAX (strlen (gctx->hn_poff + i * 64), MIN (strlen (line) - 1, 63));
-		  if(strncmp (gctx->hn_poff + i * 64, line, hnlen) == 0)
-		    {
-		      inList++;
-		    }
-		}
-
-	      gctx->poff[id] = inList;
-
-	      strncpy (gctx->hn_poff + id * 64, line, MIN (lsize - 1, 63));
-	      id++;
-	    }
-
-	  fclose (fp);
-	  free (line);
 	  free(gctx->sockfd);
-
 	  gctx->sockfd = (int *) malloc (gctx->tnc * sizeof (int));
 	  if( gctx->sockfd == NULL )
 	    {
