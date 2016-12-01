@@ -3,6 +3,7 @@
 GPI2_TSUITE_MFILE=machines
 GASPI_RUN="../bin/gaspi_run"
 GASPI_CLEAN="../bin/gaspi_cleanup"
+TESTS_GO_FAST=0
 TESTS=`ls bin`
 NUM_TESTS=0
 TESTS_FAIL=0
@@ -111,17 +112,23 @@ trap exit_timeout TERM INT QUIT
 
 #Script starts here
 OPTERR=0
-while getopts "e:vtn:m:o:" option ; do
+while getopts "e:vtn:fm:o:" option ; do
     case $option in
 	e ) MAX_TIME=${OPTARG}; opts_used=$(($opts_used + 2));;
 	v ) Results=1;opts_used=$(($opts_used + 1));echo "" > $LOG_FILE ;;
 	t ) Time=0;;
 	n ) GASPI_RUN="${GASPI_RUN} -n ${OPTARG}";opts_used=$(($opts_used + 2));;
+	f ) TESTS_GO_FAST=1;opts_used=$(($opts_used + 1));;
 	m ) GPI2_TSUITE_MFILE=${OPTARG};opts_used=$(($opts_used + 2));;
 	o ) LOG_FILE=${OPTARG};opts_used=$(($opts_used + 2));;
 	\?) FAILED_OPTION=$(($OPTIND-1));echo;echo "Unknown option (${!FAILED_OPTION})";echo;exit 1;;
     esac
 done
+
+#go fast: quick overall check
+if [ $TESTS_GO_FAST = 1 ]; then
+    TESTS="allreduce.bin compare_swap.bin fetch_add.bin fortran_use.bin g_coll_del_coll.bin notify_all.bin passive.bin seg_create_all.bin write_all_nsizes_mtt.bin"
+fi
 
 #want to run particular tests
 if [ $(($# - $opts_used)) != 0 ]; then
