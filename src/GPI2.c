@@ -115,10 +115,8 @@ pgaspi_numa_socket(gaspi_uchar * const sock)
 
 
 static gaspi_return_t
-pgaspi_init_core(void)
+pgaspi_init_core(gaspi_context_t * const gctx)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   if( gctx->dev_init )
     {
       return -1;
@@ -327,7 +325,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       goto errL;
     }
 
-  eret = pgaspi_init_core();
+  eret = pgaspi_init_core(gctx);
   if( eret != GASPI_SUCCESS )
     {
       goto errL;
@@ -413,10 +411,9 @@ pgaspi_initialized (gaspi_number_t *initialized)
 }
 
 static gaspi_return_t
-pgaspi_cleanup_core(void)
+pgaspi_cleanup_core(gaspi_context_t * const gctx)
 {
   int i;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( !(gctx->dev_init) )
     {
@@ -552,7 +549,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
 
   pgaspi_statistic_print_counters();
 
-  if( pgaspi_cleanup_core() != GASPI_SUCCESS )
+  if( pgaspi_cleanup_core(gctx) != GASPI_SUCCESS )
     {
       goto errL;
     }
