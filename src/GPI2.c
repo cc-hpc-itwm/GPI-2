@@ -122,23 +122,14 @@ pgaspi_init_core(gaspi_context_t * const gctx)
       return -1;
     }
 
-  memset(&glb_gaspi_group_ctx, 0, GASPI_MAX_GROUPS * sizeof (gaspi_group_ctx_t));
-
   int i;
   for(i = 0; i < GASPI_MAX_GROUPS; i++)
     {
       GASPI_RESET_GROUP(glb_gaspi_group_ctx, i);
-      glb_gaspi_group_ctx[i].gl.lock = 0;
-      glb_gaspi_group_ctx[i].del.lock = 0;
     }
 
   /* Set number of "created" communication queues */
   gctx->num_queues = glb_gaspi_cfg.queue_num;
-
-  for(i = 0; i < GASPI_MAX_MSEGS; i++)
-    {
-      gctx->rrmd[i] = NULL;
-    }
 
   gctx->ep_conn = (gaspi_endpoint_conn_t *) calloc(gctx->tnc, sizeof(gaspi_endpoint_conn_t));
   if( gctx->ep_conn == NULL )
