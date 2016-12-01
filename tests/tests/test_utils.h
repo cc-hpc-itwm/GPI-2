@@ -27,7 +27,8 @@ void must_timeout ( const char* file, const int line, const gaspi_return_t ec);
 #define TSUITE_INIT(argc, argv) tsuite_init(argc, argv);   
 #define ASSERT(ec) success_or_exit (__FILE__, __LINE__, ec);
 #define EXPECT_FAIL(ec) must_fail(__FILE__, __LINE__, ec);
-#define EXPECT_TIMEOUT(ec) must_timeout(__FILE__, __LINE__, ec);  
+#define EXPECT_TIMEOUT(ec) must_return_err(__FILE__, __LINE__, ec, GASPI_TIMEOUT);
+#define EXPECT_FAIL_WITH(ec,err) must_return_err(__FILE__, __LINE__, ec, err);
 
 void exit_safely(void);
   

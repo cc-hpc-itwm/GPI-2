@@ -143,11 +143,14 @@ void must_fail ( const char* file, const int line, const gaspi_return_t ec)
     }
 }
 
-void must_timeout ( const char* file, const int line, const gaspi_return_t ec)
+void must_return_err ( const char* file, const int line, const gaspi_return_t ec, const gaspi_return_t err)
 {
-  if (ec != GASPI_TIMEOUT)
+  if (ec != err)
     {
-      gaspi_printf ("Expected timeout but got %d in %s[%i]\n", ec, file, line);
+      gaspi_printf ("Expected %d(%s) but got %d(%s) in %s[%i]\n",
+		    err, gaspi_error_str(err),
+		    ec, gaspi_error_str(err),
+		    file, line);
 
       exit (EXIT_FAILURE);
     }
