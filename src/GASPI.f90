@@ -674,6 +674,46 @@ module GASPI
       end function gaspi_write_list_notify
     end interface
 
+    interface ! gaspi_read_notify
+      function gaspi_read_notify(segment_id_local,offset_local,rank, &
+&         segment_id_remote,offset_remote, &
+&         size,notification_id,queue,timeout_ms) &
+&         result( res ) bind(C, name="gaspi_read_notify")
+	import
+	integer(gaspi_segment_id_t), value :: segment_id_local
+	integer(gaspi_offset_t), value :: offset_local
+	integer(gaspi_rank_t), value :: rank
+	integer(gaspi_segment_id_t), value :: segment_id_remote
+	integer(gaspi_offset_t), value :: offset_remote
+	integer(gaspi_size_t), value :: size
+	integer(gaspi_notification_id_t), value :: notification_id
+	integer(gaspi_queue_id_t), value :: queue
+	integer(gaspi_timeout_t), value :: timeout_ms
+	integer(gaspi_return_t) :: res
+      end function gaspi_read_notify
+    end interface
+
+    interface ! gaspi_read_list_notify
+      function gaspi_read_list_notify(num,segment_id_local,offset_local, &
+&         rank,segment_id_remote,offset_remote,size,segment_id_notification, &
+&         notification_id,queue,timeout_ms) &
+&         result( res ) bind(C, name="gaspi_read_list_notify")
+	import
+	integer(gaspi_number_t), value :: num
+	type(c_ptr), value :: segment_id_local
+	type(c_ptr), value :: offset_local
+	integer(gaspi_rank_t), value :: rank
+	type(c_ptr), value :: segment_id_remote
+	type(c_ptr), value :: offset_remote
+	type(c_ptr), value :: size
+	integer(gaspi_segment_id_t), value :: segment_id_notification
+	integer(gaspi_notification_id_t), value :: notification_id
+	integer(gaspi_queue_id_t), value :: queue
+	integer(gaspi_timeout_t), value :: timeout_ms
+	integer(gaspi_return_t) :: res
+      end function gaspi_read_list_notify
+    end interface
+
     interface ! gaspi_queue_create
       function gaspi_queue_create(queue,timeout_ms) &
 &         result( res ) bind(C, name="gaspi_queue_create")
