@@ -910,7 +910,7 @@ extern "C"
 					  const gaspi_queue_id_t queue,
 					  const gaspi_timeout_t timeout_ms);
 
-  /** Read data from a given node with a notification on the local side.
+  /** Read data from a given rank with a notification on the local side.
    *
    *
    * @param segment_id_local The segment identifier where data to be written is located.
@@ -935,6 +935,36 @@ extern "C"
 				    const gaspi_notification_id_t notification_id,
 				    const gaspi_queue_id_t queue,
 				    const gaspi_timeout_t timeout_ms);
+
+  /** Read from different locations on a given rank and notify on local side.
+   *
+   *
+   * @param num The number of elements in the list.
+   * @param segment_id_local The list of local segments where data is located.
+   * @param offset_local The list of local offsets where data to write is located.
+   * @param rank The rank where to write the list and notification.
+   * @param segment_id_remote The list of remote segments where to write.
+   * @param offset_remote The list of remote offsets where to write.
+   * @param size The list of sizes to write.
+   * @param segment_id_notification The segment id used for notification.
+   * @param notification_id The notification identifier to use.
+   * @param queue The queue where to post the request.
+   * @param timeout_ms Timeout in milliseconds (or GASPI_BLOCK/GASPI_TEST).
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
+   * error, GASPI_TIMEOUT in case of timeout.
+   */
+  gaspi_return_t gaspi_read_list_notify (const gaspi_number_t num,
+					 gaspi_segment_id_t * const segment_id_local,
+					 gaspi_offset_t * const offset_local,
+					 const gaspi_rank_t rank,
+					 gaspi_segment_id_t * const segment_id_remote,
+					 gaspi_offset_t * const offset_remote,
+					 gaspi_size_t * const size,
+					 const gaspi_segment_id_t segment_id_notification,
+					 const gaspi_notification_id_t notification_id,
+					 const gaspi_queue_id_t queue,
+					 const gaspi_timeout_t timeout_ms);
 
   //@}
 

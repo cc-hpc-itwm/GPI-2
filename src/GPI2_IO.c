@@ -907,6 +907,71 @@ pgaspi_read_notify (const gaspi_segment_id_t segment_id_local,
  endL:
   unlock_gaspi (&gctx->lockC[queue]);
   return eret;
+}
 
+#pragma weak gaspi_read_list_notify = pgaspi_read_list_notify
+gaspi_return_t
+pgaspi_read_list_notify (const gaspi_number_t num,
+			 gaspi_segment_id_t * const segment_id_local,
+			 gaspi_offset_t * const offset_local,
+			 const gaspi_rank_t rank,
+			 gaspi_segment_id_t * const segment_id_remote,
+			 gaspi_offset_t * const offset_remote,
+			 gaspi_size_t * const size,
+			 const gaspi_segment_id_t segment_id_notification,
+			 const gaspi_notification_id_t notification_id,
+			 const gaspi_queue_id_t queue,
+			 const gaspi_timeout_t timeout_ms)
+{
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
+  if( num == 0 )
+    {
+      return GASPI_ERR_INV_NUM;
+    }
+
+#ifdef DEBUG
+  gaspi_verify_init("gaspi_read_list_notify");
+  gaspi_verify_queue(queue);
+  gaspi_verify_queue_size_max(gctx->ne_count_c[queue]);
+
+  gaspi_number_t n;
+  for(n = 0; n < num; n++)
+    {
+      gaspi_verify_local_off(offset_local[n], segment_id_local[n], size[n]);
+      gaspi_verify_remote_off(offset_remote[n], segment_id_remote[n], rank, size[n]);
+      gaspi_verify_comm_size(size[n], segment_id_local[n], segment_id_remote[n], rank, GASPI_MAX_TSIZE_C);
+    }
+
+#endif
+
+  gaspi_return_t eret = GASPI_ERROR;
+
+  if(lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
+    return GASPI_TIMEOUT;
+
+  if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
+    {
+      eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
+      if ( eret != GASPI_SUCCESS)
+	{
+	  goto endL;
+	}
+    }
+
+  eret = pgaspi_dev_read_list_notify(num,
+				     segment_id_local, offset_local, rank,
+				     segment_id_remote, offset_remote, size,
+				     segment_id_notification, notification_id,
+				     queue);
+
+  if( eret != GASPI_SUCCESS )
+    {
+      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      goto endL;
+    }
+
+ endL:
+  unlock_gaspi (&gctx->lockC[queue]);
+  return eret;
 }

@@ -1,4 +1,4 @@
-BIN = list_write.bin list_write_notify.bin list_read.bin
+BIN = list_write.bin list_write_notify.bin list_read.bin list_read_notify.bin
 
 CFLAGS+=-I../
 
