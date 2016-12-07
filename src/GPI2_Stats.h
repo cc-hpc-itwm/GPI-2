@@ -27,6 +27,7 @@ enum
     GASPI_STATS_COUNTER_NUM_WRITE,        /* Number of write calls */
     GASPI_STATS_COUNTER_NUM_WRITE_NOT,    /* Number of write_notify calls */
     GASPI_STATS_COUNTER_NUM_READ,         /* Number of read calls */
+    GASPI_STATS_COUNTER_NUM_READ_NOT,     /* Number of read_notify calls */
     GASPI_STATS_TIME_BARRIER,             /* Time inside gaspi_barrier */
     GASPI_STATS_TIME_WAIT,                /* Time inside gaspi_wait */
     GASPI_STATS_TIME_WAITSOME,            /* Time inside gaspi_notify_waitsome */

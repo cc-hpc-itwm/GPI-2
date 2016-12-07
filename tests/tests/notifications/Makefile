@@ -1,5 +1,6 @@
 BIN = notify_all.bin write_notify.bin notify_null.bin			\
-	not_zero_wait.bin notify_after_delete.bin write_m_to_1.bin
+	not_zero_wait.bin notify_after_delete.bin write_m_to_1.bin \
+	read_notify.bin
 
 CFLAGS+=-I../
 

@@ -525,6 +525,70 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
   return GASPI_SUCCESS;
 }
 
+gaspi_return_t
+pgaspi_dev_read_notify (const gaspi_segment_id_t segment_id_local,
+			const gaspi_offset_t offset_local,
+			const gaspi_rank_t rank,
+			const gaspi_segment_id_t segment_id_remote,
+			const gaspi_offset_t offset_remote,
+			const unsigned int size,
+			const gaspi_notification_id_t notification_id,
+			const gaspi_queue_id_t queue)
+{
+  struct ibv_send_wr *bad_wr;
+  struct ibv_sge slist, slistN;
+  struct ibv_send_wr swr, swrN;
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
+
+  slist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr + offset_local);
+
+  slist.length = size;
+  slist.lkey = ((struct ibv_mr *)gctx->rrmd[segment_id_local][gctx->rank].mr[0])->lkey;
+
+  swr.wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote][rank].data.addr + offset_remote);
+
+  swr.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].rkey[0];
+  swr.sg_list = &slist;
+  swr.num_sge = 1;
+  swr.wr_id = rank;
+  swr.opcode = IBV_WR_RDMA_READ;
+  swr.send_flags = IBV_SEND_SIGNALED;
+  swr.next = &swrN;
+
+  slistN.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].notif_spc.addr + notification_id * sizeof(gaspi_notification_t));
+  slistN.length = sizeof(gaspi_notification_t);
+  slistN.lkey = ((struct ibv_mr *)gctx->rrmd[segment_id_local][gctx->rank].mr[1])->lkey;
+
+#ifdef GPI2_CUDA
+  if((gctx->rrmd[segment_id_remote][rank].cuda_dev_id >= 0))
+    {
+      swrN.wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote][rank].host_addr + NOTIFY_OFFSET - sizeof(gaspi_notification_t));
+      swrN.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].host_rkey;
+    }
+  else
+#endif
+    {
+      swrN.wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote][rank].notif_spc.addr + NOTIFY_OFFSET - sizeof(gaspi_notification_t));
+      swrN.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].rkey[1];
+    }
+
+  swrN.sg_list = &slistN;
+  swrN.num_sge = 1;
+  swrN.wr_id = rank;
+  swrN.opcode = IBV_WR_RDMA_READ;
+  swrN.send_flags = IBV_SEND_SIGNALED;// | IBV_SEND_FENCE;;
+  swrN.next = NULL;
+
+  if( ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr, &bad_wr) )
+    {
+      return GASPI_ERROR;
+    }
+
+  gctx->ne_count_c[queue] += 2;
+
+  return GASPI_SUCCESS;
+}
+
 #ifdef GPI2_CUDA
 /* TODO: maybe rename it? gaspi_post_write_from_host */
 static int

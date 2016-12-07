@@ -269,6 +269,11 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       goto endL;
     }
 
+  /* set fixed notification value ( =1) for read_notify */
+  unsigned char *segPtr = (unsigned char *) gctx->rrmd[segment_id][gctx->rank].notif_spc.addr + NOTIFY_OFFSET - sizeof(gaspi_notification_t);
+  gaspi_notification_t *p = (gaspi_notification_t *) segPtr;
+  *p = 1;
+
 #else
   eret = pgaspi_dev_segment_alloc(segment_id, size, alloc_policy);
   if( eret != GASPI_SUCCESS )
@@ -627,6 +632,11 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
       eret = GASPI_ERR_DEVICE;
       goto endL;
     }
+
+  /* set fixed notification value ( =1) for read_notify */
+  unsigned char *segPtr = (unsigned char *) gctx->rrmd[segment_id][gctx->rank].notif_spc.addr + NOTIFY_OFFSET - sizeof(gaspi_notification_t);
+  gaspi_notification_t *p = (gaspi_notification_t *) segPtr;
+  *p = 1;
 
   gctx->mseg_cnt++;
 

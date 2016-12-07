@@ -910,6 +910,32 @@ extern "C"
 					  const gaspi_queue_id_t queue,
 					  const gaspi_timeout_t timeout_ms);
 
+  /** Read data from a given node with a notification on the local side.
+   *
+   *
+   * @param segment_id_local The segment identifier where data to be written is located.
+   * @param offset_local The offset where the data to be written is located.
+   * @param rank The rank where to write and notify.
+   * @param segment_id_remote The remote segment identifier where to write the data to.
+   * @param offset_remote The remote offset where to write to.
+   * @param size The size of the data to write.
+   * @param notification_id The notification identifier to use.
+   * @param queue The queue where to post the request.
+   * @param timeout_ms Timeout in milliseconds (or GASPI_BLOCK/GASPI_TEST).
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
+   * error, GASPI_TIMEOUT in case of timeout.
+   */
+  gaspi_return_t gaspi_read_notify (const gaspi_segment_id_t segment_id_local,
+				    const gaspi_offset_t offset_local,
+				    const gaspi_rank_t rank,
+				    const gaspi_segment_id_t segment_id_remote,
+				    const gaspi_offset_t offset_remote,
+				    const gaspi_size_t size,
+				    const gaspi_notification_id_t notification_id,
+				    const gaspi_queue_id_t queue,
+				    const gaspi_timeout_t timeout_ms);
+
   //@}
 
   /// \name Utilities and informations

@@ -328,3 +328,46 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
 
   return pgaspi_dev_notify(segment_id_notification, rank, notification_id, notification_value, queue);
 }
+
+gaspi_return_t
+pgaspi_dev_read_notify (const gaspi_segment_id_t segment_id_local,
+			const gaspi_offset_t offset_local,
+			const gaspi_rank_t rank,
+			const gaspi_segment_id_t segment_id_remote,
+			const gaspi_offset_t offset_remote,
+			const gaspi_size_t size,
+			const gaspi_notification_id_t notification_id,
+			const gaspi_queue_id_t queue)
+{
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
+
+  if( pgaspi_dev_read(segment_id_local, offset_local, rank,
+		      segment_id_remote, offset_remote, size,
+		      queue) != GASPI_SUCCESS)
+    {
+      return GASPI_ERROR;
+    }
+
+  //notification
+  tcp_dev_wr_t wr =
+    {
+      .wr_id       = rank,
+      .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
+      .source      = gctx->rank,
+      .target      = rank,
+      .local_addr  = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].notif_spc.addr + notification_id * sizeof(gaspi_notification_t)),
+      .remote_addr = (gctx->rrmd[segment_id_remote][rank].notif_spc.addr + NOTIFY_OFFSET - sizeof(gaspi_notification_t)),
+      .length      = sizeof(gaspi_notification_t),
+      .swap        = 0,
+      .opcode      = POST_RDMA_READ
+    } ;
+
+  if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+    {
+      return GASPI_ERROR;
+    }
+
+  gctx->ne_count_c[queue]++;
+
+  return GASPI_SUCCESS;
+}

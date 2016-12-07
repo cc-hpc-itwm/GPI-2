@@ -138,6 +138,13 @@ counter_info_t gpi2_counter_info[GASPI_STATS_COUNTER_NUM_MAX] =
     },
     {
       GASPI_STATISTIC_ARGUMENT_NONE,
+      "NumberOfReadNotifys",
+      "Number of times gaspi_read_notify was invoked by this rank",
+      1,
+      {	0 }
+    },
+    {
+      GASPI_STATISTIC_ARGUMENT_NONE,
       "TimeInBarrier",
       "Time spent inside gaspi_barrier by this rank",
       1,

@@ -854,3 +854,59 @@ pgaspi_write_list_notify (const gaspi_number_t num,
   unlock_gaspi (&gctx->lockC[queue]);
   return eret;
 }
+
+#pragma weak gaspi_read_notify = pgaspi_read_notify
+gaspi_return_t
+pgaspi_read_notify (const gaspi_segment_id_t segment_id_local,
+		    const gaspi_offset_t offset_local,
+		    const gaspi_rank_t rank,
+		    const gaspi_segment_id_t segment_id_remote,
+		    const gaspi_offset_t offset_remote,
+		    const gaspi_size_t size,
+		    const gaspi_notification_id_t notification_id,
+		    const gaspi_queue_id_t queue,
+		    const gaspi_timeout_t timeout_ms)
+{
+
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
+
+  gaspi_verify_init("gaspi_read_notify");
+  gaspi_verify_local_off(offset_local, segment_id_local, size);
+  gaspi_verify_remote_off(offset_remote, segment_id_remote, rank, size);
+  gaspi_verify_queue(queue);
+  gaspi_verify_comm_size(size, segment_id_local, segment_id_remote, rank, GASPI_MAX_TSIZE_C);
+  gaspi_verify_queue_size_max(gctx->ne_count_c[queue]);
+
+  gaspi_return_t eret = GASPI_ERROR;
+
+  if(lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
+    return GASPI_TIMEOUT;
+
+  if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
+    {
+      eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
+      if ( eret != GASPI_SUCCESS)
+	{
+	  goto endL;
+	}
+    }
+
+  eret = pgaspi_dev_read_notify(segment_id_local, offset_local, rank,
+				segment_id_remote, offset_remote, size,
+				notification_id, queue);
+
+  if( eret != GASPI_SUCCESS )
+    {
+      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      goto endL;
+    }
+
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_READ_NOT, 1);
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_BYTES_READ, size);
+
+ endL:
+  unlock_gaspi (&gctx->lockC[queue]);
+  return eret;
+
+
+}

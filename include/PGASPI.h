@@ -272,6 +272,16 @@ extern "C"
 					   const gaspi_queue_id_t queue,
 					   const gaspi_timeout_t timeout_ms);
 
+  gaspi_return_t pgaspi_read_notify (const gaspi_segment_id_t segment_id_local,
+				     const gaspi_offset_t offset_local,
+				     const gaspi_rank_t rank,
+				     const gaspi_segment_id_t segment_id_remote,
+				     const gaspi_offset_t offset_remote,
+				     const gaspi_size_t size,
+				     const gaspi_notification_id_t notification_id,
+				     const gaspi_queue_id_t queue,
+				     const gaspi_timeout_t timeout_ms);
+
   gaspi_return_t pgaspi_queue_size (const gaspi_queue_id_t queue,
 				    gaspi_number_t * const queue_size);
 
