@@ -25,6 +25,9 @@ main (int argc, char *argv[])
 
   if (myrank == 0)
     {
+      printf("--------------------------------------------------\n");
+      printf ("%12s\t%5s\t\t%s\n", "Bytes", "BW", "MsgRate(Mpps)");
+      printf("--------------------------------------------------\n");
 
       int bytes = 2;
 
@@ -32,7 +35,6 @@ main (int argc, char *argv[])
 	{
 	  for (j = 0; j < 10; j++)
 	    {
-
 	      stamp[j] = get_mcycles ();
 	      for (k = 0; k < 1000; k++)
 		gaspi_read (0, 0, 1, 0, 0, bytes, 0, GASPI_BLOCK);
@@ -51,14 +53,12 @@ main (int argc, char *argv[])
 
 	  const double bw = (double) bytes / ts * 1000.0;
 	  const double bw_mb = bw / (1024.0 * 1024.0);
+	  const double rate = (double) 1000.0 / ts;
 
-	  printf ("%d \t\t%.2f\n", bytes, bw_mb);
-
+	  printf ("%12d\t%4.2f\t\t%.4f\n", bytes, bw_mb, rate/1e6);
 
 	  bytes <<= 1;
-
-	}			//for
-
+	}
     }
 
   end_bench ();
