@@ -49,7 +49,7 @@ gaspi_get_cycles (void)
 #ifdef MIC
 static inline
 unsigned char gaspi_atomic_xchg (volatile unsigned char *addr,
-				      const char new_val)
+				 const char new_val)
 {
   unsigned char res;
   asm volatile ("lock; xchgb %0, %1":"+m" (*addr),
@@ -79,7 +79,7 @@ static inline int
 lock_gaspi_tout (gaspi_lock_t * l, const gaspi_timeout_t timeout_ms)
 {
 
-  if (timeout_ms == GASPI_BLOCK)
+  if( timeout_ms == GASPI_BLOCK )
     {
       while (GASPI_ATOMIC_TRY_LOCK(&l->lock))
 	while (l->lock)
