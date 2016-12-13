@@ -75,11 +75,7 @@ main(int argc, char *argv[])
   //check
   for(i = 0; i < nprocs; i++)
     {
-      //assert(mem[i] == i);
-      if( mem[i] != i){
-	gaspi_printf("Different %d should be %d\n", mem[i], i);
-	
-      }
+      assert(mem[i] == i);
     }
   
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
