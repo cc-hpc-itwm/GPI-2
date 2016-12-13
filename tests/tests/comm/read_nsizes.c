@@ -21,21 +21,22 @@ int main(int argc, char *argv[])
   gaspi_number_t queueSize, qmax;
   ASSERT (gaspi_queue_size_max(&qmax));
 
-  gaspi_pointer_t segPtr;
+  gaspi_pointer_t segPtr, segPtr1;
   ASSERT( gaspi_segment_ptr(0, &segPtr));
   int* segInt = (int *) segPtr;
 
+  ASSERT( gaspi_segment_ptr(1, &segPtr1));
+  int* segInt1 = (int *) segPtr1;
+
   gaspi_size_t segSize;
   ASSERT( gaspi_segment_size(0, myrank, &segSize));
-  
+
   int i;
   for(i = 0; i < segSize / sizeof(int); i++)
     {
       segInt[i] = myrank;
+      segInt1[i] = -1;
     }
-
-  ASSERT( gaspi_segment_ptr(1, &segPtr));
-  int* seg_read = (int *) segPtr;
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
@@ -60,11 +61,13 @@ int main(int argc, char *argv[])
 	  ASSERT (gaspi_read(1, localOff, rankSend, 0,  remOff,  commSize, 1, GASPI_BLOCK));
 	  localOff+= commSize;
 	}
-      
+
       ASSERT (gaspi_wait(1, GASPI_BLOCK));
 
       const int elems_per_rank = commSize / sizeof(int);
       int c, pos = 0;
+      int* seg_read = (int *) segPtr1;
+
       for(rankSend = 0; rankSend < numranks; rankSend++)
 	{
 	  if(rankSend == myrank)
