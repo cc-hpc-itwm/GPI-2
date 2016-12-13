@@ -50,6 +50,8 @@ void tsuite_do_backtrace(int id, gaspi_rank_t node, FILE * bt_file)
   for (i = 0; i < size; i++)
     fprintf(bt_file, "%s\n", strings[i]);
 
+  fflush(bt_file);
+
   free(strings); /*  malloced by backtrace_symbols */
 }
 
