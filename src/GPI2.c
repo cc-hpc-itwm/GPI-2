@@ -30,6 +30,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Coll.h"
 #include "GPI2_Env.h"
 #include "GPI2_Dev.h"
+#include "GPI2_Mem.h"
 #include "GPI2_SN.h"
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
