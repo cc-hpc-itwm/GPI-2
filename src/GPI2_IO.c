@@ -246,7 +246,6 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
   gaspi_verify_remote_off(offset_remote, segment_id_remote, rank, size);
   gaspi_verify_queue(queue);
   gaspi_verify_comm_size(size, segment_id_local, segment_id_remote, rank, GASPI_MAX_TSIZE_C);
-  gaspi_verify_queue_size_max(gctx->ne_count_c[queue]);
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -300,7 +299,6 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
   gaspi_verify_remote_off(offset_remote, segment_id_remote, rank, size);
   gaspi_verify_queue(queue);
   gaspi_verify_comm_size(size, segment_id_local, segment_id_remote, rank, GASPI_MAX_TSIZE_C);
-  gaspi_verify_queue_size_max(gctx->ne_count_c[queue]);
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -394,7 +392,6 @@ pgaspi_write_list (const gaspi_number_t num,
 #ifdef DEBUG
   gaspi_verify_init("gaspi_write_list");
   gaspi_verify_queue(queue);
-  gaspi_verify_queue_size_max(gctx->ne_count_c[queue]);
 
   gaspi_number_t n;
   for(n = 0; n < num; n++)
@@ -457,7 +454,6 @@ pgaspi_read_list (const gaspi_number_t num,
 #ifdef DEBUG
   gaspi_verify_init("gaspi_read_list");
   gaspi_verify_queue(queue);
-  gaspi_verify_queue_size_max(gctx->ne_count_c[queue]);
 
   gaspi_number_t n;
   for( n = 0; n < num; n++ )
@@ -515,7 +511,6 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
   gaspi_verify_null_ptr(gctx->rrmd[segment_id_remote]);
   gaspi_verify_rank(rank);
   gaspi_verify_queue(queue);
-  gaspi_verify_queue_size_max(gctx->ne_count_c[queue]);
 
   if(notification_value == 0)
     {
@@ -751,7 +746,6 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
   gaspi_verify_remote_off(offset_remote, segment_id_remote, rank, size);
   gaspi_verify_queue(queue);
   gaspi_verify_comm_size(size, segment_id_local, segment_id_remote, rank, GASPI_MAX_TSIZE_C);
-  gaspi_verify_queue_size_max(gctx->ne_count_c[queue]);
 
   if(notification_value == 0)
     {
@@ -824,7 +818,6 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 #ifdef DEBUG
   gaspi_verify_init("gaspi_write_list_notify");
   gaspi_verify_queue(queue);
-  gaspi_verify_queue_size_max(gctx->ne_count_c[queue]);
 
   gaspi_number_t n;
   for(n = 0; n < num; n++)
@@ -889,7 +882,6 @@ pgaspi_read_notify (const gaspi_segment_id_t segment_id_local,
   gaspi_verify_remote_off(offset_remote, segment_id_remote, rank, size);
   gaspi_verify_queue(queue);
   gaspi_verify_comm_size(size, segment_id_local, segment_id_remote, rank, GASPI_MAX_TSIZE_C);
-  gaspi_verify_queue_size_max(gctx->ne_count_c[queue]);
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -949,7 +941,6 @@ pgaspi_read_list_notify (const gaspi_number_t num,
 #ifdef DEBUG
   gaspi_verify_init("gaspi_read_list_notify");
   gaspi_verify_queue(queue);
-  gaspi_verify_queue_size_max(gctx->ne_count_c[queue]);
 
   gaspi_number_t n;
   for(n = 0; n < num; n++)

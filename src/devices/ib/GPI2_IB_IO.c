@@ -24,6 +24,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <cuda.h>
 #endif
 
+extern gaspi_config_t glb_gaspi_cfg;
+
 /* Communication functions */
 gaspi_return_t
 pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
@@ -40,6 +42,11 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
   enum ibv_send_flags sf;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
+  if( gctx->ne_count_c[queue] == glb_gaspi_cfg.queue_size_max )
+    {
+      return GASPI_QUEUE_FULL;
+    }
+
 #ifdef GPI2_CUDA
   if( gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id >= 0 )
     {
@@ -51,8 +58,7 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
       sf = (size > MAX_INLINE_BYTES) ? IBV_SEND_SIGNALED : IBV_SEND_SIGNALED |	IBV_SEND_INLINE;
     }
 
-  slist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr +
-			    offset_local);
+  slist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr + offset_local);
 
   slist.length = size;
   slist.lkey =  ((struct ibv_mr *)gctx->rrmd[segment_id_local][gctx->rank].mr[0])->lkey;
@@ -91,8 +97,12 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
   struct ibv_send_wr swr;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  slist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr +
-		   offset_local);
+  if( gctx->ne_count_c[queue] == glb_gaspi_cfg.queue_size_max )
+    {
+      return GASPI_QUEUE_FULL;
+    }
+
+  slist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr + offset_local);
 
   slist.length = size;
   slist.lkey = ((struct ibv_mr *)gctx->rrmd[segment_id_local][gctx->rank].mr[0])->lkey;
@@ -238,16 +248,20 @@ pgaspi_dev_write_list (const gaspi_number_t num,
   gaspi_number_t i;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
+  if( gctx->ne_count_c[queue] == (glb_gaspi_cfg.queue_size_max - num + 1) )
+    {
+      return GASPI_QUEUE_FULL;
+    }
+
+
   for (i = 0; i < num; i++)
     {
-      slist[i].addr = (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +
-				   offset_local[i]);
+      slist[i].addr = (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr + offset_local[i]);
 
       slist[i].length = size[i];
       slist[i].lkey = ((struct ibv_mr *)gctx->rrmd[segment_id_local[i]][gctx->rank].mr[0])->lkey;
 
-      swr[i].wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote[i]][rank].data.addr +
-				    offset_remote[i]);
+      swr[i].wr.rdma.remote_addr = (gctx->rrmd[segment_id_remote[i]][rank].data.addr + offset_remote[i]);
 
       swr[i].wr.rdma.rkey = gctx->rrmd[segment_id_remote[i]][rank].rkey[0];
       swr[i].sg_list = &slist[i];
@@ -288,6 +302,11 @@ pgaspi_dev_read_list (const gaspi_number_t num,
   struct ibv_send_wr swr[256];
   gaspi_number_t i;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
+
+  if( gctx->ne_count_c[queue] == (glb_gaspi_cfg.queue_size_max - num + 1) )
+    {
+      return GASPI_QUEUE_FULL;
+    }
 
   for (i = 0; i < num; i++)
     {
@@ -334,6 +353,11 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
   struct ibv_sge slistN;
   struct ibv_send_wr swrN;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
+
+  if( gctx->ne_count_c[queue] == glb_gaspi_cfg.queue_size_max )
+    {
+      return GASPI_QUEUE_FULL;
+    }
 
   slistN.addr = (uintptr_t) (gctx->nsrc.notif_spc.buf + notification_id * sizeof(gaspi_notification_t));
 
@@ -387,6 +411,11 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
   struct ibv_sge slist, slistN;
   struct ibv_send_wr swr, swrN;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
+
+  if( gctx->ne_count_c[queue] == glb_gaspi_cfg.queue_size_max - 1 )
+    {
+      return GASPI_QUEUE_FULL;
+    }
 
   slist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr +
 			    offset_local);
@@ -460,6 +489,11 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
   struct ibv_send_wr swr[256], swrN;
   gaspi_number_t i;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
+
+  if( gctx->ne_count_c[queue] == (glb_gaspi_cfg.queue_size_max - num - 2) )
+    {
+      return GASPI_QUEUE_FULL;
+    }
 
   for (i = 0; i < num; i++)
     {
@@ -538,6 +572,11 @@ pgaspi_dev_read_notify (const gaspi_segment_id_t segment_id_local,
   struct ibv_send_wr swr, swrN;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
+  if( gctx->ne_count_c[queue] == glb_gaspi_cfg.queue_size_max - 1 )
+    {
+      return GASPI_QUEUE_FULL;
+    }
+
   slist.addr = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr + offset_local);
 
   slist.length = size;
@@ -604,6 +643,11 @@ pgaspi_dev_read_list_notify (const gaspi_number_t num,
   struct ibv_send_wr swr[256], swrN;
   gaspi_number_t i;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
+
+  if( gctx->ne_count_c[queue] == (glb_gaspi_cfg.queue_size_max - num - 2) )
+    {
+      return GASPI_QUEUE_FULL;
+    }
 
   for (i = 0; i < num; i++)
     {

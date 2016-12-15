@@ -85,14 +85,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
       }						\
   }
 
-#define gaspi_verify_queue_size_max(depth)			\
-  {								\
-    if( (unsigned) depth >= glb_gaspi_cfg.queue_size_max )	\
-      {								\
-	return GASPI_ERR_MANY_Q_REQS;				\
-      }								\
-  }
-
 #define gaspi_verify_segment(seg_id)		\
   {						\
     if( seg_id >= GASPI_MAX_MSEGS)		\

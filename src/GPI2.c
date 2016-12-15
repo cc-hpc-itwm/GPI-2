@@ -766,7 +766,7 @@ pgaspi_error_str(gaspi_return_t error_code)
       [GASPI_ERR_INV_SIZE] = "Invalid size",
       [GASPI_ERR_MANY_SEG] = "Too many segments",
       [GASPI_ERR_MANY_GRP] = "Too many groups",
-      [GASPI_ERR_MANY_Q_REQS] = "Too many requests in queue",
+      [GASPI_QUEUE_FULL] = "Queue is full",
       [GASPI_ERR_UNALIGN_OFF] = "Unaligned (8 bytes) offset",
       [GASPI_ERR_ACTIVE_COLL] = "Other collective is still active",
       [GASPI_ERR_DEVICE] = "Device operation error",
