@@ -599,7 +599,6 @@ _pgaspi_dev_create_qp_exp(gaspi_context_t const * const gctx,
   attr.pd = glb_gaspi_ctx_ib.pd;
   attr.cap.max_send_wr = depth;
   attr.cap.max_recv_wr = depth;
-  attr.cap.max_send_wr = depth;
   attr.cap.max_send_sge = 1;
   attr.cap.max_inline_data = MAX_INLINE_BYTES;
 
