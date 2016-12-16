@@ -26,7 +26,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 /* Communication functions */
 gaspi_return_t
-pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_write (gaspi_context_t * const gctx,
+		  const gaspi_segment_id_t segment_id_local,
 		  const gaspi_offset_t offset_local,
 		  const gaspi_rank_t rank,
 		  const gaspi_segment_id_t segment_id_remote,
@@ -38,7 +39,6 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
   struct ibv_sge slist;
   struct ibv_send_wr swr;
   enum ibv_send_flags sf;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( gctx->ne_count_c[queue] == gctx->config->queue_size_max )
     {
@@ -82,7 +82,8 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
 }
 
 gaspi_return_t
-pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_read (gaspi_context_t * const gctx,
+		 const gaspi_segment_id_t segment_id_local,
 		 const gaspi_offset_t offset_local,
 		 const gaspi_rank_t rank,
 		 const gaspi_segment_id_t segment_id_remote,
@@ -93,7 +94,6 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slist;
   struct ibv_send_wr swr;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( gctx->ne_count_c[queue] == gctx->config->queue_size_max )
     {
@@ -127,12 +127,12 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
 }
 
 gaspi_return_t
-pgaspi_dev_purge (const gaspi_queue_id_t queue,
+pgaspi_dev_purge (gaspi_context_t * const gctx,
+		  const gaspi_queue_id_t queue,
 		  const gaspi_timeout_t timeout_ms)
 {
   int ne = 0, i;
   struct ibv_wc wc;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   const int nr = gctx->ne_count_c[queue];
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
@@ -172,13 +172,13 @@ pgaspi_dev_purge (const gaspi_queue_id_t queue,
 }
 
 gaspi_return_t
-pgaspi_dev_wait (const gaspi_queue_id_t queue,
+pgaspi_dev_wait (gaspi_context_t * const gctx,
+		 const gaspi_queue_id_t queue,
 		 const gaspi_timeout_t timeout_ms)
 {
 
   int ne = 0, i;
   struct ibv_wc wc;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   const int nr = gctx->ne_count_c[queue];
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
@@ -230,7 +230,8 @@ pgaspi_dev_wait (const gaspi_queue_id_t queue,
 }
 
 gaspi_return_t
-pgaspi_dev_write_list (const gaspi_number_t num,
+pgaspi_dev_write_list (gaspi_context_t * const gctx,
+		       const gaspi_number_t num,
 		       gaspi_segment_id_t * const segment_id_local,
 		       gaspi_offset_t * const offset_local,
 		       const gaspi_rank_t rank,
@@ -244,7 +245,6 @@ pgaspi_dev_write_list (const gaspi_number_t num,
   struct ibv_sge slist[256];
   struct ibv_send_wr swr[256];
   gaspi_number_t i;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num + 1) )
     {
@@ -285,7 +285,8 @@ pgaspi_dev_write_list (const gaspi_number_t num,
 }
 
 gaspi_return_t
-pgaspi_dev_read_list (const gaspi_number_t num,
+pgaspi_dev_read_list (gaspi_context_t * const gctx,
+		      const gaspi_number_t num,
 		      gaspi_segment_id_t * const segment_id_local,
 		      gaspi_offset_t * const offset_local,
 		      const gaspi_rank_t rank,
@@ -299,7 +300,6 @@ pgaspi_dev_read_list (const gaspi_number_t num,
   struct ibv_sge slist[256];
   struct ibv_send_wr swr[256];
   gaspi_number_t i;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num + 1) )
     {
@@ -340,7 +340,8 @@ pgaspi_dev_read_list (const gaspi_number_t num,
 }
 
 gaspi_return_t
-pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
+pgaspi_dev_notify (gaspi_context_t * const gctx,
+		   const gaspi_segment_id_t segment_id_remote,
 		   const gaspi_rank_t rank,
 		   const gaspi_notification_id_t notification_id,
 		   const gaspi_notification_t notification_value,
@@ -350,7 +351,6 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slistN;
   struct ibv_send_wr swrN;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( gctx->ne_count_c[queue] == gctx->config->queue_size_max )
     {
@@ -395,7 +395,8 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
 }
 
 gaspi_return_t
-pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_write_notify (gaspi_context_t * const gctx,
+			 const gaspi_segment_id_t segment_id_local,
 			 const gaspi_offset_t offset_local,
 			 const gaspi_rank_t rank,
 			 const gaspi_segment_id_t segment_id_remote,
@@ -408,7 +409,6 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slist, slistN;
   struct ibv_send_wr swr, swrN;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( gctx->ne_count_c[queue] == gctx->config->queue_size_max - 1 )
     {
@@ -470,7 +470,8 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
 }
 
 gaspi_return_t
-pgaspi_dev_write_list_notify (const gaspi_number_t num,
+pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
+			      const gaspi_number_t num,
 			      gaspi_segment_id_t * const segment_id_local,
 			      gaspi_offset_t * const offset_local,
 			      const gaspi_rank_t rank,
@@ -486,7 +487,6 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
   struct ibv_sge slist[256], slistN;
   struct ibv_send_wr swr[256], swrN;
   gaspi_number_t i;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 2) )
     {
@@ -556,7 +556,8 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
 }
 
 gaspi_return_t
-pgaspi_dev_read_notify (const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_read_notify (gaspi_context_t * const gctx,
+			const gaspi_segment_id_t segment_id_local,
 			const gaspi_offset_t offset_local,
 			const gaspi_rank_t rank,
 			const gaspi_segment_id_t segment_id_remote,
@@ -568,7 +569,6 @@ pgaspi_dev_read_notify (const gaspi_segment_id_t segment_id_local,
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slist, slistN;
   struct ibv_send_wr swr, swrN;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( gctx->ne_count_c[queue] == gctx->config->queue_size_max - 1 )
     {
@@ -625,7 +625,8 @@ pgaspi_dev_read_notify (const gaspi_segment_id_t segment_id_local,
 }
 
 gaspi_return_t
-pgaspi_dev_read_list_notify (const gaspi_number_t num,
+pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
+			     const gaspi_number_t num,
 			     gaspi_segment_id_t * const segment_id_local,
 			     gaspi_offset_t * const offset_local,
 			     const gaspi_rank_t rank,
@@ -640,7 +641,6 @@ pgaspi_dev_read_list_notify (const gaspi_number_t num,
   struct ibv_sge slist[256], slistN;
   struct ibv_send_wr swr[256], swrN;
   gaspi_number_t i;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 2) )
     {
@@ -707,12 +707,11 @@ pgaspi_dev_read_list_notify (const gaspi_number_t num,
 #ifdef GPI2_CUDA
 /* TODO: maybe rename it? gaspi_post_write_from_host */
 static int
-_gaspi_event_send(gaspi_cuda_event_t* event, int queue)
+_gaspi_event_send(gaspi_context_t * const gctx, gaspi_cuda_event_t* event, int queue)
 {
   struct ibv_send_wr swr;
   struct ibv_sge slist;
   struct ibv_send_wr *bad_wr;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   swr.wr.rdma.rkey = gctx->rrmd[event->segment_remote][event->rank].rkey[0];
   swr.sg_list    = &slist;
@@ -744,17 +743,16 @@ _gaspi_event_send(gaspi_cuda_event_t* event, int queue)
 }
 
 gaspi_return_t
-pgaspi_dev_gpu_write(const gaspi_segment_id_t segment_id_local,
-		 const gaspi_offset_t offset_local,
-		 const gaspi_rank_t rank,
-		 const gaspi_segment_id_t segment_id_remote,
-		 const gaspi_offset_t offset_remote,
-		 const gaspi_size_t size,
-		 const gaspi_queue_id_t queue,
-		 const gaspi_timeout_t timeout_ms)
+pgaspi_dev_gpu_write(gaspi_context_t * const gctx,
+		     const gaspi_segment_id_t segment_id_local,
+		     const gaspi_offset_t offset_local,
+		     const gaspi_rank_t rank,
+		     const gaspi_segment_id_t segment_id_remote,
+		     const gaspi_offset_t offset_remote,
+		     const gaspi_size_t size,
+		     const gaspi_queue_id_t queue,
+		     const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   if( gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id < 0 ||
       size <= GASPI_GPU_DIRECT_MAX )
     {
@@ -869,7 +867,7 @@ pgaspi_dev_gpu_write(const gaspi_segment_id_t segment_id_local,
 		  error = cudaEventQuery(agpu->events[queue][i].event );
 		  if( cudaSuccess == error )
 		    {
-		      if( _gaspi_event_send(&agpu->events[queue][i], queue) )
+		      if( _gaspi_event_send(gctx, &agpu->events[queue][i], queue) )
 			{
 			  return GASPI_ERROR;
 			}
@@ -900,7 +898,8 @@ pgaspi_dev_gpu_write(const gaspi_segment_id_t segment_id_local,
 }
 
 gaspi_return_t
-pgaspi_dev_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_gpu_write_notify(gaspi_context_t * const gctx,
+			    const gaspi_segment_id_t segment_id_local,
 			    const gaspi_offset_t offset_local,
 			    const gaspi_rank_t rank,
 			    const gaspi_segment_id_t segment_id_remote,
@@ -911,8 +910,6 @@ pgaspi_dev_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
 			    const gaspi_queue_id_t queue,
 			    const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   if( gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id < 0 ||
       size <= GASPI_GPU_DIRECT_MAX )
     {
@@ -1022,7 +1019,7 @@ pgaspi_dev_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
 		  error = cudaEventQuery(agpu->events[queue][i].event );
 		  if( cudaSuccess == error )
 		    {
-		      if (_gaspi_event_send(&agpu->events[queue][i],queue) )
+		      if (_gaspi_event_send(gctx, &agpu->events[queue][i],queue) )
 			{
 			  return GASPI_ERROR;
 			}

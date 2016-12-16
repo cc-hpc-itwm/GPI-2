@@ -37,11 +37,12 @@ pgaspi_dev_get_sizeof_rc(void);
 
 /* Groups */
 int
-pgaspi_dev_poll_groups(void);
+pgaspi_dev_poll_groups(gaspi_context_t * const gctx);
 
 int
-pgaspi_dev_post_group_write(void *, int, int, void *, unsigned char);
-
+pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
+			    void *local_addr, int length,
+			    int dst, void *remote_addr, int g);
 //////////////////////////////////////////////////////////
 
 #ifdef GPI2_CUDA
@@ -55,10 +56,10 @@ pgaspi_dev_segment_delete (const gaspi_segment_id_t);
 #endif /* GPI2_CUDA */
 
 int
-pgaspi_dev_init_core(gaspi_config_t *);
+pgaspi_dev_init_core(gaspi_context_t const * const gctx);
 
 int
-pgaspi_dev_cleanup_core(gaspi_config_t *);
+pgaspi_dev_cleanup_core(gaspi_context_t * const gctx);
 
 int
 pgaspi_dev_register_mem(gaspi_rc_mseg_t *);
@@ -67,48 +68,52 @@ int
 pgaspi_dev_unregister_mem(const gaspi_rc_mseg_t *);
 
 int
-pgaspi_dev_connect_context(const int);
+pgaspi_dev_connect_context(gaspi_context_t const * const gctx, const int);
 
 int
-pgaspi_dev_disconnect_context(const int);
+pgaspi_dev_disconnect_context(gaspi_context_t const * const gctx, const int);
 
 int
-pgaspi_dev_create_endpoint(const int);
+pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int);
 
 int
-pgaspi_dev_comm_queue_delete(const unsigned int id);
+pgaspi_dev_comm_queue_delete(gaspi_context_t const * const gctx, const unsigned int id);
 
 int
-pgaspi_dev_comm_queue_create(const unsigned int, const unsigned short);
+pgaspi_dev_comm_queue_create(gaspi_context_t const * const gctx, const unsigned int, const unsigned short);
 
 int
-pgaspi_dev_comm_queue_connect(const unsigned short q, const int i);
+pgaspi_dev_comm_queue_connect(gaspi_context_t const * const gctx, const unsigned short q, const int i);
 
 /* Device interface (GASPI routines) */
 int
 pgaspi_dev_queue_size(const gaspi_queue_id_t);
 
 gaspi_return_t
-pgaspi_dev_purge (const gaspi_queue_id_t queue,
+pgaspi_dev_purge (gaspi_context_t * const gctx,
+		  const gaspi_queue_id_t queue,
 		  const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
-pgaspi_dev_write (const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_rank_t,
+pgaspi_dev_write (gaspi_context_t * const gctx,
+		  const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_rank_t,
 		  const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_size_t,
 		  const gaspi_queue_id_t);
 
 gaspi_return_t
-pgaspi_dev_read (const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_rank_t,
+pgaspi_dev_read (gaspi_context_t * const gctx,
+		 const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_rank_t,
 		 const gaspi_segment_id_t, const gaspi_offset_t, const gaspi_size_t,
 		 const gaspi_queue_id_t);
 
 
 gaspi_return_t
-pgaspi_dev_wait (const gaspi_queue_id_t, const gaspi_timeout_t);
+pgaspi_dev_wait (gaspi_context_t * const gctx, const gaspi_queue_id_t, const gaspi_timeout_t);
 
 
 gaspi_return_t
-pgaspi_dev_write_list (const gaspi_number_t,
+pgaspi_dev_write_list (gaspi_context_t * const gctx,
+		       const gaspi_number_t,
 		       gaspi_segment_id_t * const,
 		       gaspi_offset_t * const,
 		       const gaspi_rank_t,
@@ -118,7 +123,8 @@ pgaspi_dev_write_list (const gaspi_number_t,
 		       const gaspi_queue_id_t);
 
 gaspi_return_t
-pgaspi_dev_read_list (const gaspi_number_t,
+pgaspi_dev_read_list (gaspi_context_t * const gctx,
+		      const gaspi_number_t,
 		      gaspi_segment_id_t * const,
 		      gaspi_offset_t * const,
 		      const gaspi_rank_t,
@@ -128,14 +134,16 @@ pgaspi_dev_read_list (const gaspi_number_t,
 		      const gaspi_queue_id_t);
 
 gaspi_return_t
-pgaspi_dev_notify (const gaspi_segment_id_t,
+pgaspi_dev_notify (gaspi_context_t * const gctx,
+		   const gaspi_segment_id_t,
 		   const gaspi_rank_t,
 		   const gaspi_notification_id_t,
 		   const gaspi_notification_t,
 		   const gaspi_queue_id_t);
 
 gaspi_return_t
-pgaspi_dev_write_notify (const gaspi_segment_id_t,
+pgaspi_dev_write_notify (gaspi_context_t * const gctx,
+			 const gaspi_segment_id_t,
 			 const gaspi_offset_t,
 			 const gaspi_rank_t,
 			 const gaspi_segment_id_t,
@@ -147,7 +155,8 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t,
 
 
 gaspi_return_t
-pgaspi_dev_write_list_notify (const gaspi_number_t,
+pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
+			      const gaspi_number_t,
 			      gaspi_segment_id_t * const,
 			      gaspi_offset_t * const,
 			      const gaspi_rank_t,
@@ -160,7 +169,8 @@ pgaspi_dev_write_list_notify (const gaspi_number_t,
 			      const gaspi_queue_id_t);
 
 gaspi_return_t
-pgaspi_dev_read_notify (const gaspi_segment_id_t,
+pgaspi_dev_read_notify (gaspi_context_t * const gctx,
+			const gaspi_segment_id_t,
 			const gaspi_offset_t,
 			const gaspi_rank_t,
 			const gaspi_segment_id_t,
@@ -170,7 +180,8 @@ pgaspi_dev_read_notify (const gaspi_segment_id_t,
 			const gaspi_queue_id_t);
 
 gaspi_return_t
-pgaspi_dev_read_list_notify (const gaspi_number_t num,
+pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
+			     const gaspi_number_t num,
 			     gaspi_segment_id_t * const segment_id_local,
 			     gaspi_offset_t * const offset_local,
 			     const gaspi_rank_t rank,
@@ -181,28 +192,32 @@ pgaspi_dev_read_list_notify (const gaspi_number_t num,
 			     const gaspi_notification_id_t notification_id,
 			     const gaspi_queue_id_t queue);
 gaspi_return_t
-pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t,
+pgaspi_dev_atomic_fetch_add (gaspi_context_t const * const gctx,
+			     const gaspi_segment_id_t,
 			     const gaspi_offset_t,
 			     const gaspi_rank_t,
 			     const gaspi_atomic_value_t);
 
 
 gaspi_return_t
-pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t,
+pgaspi_dev_atomic_compare_swap (gaspi_context_t const * const gctx,
+				const gaspi_segment_id_t,
 				const gaspi_offset_t,
 				const gaspi_rank_t,
 				const gaspi_atomic_value_t,
 				const gaspi_atomic_value_t);
 
 gaspi_return_t
-pgaspi_dev_passive_send (const gaspi_segment_id_t,
+pgaspi_dev_passive_send (gaspi_context_t * const gctx,
+			 const gaspi_segment_id_t,
 			 const gaspi_offset_t,
 			 const gaspi_rank_t,
 			 const gaspi_size_t,
 			 const gaspi_timeout_t);
 
 gaspi_return_t
-pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
+			    const gaspi_segment_id_t segment_id_local,
 			    const gaspi_offset_t offset_local,
 			    gaspi_rank_t * const rem_rank,
 			    const gaspi_size_t size,
@@ -210,7 +225,8 @@ pgaspi_dev_passive_receive (const gaspi_segment_id_t segment_id_local,
 
 #ifdef GPI2_CUDA
 gaspi_return_t
-pgaspi_dev_gpu_write(const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_gpu_write(gaspi_context_t * const gctx,
+		     const gaspi_segment_id_t segment_id_local,
 		     const gaspi_offset_t offset_local,
 		     const gaspi_rank_t rank,
 		     const gaspi_segment_id_t segment_id_remote,
@@ -220,7 +236,8 @@ pgaspi_dev_gpu_write(const gaspi_segment_id_t segment_id_local,
 		     const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
-pgaspi_dev_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_gpu_write_notify(gaspi_context_t * const gctx,
+			    const gaspi_segment_id_t segment_id_local,
 			    const gaspi_offset_t offset_local,
 			    const gaspi_rank_t rank,
 			    const gaspi_segment_id_t segment_id_remote,

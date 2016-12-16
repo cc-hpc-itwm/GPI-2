@@ -34,7 +34,7 @@ pgaspi_create_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout
 
   if( GASPI_ENDPOINT_NOT_CREATED == gctx->ep_conn[i].istat )
     {
-      if( pgaspi_dev_create_endpoint(i) < 0 )
+      if( pgaspi_dev_create_endpoint(gctx, i) < 0 )
 	{
 	  unlock_gaspi(&(gctx->create_lock));
 	  return GASPI_ERR_DEVICE;
@@ -65,7 +65,7 @@ pgaspi_connect_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeou
     }
   else
     {
-      if( pgaspi_dev_connect_context(i) != 0 )
+      if( pgaspi_dev_connect_context(gctx, i) != 0 )
 	{
 	  eret = GASPI_ERR_DEVICE;
 	}
@@ -145,7 +145,7 @@ pgaspi_local_disconnect(const gaspi_rank_t rank, const gaspi_timeout_t timeout_m
       return GASPI_SUCCESS;
     }
 
-  eret = pgaspi_dev_disconnect_context(i);
+  eret = pgaspi_dev_disconnect_context(gctx, i);
   if( eret == GASPI_SUCCESS)
     {
       gctx->ep_conn[i].istat = GASPI_ENDPOINT_NOT_CREATED;

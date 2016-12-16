@@ -19,13 +19,12 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_TCP.h"
 
 gaspi_return_t
-pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
+pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
+			     const gaspi_segment_id_t segment_id,
 			     const gaspi_offset_t offset,
 			     const gaspi_rank_t rank,
 			     const gaspi_atomic_value_t val_add)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   tcp_dev_wr_t wr =
     {
       .wr_id       = rank,
@@ -73,14 +72,13 @@ pgaspi_dev_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 }
 
 gaspi_return_t
-pgaspi_dev_atomic_compare_swap (const gaspi_segment_id_t segment_id,
+pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
+				const gaspi_segment_id_t segment_id,
 				const gaspi_offset_t offset,
 				const gaspi_rank_t rank,
 				const gaspi_atomic_value_t comparator,
 				const gaspi_atomic_value_t val_new)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   tcp_dev_wr_t wr =
     {
       .wr_id       = rank,

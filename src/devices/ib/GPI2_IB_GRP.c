@@ -27,10 +27,9 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 /* Group utilities */
 int
-pgaspi_dev_poll_groups(void)
+pgaspi_dev_poll_groups(gaspi_context_t * const gctx)
 {
   int i;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   const int pret = ibv_poll_cq( glb_gaspi_ctx_ib.scqGroups,
 				gctx->ne_count_grp,
@@ -59,13 +58,12 @@ pgaspi_dev_poll_groups(void)
 }
 
 int
-pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_addr, unsigned char group)
+pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
+			    void *local_addr, int length, int dst, void *remote_addr, unsigned char group)
 {
-
   struct ibv_sge slist;
   struct ibv_send_wr swr;
   struct ibv_send_wr *bad_wr_send;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
   slist.addr = (uintptr_t) local_addr;
   slist.length = length;

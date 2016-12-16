@@ -20,10 +20,9 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Types.h"
 
 int
-pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_addr, int g)
+pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
+			    void *local_addr, int length, int dst, void *remote_addr, int g)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   tcp_dev_wr_t wr =
     {
       .cq_handle   = glb_gaspi_ctx_tcp.scqGroups->num,
@@ -50,10 +49,8 @@ pgaspi_dev_post_group_write(void *local_addr, int length, int dst, void *remote_
 
 /* TODO: number of elems to poll as arg */
 int
-pgaspi_dev_poll_groups(void)
+pgaspi_dev_poll_groups(gaspi_context_t * const gctx)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   const int nr = gctx->ne_count_grp;
   int i, ne = 0;
   tcp_dev_wc_t wc;

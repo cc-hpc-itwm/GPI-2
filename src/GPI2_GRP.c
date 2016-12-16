@@ -664,7 +664,8 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	    }
 	}
 
-      if( pgaspi_dev_post_group_write((void *) barrier_ptr, 1, dst,
+      if( pgaspi_dev_post_group_write(gctx,
+				      (void *) barrier_ptr, 1, dst,
 				      (void *) GPI2_GRP_REMOTE_SYNC_ADDR(grp_ctx, dst),
 				      g) != 0)
 	{
@@ -690,7 +691,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
      e.g. with a small, user-defined queue size and a large number of
      ranks. */
 
-  const int pret = pgaspi_dev_poll_groups();
+  const int pret = pgaspi_dev_poll_groups(gctx);
   if( pret < 0 )
     {
       unlock_gaspi (&grp_ctx->gl);
@@ -743,7 +744,7 @@ _gaspi_allreduce_write_and_sync(gaspi_context_t * const gctx,
     }
 
   void* remote_addr = (void *)(grp_ctx->rrcd[dst].data.addr + (COLL_MEM_RECV + (TOGGLE_SIZE * bid + grp_ctx->togle) * GPI2_REDUX_BUF_SIZE));
-  if( pgaspi_dev_post_group_write(send_ptr, buf_size, dst, remote_addr, g) != 0 )
+  if( pgaspi_dev_post_group_write(gctx, send_ptr, buf_size, dst, remote_addr, g) != 0 )
     {
       gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
       return GASPI_ERR_DEVICE;
@@ -752,7 +753,7 @@ _gaspi_allreduce_write_and_sync(gaspi_context_t * const gctx,
   unsigned char *barrier_ptr = GPI2_GRP_LOCAL_SYNC_ADDR(grp_ctx);
   barrier_ptr[0] = grp_ctx->barrier_cnt;
 
-  if( pgaspi_dev_post_group_write(barrier_ptr, 1, dst, (void*) GPI2_GRP_REMOTE_SYNC_ADDR(grp_ctx, dst), g) != 0 )
+  if( pgaspi_dev_post_group_write(gctx, barrier_ptr, 1, dst, (void*) GPI2_GRP_REMOTE_SYNC_ADDR(grp_ctx, dst), g) != 0 )
     {
       gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
       return GASPI_ERR_DEVICE;
@@ -966,7 +967,7 @@ _gaspi_allreduce (gaspi_context_t * const gctx,
 	}
     }
 
-  const int pret = pgaspi_dev_poll_groups();
+  const int pret = pgaspi_dev_poll_groups(gctx);
   if( pret < 0 )
     {
       return GASPI_ERR_DEVICE;

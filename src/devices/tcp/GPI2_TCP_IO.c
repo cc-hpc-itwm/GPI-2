@@ -20,7 +20,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 /* Communication functions */
 gaspi_return_t
-pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_write (gaspi_context_t * const gctx,
+		  const gaspi_segment_id_t segment_id_local,
 		  const gaspi_offset_t offset_local,
 		  const gaspi_rank_t rank,
 		  const gaspi_segment_id_t segment_id_remote,
@@ -28,8 +29,6 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
 		  const gaspi_size_t size,
 		  const gaspi_queue_id_t queue)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   if( gctx->ne_count_c[queue] == gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
@@ -60,7 +59,8 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
 }
 
 gaspi_return_t
-pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_read (gaspi_context_t * const gctx,
+		 const gaspi_segment_id_t segment_id_local,
 		 const gaspi_offset_t offset_local,
 		 const gaspi_rank_t rank,
 		 const gaspi_segment_id_t segment_id_remote,
@@ -68,8 +68,6 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
 		 const gaspi_size_t size,
 		 const gaspi_queue_id_t queue)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   if( gctx->ne_count_c[queue] == gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
@@ -100,13 +98,12 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
 }
 
 gaspi_return_t
-pgaspi_dev_purge (const gaspi_queue_id_t queue,
+pgaspi_dev_purge (gaspi_context_t * const gctx,
+		  const gaspi_queue_id_t queue,
 		  const gaspi_timeout_t timeout_ms)
 {
   int ne = 0, i;
   tcp_dev_wc_t wc;
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   const int nr = gctx->ne_count_c[queue];
 
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
@@ -137,11 +134,10 @@ pgaspi_dev_purge (const gaspi_queue_id_t queue,
 }
 
 gaspi_return_t
-pgaspi_dev_wait (const gaspi_queue_id_t queue,
+pgaspi_dev_wait (gaspi_context_t * const gctx,
+		 const gaspi_queue_id_t queue,
 		 const gaspi_timeout_t timeout_ms)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   int ne = 0, i;
   tcp_dev_wc_t wc;
 
@@ -180,14 +176,13 @@ pgaspi_dev_wait (const gaspi_queue_id_t queue,
 }
 
 gaspi_return_t
-pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
+pgaspi_dev_notify (gaspi_context_t * const gctx,
+		   const gaspi_segment_id_t segment_id_remote,
 		   const gaspi_rank_t rank,
 		   const gaspi_notification_id_t notification_id,
 		   const gaspi_notification_t notification_value,
 		   const gaspi_queue_id_t queue)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   if( gctx->ne_count_c[queue] == gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
@@ -220,7 +215,8 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
 }
 
 gaspi_return_t
-pgaspi_dev_write_list (const gaspi_number_t num,
+pgaspi_dev_write_list (gaspi_context_t * const gctx,
+		       const gaspi_number_t num,
 		       gaspi_segment_id_t * const segment_id_local,
 		       gaspi_offset_t * const offset_local,
 		       const gaspi_rank_t rank,
@@ -229,7 +225,6 @@ pgaspi_dev_write_list (const gaspi_number_t num,
 		       gaspi_size_t * const size,
 		       const gaspi_queue_id_t queue)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
   gaspi_number_t i;
 
   if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 1) )
@@ -265,7 +260,8 @@ pgaspi_dev_write_list (const gaspi_number_t num,
 }
 
 gaspi_return_t
-pgaspi_dev_read_list (const gaspi_number_t num,
+pgaspi_dev_read_list (gaspi_context_t * const gctx,
+		      const gaspi_number_t num,
 		      gaspi_segment_id_t * const segment_id_local,
 		      gaspi_offset_t * const offset_local,
 		      const gaspi_rank_t rank,
@@ -274,7 +270,6 @@ pgaspi_dev_read_list (const gaspi_number_t num,
 		      gaspi_size_t * const size,
 		      const gaspi_queue_id_t queue)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
   gaspi_number_t i;
 
   if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 1) )
@@ -310,7 +305,8 @@ pgaspi_dev_read_list (const gaspi_number_t num,
 }
 
 gaspi_return_t
-pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_write_notify (gaspi_context_t * const gctx,
+			 const gaspi_segment_id_t segment_id_local,
 			 const gaspi_offset_t offset_local,
 			 const gaspi_rank_t rank,
 			 const gaspi_segment_id_t segment_id_remote,
@@ -320,14 +316,13 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
 			 const gaspi_notification_t notification_value,
 			 const gaspi_queue_id_t queue)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - 1) )
     {
       return GASPI_QUEUE_FULL;
     }
 
-  gaspi_return_t ret = pgaspi_dev_write(segment_id_local, offset_local, rank,
+  gaspi_return_t ret = pgaspi_dev_write(gctx,
+					segment_id_local, offset_local, rank,
 					segment_id_remote, offset_remote, size,
 					queue);
 
@@ -336,11 +331,12 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
       return ret;
     }
 
-  return pgaspi_dev_notify(segment_id_remote, rank, notification_id, notification_value, queue);
+  return pgaspi_dev_notify(gctx, segment_id_remote, rank, notification_id, notification_value, queue);
 }
 
 gaspi_return_t
-pgaspi_dev_write_list_notify (const gaspi_number_t num,
+pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
+			      const gaspi_number_t num,
 			      gaspi_segment_id_t * const segment_id_local,
 			      gaspi_offset_t * const offset_local,
 			      const gaspi_rank_t rank,
@@ -352,15 +348,14 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
 			      const gaspi_notification_t notification_value,
 			      const gaspi_queue_id_t queue)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 2) )
     {
       return GASPI_QUEUE_FULL;
     }
 
   //TODO: check different with and without extra function calls
-  gaspi_return_t ret =  pgaspi_dev_write_list(num, segment_id_local, offset_local, rank,
+  gaspi_return_t ret =  pgaspi_dev_write_list(gctx,
+					      num, segment_id_local, offset_local, rank,
 					      segment_id_remote, offset_remote, size,
 					      queue);
 
@@ -369,11 +364,12 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
       return ret;
     }
 
-  return pgaspi_dev_notify(segment_id_notification, rank, notification_id, notification_value, queue);
+  return pgaspi_dev_notify(gctx, segment_id_notification, rank, notification_id, notification_value, queue);
 }
 
 gaspi_return_t
-pgaspi_dev_read_notify (const gaspi_segment_id_t segment_id_local,
+pgaspi_dev_read_notify (gaspi_context_t * const gctx,
+			const gaspi_segment_id_t segment_id_local,
 			const gaspi_offset_t offset_local,
 			const gaspi_rank_t rank,
 			const gaspi_segment_id_t segment_id_remote,
@@ -382,14 +378,13 @@ pgaspi_dev_read_notify (const gaspi_segment_id_t segment_id_local,
 			const gaspi_notification_id_t notification_id,
 			const gaspi_queue_id_t queue)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   if( gctx->ne_count_c[queue] == ( gctx->config->queue_size_max - 1) )
     {
       return GASPI_QUEUE_FULL;
     }
 
-  gaspi_return_t ret = pgaspi_dev_read(segment_id_local, offset_local, rank,
+  gaspi_return_t ret = pgaspi_dev_read(gctx,
+				       segment_id_local, offset_local, rank,
 				       segment_id_remote, offset_remote, size,
 				       queue);
 
@@ -423,7 +418,8 @@ pgaspi_dev_read_notify (const gaspi_segment_id_t segment_id_local,
 }
 
 gaspi_return_t
-pgaspi_dev_read_list_notify (const gaspi_number_t num,
+pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
+			     const gaspi_number_t num,
 			     gaspi_segment_id_t * const segment_id_local,
 			     gaspi_offset_t * const offset_local,
 			     const gaspi_rank_t rank,
@@ -434,14 +430,13 @@ pgaspi_dev_read_list_notify (const gaspi_number_t num,
 			     const gaspi_notification_id_t notification_id,
 			     const gaspi_queue_id_t queue)
 {
-  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-
   if( gctx->ne_count_c[queue] == ( gctx->config->queue_size_max - num - 2) )
     {
       return GASPI_QUEUE_FULL;
     }
 
-  gaspi_return_t ret = pgaspi_dev_read_list(num, segment_id_local, offset_local, rank,
+  gaspi_return_t ret = pgaspi_dev_read_list(gctx,
+					    num, segment_id_local, offset_local, rank,
 					    segment_id_remote, offset_remote, size,
 					    queue);
   if( ret != GASPI_SUCCESS )

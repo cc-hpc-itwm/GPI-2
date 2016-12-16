@@ -63,7 +63,8 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 	}
     }
 
-  eret = pgaspi_dev_passive_send(segment_id_local, offset_local, rank,
+  eret = pgaspi_dev_passive_send(gctx,
+				 segment_id_local, offset_local, rank,
 				 size, timeout_ms);
 
   if( eret == GASPI_ERROR )
@@ -98,7 +99,8 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
       return GASPI_TIMEOUT;
     }
 
-  eret = pgaspi_dev_passive_receive(segment_id_local, offset_local, rem_rank,
+  eret = pgaspi_dev_passive_receive(gctx,
+				    segment_id_local, offset_local, rem_rank,
 				    size, timeout_ms);
 
   unlock_gaspi (&gctx->lockPR);

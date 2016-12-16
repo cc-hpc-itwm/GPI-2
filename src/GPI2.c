@@ -138,7 +138,7 @@ pgaspi_init_core(gaspi_context_t * const gctx)
       return GASPI_ERR_MEMALLOC;
     }
 
-  if( pgaspi_dev_init_core(gctx->config) != 0 )
+  if( pgaspi_dev_init_core(gctx) != 0 )
     {
       return GASPI_ERR_DEVICE;
     }
@@ -413,7 +413,7 @@ pgaspi_cleanup_core(gaspi_context_t * const gctx)
       gaspi_uint q;
       for (q = gctx->config->queue_num; q < gctx->num_queues; q ++)
 	{
-	  if( pgaspi_dev_comm_queue_delete(q) != 0)
+	  if( pgaspi_dev_comm_queue_delete(gctx, q) != 0)
 	    {
 	      gaspi_print_error ("Failed to destroy queue.");
 	      return -1;
@@ -472,7 +472,7 @@ pgaspi_cleanup_core(gaspi_context_t * const gctx)
   lock_gaspi_tout (&(gctx->ctx_lock), GASPI_BLOCK);
 
   /* Device clean-up */
-  if( pgaspi_dev_cleanup_core(gctx->config) != 0 )
+  if( pgaspi_dev_cleanup_core(gctx) != 0 )
     {
       return GASPI_ERR_DEVICE;
     }
