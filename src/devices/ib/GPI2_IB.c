@@ -526,15 +526,17 @@ pgaspi_dev_init_core (gaspi_config_t *gaspi_cfg)
 }
 
 static struct ibv_qp *
-_pgaspi_dev_create_qp(gaspi_context_t const * const gctx, struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv_srq *srq)
+_pgaspi_dev_create_qp(gaspi_context_t const * const gctx,
+		      struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv_srq *srq,
+		      uint32_t depth)
 {
   struct ibv_qp *qp;
 
   /* Set initial attributes */
   struct ibv_qp_init_attr qpi_attr;
   memset (&qpi_attr, 0, sizeof (struct ibv_qp_init_attr));
-  qpi_attr.cap.max_send_wr = gctx->config->queue_size_max;
-  qpi_attr.cap.max_recv_wr = gctx->config->queue_size_max;
+  qpi_attr.cap.max_send_wr = depth;
+  qpi_attr.cap.max_recv_wr = depth;
   qpi_attr.cap.max_send_sge = 1;
   qpi_attr.cap.max_recv_sge = 1;
   qpi_attr.cap.max_inline_data = MAX_INLINE_BYTES;
@@ -583,7 +585,9 @@ _pgaspi_dev_create_qp(gaspi_context_t const * const gctx, struct ibv_cq *send_cq
 
 #ifdef GPI2_EXP_VERBS
 static struct ibv_qp*
-_pgaspi_dev_create_qp_exp(gaspi_context_t const * const gctx, struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv_srq *srq)
+_pgaspi_dev_create_qp_exp(gaspi_context_t const * const gctx,
+			  struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv_srq *srq,
+			  uint32_t depth)
 {
   struct ibv_exp_qp_init_attr attr;
   struct ibv_qp* qp = NULL;
@@ -593,9 +597,9 @@ _pgaspi_dev_create_qp_exp(gaspi_context_t const * const gctx, struct ibv_cq *sen
   memset(&dev_attr, 0, sizeof(dev_attr));
 
   attr.pd = glb_gaspi_ctx_ib.pd;
-  attr.cap.max_send_wr = gctx->config->queue_size_max;
-  attr.cap.max_recv_wr = gctx->config->queue_size_max;
-  attr.cap.max_send_wr  = gctx->config->queue_size_max;
+  attr.cap.max_send_wr = depth;
+  attr.cap.max_recv_wr = depth;
+  attr.cap.max_send_wr = depth;
   attr.cap.max_send_sge = 1;
   attr.cap.max_inline_data = MAX_INLINE_BYTES;
 
@@ -738,7 +742,8 @@ pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_
       return -1;
     }
 
-  glb_gaspi_ctx_ib.qpC[id][remote_node] = _pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqC[id], glb_gaspi_ctx_ib.scqC[id], NULL);
+  glb_gaspi_ctx_ib.qpC[id][remote_node] =
+    _pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqC[id], glb_gaspi_ctx_ib.scqC[id], NULL, gctx->config->queue_size_max);
   if( glb_gaspi_ctx_ib.qpC[id][remote_node] == NULL )
     {
       gaspi_print_error ("Failed to create QP (libibverbs)");
@@ -760,11 +765,11 @@ pgaspi_dev_create_endpoint(const int i)
   /* Groups QP*/
 #ifdef GPI2_EXP_VERBS
   glb_gaspi_ctx_ib.qpGroups[i] =
-    _pgaspi_dev_create_qp_exp(gctx, glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL);
+    _pgaspi_dev_create_qp_exp(gctx, glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL, gctx->config->queue_size_max);
 
 #else
   glb_gaspi_ctx_ib.qpGroups[i] =
-    _pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL);
+    _pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL, gctx->config->queue_size_max);
 
   if( glb_gaspi_ctx_ib.qpGroups[i] == NULL )
     {
@@ -778,7 +783,7 @@ pgaspi_dev_create_endpoint(const int i)
   for(c = 0; c < gctx->config->queue_num; c++)
     {
       glb_gaspi_ctx_ib.qpC[c][i] =
-	_pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqC[c], glb_gaspi_ctx_ib.scqC[c], NULL);
+	_pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqC[c], glb_gaspi_ctx_ib.scqC[c], NULL, gctx->config->queue_size_max);
 
       if( glb_gaspi_ctx_ib.qpC[c][i] == NULL )
 	return -1;
@@ -788,7 +793,7 @@ pgaspi_dev_create_endpoint(const int i)
 
   /* Passive QP */
   glb_gaspi_ctx_ib.qpP[i] =
-    _pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqP, glb_gaspi_ctx_ib.rcqP, glb_gaspi_ctx_ib.srqP);
+    _pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqP, glb_gaspi_ctx_ib.rcqP, glb_gaspi_ctx_ib.srqP,gctx->config->queue_size_max);
 
   if( glb_gaspi_ctx_ib.qpP[i] == NULL )
     return -1;
