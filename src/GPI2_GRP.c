@@ -525,6 +525,7 @@ gaspi_return_t
 pgaspi_group_max (gaspi_number_t * const group_max)
 {
   gaspi_verify_null_ptr(group_max);
+  gaspi_verify_init("gaspi_group_max");
 
   *group_max = GASPI_MAX_GROUPS;
 
@@ -536,6 +537,7 @@ gaspi_return_t
 pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
 {
   gaspi_verify_null_ptr(buf_size);
+  gaspi_verify_init("gaspi_allreduce_buf_size");
 
   *buf_size = GPI2_REDUX_BUF_SIZE;
 
@@ -547,6 +549,7 @@ gaspi_return_t
 pgaspi_allreduce_elem_max (gaspi_number_t * const elem_max)
 {
   gaspi_verify_null_ptr(elem_max);
+  gaspi_verify_init("gaspi_allreduce_elem_max");
 
   *elem_max = GPI2_ALLREDUCE_ELEM_MAX;
 

@@ -689,6 +689,8 @@ gaspi_return_t
 pgaspi_network_type (gaspi_network_t * const network_type)
 {
   gaspi_verify_null_ptr(network_type);
+  gaspi_verify_init("gaspi_network_type");
+
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   *network_type = gctx->config->network;

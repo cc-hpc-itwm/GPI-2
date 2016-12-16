@@ -31,6 +31,8 @@ pgaspi_queue_size (const gaspi_queue_id_t queue,
 {
   gaspi_verify_queue(queue);
   gaspi_verify_null_ptr(queue_size);
+  gaspi_verify_init("gaspi_queue_size");
+
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   *queue_size = (gaspi_number_t) gctx->ne_count_c[queue];
@@ -43,6 +45,8 @@ gaspi_return_t
 pgaspi_queue_num (gaspi_number_t * const queue_num)
 {
   gaspi_verify_null_ptr(queue_num);
+  gaspi_verify_init("gaspi_queue_num");
+
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   *queue_num = gctx->num_queues;
@@ -55,6 +59,8 @@ gaspi_return_t
 pgaspi_queue_size_max (gaspi_number_t * const queue_size_max)
 {
   gaspi_verify_null_ptr(queue_size_max);
+  gaspi_verify_init("gaspi_queue_size_max");
+
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   *queue_size_max = gctx->config->queue_size_max;
@@ -66,6 +72,7 @@ gaspi_return_t
 pgaspi_transfer_size_min (gaspi_size_t * const transfer_size_min)
 {
   gaspi_verify_null_ptr(transfer_size_min);
+  gaspi_verify_init("gaspi_transfer_size_min");
 
   *transfer_size_min = 1;
   return GASPI_SUCCESS;
@@ -76,6 +83,7 @@ gaspi_return_t
 pgaspi_transfer_size_max (gaspi_size_t * const transfer_size_max)
 {
   gaspi_verify_null_ptr(transfer_size_max);
+  gaspi_verify_init("gaspi_transfer_size_max");
 
   *transfer_size_max = GASPI_MAX_TSIZE_C;
   return GASPI_SUCCESS;
@@ -86,6 +94,7 @@ gaspi_return_t
 pgaspi_notification_num (gaspi_number_t * const notification_num)
 {
   gaspi_verify_null_ptr(notification_num);
+  gaspi_verify_init("gaspi_notification_num");
 
   *notification_num = GASPI_MAX_NOTIFICATION;
 
@@ -97,6 +106,7 @@ gaspi_return_t
 pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
 {
   gaspi_verify_null_ptr(elem_max);
+  gaspi_verify_init("gaspi_rw_list_elem_max");
 
   *elem_max = ((1 << 8) - 1);
   return GASPI_SUCCESS;
@@ -107,6 +117,7 @@ gaspi_return_t
 pgaspi_queue_max(gaspi_number_t * const queue_max)
 {
   gaspi_verify_null_ptr(queue_max);
+  gaspi_verify_init("gaspi_queue_max");
 
   *queue_max = GASPI_MAX_QP;
 
