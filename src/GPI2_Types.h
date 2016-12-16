@@ -142,6 +142,9 @@ typedef struct
   int ne_count_c[GASPI_MAX_QP];
   unsigned char ne_count_p[8192]; //TODO: dynamic size
 
+  /* GASPI configuration */
+  gaspi_config_t* config;
+
 } gaspi_context_t;
 
 #endif /* _GPI2_TYPES_H_ */

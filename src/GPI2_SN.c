@@ -48,8 +48,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 /* Status and return value of SN thread: mostly for error detection */
 volatile enum gaspi_sn_status gaspi_sn_status = GASPI_SN_STATE_INIT;
 
-extern gaspi_config_t glb_gaspi_cfg;
-
 volatile int _gaspi_sn_stop = 0;
 
 int
@@ -407,7 +405,7 @@ gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
 static int
 gaspi_sn_recv_topology(gaspi_context_t * const gctx)
 {
-  const int port_to_wait = glb_gaspi_cfg.sn_port + 64 + gctx->localSocket;
+  const int port_to_wait = gctx->config->sn_port + 64 + gctx->localSocket;
   int nsock =  _gaspi_sn_wait_connection(port_to_wait);
   if( nsock < 0 )
     {
@@ -463,7 +461,7 @@ static int
 gaspi_sn_send_topology(gaspi_context_t * const gctx, const int i, const gaspi_timeout_t timeout_ms)
 {
   if( (gctx->sockfd[i] = gaspi_sn_connect2port( pgaspi_gethostname(i),
-						(glb_gaspi_cfg.sn_port + 64 + gctx->poff[i]),
+						(gctx->config->sn_port + 64 + gctx->poff[i]),
 						timeout_ms)) < 0 )
     {
       gaspi_print_error("Failed to connect to %d", i);
@@ -639,7 +637,7 @@ gaspi_sn_connect_to_rank(const gaspi_rank_t rank, const gaspi_timeout_t timeout_
   while(gctx->sockfd[rank] == -1)
     {
       gctx->sockfd[rank] = gaspi_sn_connect2port(pgaspi_gethostname(rank),
-						 glb_gaspi_cfg.sn_port + gctx->poff[rank],
+						 gctx->config->sn_port + gctx->poff[rank],
 						 timeout_ms);
 
       if( -2 == gctx->sockfd[rank] )
@@ -1184,9 +1182,10 @@ gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gasp
   if( 1 == ret )
     eret = GASPI_TIMEOUT;
 
-  if( !glb_gaspi_cfg.sn_persistent )
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
+
+  if( !gctx->config->sn_persistent )
     {
-      gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
       if( gaspi_sn_close(gctx->sockfd[rank]) != 0 )
 	{
@@ -1290,7 +1289,7 @@ gaspi_sn_backend(void *arg)
 
   struct sockaddr_in listeningAddress;
   listeningAddress.sin_family = AF_INET;
-  listeningAddress.sin_port = htons((glb_gaspi_cfg.sn_port + gctx->localSocket));
+  listeningAddress.sin_port = htons((gctx->config->sn_port + gctx->localSocket));
   listeningAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 
   if( bind(lsock, (struct sockaddr*)(&listeningAddress), sizeof(listeningAddress) ) < 0)

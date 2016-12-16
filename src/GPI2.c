@@ -130,7 +130,7 @@ pgaspi_init_core(gaspi_context_t * const gctx)
     }
 
   /* Set number of "created" communication queues */
-  gctx->num_queues = glb_gaspi_cfg.queue_num;
+  gctx->num_queues = gctx->config->queue_num;
 
   gctx->ep_conn = (gaspi_endpoint_conn_t *) calloc(gctx->tnc, sizeof(gaspi_endpoint_conn_t));
   if( gctx->ep_conn == NULL )
@@ -138,7 +138,7 @@ pgaspi_init_core(gaspi_context_t * const gctx)
       return GASPI_ERR_MEMALLOC;
     }
 
-  if( pgaspi_dev_init_core(&glb_gaspi_cfg) != 0 )
+  if( pgaspi_dev_init_core(gctx->config) != 0 )
     {
       return GASPI_ERR_DEVICE;
     }
@@ -255,6 +255,8 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       return GASPI_TIMEOUT;
     }
 
+  gctx->config = &glb_gaspi_cfg;
+
   if( gctx->sn_init == 0 )
     {
       struct utsname mbuf;
@@ -338,7 +340,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   unlock_gaspi (&(gctx->ctx_lock));
 
-  if( glb_gaspi_cfg.build_infrastructure )
+  if( gctx->config->build_infrastructure )
     {
       eret = pgaspi_group_all_local_create(gctx, timeout_ms);
       if( eret != GASPI_SUCCESS )
@@ -347,7 +349,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	}
 
       /* configuration tells us to pre-connect */
-      if( GASPI_TOPOLOGY_STATIC == glb_gaspi_cfg.build_infrastructure )
+      if( GASPI_TOPOLOGY_STATIC == gctx->config->build_infrastructure )
 	{
 	  for(i = gctx->rank; i >= 0; i--)
 	    {
@@ -406,10 +408,10 @@ pgaspi_cleanup_core(gaspi_context_t * const gctx)
     }
 
   /* Delete extra queues created */
-  if( gctx->num_queues != glb_gaspi_cfg.queue_num )
+  if( gctx->num_queues != gctx->config->queue_num )
     {
       gaspi_uint q;
-      for (q = glb_gaspi_cfg.queue_num; q < gctx->num_queues; q ++)
+      for (q = gctx->config->queue_num; q < gctx->num_queues; q ++)
 	{
 	  if( pgaspi_dev_comm_queue_delete(q) != 0)
 	    {
@@ -470,7 +472,7 @@ pgaspi_cleanup_core(gaspi_context_t * const gctx)
   lock_gaspi_tout (&(gctx->ctx_lock), GASPI_BLOCK);
 
   /* Device clean-up */
-  if( pgaspi_dev_cleanup_core(&glb_gaspi_cfg) != 0 )
+  if( pgaspi_dev_cleanup_core(gctx->config) != 0 )
     {
       return GASPI_ERR_DEVICE;
     }
@@ -674,8 +676,9 @@ gaspi_return_t
 pgaspi_network_type (gaspi_network_t * const network_type)
 {
   gaspi_verify_null_ptr(network_type);
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
-  *network_type = glb_gaspi_cfg.network;
+  *network_type = gctx->config->network;
   return GASPI_SUCCESS;
 }
 

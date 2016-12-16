@@ -23,8 +23,6 @@
 
 #include "GPI2_SN.h"
 
-extern gaspi_config_t glb_gaspi_cfg;
-
 /* Queue utilities and IO limits */
 #pragma weak gaspi_queue_size = pgaspi_queue_size
 gaspi_return_t
@@ -57,8 +55,9 @@ gaspi_return_t
 pgaspi_queue_size_max (gaspi_number_t * const queue_size_max)
 {
   gaspi_verify_null_ptr(queue_size_max);
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
-  *queue_size_max = glb_gaspi_cfg.queue_size_max;
+  *queue_size_max = gctx->config->queue_size_max;
   return GASPI_SUCCESS;
 }
 

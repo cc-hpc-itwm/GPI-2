@@ -28,8 +28,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Utility.h"
 #include "tcp_device.h"
 
-extern gaspi_config_t glb_gaspi_cfg;
-
 /* TODO: empty functions smell */
 inline char *
 pgaspi_dev_get_rrcd(int rank)
@@ -91,9 +89,11 @@ pgaspi_dev_comm_queue_delete(const unsigned int id)
 int
 pgaspi_dev_comm_queue_create(const unsigned int id, const unsigned short remote_node)
 {
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+
   if( glb_gaspi_ctx_tcp.scqC[id] == NULL)
     {
-      glb_gaspi_ctx_tcp.scqC[id] = tcp_dev_create_cq(glb_gaspi_cfg.queue_size_max, NULL);
+      glb_gaspi_ctx_tcp.scqC[id] = tcp_dev_create_cq(gctx->config->queue_size_max, NULL);
       if( glb_gaspi_ctx_tcp.scqC[id] == NULL )
 	{
 	  gaspi_print_error("Failed to create IO completion queue.");

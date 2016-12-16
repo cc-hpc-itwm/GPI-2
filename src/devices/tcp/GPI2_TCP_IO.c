@@ -18,8 +18,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GASPI.h"
 #include "GPI2_TCP.h"
 
-extern gaspi_config_t glb_gaspi_cfg;
-
 /* Communication functions */
 gaspi_return_t
 pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
@@ -32,7 +30,7 @@ pgaspi_dev_write (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  if( gctx->ne_count_c[queue] == glb_gaspi_cfg.queue_size_max )
+  if( gctx->ne_count_c[queue] == gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -72,7 +70,7 @@ pgaspi_dev_read (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  if( gctx->ne_count_c[queue] == glb_gaspi_cfg.queue_size_max )
+  if( gctx->ne_count_c[queue] == gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -190,7 +188,7 @@ pgaspi_dev_notify (const gaspi_segment_id_t segment_id_remote,
 {
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  if( gctx->ne_count_c[queue] == glb_gaspi_cfg.queue_size_max )
+  if( gctx->ne_count_c[queue] == gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -234,7 +232,7 @@ pgaspi_dev_write_list (const gaspi_number_t num,
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
   gaspi_number_t i;
 
-  if( gctx->ne_count_c[queue] == (glb_gaspi_cfg.queue_size_max - num - 1) )
+  if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 1) )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -279,7 +277,7 @@ pgaspi_dev_read_list (const gaspi_number_t num,
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
   gaspi_number_t i;
 
-  if( gctx->ne_count_c[queue] == (glb_gaspi_cfg.queue_size_max - num - 1) )
+  if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 1) )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -324,7 +322,7 @@ pgaspi_dev_write_notify (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  if( gctx->ne_count_c[queue] == (glb_gaspi_cfg.queue_size_max - 1) )
+  if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - 1) )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -356,7 +354,7 @@ pgaspi_dev_write_list_notify (const gaspi_number_t num,
 {
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  if( gctx->ne_count_c[queue] == (glb_gaspi_cfg.queue_size_max - num - 2) )
+  if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 2) )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -386,7 +384,7 @@ pgaspi_dev_read_notify (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  if( gctx->ne_count_c[queue] == ( glb_gaspi_cfg.queue_size_max - 1) )
+  if( gctx->ne_count_c[queue] == ( gctx->config->queue_size_max - 1) )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -438,7 +436,7 @@ pgaspi_dev_read_list_notify (const gaspi_number_t num,
 {
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
-  if( gctx->ne_count_c[queue] == ( glb_gaspi_cfg.queue_size_max - num - 2) )
+  if( gctx->ne_count_c[queue] == ( gctx->config->queue_size_max - num - 2) )
     {
       return GASPI_QUEUE_FULL;
     }
