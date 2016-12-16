@@ -33,6 +33,16 @@ program main
   type(c_ptr) :: seg_ptr
   integer :: seg_int_size, recvmsgs, i
 
+  !init
+  ret = gaspi_proc_init(GASPI_BLOCK)
+  if(ret .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_proc_init failed"
+     call exit(-1)
+  end if
+
+  ret = gaspi_initialized(initialized)
+  write(*,*) "Is initialized(after): ", initialized
+
   !capabilities
   ret = gaspi_transfer_size_min(transfer)
   write(*,*) "Min transfer: ", transfer
@@ -64,16 +74,6 @@ program main
 
   ret = gaspi_initialized(initialized)
   write(*,*) "Is initialized(before): ", initialized
-
-  !init
-  ret = gaspi_proc_init(GASPI_BLOCK)
-  if(ret .ne. GASPI_SUCCESS) then
-     write(*,*) "gaspi_proc_init failed"
-     call exit(-1)
-  end if
-
-  ret = gaspi_initialized(initialized)
-  write(*,*) "Is initialized(after): ", initialized
 
   ret = gaspi_proc_rank(rank)
   ret = gaspi_proc_num(nprocs)

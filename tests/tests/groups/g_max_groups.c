@@ -9,11 +9,11 @@ int main(int argc, char *argv[])
 
   TSUITE_INIT(argc, argv);
 
-  gaspi_group_max(&max_groups);
-
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
   ASSERT(gaspi_proc_num(&nprocs));
+
+  gaspi_group_max(&max_groups);
 
   for(i = 0; i < max_groups - 1; i++)
     {
