@@ -34,6 +34,18 @@ swap_uint64( uint64_t val )
 }
 #endif
 
+#pragma weak gaspi_atomic_max = pgaspi_atomic_max
+gaspi_return_t
+pgaspi_atomic_max(gaspi_atomic_value_t *max_value)
+{
+  gaspi_verify_init("gaspi_atomic_max");
+  gaspi_verify_null_ptr(max_value);
+
+  *max_value = 0xffffffffffffffff;
+
+  return GASPI_SUCCESS;
+}
+
 #pragma weak gaspi_atomic_fetch_add = pgaspi_atomic_fetch_add
 gaspi_return_t
 pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,

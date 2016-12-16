@@ -384,6 +384,19 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   return eret;
 }
 
+gaspi_return_t
+pgaspi_build_infrastructure(gaspi_number_t *build)
+{
+  gaspi_verify_init("gaspi_build_infrastructure");
+  gaspi_verify_null_ptr(build);
+
+  gaspi_context_t * const gctx = &glb_gaspi_ctx;
+
+  *build = gctx->config->build_infrastructure;
+
+  return GASPI_SUCCESS;
+}
+
 #pragma weak gaspi_initialized = pgaspi_initialized
 gaspi_return_t
 pgaspi_initialized (gaspi_number_t *initialized)

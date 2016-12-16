@@ -1081,6 +1081,16 @@ extern "C"
    */
   gaspi_return_t gaspi_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max);
 
+  /** Maximum value an gaspi_atomic_value_t can hold.
+   *
+   *
+   * @param max_value Output parameter with the maximum value allowed
+   * for atomic operations.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_atomic_max(gaspi_atomic_value_t *max_value);
+
   /** Get the internal buffer size for gaspi_allreduce_user.
    *
    *
@@ -1116,6 +1126,15 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t gaspi_network_type (gaspi_network_t * const network_type);
+
+  /** Get current value of config build_infrastructure.
+   *
+   *
+   * @param build Output parameter with the value.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_build_infrastructure (gaspi_number_t * const build);
 
   /** Get the number of cycles (ticks).
    *
