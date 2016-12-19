@@ -568,8 +568,9 @@ extern "C"
    * @param queue The queue where to post the write request.
    * @param timeout_ms Timeout in milliseconds (or GASPI_BLOCK/GASPI_TEST).
    *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
-   * error, GASPI_TIMEOUT in case of timeout.
+   * @return GASPI_SUCCESS in case of success, GASPI_QUEUE_FULL if the
+   * requested could not be posted because the provided queue is full,
+   * GASPI_ERROR in case of error, GASPI_TIMEOUT in case of timeout.
    */
   gaspi_return_t gaspi_write (const gaspi_segment_id_t segment_id_local,
 			      const gaspi_offset_t offset_local,
@@ -590,10 +591,10 @@ extern "C"
    * @param size The size of data to read.
    * @param queue The queue where to post the read request.
    * @param timeout_ms Timeout in milliseconds (or GASPI_BLOCK/GASPI_TEST).
-
    *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
-   * error, GASPI_TIMEOUT in case of timeout.
+   * @return GASPI_SUCCESS in case of success, GASPI_QUEUE_FULL if the
+   * requested could not be posted because the provided queue is full,
+   * GASPI_ERROR in case of error, GASPI_TIMEOUT in case of timeout.
    */
   gaspi_return_t gaspi_read (const gaspi_segment_id_t segment_id_local,
 			     const gaspi_offset_t offset_local,
@@ -617,8 +618,9 @@ extern "C"
    * @param queue The queue where to post the list.
    * @param timeout_ms Timeout in milliseconds (or GASPI_BLOCK/GASPI_TEST).
    *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
-   * error, GASPI_TIMEOUT in case of timeout.
+   * @return GASPI_SUCCESS in case of success, GASPI_QUEUE_FULL if the
+   * requested could not be posted because the provided queue is full,
+   * GASPI_ERROR in case of error, GASPI_TIMEOUT in case of timeout.
    */
   gaspi_return_t gaspi_write_list (const gaspi_number_t num,
 				   gaspi_segment_id_t * const segment_id_local,
@@ -643,8 +645,9 @@ extern "C"
    * @param queue The queue where to post the list.
    * @param timeout_ms Timeout in milliseconds (or GASPI_BLOCK/GASPI_TEST).
    *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
-   * error, GASPI_TIMEOUT in case of timeout.
+   * @return GASPI_SUCCESS in case of success, GASPI_QUEUE_FULL if the
+   * requested could not be posted because the provided queue is full,
+   * GASPI_ERROR in case of error, GASPI_TIMEOUT in case of timeout.
    */
 
   gaspi_return_t gaspi_read_list (const gaspi_number_t num,
@@ -864,8 +867,9 @@ extern "C"
    * @param queue The queue where to post the request.
    * @param timeout_ms Timeout in milliseconds (or GASPI_BLOCK/GASPI_TEST).
    *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
-   * error, GASPI_TIMEOUT in case of timeout.
+   * @return GASPI_SUCCESS in case of success, GASPI_QUEUE_FULL if the
+   * requested could not be posted because the provided queue is full,
+   * GASPI_ERROR in case of error, GASPI_TIMEOUT in case of timeout.
    */
   gaspi_return_t gaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 				     const gaspi_offset_t offset_local,
@@ -894,8 +898,9 @@ extern "C"
    * @param queue The queue where to post the request.
    * @param timeout_ms Timeout in milliseconds (or GASPI_BLOCK/GASPI_TEST).
    *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
-   * error, GASPI_TIMEOUT in case of timeout.
+   * @return GASPI_SUCCESS in case of success, GASPI_QUEUE_FULL if the
+   * requested could not be posted because the provided queue is full,
+   * GASPI_ERROR in case of error, GASPI_TIMEOUT in case of timeout.
    */
   gaspi_return_t gaspi_write_list_notify (const gaspi_number_t num,
 					  gaspi_segment_id_t * const segment_id_local,
@@ -923,8 +928,9 @@ extern "C"
    * @param queue The queue where to post the request.
    * @param timeout_ms Timeout in milliseconds (or GASPI_BLOCK/GASPI_TEST).
    *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
-   * error, GASPI_TIMEOUT in case of timeout.
+   * @return GASPI_SUCCESS in case of success, GASPI_QUEUE_FULL if the
+   * requested could not be posted because the provided queue is full,
+   * GASPI_ERROR in case of error, GASPI_TIMEOUT in case of timeout.
    */
   gaspi_return_t gaspi_read_notify (const gaspi_segment_id_t segment_id_local,
 				    const gaspi_offset_t offset_local,
@@ -951,8 +957,9 @@ extern "C"
    * @param queue The queue where to post the request.
    * @param timeout_ms Timeout in milliseconds (or GASPI_BLOCK/GASPI_TEST).
    *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of
-   * error, GASPI_TIMEOUT in case of timeout.
+   * @return GASPI_SUCCESS in case of success, GASPI_QUEUE_FULL if the
+   * requested could not be posted because the provided queue is full,
+   * GASPI_ERROR in case of error, GASPI_TIMEOUT in case of timeout.
    */
   gaspi_return_t gaspi_read_list_notify (const gaspi_number_t num,
 					 gaspi_segment_id_t * const segment_id_local,
