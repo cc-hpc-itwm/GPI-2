@@ -262,9 +262,9 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
   if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
-      if( eret != GASPI_SUCCESS)
+      if( eret != GASPI_SUCCESS )
 	{
-	  goto endL;
+	  return eret;
 	}
     }
 
@@ -316,9 +316,9 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
   if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
-      if ( eret != GASPI_SUCCESS)
+      if( eret != GASPI_SUCCESS )
 	{
-	  goto endL;
+	  return eret;
 	}
     }
 
@@ -420,9 +420,9 @@ pgaspi_write_list (const gaspi_number_t num,
   if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
-      if ( eret != GASPI_SUCCESS)
+      if( eret != GASPI_SUCCESS )
 	{
-	  goto endL;
+	  return eret;
 	}
     }
 
@@ -482,9 +482,9 @@ pgaspi_read_list (const gaspi_number_t num,
   if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
-      if ( eret != GASPI_SUCCESS)
+      if( eret != GASPI_SUCCESS )
 	{
-	  goto endL;
+	  return eret;
 	}
     }
 
@@ -537,9 +537,9 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
   if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
-      if ( eret != GASPI_SUCCESS)
+      if( eret != GASPI_SUCCESS )
 	{
-	  goto endL;
+	  return eret;
 	}
     }
 
@@ -773,9 +773,9 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
   if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
-      if ( eret != GASPI_SUCCESS)
+      if( eret != GASPI_SUCCESS )
 	{
-	  goto endL;
+	  return eret;
 	}
     }
 
@@ -850,9 +850,9 @@ pgaspi_write_list_notify (const gaspi_number_t num,
   if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
-      if ( eret != GASPI_SUCCESS)
+      if( eret != GASPI_SUCCESS )
 	{
-	  goto endL;
+	  return eret;
 	}
     }
 
@@ -905,9 +905,9 @@ pgaspi_read_notify (const gaspi_segment_id_t segment_id_local,
   if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
-      if ( eret != GASPI_SUCCESS)
+      if( eret != GASPI_SUCCESS )
 	{
-	  goto endL;
+	  return eret;
 	}
     }
 
@@ -975,9 +975,9 @@ pgaspi_read_list_notify (const gaspi_number_t num,
   if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
     {
       eret = pgaspi_connect((gaspi_rank_t) rank, timeout_ms);
-      if ( eret != GASPI_SUCCESS)
+      if( eret != GASPI_SUCCESS )
 	{
-	  goto endL;
+	  return eret;
 	}
     }
 
