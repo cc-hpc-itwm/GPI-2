@@ -155,7 +155,9 @@ pgaspi_queue_create(gaspi_queue_id_t * const queue_id, const gaspi_timeout_t tim
 	      return GASPI_ERR_DEVICE;
 	    }
 
-	  eret = gaspi_sn_command( GASPI_SN_QUEUE_CREATE, i, timeout_ms, &next_avail_q );
+	  gaspi_dev_exch_info_t * const exch_info = &(gctx->ep_conn[i].exch_info);
+
+	  eret = gaspi_sn_command( GASPI_SN_QUEUE_CREATE, i, timeout_ms, exch_info );
 	  if( GASPI_SUCCESS != eret )
 	    {
 	      if( GASPI_ERROR == eret )

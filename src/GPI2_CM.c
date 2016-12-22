@@ -22,7 +22,9 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Types.h"
 
 gaspi_return_t
-pgaspi_create_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
+pgaspi_create_endpoint_to(const gaspi_rank_t rank,
+			  gaspi_dev_exch_info_t* info,
+			  const gaspi_timeout_t timeout_ms)
 {
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
   const int i = (int) rank;
@@ -32,13 +34,17 @@ pgaspi_create_endpoint_to(const gaspi_rank_t rank, const gaspi_timeout_t timeout
       return GASPI_TIMEOUT;
     }
 
+  if( pgaspi_dev_create_endpoint(gctx, i,
+				 &(info->local_info),
+				 &(info->remote_info),
+				 &(info->info_size)) < 0 )
+    {
+      unlock_gaspi(&(gctx->create_lock));
+      return GASPI_ERR_DEVICE;
+    }
+
   if( GASPI_ENDPOINT_NOT_CREATED == gctx->ep_conn[i].istat )
     {
-      if( pgaspi_dev_create_endpoint(gctx, i) < 0 )
-	{
-	  unlock_gaspi(&(gctx->create_lock));
-	  return GASPI_ERR_DEVICE;
-	}
       gctx->ep_conn[i].istat = GASPI_ENDPOINT_CREATED;
     }
 
@@ -92,8 +98,10 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 
   const int i = (int) rank;
 
-  eret = pgaspi_create_endpoint_to(rank, timeout_ms);
-  if( eret != GASPI_SUCCESS)
+  gaspi_dev_exch_info_t * const exch_info = &(gctx->ep_conn[i].exch_info);
+
+  eret = pgaspi_create_endpoint_to(rank, exch_info, timeout_ms);
+  if( eret != GASPI_SUCCESS )
     {
       return eret;
     }
@@ -109,7 +117,7 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
       return GASPI_SUCCESS;
     }
 
-  eret = gaspi_sn_command(GASPI_SN_CONNECT, rank, timeout_ms, NULL);
+  eret = gaspi_sn_command(GASPI_SN_CONNECT, rank, timeout_ms, exch_info);
   if( eret != GASPI_SUCCESS )
     {
       if( GASPI_ERROR == eret)

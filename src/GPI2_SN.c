@@ -665,6 +665,7 @@ gaspi_sn_send_recv_cmd(const gaspi_rank_t target_rank,
 			void* recv_buf, size_t recv_size)
 {
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+
   const int sockfd = gctx->sockfd[(int) target_rank];
 
   gaspi_cd_header cdh;
@@ -699,14 +700,16 @@ gaspi_sn_send_recv_cmd(const gaspi_rank_t target_rank,
 }
 
 static inline int
-_gaspi_sn_connect_command(const gaspi_rank_t rank)
+_gaspi_sn_connect_command(const gaspi_rank_t rank, void const * const arg)
 {
-  const size_t rc_size = pgaspi_dev_get_sizeof_rc();
+  gaspi_dev_exch_info_t* dev_info = (gaspi_dev_exch_info_t* ) arg;
+
+  const size_t rc_size = dev_info->info_size;
   if( rc_size > 0 )
     {
       return gaspi_sn_send_recv_cmd(rank, GASPI_SN_CONNECT,
-				    pgaspi_dev_get_lrcd((int) rank), rc_size,
-				    pgaspi_dev_get_rrcd((int) rank), rc_size);
+				    dev_info->local_info, rc_size,
+				    dev_info->remote_info, rc_size);
     }
 
   return 0;
@@ -715,12 +718,14 @@ _gaspi_sn_connect_command(const gaspi_rank_t rank)
 static inline int
 _gaspi_sn_queue_create_command(const gaspi_rank_t rank, const void * const arg)
 {
-  const size_t rc_size = pgaspi_dev_get_sizeof_rc();
+  gaspi_dev_exch_info_t* dev_info = (gaspi_dev_exch_info_t* ) arg;
+
+  const size_t rc_size = dev_info->info_size;
   if( rc_size > 0 )
     {
       int result = 1;
       return gaspi_sn_send_recv_cmd(rank, GASPI_SN_QUEUE_CREATE,
-				    pgaspi_dev_get_lrcd((int) rank), rc_size,
+				    dev_info->local_info, rc_size,
 				    &result, sizeof(int));
     }
 
@@ -1135,7 +1140,7 @@ gaspi_sn_command(const enum gaspi_sn_ops op, const gaspi_rank_t rank, const gasp
     {
     case GASPI_SN_CONNECT:
       {
-	ret = _gaspi_sn_connect_command(rank);
+	ret = _gaspi_sn_connect_command(rank, arg);
 	break;
       }
     case GASPI_SN_DISCONNECT:
@@ -1416,11 +1421,6 @@ gaspi_sn_backend(void *arg)
 		      int rsize = mgmt->blen - mgmt->bdone;
 		      char* ptr = (char *) &mgmt->cdh;
 
-		      if( mgmt->op == GASPI_SN_CONNECT || (mgmt->op == GASPI_SN_QUEUE_CREATE) )
-			{
-			  ptr = pgaspi_dev_get_rrcd(mgmt->cdh.rank);
-			}
-
 		      rcount = read(mgmt->fd, ptr + mgmt->bdone, rsize);
 
 		      /* errno==EAGAIN => we have read all data */
@@ -1451,22 +1451,12 @@ gaspi_sn_backend(void *arg)
 			  /* read all data? */
 			  if( mgmt->bdone == mgmt->blen )
 			    {
-			      int _op_len = sizeof(gaspi_cd_header);
-			      enum gaspi_sn_ops _op = GASPI_SN_HEADER;
-
 			      /* we got header, what do we have to do ? */
 			      if( mgmt->op == GASPI_SN_HEADER )
 				{
 				  if( mgmt->cdh.op == GASPI_SN_PROC_KILL )
 				    {
 				      _exit(-1);
-				    }
-				  else if( (mgmt->cdh.op == GASPI_SN_CONNECT) || (mgmt->cdh.op == GASPI_SN_QUEUE_CREATE) )
-				    {
-				      /* For these ops, we have an extra step (below).
-					 => we modify the required parameters for the event. */
-				      _op_len = mgmt->cdh.op_len;
-				      _op = mgmt->cdh.op;
 				    }
 				  else if( mgmt->cdh.op == GASPI_SN_DISCONNECT )
 				    {
@@ -1480,11 +1470,11 @@ gaspi_sn_backend(void *arg)
 				    }
 				  else
 				    {
-				      /* These commands require a response (data or ack) */
-				      void* response;
-				      size_t response_size;
+				      /* These commands require more work: possibly reading more and a response (data or ack) */
+				      size_t response_size = sizeof(int);
 				      int response_free = 0;
-				      int ack;
+				      int ack = 0;
+				      void* response = &ack;
 
 				      if( mgmt->cdh.op == GASPI_SN_GRP_CHECK )
 					{
@@ -1510,15 +1500,71 @@ gaspi_sn_backend(void *arg)
 				      else if( mgmt->cdh.op == GASPI_SN_SEG_REGISTER )
 					{
 					  ack = gaspi_sn_segment_register(mgmt->cdh);
+					}
+				      else if( mgmt->cdh.op == GASPI_SN_CONNECT )
+					{
+					  gaspi_dev_exch_info_t * const exch_info = &(gctx->ep_conn[mgmt->cdh.rank].exch_info);
 
-					  response = &ack;
-					  response_size = sizeof(int);
+					  gaspi_return_t eret = pgaspi_create_endpoint_to(mgmt->cdh.rank, exch_info, GASPI_BLOCK);//TODO: timeout
+					  if( eret != GASPI_SUCCESS )
+					    {
+					      gaspi_print_error("Failed to create endpoint with %u\n", mgmt->cdh.rank);
+					      io_err = 1;
+					      break;
+					    }
+
+					  ssize_t info_read = gaspi_sn_readn(mgmt->fd, exch_info->remote_info, exch_info->info_size);
+					  if( info_read < mgmt->cdh.op_len )
+					    {
+					      gaspi_print_error("Failed to read with %u\n", mgmt->cdh.rank);
+					      io_err = 1;
+					      break;
+					    }
+
+					  eret = pgaspi_connect_endpoint_to(mgmt->cdh.rank, GASPI_BLOCK);//TODO: timeout
+					  if( eret != GASPI_SUCCESS )
+					    {
+					      /* We set io_err, connection is closed and remote peer reads EOF */
+					      gaspi_print_error("Failed to connect endpoint with %u\n", mgmt->cdh.rank);
+					      io_err = 1;
+					      break;
+					    }
+
+					  if( NULL != exch_info->local_info )
+					    {
+					      response = exch_info->local_info;
+					      response_size = exch_info->info_size;
+					    }
+					  else
+					    {
+					      gaspi_print_error("Unexpected error: no exch information to %u\n", mgmt->cdh.rank);
+					      io_err = 1;
+					      break;
+					    }
+					}
+
+				      else if( mgmt->cdh.op == GASPI_SN_QUEUE_CREATE )
+					{
+					  gaspi_dev_exch_info_t * const exch_info = &(gctx->ep_conn[mgmt->cdh.rank].exch_info);
+					  if( NULL == exch_info->remote_info )
+					    {
+					      gaspi_print_error("Unexpected error: no connection to %u\n", mgmt->cdh.rank);
+					      io_err = 1;
+					      break;
+					    }
+
+					  /* read remote info */
+					  ssize_t info_read = gaspi_sn_readn(mgmt->fd, exch_info->remote_info, exch_info->info_size);
+					  if( info_read < mgmt->cdh.op_len )
+					    {
+					      gaspi_print_error("Failed to read with %u\n", mgmt->cdh.rank);
+					      io_err = 1;
+					      break;
+					    }
 					}
 				      else if( mgmt->cdh.op == GASPI_SN_PROC_PING )
 					{
-					  ack = 0;
-					  response = &ack;
-					  response_size = sizeof(int);
+					  /* use default response => ack */
 					}
 
 				      ssize_t wbytes = gaspi_sn_writen( mgmt->fd, response, response_size );
@@ -1537,62 +1583,11 @@ gaspi_sn_backend(void *arg)
 				}/* !header */
 			      else
 				{
-				  /* we set here, once, the reset parameters */
-				  _op_len = sizeof(gaspi_cd_header);
-				  _op = GASPI_SN_HEADER;
-
-				  if( mgmt->op == GASPI_SN_CONNECT )
-				    {
-				      const size_t len = pgaspi_dev_get_sizeof_rc();
-				      char *lrcd_ptr = NULL;
-
-				      gaspi_return_t eret = pgaspi_create_endpoint_to(mgmt->cdh.rank, GASPI_BLOCK);
-				      if( eret == GASPI_SUCCESS )
-					{
-					  eret = pgaspi_connect_endpoint_to(mgmt->cdh.rank, GASPI_BLOCK);
-					  if( eret == GASPI_SUCCESS )
-					    {
-					      lrcd_ptr = pgaspi_dev_get_lrcd(mgmt->cdh.rank);
-					    }
-					}
-
-				      if( eret != GASPI_SUCCESS )
-					{
-					  /* We set io_err, connection is closed and remote peer reads EOF */
-					  io_err = 1;
-					}
-				      else
-					{
-					  if( NULL != lrcd_ptr )
-					    {
-					      if( gaspi_sn_writen( mgmt->fd, lrcd_ptr, len ) < 0 )
-						{
-						  gaspi_print_error("Failed response to connection request from %u.", mgmt->cdh.rank);
-						  io_err = 1;
-						}
-					    }
-					}
-				    }
-				  else if( mgmt->op == GASPI_SN_QUEUE_CREATE )
-				    {
-				      int rret = 0;
-
-				      /* just ack back */
-				      if( gaspi_sn_writen( mgmt->fd, &rret, sizeof(int) ) < 0 )
-					{
-					  gaspi_print_error("Failed ack queue creation.");
-					  io_err = 1;
-					  break; //TODO: needed?
-					}
-				    }
-				  else
-				    {
-				      gaspi_print_error("Received unknown SN operation");
-				    }
+				  gaspi_print_error("Received unknown SN operation");
 				}
 
 			      /* IMPORTANT not to forget the event reset accordingly */
-			      GASPI_SN_RESET_EVENT(mgmt, _op_len, _op );
+			      GASPI_SN_RESET_EVENT(mgmt, sizeof(gaspi_cd_header), GASPI_SN_HEADER);
 
 			      break;
 			    } /* if all data ie. if( mgmt->bdone == mgmt->blen ) */
@@ -1608,7 +1603,7 @@ gaspi_sn_backend(void *arg)
 		}
 	    }
 	} /* for each event */
-    }/* event loop while(1) */
+    }/* event loop while( !_gaspi_sn_stop ) */
 
   free(ret_ev);
 

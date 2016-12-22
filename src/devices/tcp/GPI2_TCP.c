@@ -28,29 +28,14 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Utility.h"
 #include "tcp_device.h"
 
-/* TODO: empty functions smell */
-inline char *
-pgaspi_dev_get_rrcd(int rank)
-{
-  return NULL;
-}
-
-
-inline char *
-pgaspi_dev_get_lrcd(int rank)
-{
-  return NULL;
-}
-
-inline size_t
-pgaspi_dev_get_sizeof_rc(void)
-{
-  return 0;
-}
-
 int
-pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int i)
+pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int i,
+			   void** info, void** remote_info, size_t* info_size)
 {
+  *info = NULL;
+  *remote_info = NULL;
+  *info_size = 0;
+
   return 0;
 }
 

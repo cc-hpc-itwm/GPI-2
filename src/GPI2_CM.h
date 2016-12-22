@@ -34,16 +34,29 @@ typedef enum
     GASPI_ENDPOINT_CREATED = 1
   }gaspi_endpoint_creation_status_t;
 
+/* Devices may have to exchange information when setting up a
+   connection. */
+typedef struct
+{
+  void* local_info;
+  void* remote_info;
+  size_t info_size;
+} gaspi_dev_exch_info_t;
+
 /* connection to a endpoint */
 typedef struct
 {
   gaspi_rank_t rank; /* to whom */
+  gaspi_dev_exch_info_t exch_info; /* device exchange info */
+
   volatile gaspi_endpoint_creation_status_t istat;
   volatile gaspi_endpoint_conn_status_t cstat;
 } gaspi_endpoint_conn_t;
 
 gaspi_return_t
-pgaspi_create_endpoint_to(const gaspi_rank_t target, const gaspi_timeout_t timeout_ms);
+pgaspi_create_endpoint_to(const gaspi_rank_t rank,
+			  gaspi_dev_exch_info_t* info,
+			  const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
 pgaspi_connect_endpoint_to(const gaspi_rank_t target, const gaspi_timeout_t timeout_ms);

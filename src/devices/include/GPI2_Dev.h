@@ -22,39 +22,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GASPI.h"
 
 /* Device interface */
-
-/////////////////// WORK SANDBOX /////////////////////////
-///TODO: think about these
-
- char *
-pgaspi_dev_get_rrcd(int);
-
- char *
-pgaspi_dev_get_lrcd(int);
-
- size_t
-pgaspi_dev_get_sizeof_rc(void);
-
-/* Groups */
-int
-pgaspi_dev_poll_groups(gaspi_context_t * const gctx);
-
-int
-pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
-			    void *local_addr, int length,
-			    int dst, void *remote_addr, int g);
-//////////////////////////////////////////////////////////
-
-#ifdef GPI2_CUDA
-gaspi_return_t
-pgaspi_dev_segment_alloc (const gaspi_segment_id_t,
-			  const gaspi_size_t,
-			  const gaspi_alloc_t);
-
-gaspi_return_t
-pgaspi_dev_segment_delete (const gaspi_segment_id_t);
-#endif /* GPI2_CUDA */
-
 int
 pgaspi_dev_init_core(gaspi_context_t const * const gctx);
 
@@ -74,7 +41,8 @@ int
 pgaspi_dev_disconnect_context(gaspi_context_t const * const gctx, const int);
 
 int
-pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int);
+pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int i,
+			   void** info, void** remote_info, size_t* info_size);
 
 int
 pgaspi_dev_comm_queue_delete(gaspi_context_t const * const gctx, const unsigned int id);
@@ -86,6 +54,15 @@ int
 pgaspi_dev_comm_queue_connect(gaspi_context_t const * const gctx, const unsigned short q, const int i);
 
 /* Device interface (GASPI routines) */
+/* Groups */
+int
+pgaspi_dev_poll_groups(gaspi_context_t * const gctx);
+
+int
+pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
+			    void *local_addr, int length,
+			    int dst, void *remote_addr, int g);
+
 int
 pgaspi_dev_queue_size(const gaspi_queue_id_t);
 
@@ -224,6 +201,14 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
 			    const gaspi_timeout_t timeout_ms);
 
 #ifdef GPI2_CUDA
+gaspi_return_t
+pgaspi_dev_segment_alloc (const gaspi_segment_id_t,
+			  const gaspi_size_t,
+			  const gaspi_alloc_t);
+
+gaspi_return_t
+pgaspi_dev_segment_delete (const gaspi_segment_id_t);
+
 gaspi_return_t
 pgaspi_dev_gpu_write(gaspi_context_t * const gctx,
 		     const gaspi_segment_id_t segment_id_local,

@@ -81,25 +81,6 @@ pgaspi_null_gid (union ibv_gid *gid)
 	   raw[15]);
 }
 
-/* Utilities */
-inline char *
-pgaspi_dev_get_rrcd(int rank)
-{
-  return (char *)&glb_gaspi_ctx_ib.remote_info[rank];
-}
-
-inline char *
-pgaspi_dev_get_lrcd(int rank)
-{
-  return (char *)&glb_gaspi_ctx_ib.local_info[rank];
-}
-
-inline size_t
-pgaspi_dev_get_sizeof_rc(void)
-{
-  return sizeof(struct ib_ctx_info);
-}
-
 int
 pgaspi_dev_init_core (gaspi_context_t const * const gctx)
 {
@@ -742,6 +723,7 @@ pgaspi_dev_comm_queue_create(gaspi_context_t const * const gctx,
 
   glb_gaspi_ctx_ib.qpC[id][remote_node] =
     _pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqC[id], glb_gaspi_ctx_ib.scqC[id], NULL, gctx->config->queue_size_max);
+
   if( glb_gaspi_ctx_ib.qpC[id][remote_node] == NULL )
     {
       gaspi_print_error ("Failed to create QP (libibverbs)");
@@ -754,47 +736,55 @@ pgaspi_dev_comm_queue_create(gaspi_context_t const * const gctx,
 }
 
 int
-pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int i)
+pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int i,
+			   void** info, void** remote_info, size_t* info_size)
 {
   unsigned int c;
 
-  /* Groups QP*/
-#ifdef GPI2_EXP_VERBS
-  glb_gaspi_ctx_ib.qpGroups[i] =
-    _pgaspi_dev_create_qp_exp(gctx, glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL, gctx->config->queue_size_max);
-
-#else
-  glb_gaspi_ctx_ib.qpGroups[i] =
-    _pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL, gctx->config->queue_size_max);
-
   if( glb_gaspi_ctx_ib.qpGroups[i] == NULL )
     {
-      return -1;
-    }
+      /* Groups QP*/
+#ifdef GPI2_EXP_VERBS
+      glb_gaspi_ctx_ib.qpGroups[i] =
+	_pgaspi_dev_create_qp_exp(gctx, glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL, gctx->config->queue_size_max);
+
+#else
+      glb_gaspi_ctx_ib.qpGroups[i] =
+	_pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL, gctx->config->queue_size_max);
+
+      if( glb_gaspi_ctx_ib.qpGroups[i] == NULL )
+	{
+	  return -1;
+	}
 #endif
 
-  glb_gaspi_ctx_ib.local_info[i].qpnGroup = glb_gaspi_ctx_ib.qpGroups[i]->qp_num;
+      glb_gaspi_ctx_ib.local_info[i].qpnGroup = glb_gaspi_ctx_ib.qpGroups[i]->qp_num;
 
-  /* IO QPs*/
-  for(c = 0; c < gctx->config->queue_num; c++)
-    {
-      glb_gaspi_ctx_ib.qpC[c][i] =
-	_pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqC[c], glb_gaspi_ctx_ib.scqC[c], NULL, gctx->config->queue_size_max);
+      /* IO QPs*/
+      for(c = 0; c < gctx->config->queue_num; c++)
+	{
+	  glb_gaspi_ctx_ib.qpC[c][i] =
+	    _pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqC[c], glb_gaspi_ctx_ib.scqC[c], NULL, gctx->config->queue_size_max);
 
-      if( glb_gaspi_ctx_ib.qpC[c][i] == NULL )
+	  if( glb_gaspi_ctx_ib.qpC[c][i] == NULL )
+	    return -1;
+
+	  glb_gaspi_ctx_ib.local_info[i].qpnC[c] = glb_gaspi_ctx_ib.qpC[c][i]->qp_num;
+	}
+
+      /* Passive QP */
+      glb_gaspi_ctx_ib.qpP[i] =
+	_pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqP, glb_gaspi_ctx_ib.rcqP, glb_gaspi_ctx_ib.srqP,gctx->config->queue_size_max);
+
+      if( glb_gaspi_ctx_ib.qpP[i] == NULL )
 	return -1;
 
-      glb_gaspi_ctx_ib.local_info[i].qpnC[c] = glb_gaspi_ctx_ib.qpC[c][i]->qp_num;
+      glb_gaspi_ctx_ib.local_info[i].qpnP = glb_gaspi_ctx_ib.qpP[i]->qp_num;
     }
 
-  /* Passive QP */
-  glb_gaspi_ctx_ib.qpP[i] =
-    _pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqP, glb_gaspi_ctx_ib.rcqP, glb_gaspi_ctx_ib.srqP,gctx->config->queue_size_max);
-
-  if( glb_gaspi_ctx_ib.qpP[i] == NULL )
-    return -1;
-
-  glb_gaspi_ctx_ib.local_info[i].qpnP = glb_gaspi_ctx_ib.qpP[i]->qp_num;
+  *info = &glb_gaspi_ctx_ib.local_info[i];
+  *remote_info = &glb_gaspi_ctx_ib.remote_info[i];
+  *info_size = sizeof(struct ib_ctx_info);
 
   return 0;
 }
