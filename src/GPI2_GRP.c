@@ -41,7 +41,7 @@ _gaspi_release_group_mem(gaspi_context_t const * const gctx,
 
   if( grp_ctx->rrcd != NULL )
     {
-      if( pgaspi_dev_unregister_mem(&(grp_ctx->rrcd[gctx->rank]))!= GASPI_SUCCESS )
+      if( pgaspi_dev_unregister_mem(gctx, &(grp_ctx->rrcd[gctx->rank]))!= GASPI_SUCCESS )
 	{
 	  return GASPI_ERR_DEVICE;
 	}
@@ -124,7 +124,7 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   new_grp_ctx->rrcd[gctx->rank].size = size;
 
-  eret = pgaspi_dev_register_mem(&(new_grp_ctx->rrcd[gctx->rank]));
+  eret = pgaspi_dev_register_mem(gctx, &(new_grp_ctx->rrcd[gctx->rank]));
   if( eret != GASPI_SUCCESS )
     {
       eret = GASPI_ERR_DEVICE;

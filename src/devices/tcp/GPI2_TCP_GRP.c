@@ -23,9 +23,11 @@ int
 pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
 			    void *local_addr, int length, int dst, void *remote_addr, int g)
 {
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
   tcp_dev_wr_t wr =
     {
-      .cq_handle   = glb_gaspi_ctx_tcp.scqGroups->num,
+      .cq_handle   = tcp_dev_ctx->scqGroups->num,
       .source      = gctx->rank,
       .local_addr  = (uintptr_t) local_addr,
       .length      = length,
@@ -37,7 +39,7 @@ pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
       .wr_id       = dst
     };
 
-  if( write(glb_gaspi_ctx_tcp.qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+  if( write(tcp_dev_ctx->qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return 1;
     }
@@ -55,11 +57,13 @@ pgaspi_dev_poll_groups(gaspi_context_t * const gctx)
   int i, ne = 0;
   tcp_dev_wc_t wc;
 
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
   for(i = 0; i < nr; i++)
     {
       do
 	{
-	  ne = tcp_dev_return_wc (glb_gaspi_ctx_tcp.scqGroups, &wc);
+	  ne = tcp_dev_return_wc (tcp_dev_ctx->scqGroups, &wc);
 	}
       while (ne == 0);
 

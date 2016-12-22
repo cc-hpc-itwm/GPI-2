@@ -54,14 +54,16 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
   swr.num_sge = 1;
   swr.next = NULL;
 
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
 #ifdef GPI2_EXP_VERBS
-  if( ibv_exp_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr) )
+  if( ibv_exp_post_send (ib_dev_ctx->qpGroups[rank], &swr, &bad_wr) )
     {
       glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = 1;
       return GASPI_ERROR;
     }
 #else
-  if( ibv_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr) )
+  if( ibv_post_send (ib_dev_ctx->qpGroups[rank], &swr, &bad_wr) )
     {
       return GASPI_ERROR;
     }
@@ -75,12 +77,12 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
     {
       do
 	{
-	  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, 1,
-			    glb_gaspi_ctx_ib.wc_grp_send);
+	  ne = ibv_poll_cq (ib_dev_ctx->scqGroups, 1,
+			    ib_dev_ctx->wc_grp_send);
 	}
       while (ne == 0);
 
-      if ((ne < 0)  || (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS))
+      if ((ne < 0)  || (ib_dev_ctx->wc_grp_send[i].status != IBV_WC_SUCCESS))
 	{
 	  return GASPI_ERROR;
 	}
@@ -121,6 +123,8 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
   swr.send_flags = IBV_SEND_SIGNALED;
 #endif
 
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   swr.wr.atomic.remote_addr = gctx->rrmd[segment_id][rank].data.addr + offset;
   swr.wr.atomic.rkey = gctx->rrmd[segment_id][rank].rkey[0];
   swr.wr.atomic.compare_add = comparator;
@@ -132,13 +136,13 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
   swr.next = NULL;
 
 #ifdef GPI2_EXP_VERBS
-  if (ibv_exp_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr))
+  if (ibv_exp_post_send (ib_dev_ctx->qpGroups[rank], &swr, &bad_wr))
     {
       glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = 1;
       return GASPI_ERROR;
     }
 #else
-  if (ibv_post_send (glb_gaspi_ctx_ib.qpGroups[rank], &swr, &bad_wr))
+  if (ibv_post_send (ib_dev_ctx->qpGroups[rank], &swr, &bad_wr))
     {
       return GASPI_ERROR;
     }
@@ -151,12 +155,12 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
     {
       do
 	{
-	  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqGroups, 1,
-			    glb_gaspi_ctx_ib.wc_grp_send);
+	  ne = ibv_poll_cq (ib_dev_ctx->scqGroups, 1,
+			    ib_dev_ctx->wc_grp_send);
 	}
       while (ne == 0);
 
-      if ((ne < 0) || (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS))
+      if ((ne < 0) || (ib_dev_ctx->wc_grp_send[i].status != IBV_WC_SUCCESS))
 	{
 	  return GASPI_ERROR;
 	}

@@ -76,7 +76,4 @@ typedef struct
 
 } gaspi_ib_ctx;
 
-gaspi_ib_ctx glb_gaspi_ctx_ib;
-
-
 #endif // _GPI2_IB_H_

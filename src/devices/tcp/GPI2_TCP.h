@@ -47,6 +47,4 @@ typedef struct
 
 }  gaspi_tcp_ctx;
 
-gaspi_tcp_ctx glb_gaspi_ctx_tcp;
-
 #endif //_GPI2_TCP_H_

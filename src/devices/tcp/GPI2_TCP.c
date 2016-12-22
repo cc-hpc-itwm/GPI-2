@@ -60,11 +60,13 @@ pgaspi_dev_comm_queue_connect(gaspi_context_t const * const gctx, const unsigned
 int
 pgaspi_dev_comm_queue_delete(gaspi_context_t const * const gctx, const unsigned int id)
 {
-  tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpC[id]);
-  glb_gaspi_ctx_tcp.qpC[id] = NULL;
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
 
-  tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.scqC[id]);
-  glb_gaspi_ctx_tcp.scqC[id] = NULL;
+  tcp_dev_destroy_queue(tcp_dev_ctx->qpC[id]);
+  tcp_dev_ctx->qpC[id] = NULL;
+
+  tcp_dev_destroy_cq(tcp_dev_ctx->scqC[id]);
+  tcp_dev_ctx->scqC[id] = NULL;
 
   return 0;
 }
@@ -74,20 +76,22 @@ pgaspi_dev_comm_queue_create(gaspi_context_t const * const gctx,
 			     const unsigned int id,
 			     const unsigned short remote_node)
 {
-  if( glb_gaspi_ctx_tcp.scqC[id] == NULL)
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
+  if( tcp_dev_ctx->scqC[id] == NULL)
     {
-      glb_gaspi_ctx_tcp.scqC[id] = tcp_dev_create_cq(gctx->config->queue_size_max, NULL);
-      if( glb_gaspi_ctx_tcp.scqC[id] == NULL )
+      tcp_dev_ctx->scqC[id] = tcp_dev_create_cq(gctx->config->queue_size_max, NULL);
+      if( tcp_dev_ctx->scqC[id] == NULL )
 	{
 	  gaspi_print_error("Failed to create IO completion queue.");
 	  return -1;
 	}
     }
 
-  if( glb_gaspi_ctx_tcp.qpC[id] == NULL)
+  if( tcp_dev_ctx->qpC[id] == NULL)
     {
-      glb_gaspi_ctx_tcp.qpC[id] = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqC[id], NULL);
-      if( glb_gaspi_ctx_tcp.qpC[id] == NULL )
+      tcp_dev_ctx->qpC[id] = tcp_dev_create_queue( tcp_dev_ctx->scqC[id], NULL);
+      if( tcp_dev_ctx->qpC[id] == NULL )
 	{
 	  gaspi_print_error("Failed to create queue %d for IO.", id);
 	  return -1;
@@ -120,9 +124,22 @@ pgaspi_dev_print_info()
 }
 
 int
-pgaspi_dev_init_core(gaspi_context_t const * const gctx)
+pgaspi_dev_init_core(gaspi_context_t * const gctx)
 {
-  memset (&glb_gaspi_ctx_tcp, 0, sizeof (gaspi_tcp_ctx));
+  gctx->device = calloc(1, sizeof(gctx->device));
+  if( NULL == gctx->device )
+    {
+      return -1;
+    }
+
+  gctx->device->ctx = calloc(1, sizeof(gaspi_tcp_ctx));
+  if( NULL == gctx->device->ctx )
+    {
+      free(gctx->device);
+      return -1;
+    }
+
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
 
   struct tcp_dev_args* dev_args = malloc(sizeof(struct tcp_dev_args));
   if( NULL == dev_args )
@@ -135,9 +152,9 @@ pgaspi_dev_init_core(gaspi_context_t const * const gctx)
   dev_args->id = gctx->rank;
   dev_args->port = TCP_DEV_PORT + gctx->localSocket;
 
-  glb_gaspi_ctx_tcp.device_channel = tcp_dev_init_device(dev_args);
+  tcp_dev_ctx->device_channel = tcp_dev_init_device(dev_args);
 
-  if( glb_gaspi_ctx_tcp.device_channel < 0 )
+  if( tcp_dev_ctx->device_channel < 0 )
     {
       gaspi_print_error("Failed to initialize device.");
       return -1;
@@ -155,44 +172,44 @@ pgaspi_dev_init_core(gaspi_context_t const * const gctx)
     }
 
   /* Passive channel (SRQ) */
-  glb_gaspi_ctx_tcp.srqP = gaspi_sn_connect2port("localhost", TCP_DEV_PORT + gctx->localSocket, CONN_TIMEOUT);
-  if( glb_gaspi_ctx_tcp.srqP == -1 )
+  tcp_dev_ctx->srqP = gaspi_sn_connect2port("localhost", TCP_DEV_PORT + gctx->localSocket, CONN_TIMEOUT);
+  if( tcp_dev_ctx->srqP == -1 )
     {
       gaspi_print_error("Failed to create passive channel connection");
       return -1;
     }
 
-  glb_gaspi_ctx_tcp.channelP = tcp_dev_create_passive_channel();
-  if( glb_gaspi_ctx_tcp.channelP == NULL )
+  tcp_dev_ctx->channelP = tcp_dev_create_passive_channel();
+  if( tcp_dev_ctx->channelP == NULL )
     {
       gaspi_print_error("Failed to create passive channel.");
       return -1;
     }
 
   /* Completion Queues */
-  glb_gaspi_ctx_tcp.scqGroups = tcp_dev_create_cq(gctx->config->queue_size_max, NULL);
-  if( glb_gaspi_ctx_tcp.scqGroups == NULL )
+  tcp_dev_ctx->scqGroups = tcp_dev_create_cq(gctx->config->queue_size_max, NULL);
+  if( tcp_dev_ctx->scqGroups == NULL )
     {
       gaspi_print_error("Failed to create groups send completion queue.");
       return -1;
     }
 
-  glb_gaspi_ctx_tcp.rcqGroups = tcp_dev_create_cq(gctx->config->queue_size_max, NULL);
-  if( glb_gaspi_ctx_tcp.rcqGroups == NULL )
+  tcp_dev_ctx->rcqGroups = tcp_dev_create_cq(gctx->config->queue_size_max, NULL);
+  if( tcp_dev_ctx->rcqGroups == NULL )
     {
       gaspi_print_error("Failed to create groups receive completion queue.");
       return -1;
     }
 
-  glb_gaspi_ctx_tcp.scqP = tcp_dev_create_cq(gctx->config->queue_size_max, NULL);
-  if( glb_gaspi_ctx_tcp.scqP == NULL )
+  tcp_dev_ctx->scqP = tcp_dev_create_cq(gctx->config->queue_size_max, NULL);
+  if( tcp_dev_ctx->scqP == NULL )
     {
       gaspi_print_error("Failed to create passive send completion queue.");
       return -1;
     }
 
-  glb_gaspi_ctx_tcp.rcqP = tcp_dev_create_cq(gctx->config->queue_size_max, glb_gaspi_ctx_tcp.channelP);
-  if( glb_gaspi_ctx_tcp.rcqP == NULL )
+  tcp_dev_ctx->rcqP = tcp_dev_create_cq(gctx->config->queue_size_max, tcp_dev_ctx->channelP);
+  if( tcp_dev_ctx->rcqP == NULL )
     {
       gaspi_print_error("Failed to create passive recv completion queue.");
       return -1;
@@ -201,8 +218,8 @@ pgaspi_dev_init_core(gaspi_context_t const * const gctx)
   unsigned int c;
   for(c = 0; c < gctx->config->queue_num; c++)
     {
-      glb_gaspi_ctx_tcp.scqC[c] = tcp_dev_create_cq(gctx->config->queue_size_max, NULL);
-      if( glb_gaspi_ctx_tcp.scqC[c] == NULL )
+      tcp_dev_ctx->scqC[c] = tcp_dev_create_cq(gctx->config->queue_size_max, NULL);
+      if( tcp_dev_ctx->scqC[c] == NULL )
 	{
 	  gaspi_print_error("Failed to create IO completion queue.");
 	  return -1;
@@ -210,9 +227,9 @@ pgaspi_dev_init_core(gaspi_context_t const * const gctx)
     }
 
   /* Queues (QPs) */
-  glb_gaspi_ctx_tcp.qpGroups = tcp_dev_create_queue(glb_gaspi_ctx_tcp.scqGroups,
-						    glb_gaspi_ctx_tcp.rcqGroups);
-  if( glb_gaspi_ctx_tcp.qpGroups == NULL )
+  tcp_dev_ctx->qpGroups = tcp_dev_create_queue(tcp_dev_ctx->scqGroups,
+						    tcp_dev_ctx->rcqGroups);
+  if( tcp_dev_ctx->qpGroups == NULL )
     {
       gaspi_print_error("Failed to create queue for groups.");
       return -1;
@@ -220,18 +237,18 @@ pgaspi_dev_init_core(gaspi_context_t const * const gctx)
 
   for(c = 0; c < gctx->config->queue_num; c++)
     {
-      glb_gaspi_ctx_tcp.qpC[c] = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqC[c],
+      tcp_dev_ctx->qpC[c] = tcp_dev_create_queue( tcp_dev_ctx->scqC[c],
 						       NULL);
-      if( glb_gaspi_ctx_tcp.qpC[c] == NULL )
+      if( tcp_dev_ctx->qpC[c] == NULL )
 	{
 	  gaspi_print_error("Failed to create queue %d for IO.", c);
 	  return -1;
 	}
     }
 
-  glb_gaspi_ctx_tcp.qpP = tcp_dev_create_queue( glb_gaspi_ctx_tcp.scqP,
-						glb_gaspi_ctx_tcp.rcqP);
-  if( glb_gaspi_ctx_tcp.qpP == NULL )
+  tcp_dev_ctx->qpP = tcp_dev_create_queue( tcp_dev_ctx->scqP,
+						tcp_dev_ctx->rcqP);
+  if( tcp_dev_ctx->qpP == NULL )
     {
       gaspi_print_error("Failed to create queue for passive.");
       return -1;
@@ -258,45 +275,52 @@ pgaspi_dev_init_core(gaspi_context_t const * const gctx)
 int
 pgaspi_dev_cleanup_core(gaspi_context_t * const gctx)
 {
-  if( tcp_dev_stop_device(glb_gaspi_ctx_tcp.device_channel) != 0 )
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
+  if( tcp_dev_stop_device(tcp_dev_ctx->device_channel) != 0 )
     {
       gaspi_print_error("Failed to stop device.");
     }
 
   /* Destroy posting queues and associated channels */
-  tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpGroups);
-  tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpP);
+  tcp_dev_destroy_queue(tcp_dev_ctx->qpGroups);
+  tcp_dev_destroy_queue(tcp_dev_ctx->qpP);
 
   unsigned int c;
   for(c = 0; c < gctx->config->queue_num; c++)
     {
-      tcp_dev_destroy_queue(glb_gaspi_ctx_tcp.qpC[c]);
+      tcp_dev_destroy_queue(tcp_dev_ctx->qpC[c]);
     }
 
-  if( glb_gaspi_ctx_tcp.srqP )
+  if( tcp_dev_ctx->srqP )
     {
-      if( close(glb_gaspi_ctx_tcp.srqP ) < 0 )
+      if( close(tcp_dev_ctx->srqP ) < 0 )
 	{
 	  gaspi_print_error("Failed to close srqP.");
 	}
     }
 
-  if( glb_gaspi_ctx_tcp.channelP )
+  if( tcp_dev_ctx->channelP )
     {
-      tcp_dev_destroy_passive_channel(glb_gaspi_ctx_tcp.channelP);
+      tcp_dev_destroy_passive_channel(tcp_dev_ctx->channelP);
     }
 
   /* Now we can destroy the resources for completion and incoming data */
-  tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.scqGroups);
-  tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.rcqGroups);
-  tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.scqP);
-  tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.rcqP);
+  tcp_dev_destroy_cq(tcp_dev_ctx->scqGroups);
+  tcp_dev_destroy_cq(tcp_dev_ctx->rcqGroups);
+  tcp_dev_destroy_cq(tcp_dev_ctx->scqP);
+  tcp_dev_destroy_cq(tcp_dev_ctx->rcqP);
 
   for(c = 0; c < gctx->config->queue_num; c++)
     {
-      tcp_dev_destroy_cq(glb_gaspi_ctx_tcp.scqC[c]);
+      tcp_dev_destroy_cq(tcp_dev_ctx->scqC[c]);
     }
-  close(glb_gaspi_ctx_tcp.device_channel);
+  close(tcp_dev_ctx->device_channel);
+
+  free(gctx->device->ctx);
+  gctx->device->ctx = NULL;
+  free(gctx->device);
+  gctx->device = NULL;
 
   return 0;
 }

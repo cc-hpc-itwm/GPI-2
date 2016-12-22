@@ -159,7 +159,7 @@ pgaspi_init_core(gaspi_context_t * const gctx)
   gctx->nsrc.data.addr += NOTIFY_OFFSET;
 
   /* Register internal memory */
-  if( pgaspi_dev_register_mem(&(gctx->nsrc)) != 0 )
+  if( pgaspi_dev_register_mem(gctx, &(gctx->nsrc)) != 0 )
     {
       gaspi_print_error ("Failed to register internal memory");
       return -1;
@@ -435,7 +435,7 @@ pgaspi_cleanup_core(gaspi_context_t * const gctx)
     }
 
   /* Unregister and release internal memory */
-  if( pgaspi_dev_unregister_mem(&(gctx->nsrc)) != 0 )
+  if( pgaspi_dev_unregister_mem(gctx, &(gctx->nsrc)) != 0 )
     {
       gaspi_print_error ("Failed to de-register internal memory");
       return -1;

@@ -30,25 +30,26 @@ int
 pgaspi_dev_poll_groups(gaspi_context_t * const gctx)
 {
   int i;
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
 
-  const int pret = ibv_poll_cq( glb_gaspi_ctx_ib.scqGroups,
+  const int pret = ibv_poll_cq( ib_dev_ctx->scqGroups,
 				gctx->ne_count_grp,
-				glb_gaspi_ctx_ib.wc_grp_send );
+				ib_dev_ctx->wc_grp_send );
 
   if (pret < 0)
     {
       for (i = 0; i < gctx->ne_count_grp; i++)
 	{
-	  if (glb_gaspi_ctx_ib.wc_grp_send[i].status != IBV_WC_SUCCESS)
+	  if (ib_dev_ctx->wc_grp_send[i].status != IBV_WC_SUCCESS)
 	    {
 	      //TODO: for now here because we need to identify the erroneous rank
 	      // but has to go out of device
-	      gctx->qp_state_vec[GASPI_COLL_QP][glb_gaspi_ctx_ib.wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
+	      gctx->qp_state_vec[GASPI_COLL_QP][ib_dev_ctx->wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
 	    }
 	}
 
       gaspi_print_error("Failed request to %lu. Collectives queue might be broken",
-			glb_gaspi_ctx_ib.wc_grp_send[i].wr_id);
+			ib_dev_ctx->wc_grp_send[i].wr_id);
       return -1;
     }
 
@@ -65,6 +66,8 @@ pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
   struct ibv_send_wr swr;
   struct ibv_send_wr *bad_wr_send;
 
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   slist.addr = (uintptr_t) local_addr;
   slist.length = length;
   slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ctx[group].rrcd[gctx->rank].mr[0])->lkey;
@@ -79,7 +82,7 @@ pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
   swr.wr.rdma.rkey = glb_gaspi_group_ctx[group].rrcd[dst].rkey[0];
   swr.wr_id = dst;
 
-  if (ibv_post_send ((struct ibv_qp *) glb_gaspi_ctx_ib.qpGroups[dst], &swr, &bad_wr_send))
+  if (ibv_post_send ((struct ibv_qp *) ib_dev_ctx->qpGroups[dst], &swr, &bad_wr_send))
     {
       return 1;
     }

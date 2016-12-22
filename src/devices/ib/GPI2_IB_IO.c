@@ -71,7 +71,9 @@ pgaspi_dev_write (gaspi_context_t * const gctx,
   swr.send_flags = sf;
   swr.next = NULL;
 
-  if( ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr, &bad_wr) )
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if( ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr, &bad_wr) )
     {
       return GASPI_ERROR;
     }
@@ -116,7 +118,9 @@ pgaspi_dev_read (gaspi_context_t * const gctx,
   swr.send_flags = IBV_SEND_SIGNALED;// | IBV_SEND_FENCE;
   swr.next = NULL;
 
-  if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr, &bad_wr))
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr, &bad_wr))
     {
       return GASPI_ERROR;
     }
@@ -137,11 +141,13 @@ pgaspi_dev_purge (gaspi_context_t * const gctx,
   const int nr = gctx->ne_count_c[queue];
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
 
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   for (i = 0; i < nr; i++)
     {
       do
 	{
-	  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqC[queue], 1, &wc);
+	  ne = ibv_poll_cq (ib_dev_ctx->scqC[queue], 1, &wc);
 	  gctx->ne_count_c[queue] -= ne;
 
 	  if (ne == 0)
@@ -183,11 +189,13 @@ pgaspi_dev_wait (gaspi_context_t * const gctx,
   const int nr = gctx->ne_count_c[queue];
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
 
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   for (i = 0; i < nr; i++)
     {
       do
 	{
-	  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqC[queue], 1, &wc);
+	  ne = ibv_poll_cq (ib_dev_ctx->scqC[queue], 1, &wc);
 	  gctx->ne_count_c[queue] -= ne; //TODO: this should be done below, when ne > 0
 
 	  if (ne == 0)
@@ -274,7 +282,9 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
 	swr[i].next = &swr[i + 1];
     }
 
-  if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr[0], &bad_wr))
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr[0], &bad_wr))
     {
       return GASPI_ERROR;
     }
@@ -329,7 +339,9 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
 	swr[i].next = &swr[i + 1];
     }
 
-  if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr[0], &bad_wr))
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr[0], &bad_wr))
     {
       return GASPI_ERROR;
     }
@@ -384,7 +396,9 @@ pgaspi_dev_notify (gaspi_context_t * const gctx,
   swrN.send_flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;
   swrN.next = NULL;
 
-  if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swrN, &bad_wr))
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swrN, &bad_wr))
     {
       return GASPI_ERROR;
     }
@@ -459,7 +473,9 @@ pgaspi_dev_write_notify (gaspi_context_t * const gctx,
   swrN.send_flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;;
   swrN.next = NULL;
 
-  if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr, &bad_wr))
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr, &bad_wr))
     {
       return GASPI_ERROR;
     }
@@ -545,7 +561,9 @@ pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
   swrN.send_flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;
   swrN.next = NULL;
 
-  if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr[0], &bad_wr))
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr[0], &bad_wr))
     {
       return GASPI_ERROR;
     }
@@ -614,7 +632,9 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
   swrN.send_flags = IBV_SEND_SIGNALED;// | IBV_SEND_FENCE;;
   swrN.next = NULL;
 
-  if( ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr, &bad_wr) )
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if( ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr, &bad_wr) )
     {
       return GASPI_ERROR;
     }
@@ -694,7 +714,9 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
   swrN.send_flags = IBV_SEND_SIGNALED;// | IBV_SEND_FENCE;
   swrN.next = NULL;
 
-  if (ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swr[0], &bad_wr))
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr[0], &bad_wr))
     {
       return GASPI_ERROR;
     }
@@ -728,7 +750,9 @@ _gaspi_event_send(gaspi_context_t * const gctx, gaspi_cuda_event_t* event, int q
 
   swr.wr.rdma.remote_addr = (gctx->rrmd[event->segment_remote][event->rank].data.addr + event->offset_remote);
 
-  if( ibv_post_send(glb_gaspi_ctx_ib.qpC[queue][event->rank], &swr, &bad_wr) )
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if( ibv_post_send(ib_dev_ctx->qpC[queue][event->rank], &swr, &bad_wr) )
     {
       //TODO:not here
       gctx->qp_state_vec[queue][event->rank] = GASPI_STATE_CORRUPT;
@@ -778,6 +802,8 @@ pgaspi_dev_gpu_write(gaspi_context_t * const gctx,
   const int BLOCK_SIZE = GASPI_GPU_BUFFERED;
 
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
+
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
 
   while(size_left > 0)
     {
@@ -837,7 +863,7 @@ pgaspi_dev_gpu_write(gaspi_context_t * const gctx,
 	      int ne;
 	      do
 		{
-		  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqC[queue], 1, &wc);
+		  ne = ibv_poll_cq (ib_dev_ctx->scqC[queue], 1, &wc);
 		  gctx->ne_count_c[queue] -= ne; //TODO: this should be done below, when ne > 0
 		  if( ne == 0 )
 		    {
@@ -937,6 +963,8 @@ pgaspi_dev_gpu_write_notify(gaspi_context_t * const gctx,
 
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
 
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   while(size_left > 0)
     {
       int i;
@@ -983,7 +1011,7 @@ pgaspi_dev_gpu_write_notify(gaspi_context_t * const gctx,
 	      int ne;
 	      do
 		{
-		  ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqC[queue], 1, &wc);
+		  ne = ibv_poll_cq (ib_dev_ctx->scqC[queue], 1, &wc);
 		  gctx->ne_count_c[queue] -= ne; //TODO: this should be done below, when ne > 0
 		  if( ne == 0 )
 		    {
@@ -1076,7 +1104,9 @@ pgaspi_dev_gpu_write_notify(gaspi_context_t * const gctx,
   swrN.send_flags = IBV_SEND_SIGNALED | IBV_SEND_INLINE;
   swrN.next = NULL;
 
-  if( ibv_post_send (glb_gaspi_ctx_ib.qpC[queue][rank], &swrN, &bad_wr) )
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if( ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swrN, &bad_wr) )
     {
       gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
@@ -1094,8 +1124,10 @@ _gaspi_find_dev_numa_node(void)
   int numa_node;
   FILE *sysfile = NULL;
 
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   sprintf(path, "/sys/class/infiniband/%s/device/numa_node",
-	  ibv_get_device_name(glb_gaspi_ctx_ib.ib_dev));
+	  ibv_get_device_name(ib_dev_ctx->ib_dev));
 
   sysfile = fopen(path, "r");
   if( sysfile == NULL )

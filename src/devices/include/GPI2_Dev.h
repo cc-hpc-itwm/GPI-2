@@ -23,16 +23,16 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 /* Device interface */
 int
-pgaspi_dev_init_core(gaspi_context_t const * const gctx);
+pgaspi_dev_init_core(gaspi_context_t * const gctx);
 
 int
 pgaspi_dev_cleanup_core(gaspi_context_t * const gctx);
 
 int
-pgaspi_dev_register_mem(gaspi_rc_mseg_t *);
+pgaspi_dev_register_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t *seg);
 
 int
-pgaspi_dev_unregister_mem(const gaspi_rc_mseg_t *);
+pgaspi_dev_unregister_mem(gaspi_context_t const * const gctx,const gaspi_rc_mseg_t * seg);
 
 int
 pgaspi_dev_connect_context(gaspi_context_t const * const gctx, const int);

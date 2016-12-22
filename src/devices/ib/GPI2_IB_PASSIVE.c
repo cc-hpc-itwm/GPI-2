@@ -54,7 +54,9 @@ pgaspi_dev_passive_send (gaspi_context_t * const gctx,
   swr.send_flags = IBV_SEND_SIGNALED;
   swr.next = NULL;
 
-  if( ibv_post_send (glb_gaspi_ctx_ib.qpP[rank], &swr, &bad_wr) )
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if( ibv_post_send (ib_dev_ctx->qpP[rank], &swr, &bad_wr) )
     {
       return GASPI_ERROR;
     }
@@ -68,7 +70,7 @@ pgaspi_dev_passive_send (gaspi_context_t * const gctx,
   int ne = 0;
   do
     {
-      ne = ibv_poll_cq (glb_gaspi_ctx_ib.scqP, 1, &wc_send);
+      ne = ibv_poll_cq (ib_dev_ctx->scqP, 1, &wc_send);
 
       if (ne == 0)
 	{
@@ -121,13 +123,15 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
   rwr.num_sge = 1;
   rwr.next = NULL;
 
-  if (ibv_post_srq_recv (glb_gaspi_ctx_ib.srqP, &rwr, &bad_wr))
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if (ibv_post_srq_recv (ib_dev_ctx->srqP, &rwr, &bad_wr))
     {
       return GASPI_ERROR;
     }
 
   FD_ZERO (&rfds);
-  FD_SET (glb_gaspi_ctx_ib.channelP->fd, &rfds);
+  FD_SET (ib_dev_ctx->channelP->fd, &rfds);
 
   const long ts = (timeout_ms / 1000);
   const long tus = (timeout_ms - ts * 1000) * 1000;
@@ -145,19 +149,19 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
       return GASPI_TIMEOUT;
     }
 
-  if (ibv_get_cq_event (glb_gaspi_ctx_ib.channelP, &ev_cq, &ev_ctx))
+  if (ibv_get_cq_event (ib_dev_ctx->channelP, &ev_cq, &ev_ctx))
     {
       return GASPI_ERROR;
     }
 
   ibv_ack_cq_events (ev_cq, 1);
 
-  if (ev_cq != glb_gaspi_ctx_ib.rcqP)
+  if (ev_cq != ib_dev_ctx->rcqP)
     {
       return GASPI_ERROR;
     }
 
-  if (ibv_req_notify_cq (glb_gaspi_ctx_ib.rcqP, 0))
+  if (ibv_req_notify_cq (ib_dev_ctx->rcqP, 0))
     {
       return GASPI_ERROR;
     }
@@ -165,7 +169,7 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
   int ne = 0;
   do
     {
-      ne = ibv_poll_cq (glb_gaspi_ctx_ib.rcqP, 1, &wc_recv);
+      ne = ibv_poll_cq (ib_dev_ctx->rcqP, 1, &wc_recv);
     }
   while (ne == 0);
 
@@ -182,9 +186,9 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
       for (i = 0; i < gctx->tnc; i++)
 	{
 	  /* we need to make sure the QP was already created and valid */
-	  if(glb_gaspi_ctx_ib.qpP != NULL)
-	    if(glb_gaspi_ctx_ib.qpP[i] != NULL)
-	      if (glb_gaspi_ctx_ib.qpP[i]->qp_num == wc_recv.qp_num)
+	  if(ib_dev_ctx->qpP != NULL)
+	    if(ib_dev_ctx->qpP[i] != NULL)
+	      if (ib_dev_ctx->qpP[i]->qp_num == wc_recv.qp_num)
 		{
 		  *rem_rank = i;
 		  break;

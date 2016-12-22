@@ -76,28 +76,40 @@ link_layer_str (uint8_t link_layer)
 static int
 pgaspi_null_gid (union ibv_gid *gid)
 {
-  return !(gid->raw[8] | gid->raw[9] | gid->raw[10] | gid->
-	   raw[11] | gid->raw[12] | gid->raw[13] | gid->raw[14] | gid->
-	   raw[15]);
+  return !(gid->raw[8]  | gid->raw[9]  | gid->raw[10] | gid->raw[11] |
+	   gid->raw[12] | gid->raw[13] | gid->raw[14] | gid->raw[15]);
 }
 
 int
-pgaspi_dev_init_core (gaspi_context_t const * const gctx)
+pgaspi_dev_init_core (gaspi_context_t * const gctx)
 {
   char boardIDbuf[256];
   int i, p, dev_idx = 0;
   unsigned int c;
 
-  memset (&glb_gaspi_ctx_ib, 0, sizeof (gaspi_ib_ctx));
+  gctx->device = calloc(1, sizeof(gctx->device));
+  if( NULL == gctx->device )
+    {
+      return -1;
+    }
+
+  gctx->device->ctx = calloc(1, sizeof(gaspi_ib_ctx));
+  if( NULL == gctx->device->ctx )
+    {
+      free(gctx->device);
+      return -1;
+    }
+
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
 
   for (i = 0; i < 64; i++)
     {
-      glb_gaspi_ctx_ib.wc_grp_send[i].status = IBV_WC_SUCCESS;
+      ib_dev_ctx->wc_grp_send[i].status = IBV_WC_SUCCESS;
     }
 
   /* Take care of IB device ( */
-  glb_gaspi_ctx_ib.dev_list = ibv_get_device_list (&glb_gaspi_ctx_ib.num_dev);
-  if (!glb_gaspi_ctx_ib.dev_list)
+  ib_dev_ctx->dev_list = ibv_get_device_list (&ib_dev_ctx->num_dev);
+  if (!ib_dev_ctx->dev_list)
     {
       gaspi_print_error ("Failed to get device list (libibverbs)");
       return -1;
@@ -105,14 +117,14 @@ pgaspi_dev_init_core (gaspi_context_t const * const gctx)
 
   if(gctx->config->netdev_id >= 0)
     {
-      if(gctx->config->netdev_id >= glb_gaspi_ctx_ib.num_dev)
+      if(gctx->config->netdev_id >= ib_dev_ctx->num_dev)
 	{
 	  gaspi_print_error ("Failed to get device (libibverbs)");
 	  return -1;
 	}
 
-      glb_gaspi_ctx_ib.ib_dev = glb_gaspi_ctx_ib.dev_list[gctx->config->netdev_id];
-      if (!glb_gaspi_ctx_ib.ib_dev)
+      ib_dev_ctx->ib_dev = ib_dev_ctx->dev_list[gctx->config->netdev_id];
+      if (!ib_dev_ctx->ib_dev)
 	{
 	  gaspi_print_error ("Failed to get device (libibverbs)");
 	  return -1;
@@ -122,17 +134,17 @@ pgaspi_dev_init_core (gaspi_context_t const * const gctx)
     }
   else
     {
-      for (i = 0;i < glb_gaspi_ctx_ib.num_dev; i++)
+      for (i = 0;i < ib_dev_ctx->num_dev; i++)
 	{
-	  glb_gaspi_ctx_ib.ib_dev = glb_gaspi_ctx_ib.dev_list[i];
+	  ib_dev_ctx->ib_dev = ib_dev_ctx->dev_list[i];
 
-	  if (!glb_gaspi_ctx_ib.ib_dev)
+	  if (!ib_dev_ctx->ib_dev)
 	    {
 	      gaspi_print_error ("Failed to get device (libibverbs)");
 	      continue;
 	    }
 
-	  if (glb_gaspi_ctx_ib.ib_dev->transport_type != IBV_TRANSPORT_IB)
+	  if (ib_dev_ctx->ib_dev->transport_type != IBV_TRANSPORT_IB)
 	    continue;
 	  else
 	    {
@@ -142,44 +154,44 @@ pgaspi_dev_init_core (gaspi_context_t const * const gctx)
 	}
     }
 
-  if (!glb_gaspi_ctx_ib.ib_dev)
+  if (!ib_dev_ctx->ib_dev)
     return -1;
 
-  if (glb_gaspi_ctx_ib.ib_dev->transport_type != IBV_TRANSPORT_IB)
+  if (ib_dev_ctx->ib_dev->transport_type != IBV_TRANSPORT_IB)
     {
       gaspi_print_error ("Device does not support IB transport");
       return -1;
     }
 
-  glb_gaspi_ctx_ib.context = ibv_open_device (glb_gaspi_ctx_ib.ib_dev);
-  if(!glb_gaspi_ctx_ib.context)
+  ib_dev_ctx->context = ibv_open_device (ib_dev_ctx->ib_dev);
+  if(!ib_dev_ctx->context)
     {
       gaspi_print_error ("Failed to open IB device (libibverbs)");
       return -1;
     }
 
   /* Completion channel (for passive communication) */
-  glb_gaspi_ctx_ib.channelP = ibv_create_comp_channel (glb_gaspi_ctx_ib.context);
-  if(!glb_gaspi_ctx_ib.channelP)
+  ib_dev_ctx->channelP = ibv_create_comp_channel (ib_dev_ctx->context);
+  if(!ib_dev_ctx->channelP)
     {
       gaspi_print_error ("Failed to create completion channel (libibverbs)");
       return -1;
     }
 
   /* Query device and print info */
-  if(ibv_query_device(glb_gaspi_ctx_ib.context, &glb_gaspi_ctx_ib.device_attr))
+  if(ibv_query_device(ib_dev_ctx->context, &ib_dev_ctx->device_attr))
     {
       gaspi_print_error ("Failed to query device (libibverbs)");
       return -1;
     }
 
-  glb_gaspi_ctx_ib.card_type = glb_gaspi_ctx_ib.device_attr.vendor_part_id;
-  glb_gaspi_ctx_ib.max_rd_atomic = glb_gaspi_ctx_ib.device_attr.max_qp_rd_atom;
+  ib_dev_ctx->card_type = ib_dev_ctx->device_attr.vendor_part_id;
+  ib_dev_ctx->max_rd_atomic = ib_dev_ctx->device_attr.max_qp_rd_atom;
 
 
-  for(p = 0; p < MIN (glb_gaspi_ctx_ib.device_attr.phys_port_cnt, 2); p++)
+  for(p = 0; p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, 2); p++)
     {
-      if(ibv_query_port(glb_gaspi_ctx_ib.context, (unsigned char) (p + 1),&glb_gaspi_ctx_ib.port_attr[p]))
+      if(ibv_query_port(ib_dev_ctx->context, (unsigned char) (p + 1),&ib_dev_ctx->port_attr[p]))
 	{
 	  gaspi_print_error ("Failed to query port (libibverbs)");
 	  return -1;
@@ -189,80 +201,80 @@ pgaspi_dev_init_core (gaspi_context_t const * const gctx)
   if (gctx->config->net_info)
     {
       gaspi_printf ("<<<<<<<<<<<<<<<<IB-info>>>>>>>>>>>>>>>>>>>\n");
-      gaspi_printf ("\tib_dev     : %d (%s)\n",dev_idx,ibv_get_device_name(glb_gaspi_ctx_ib.dev_list[dev_idx]));
+      gaspi_printf ("\tib_dev     : %d (%s)\n",dev_idx,ibv_get_device_name(ib_dev_ctx->dev_list[dev_idx]));
       gaspi_printf ("\tca type    : %d\n",
-		    glb_gaspi_ctx_ib.device_attr.vendor_part_id);
+		    ib_dev_ctx->device_attr.vendor_part_id);
       if(gctx->config->mtu==0)
 	gaspi_printf ("\tmtu        : (active_mtu)\n");
       else
 	gaspi_printf ("\tmtu        : %d (user)\n", gctx->config->mtu);
 
       gaspi_printf ("\tfw_version : %s\n",
-		    glb_gaspi_ctx_ib.device_attr.fw_ver);
+		    ib_dev_ctx->device_attr.fw_ver);
       gaspi_printf ("\thw_version : %x\n",
-		    glb_gaspi_ctx_ib.device_attr.hw_ver);
+		    ib_dev_ctx->device_attr.hw_ver);
 
       if (ibv_read_sysfs_file
-	  (glb_gaspi_ctx_ib.ib_dev->ibdev_path, "board_id", boardIDbuf,
+	  (ib_dev_ctx->ib_dev->ibdev_path, "board_id", boardIDbuf,
 	   sizeof (boardIDbuf)) > 0)
 	gaspi_printf ("\tpsid       : %s\n", boardIDbuf);
 
       gaspi_printf ("\t# ports    : %d\n",
-		    glb_gaspi_ctx_ib.device_attr.phys_port_cnt);
+		    ib_dev_ctx->device_attr.phys_port_cnt);
       gaspi_printf ("\t# rd_atom  : %d\n",
-		    glb_gaspi_ctx_ib.device_attr.max_qp_rd_atom);
+		    ib_dev_ctx->device_attr.max_qp_rd_atom);
 
       int id0[2] = { 0, 0 };
       int id1[2] = { 0, 0 };
 
-      for(p = 0; p < MIN (glb_gaspi_ctx_ib.device_attr.phys_port_cnt, 2);p++)
+      for(p = 0; p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, 2);p++)
 	{
 	  gaspi_printf ("\tport Nr    : %d\n", p + 1);
-	  id0[p] = glb_gaspi_ctx_ib.port_attr[p].state <6 ? glb_gaspi_ctx_ib.port_attr[p].state : 0;
+	  id0[p] = ib_dev_ctx->port_attr[p].state <6 ? ib_dev_ctx->port_attr[p].state : 0;
 	  gaspi_printf ("\t  state      : %s\n", port_state_str[id0[p]]);
 
-	  id1[p] = glb_gaspi_ctx_ib.port_attr[p].phys_state <8 ? glb_gaspi_ctx_ib.port_attr[p].phys_state : 3;
+	  id1[p] = ib_dev_ctx->port_attr[p].phys_state <8 ? ib_dev_ctx->port_attr[p].phys_state : 3;
 	  gaspi_printf ("\t  phy state  : %s\n", port_phy_state_str[id1[p]]);
-	  gaspi_printf ("\t  link layer : %s\n",link_layer_str (glb_gaspi_ctx_ib.port_attr[p].link_layer));
+	  gaspi_printf ("\t  link layer : %s\n",link_layer_str (ib_dev_ctx->port_attr[p].link_layer));
 	}
     }
 
   /* Port check */
   if(gctx->config->port_check)
     {
-      if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)&& (glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE))
+      if((ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE)&& (ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE))
 	{
 	  gaspi_print_error ("No IB active port found");
 	  return -1;
 	}
 
-      if((glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)&& (glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP))
+      if((ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP)&& (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP))
 	{
 	  gaspi_print_error ("No IB active link found");
 	  return -1;
 	}
 
-      glb_gaspi_ctx_ib.ib_port = 1;
+      ib_dev_ctx->ib_port = 1;
 
-      if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE) || (glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP))
+      if((ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE) || (ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP))
 	{
 
-	  if((glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE) || (glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP))
+	  if((ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE) || (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP))
 	    {
 	      gaspi_print_error ("No IB active port found");
 	      return -1;
 	    }
 
-	  glb_gaspi_ctx_ib.ib_port = 2;
+	  ib_dev_ctx->ib_port = 2;
 	}
 
       /* user didnt choose something, so we use network type of first active port */
       if(!gctx->config->user_net)
 	{
-	  if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer == IBV_LINK_LAYER_INFINIBAND)
+	  if(ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].link_layer == IBV_LINK_LAYER_INFINIBAND)
 	    gctx->config->network = GASPI_IB;
 
-	  else if(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].link_layer == IBV_LINK_LAYER_ETHERNET)
+	  else if(ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].link_layer == IBV_LINK_LAYER_ETHERNET)
 	    gctx->config->network = GASPI_ROCE;
 	}
 
@@ -270,38 +282,38 @@ pgaspi_dev_init_core (gaspi_context_t const * const gctx)
       if(gctx->config->network == GASPI_ROCE)
 	{
 
-	  glb_gaspi_ctx_ib.ib_port = 1;
+	  ib_dev_ctx->ib_port = 1;
 
-	  if((glb_gaspi_ctx_ib.port_attr[0].state != IBV_PORT_ACTIVE)
-	     ||(glb_gaspi_ctx_ib.port_attr[0].phys_state != PORT_LINK_UP)
-	     ||(glb_gaspi_ctx_ib.port_attr[0].link_layer != IBV_LINK_LAYER_ETHERNET)){
+	  if((ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE)
+	     ||(ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP)
+	     ||(ib_dev_ctx->port_attr[0].link_layer != IBV_LINK_LAYER_ETHERNET)){
 
 
-	    if((glb_gaspi_ctx_ib.port_attr[1].state != IBV_PORT_ACTIVE)
-	       ||(glb_gaspi_ctx_ib.port_attr[1].phys_state != PORT_LINK_UP)
-	       ||(glb_gaspi_ctx_ib.port_attr[1].link_layer != IBV_LINK_LAYER_ETHERNET)){
+	    if((ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE)
+	       ||(ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP)
+	       ||(ib_dev_ctx->port_attr[1].link_layer != IBV_LINK_LAYER_ETHERNET)){
 
 	      gaspi_print_error ("No active Ethernet (RoCE) port found");
 	      return -1;
 	    }
 
-	    glb_gaspi_ctx_ib.ib_port = 2;
+	    ib_dev_ctx->ib_port = 2;
 	  }
 	}
     }/* if(gctx->config->port_check) */
   else
     {
-      glb_gaspi_ctx_ib.ib_port = 1;
+      ib_dev_ctx->ib_port = 1;
     }
 
   if(gctx->config->net_info)
-    gaspi_printf ("\tusing port : %d\n", glb_gaspi_ctx_ib.ib_port);
+    gaspi_printf ("\tusing port : %d\n", ib_dev_ctx->ib_port);
 
   if (gctx->config->network == GASPI_IB)
     {
       if(gctx->config->mtu == 0)
 	{
-	  switch(glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].active_mtu){
+	  switch(ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].active_mtu){
 
 	  case IBV_MTU_1024:
 	    gctx->config->mtu = 1024;
@@ -328,20 +340,20 @@ pgaspi_dev_init_core (gaspi_context_t const * const gctx)
       if(gctx->config->net_info) gaspi_printf ("\teth. mtu   : %d\n", gctx->config->mtu);
     }
 
-  glb_gaspi_ctx_ib.pd = ibv_alloc_pd (glb_gaspi_ctx_ib.context);
-  if (!glb_gaspi_ctx_ib.pd)
+  ib_dev_ctx->pd = ibv_alloc_pd (ib_dev_ctx->context);
+  if (!ib_dev_ctx->pd)
     {
       gaspi_print_error ("Failed to allocate protection domain (libibverbs)");
       return -1;
     }
 
-  memset (&glb_gaspi_ctx_ib.srq_attr, 0, sizeof (struct ibv_srq_init_attr));
+  memset (&ib_dev_ctx->srq_attr, 0, sizeof (struct ibv_srq_init_attr));
 
-  glb_gaspi_ctx_ib.srq_attr.attr.max_wr  = gctx->config->queue_size_max;
-  glb_gaspi_ctx_ib.srq_attr.attr.max_sge = 1;
+  ib_dev_ctx->srq_attr.attr.max_wr  = gctx->config->queue_size_max;
+  ib_dev_ctx->srq_attr.attr.max_sge = 1;
 
-  glb_gaspi_ctx_ib.srqP = ibv_create_srq (glb_gaspi_ctx_ib.pd, &glb_gaspi_ctx_ib.srq_attr);
-  if(!glb_gaspi_ctx_ib.srqP)
+  ib_dev_ctx->srqP = ibv_create_srq (ib_dev_ctx->pd, &ib_dev_ctx->srq_attr);
+  if(!ib_dev_ctx->srqP)
     {
       gaspi_print_error ("Failed to create SRQ (libibverbs)");
       return -1;
@@ -353,54 +365,54 @@ pgaspi_dev_init_core (gaspi_context_t const * const gctx)
   struct ibv_exp_cq_init_attr cqattr;
   memset(&cqattr, 0, sizeof(cqattr));
 
-  glb_gaspi_ctx_ib.scqGroups = ibv_exp_create_cq (glb_gaspi_ctx_ib.context, gctx->config->queue_size_max, NULL,NULL, 0, &cqattr);
+  ib_dev_ctx->scqGroups = ibv_exp_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,NULL, 0, &cqattr);
 
-  if(!glb_gaspi_ctx_ib.scqGroups)
+  if(!ib_dev_ctx->scqGroups)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 
-  glb_gaspi_ctx_ib.rcqGroups = ibv_exp_create_cq (glb_gaspi_ctx_ib.context, gctx->config->queue_size_max, NULL,NULL, 0, &cqattr);
+  ib_dev_ctx->rcqGroups = ibv_exp_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,NULL, 0, &cqattr);
 
-  if(!glb_gaspi_ctx_ib.rcqGroups)
+  if(!ib_dev_ctx->rcqGroups)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 #else
-  glb_gaspi_ctx_ib.scqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, gctx->config->queue_size_max, NULL,NULL, 0);
+  ib_dev_ctx->scqGroups = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,NULL, 0);
 
-  if(!glb_gaspi_ctx_ib.scqGroups)
+  if(!ib_dev_ctx->scqGroups)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 
-  glb_gaspi_ctx_ib.rcqGroups = ibv_create_cq (glb_gaspi_ctx_ib.context, gctx->config->queue_size_max, NULL,NULL, 0);
-  if(!glb_gaspi_ctx_ib.rcqGroups)
+  ib_dev_ctx->rcqGroups = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,NULL, 0);
+  if(!ib_dev_ctx->rcqGroups)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 #endif
   /* Passive */
-  glb_gaspi_ctx_ib.scqP = ibv_create_cq (glb_gaspi_ctx_ib.context, gctx->config->queue_size_max, NULL,NULL, 0);
-  if(!glb_gaspi_ctx_ib.scqP)
+  ib_dev_ctx->scqP = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,NULL, 0);
+  if(!ib_dev_ctx->scqP)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 
-  glb_gaspi_ctx_ib.rcqP = ibv_create_cq (glb_gaspi_ctx_ib.context, gctx->config->queue_size_max, NULL, glb_gaspi_ctx_ib.channelP, 0);
+  ib_dev_ctx->rcqP = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL, ib_dev_ctx->channelP, 0);
 
-  if(!glb_gaspi_ctx_ib.rcqP)
+  if(!ib_dev_ctx->rcqP)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 
-  if(ibv_req_notify_cq (glb_gaspi_ctx_ib.rcqP, 0))
+  if(ibv_req_notify_cq (ib_dev_ctx->rcqP, 0))
     {
       gaspi_print_error ("Failed to request CQ notifications (libibverbs)");
       return 1;
@@ -409,8 +421,8 @@ pgaspi_dev_init_core (gaspi_context_t const * const gctx)
   /* One-sided Communication */
   for(c = 0; c < gctx->config->queue_num; c++)
     {
-      glb_gaspi_ctx_ib.scqC[c] = ibv_create_cq (glb_gaspi_ctx_ib.context, gctx->config->queue_size_max, NULL, NULL, 0);
-      if(!glb_gaspi_ctx_ib.scqC[c])
+      ib_dev_ctx->scqC[c] = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL, NULL, 0);
+      if(!ib_dev_ctx->scqC[c])
 	{
 	  gaspi_print_error ("Failed to create CQ (libibverbs)");
 	  return -1;
@@ -419,78 +431,78 @@ pgaspi_dev_init_core (gaspi_context_t const * const gctx)
 
   /* Allocate space for QPs */
   //  gaspi_context_t * const gctx = &glb_gaspi_ctx;
-  glb_gaspi_ctx_ib.qpGroups = (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
-  if(!glb_gaspi_ctx_ib.qpGroups)
+  ib_dev_ctx->qpGroups = (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
+  if(!ib_dev_ctx->qpGroups)
     {
       return -1;
     }
 
   for(c = 0; c < gctx->config->queue_num; c++)
     {
-      glb_gaspi_ctx_ib.qpC[c] = (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
-      if(!glb_gaspi_ctx_ib.qpC[c])
+      ib_dev_ctx->qpC[c] = (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
+      if(!ib_dev_ctx->qpC[c])
 	return -1;
     }
 
-  glb_gaspi_ctx_ib.qpP = (struct ibv_qp **) calloc (gctx->tnc , sizeof (struct ibv_qp *));
-  if(!glb_gaspi_ctx_ib.qpP)
+  ib_dev_ctx->qpP = (struct ibv_qp **) calloc (gctx->tnc , sizeof (struct ibv_qp *));
+  if(!ib_dev_ctx->qpP)
     {
       return -1;
     }
 
   /* Zero-fy QP creation state */
-  memset(&(glb_gaspi_ctx_ib.qpC_cstat), 0, GASPI_MAX_QP);
+  memset(&(ib_dev_ctx->qpC_cstat), 0, GASPI_MAX_QP);
 
   /* RoCE */
   if(gctx->config->network == GASPI_ROCE)
     {
-      const int ret = ibv_query_gid (glb_gaspi_ctx_ib.context, glb_gaspi_ctx_ib.ib_port,GASPI_GID_INDEX, &glb_gaspi_ctx_ib.gid);
+      const int ret = ibv_query_gid (ib_dev_ctx->context, ib_dev_ctx->ib_port,GASPI_GID_INDEX, &ib_dev_ctx->gid);
       if(ret)
 	{
 	  gaspi_print_error ("Failed to query gid (RoCE - libiverbs)");
 	  return -1;
 	}
 
-      if (!pgaspi_null_gid (&glb_gaspi_ctx_ib.gid))
+      if (!pgaspi_null_gid (&ib_dev_ctx->gid))
 	{
 	  if (gctx->config->net_info)
 	    gaspi_printf
 	      ("gid[0]: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
-	       glb_gaspi_ctx_ib.gid.raw[0], glb_gaspi_ctx_ib.gid.raw[1],
-	       glb_gaspi_ctx_ib.gid.raw[2], glb_gaspi_ctx_ib.gid.raw[3],
-	       glb_gaspi_ctx_ib.gid.raw[4], glb_gaspi_ctx_ib.gid.raw[5],
-	       glb_gaspi_ctx_ib.gid.raw[6], glb_gaspi_ctx_ib.gid.raw[7],
-	       glb_gaspi_ctx_ib.gid.raw[8], glb_gaspi_ctx_ib.gid.raw[9],
-	       glb_gaspi_ctx_ib.gid.raw[10], glb_gaspi_ctx_ib.gid.raw[11],
-	       glb_gaspi_ctx_ib.gid.raw[12], glb_gaspi_ctx_ib.gid.raw[13],
-	       glb_gaspi_ctx_ib.gid.raw[14], glb_gaspi_ctx_ib.gid.raw[15]);
+	       ib_dev_ctx->gid.raw[0], ib_dev_ctx->gid.raw[1],
+	       ib_dev_ctx->gid.raw[2], ib_dev_ctx->gid.raw[3],
+	       ib_dev_ctx->gid.raw[4], ib_dev_ctx->gid.raw[5],
+	       ib_dev_ctx->gid.raw[6], ib_dev_ctx->gid.raw[7],
+	       ib_dev_ctx->gid.raw[8], ib_dev_ctx->gid.raw[9],
+	       ib_dev_ctx->gid.raw[10], ib_dev_ctx->gid.raw[11],
+	       ib_dev_ctx->gid.raw[12], ib_dev_ctx->gid.raw[13],
+	       ib_dev_ctx->gid.raw[14], ib_dev_ctx->gid.raw[15]);
 	}
     }
 
-  glb_gaspi_ctx_ib.local_info = (struct ib_ctx_info *) calloc (gctx->tnc, sizeof(struct ib_ctx_info));
-  if(!glb_gaspi_ctx_ib.local_info)
+  ib_dev_ctx->local_info = (struct ib_ctx_info *) calloc (gctx->tnc, sizeof(struct ib_ctx_info));
+  if(!ib_dev_ctx->local_info)
     {
       return -1;
     }
 
-  glb_gaspi_ctx_ib.remote_info = (struct ib_ctx_info *) calloc (gctx->tnc, sizeof(struct ib_ctx_info));
-  if(!glb_gaspi_ctx_ib.remote_info)
+  ib_dev_ctx->remote_info = (struct ib_ctx_info *) calloc (gctx->tnc, sizeof(struct ib_ctx_info));
+  if(!ib_dev_ctx->remote_info)
     {
       return -1;
     }
 
   for(i = 0; i < gctx->tnc; i++)
     {
-      glb_gaspi_ctx_ib.local_info[i].lid = glb_gaspi_ctx_ib.port_attr[glb_gaspi_ctx_ib.ib_port - 1].lid;
+      ib_dev_ctx->local_info[i].lid = ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].lid;
 
       struct timeval tv;
       gettimeofday (&tv, NULL);
       srand48 (tv.tv_usec);
-      glb_gaspi_ctx_ib.local_info[i].psn = lrand48 () & 0xffffff;
+      ib_dev_ctx->local_info[i].psn = lrand48 () & 0xffffff;
 
       if(gctx->config->port_check)
 	{
-	  if(!glb_gaspi_ctx_ib.local_info[i].lid && (gctx->config->network == GASPI_IB))
+	  if(!ib_dev_ctx->local_info[i].lid && (gctx->config->network == GASPI_IB))
 	    {
 	      gaspi_print_error("Failed to find topology! Is subnet-manager running ?");
 	      return -1;
@@ -499,7 +511,7 @@ pgaspi_dev_init_core (gaspi_context_t const * const gctx)
 
       if(gctx->config->network == GASPI_ROCE)
 	{
-	  glb_gaspi_ctx_ib.local_info[i].gid = glb_gaspi_ctx_ib.gid;
+	  ib_dev_ctx->local_info[i].gid = ib_dev_ctx->gid;
 	}
     }
 
@@ -511,6 +523,8 @@ _pgaspi_dev_create_qp(gaspi_context_t const * const gctx,
 		      struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv_srq *srq,
 		      uint32_t depth)
 {
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   struct ibv_qp *qp;
 
   /* Set initial attributes */
@@ -527,7 +541,7 @@ _pgaspi_dev_create_qp(gaspi_context_t const * const gctx,
   qpi_attr.recv_cq = recv_cq;
   qpi_attr.srq = srq;
 
-  qp = ibv_create_qp (glb_gaspi_ctx_ib.pd, &qpi_attr);
+  qp = ibv_create_qp (ib_dev_ctx->pd, &qpi_attr);
   if( qp == NULL)
     {
       gaspi_print_error ("Failed to create QP (libibverbs)");
@@ -540,7 +554,7 @@ _pgaspi_dev_create_qp(gaspi_context_t const * const gctx,
 
   qp_attr.qp_state = IBV_QPS_INIT;
   qp_attr.pkey_index = 0;
-  qp_attr.port_num = glb_gaspi_ctx_ib.ib_port;
+  qp_attr.port_num = ib_dev_ctx->ib_port;
   qp_attr.qp_access_flags = IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE |IBV_ACCESS_REMOTE_ATOMIC;
 
   if(ibv_modify_qp(qp, &qp_attr,
@@ -570,6 +584,8 @@ _pgaspi_dev_create_qp_exp(gaspi_context_t const * const gctx,
 			  struct ibv_cq *send_cq, struct ibv_cq *recv_cq, struct ibv_srq *srq,
 			  uint32_t depth)
 {
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   struct ibv_exp_qp_init_attr attr;
   struct ibv_qp* qp = NULL;
   struct ibv_exp_device_attr dev_attr;
@@ -577,7 +593,7 @@ _pgaspi_dev_create_qp_exp(gaspi_context_t const * const gctx,
   memset(&attr, 0, sizeof(attr));
   memset(&dev_attr, 0, sizeof(dev_attr));
 
-  attr.pd = glb_gaspi_ctx_ib.pd;
+  attr.pd = ib_dev_ctx->pd;
   attr.cap.max_send_wr = depth;
   attr.cap.max_recv_wr = depth;
   attr.cap.max_send_sge = 1;
@@ -594,7 +610,7 @@ _pgaspi_dev_create_qp_exp(gaspi_context_t const * const gctx,
 
   attr.qp_type = IBV_QPT_RC;
 
-  qp = ibv_exp_create_qp(glb_gaspi_ctx_ib.context, &attr);
+  qp = ibv_exp_create_qp(ib_dev_ctx->context, &attr);
   if( qp == NULL )
     {
       gaspi_print_error ("Failed to create QP (libibverbs)");
@@ -607,7 +623,7 @@ _pgaspi_dev_create_qp_exp(gaspi_context_t const * const gctx,
 
   qp_attr.qp_state = IBV_QPS_INIT;
   qp_attr.pkey_index = 0;
-  qp_attr.port_num = glb_gaspi_ctx_ib.ib_port;
+  qp_attr.port_num = ib_dev_ctx->ib_port;
 
   qp_attr.qp_access_flags = IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE |IBV_ACCESS_REMOTE_ATOMIC;
 
@@ -618,7 +634,7 @@ _pgaspi_dev_create_qp_exp(gaspi_context_t const * const gctx,
 
   exp_attr.qp_state = qp_attr.qp_state;
   exp_attr.pkey_index = qp_attr.pkey_index;
-  exp_attr.port_num = glb_gaspi_ctx_ib.ib_port;
+  exp_attr.port_num = ib_dev_ctx->ib_port;
 
   exp_attr.qp_access_flags = qp_attr.qp_access_flags;
 
@@ -643,8 +659,9 @@ _pgaspi_dev_create_qp_exp(gaspi_context_t const * const gctx,
 int
 pgaspi_dev_comm_queue_delete(gaspi_context_t const * const gctx, const unsigned int id)
 {
-  int i;
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
 
+  int i;
   for(i = 0; i < gctx->tnc; i++)
     {
       if(gctx->ep_conn[i].istat == 0)
@@ -652,11 +669,11 @@ pgaspi_dev_comm_queue_delete(gaspi_context_t const * const gctx, const unsigned 
 	  continue;
 	}
 
-      if( glb_gaspi_ctx_ib.qpC[id] )
+      if( ib_dev_ctx->qpC[id] )
 	{
-	  if( glb_gaspi_ctx_ib.qpC[id][i] )
+	  if( ib_dev_ctx->qpC[id][i] )
 	    {
-	      if( ibv_destroy_qp( glb_gaspi_ctx_ib.qpC[id][i] ) )
+	      if( ibv_destroy_qp( ib_dev_ctx->qpC[id][i] ) )
 		{
 		  gaspi_print_error ("Failed to destroy QP (libibverbs)");
 		  return -1;
@@ -664,27 +681,27 @@ pgaspi_dev_comm_queue_delete(gaspi_context_t const * const gctx, const unsigned 
 	    }
 	}
 
-      glb_gaspi_ctx_ib.remote_info[i].qpnC[id] = 0;
+      ib_dev_ctx->remote_info[i].qpnC[id] = 0;
     }
 
-  free (glb_gaspi_ctx_ib.qpC[id]);
+  free (ib_dev_ctx->qpC[id]);
 
-  glb_gaspi_ctx_ib.qpC[id] = NULL;
+  ib_dev_ctx->qpC[id] = NULL;
 
-  if( 1 == glb_gaspi_ctx_ib.qpC_cstat[id] )
+  if( 1 == ib_dev_ctx->qpC_cstat[id] )
     {
-      if( glb_gaspi_ctx_ib.scqC[id] )
+      if( ib_dev_ctx->scqC[id] )
 	{
-	  if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqC[id]))
+	  if(ibv_destroy_cq (ib_dev_ctx->scqC[id]))
 	    {
 	      gaspi_print_error ("Failed to destroy CQ (libibverbs)");
 	      return -1;
 	    }
 
-	  glb_gaspi_ctx_ib.scqC[id] = NULL;
+	  ib_dev_ctx->scqC[id] = NULL;
 	}
 
-      glb_gaspi_ctx_ib.qpC_cstat[id] = 0;
+      ib_dev_ctx->qpC_cstat[id] = 0;
     }
 
   return 0;
@@ -694,43 +711,45 @@ int
 pgaspi_dev_comm_queue_create(gaspi_context_t const * const gctx,
 			     const unsigned int id, const unsigned short remote_node)
 {
-  if( 0 == glb_gaspi_ctx_ib.qpC_cstat[id] )
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
+  if( 0 == ib_dev_ctx->qpC_cstat[id] )
     {
       /* Completion queue */
-      glb_gaspi_ctx_ib.scqC[id] = ibv_create_cq (glb_gaspi_ctx_ib.context, gctx->config->queue_size_max, NULL, NULL, 0);
-      if(!glb_gaspi_ctx_ib.scqC[id])
+      ib_dev_ctx->scqC[id] = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL, NULL, 0);
+      if(!ib_dev_ctx->scqC[id])
 	{
 	  gaspi_print_error ("Failed to create CQ (libibverbs)");
 	  return -1;
 	}
 
       /* Queue Pair */
-      glb_gaspi_ctx_ib.qpC[id] = (struct ibv_qp **) malloc (gctx->tnc * sizeof (struct ibv_qp *));
-      if( glb_gaspi_ctx_ib.qpC[id] == NULL)
+      ib_dev_ctx->qpC[id] = (struct ibv_qp **) malloc (gctx->tnc * sizeof (struct ibv_qp *));
+      if( ib_dev_ctx->qpC[id] == NULL)
 	{
 	  gaspi_print_error ("Failed to memory allocation");
 	  return -1;
 	}
 
-      glb_gaspi_ctx_ib.qpC_cstat[id] = 1;
+      ib_dev_ctx->qpC_cstat[id] = 1;
     }
 
-  if( glb_gaspi_ctx_ib.qpC[id] == NULL)
+  if( ib_dev_ctx->qpC[id] == NULL)
     {
       gaspi_print_error ("Failed to memory allocation");
       return -1;
     }
 
-  glb_gaspi_ctx_ib.qpC[id][remote_node] =
-    _pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqC[id], glb_gaspi_ctx_ib.scqC[id], NULL, gctx->config->queue_size_max);
+  ib_dev_ctx->qpC[id][remote_node] =
+    _pgaspi_dev_create_qp(gctx, ib_dev_ctx->scqC[id], ib_dev_ctx->scqC[id], NULL, gctx->config->queue_size_max);
 
-  if( glb_gaspi_ctx_ib.qpC[id][remote_node] == NULL )
+  if( ib_dev_ctx->qpC[id][remote_node] == NULL )
     {
       gaspi_print_error ("Failed to create QP (libibverbs)");
       return -1;
     }
 
-  glb_gaspi_ctx_ib.local_info[remote_node].qpnC[id] = glb_gaspi_ctx_ib.qpC[id][remote_node]->qp_num;
+  ib_dev_ctx->local_info[remote_node].qpnC[id] = ib_dev_ctx->qpC[id][remote_node]->qp_num;
 
   return 0;
 }
@@ -739,51 +758,53 @@ int
 pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int i,
 			   void** info, void** remote_info, size_t* info_size)
 {
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   unsigned int c;
 
-  if( glb_gaspi_ctx_ib.qpGroups[i] == NULL )
+  if( ib_dev_ctx->qpGroups[i] == NULL )
     {
       /* Groups QP*/
 #ifdef GPI2_EXP_VERBS
-      glb_gaspi_ctx_ib.qpGroups[i] =
-	_pgaspi_dev_create_qp_exp(gctx, glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL, gctx->config->queue_size_max);
+      ib_dev_ctx->qpGroups[i] =
+	_pgaspi_dev_create_qp_exp(gctx, ib_dev_ctx->scqGroups, ib_dev_ctx->rcqGroups, NULL, gctx->config->queue_size_max);
 
 #else
-      glb_gaspi_ctx_ib.qpGroups[i] =
-	_pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqGroups, glb_gaspi_ctx_ib.rcqGroups, NULL, gctx->config->queue_size_max);
+      ib_dev_ctx->qpGroups[i] =
+	_pgaspi_dev_create_qp(gctx, ib_dev_ctx->scqGroups, ib_dev_ctx->rcqGroups, NULL, gctx->config->queue_size_max);
 
-      if( glb_gaspi_ctx_ib.qpGroups[i] == NULL )
+      if( ib_dev_ctx->qpGroups[i] == NULL )
 	{
 	  return -1;
 	}
 #endif
 
-      glb_gaspi_ctx_ib.local_info[i].qpnGroup = glb_gaspi_ctx_ib.qpGroups[i]->qp_num;
+      ib_dev_ctx->local_info[i].qpnGroup = ib_dev_ctx->qpGroups[i]->qp_num;
 
       /* IO QPs*/
       for(c = 0; c < gctx->config->queue_num; c++)
 	{
-	  glb_gaspi_ctx_ib.qpC[c][i] =
-	    _pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqC[c], glb_gaspi_ctx_ib.scqC[c], NULL, gctx->config->queue_size_max);
+	  ib_dev_ctx->qpC[c][i] =
+	    _pgaspi_dev_create_qp(gctx, ib_dev_ctx->scqC[c], ib_dev_ctx->scqC[c], NULL, gctx->config->queue_size_max);
 
-	  if( glb_gaspi_ctx_ib.qpC[c][i] == NULL )
+	  if( ib_dev_ctx->qpC[c][i] == NULL )
 	    return -1;
 
-	  glb_gaspi_ctx_ib.local_info[i].qpnC[c] = glb_gaspi_ctx_ib.qpC[c][i]->qp_num;
+	  ib_dev_ctx->local_info[i].qpnC[c] = ib_dev_ctx->qpC[c][i]->qp_num;
 	}
 
       /* Passive QP */
-      glb_gaspi_ctx_ib.qpP[i] =
-	_pgaspi_dev_create_qp(gctx, glb_gaspi_ctx_ib.scqP, glb_gaspi_ctx_ib.rcqP, glb_gaspi_ctx_ib.srqP,gctx->config->queue_size_max);
+      ib_dev_ctx->qpP[i] =
+	_pgaspi_dev_create_qp(gctx, ib_dev_ctx->scqP, ib_dev_ctx->rcqP, ib_dev_ctx->srqP,gctx->config->queue_size_max);
 
-      if( glb_gaspi_ctx_ib.qpP[i] == NULL )
+      if( ib_dev_ctx->qpP[i] == NULL )
 	return -1;
 
-      glb_gaspi_ctx_ib.local_info[i].qpnP = glb_gaspi_ctx_ib.qpP[i]->qp_num;
+      ib_dev_ctx->local_info[i].qpnP = ib_dev_ctx->qpP[i]->qp_num;
     }
 
-  *info = &glb_gaspi_ctx_ib.local_info[i];
-  *remote_info = &glb_gaspi_ctx_ib.remote_info[i];
+  *info = &ib_dev_ctx->local_info[i];
+  *remote_info = &ib_dev_ctx->remote_info[i];
   *info_size = sizeof(struct ib_ctx_info);
 
   return 0;
@@ -793,9 +814,11 @@ pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int i,
 int
 pgaspi_dev_disconnect_context(gaspi_context_t const * const gctx, const int i)
 {
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   unsigned int c;
 
-  if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpGroups[i]))
+  if(ibv_destroy_qp(ib_dev_ctx->qpGroups[i]))
     {
       gaspi_print_error ("Failed to destroy QP (libibverbs)");
       return -1;
@@ -803,25 +826,25 @@ pgaspi_dev_disconnect_context(gaspi_context_t const * const gctx, const int i)
 
   for(c = 0; c < gctx->config->queue_num; c++)
     {
-      if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpC[c][i]))
+      if(ibv_destroy_qp(ib_dev_ctx->qpC[c][i]))
 	{
 	  gaspi_print_error ("Failed to destroy QP (libibverbs)");
 	  return -1;
 	}
     }
 
-  if(ibv_destroy_qp(glb_gaspi_ctx_ib.qpP[i]))
+  if(ibv_destroy_qp(ib_dev_ctx->qpP[i]))
     {
       gaspi_print_error ("Failed to destroy QP (libibverbs)");
       return -1;
     }
 
-  glb_gaspi_ctx_ib.local_info[i].qpnGroup = 0;
-  glb_gaspi_ctx_ib.local_info[i].qpnP = 0;
+  ib_dev_ctx->local_info[i].qpnGroup = 0;
+  ib_dev_ctx->local_info[i].qpnP = 0;
 
   for(c = 0; c < gctx->config->queue_num; c++)
     {
-      glb_gaspi_ctx_ib.local_info[i].qpnC[c] = 0;
+      ib_dev_ctx->local_info[i].qpnC[c] = 0;
     }
 
   return 0;
@@ -830,6 +853,8 @@ pgaspi_dev_disconnect_context(gaspi_context_t const * const gctx, const int i)
 static int
 _pgaspi_dev_qp_set_ready(gaspi_context_t const * const gctx, struct ibv_qp *qp, int target, int target_qp)
 {
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   struct ibv_qp_attr qp_attr;
 
   memset(&qp_attr, 0, sizeof (qp_attr));
@@ -855,25 +880,25 @@ _pgaspi_dev_qp_set_ready(gaspi_context_t const * const gctx, struct ibv_qp *qp, 
   /* ready2recv */
   qp_attr.qp_state = IBV_QPS_RTR;
   qp_attr.dest_qp_num = target_qp;
-  qp_attr.rq_psn = glb_gaspi_ctx_ib.remote_info[target].psn;
-  qp_attr.max_dest_rd_atomic = glb_gaspi_ctx_ib.max_rd_atomic;
+  qp_attr.rq_psn = ib_dev_ctx->remote_info[target].psn;
+  qp_attr.max_dest_rd_atomic = ib_dev_ctx->max_rd_atomic;
   qp_attr.min_rnr_timer = 12;
 
   if(gctx->config->network == GASPI_IB)
     {
       qp_attr.ah_attr.is_global = 0;
-      qp_attr.ah_attr.dlid = (unsigned short) glb_gaspi_ctx_ib.remote_info[target].lid;
+      qp_attr.ah_attr.dlid = (unsigned short) ib_dev_ctx->remote_info[target].lid;
     }
   else
     {
       qp_attr.ah_attr.is_global = 1;
-      qp_attr.ah_attr.grh.dgid = glb_gaspi_ctx_ib.remote_info[target].gid;
+      qp_attr.ah_attr.grh.dgid = ib_dev_ctx->remote_info[target].gid;
       qp_attr.ah_attr.grh.hop_limit = 1;
     }
 
   qp_attr.ah_attr.sl = 0;
   qp_attr.ah_attr.src_path_bits = 0;
-  qp_attr.ah_attr.port_num = glb_gaspi_ctx_ib.ib_port;
+  qp_attr.ah_attr.port_num = ib_dev_ctx->ib_port;
 
   if(ibv_modify_qp( qp, &qp_attr,
 		    IBV_QP_STATE
@@ -893,8 +918,8 @@ _pgaspi_dev_qp_set_ready(gaspi_context_t const * const gctx, struct ibv_qp *qp, 
   qp_attr.retry_cnt = GASPI_QP_RETRY;
   qp_attr.rnr_retry = GASPI_QP_RETRY;
   qp_attr.qp_state = IBV_QPS_RTS;
-  qp_attr.sq_psn = glb_gaspi_ctx_ib.local_info[target].psn;
-  qp_attr.max_rd_atomic = glb_gaspi_ctx_ib.max_rd_atomic;
+  qp_attr.sq_psn = ib_dev_ctx->local_info[target].psn;
+  qp_attr.max_rd_atomic = ib_dev_ctx->max_rd_atomic;
 
   if(ibv_modify_qp( qp, &qp_attr,
 		    IBV_QP_STATE
@@ -914,36 +939,40 @@ _pgaspi_dev_qp_set_ready(gaspi_context_t const * const gctx, struct ibv_qp *qp, 
 int
 pgaspi_dev_comm_queue_connect(gaspi_context_t const * const gctx, const unsigned short q, const int i)
 {
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   /* Not very nice but we need to wait for info to be available */
   do
     {
       usleep(10);
     }
-  while(glb_gaspi_ctx_ib.remote_info[i].qpnC[q] == 0);
+  while(ib_dev_ctx->remote_info[i].qpnC[q] == 0);
 
   return _pgaspi_dev_qp_set_ready(gctx,
-				  glb_gaspi_ctx_ib.qpC[q][i],
+				  ib_dev_ctx->qpC[q][i],
 				  i,
-				  glb_gaspi_ctx_ib.remote_info[i].qpnC[q]);
+				  ib_dev_ctx->remote_info[i].qpnC[q]);
 }
 
 /* TODO: rename to endpoint */
 int
 pgaspi_dev_connect_context(gaspi_context_t const * const gctx, const int i)
 {
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   unsigned int c;
   if( 0 != _pgaspi_dev_qp_set_ready(gctx,
-				    glb_gaspi_ctx_ib.qpGroups[i],
+				    ib_dev_ctx->qpGroups[i],
 				    i,
-				    glb_gaspi_ctx_ib.remote_info[i].qpnGroup) )
+				    ib_dev_ctx->remote_info[i].qpnGroup) )
     {
       return -1;
     }
 
   if( 0 != _pgaspi_dev_qp_set_ready(gctx,
-				    glb_gaspi_ctx_ib.qpP[i],
+				    ib_dev_ctx->qpP[i],
 				    i,
-				    glb_gaspi_ctx_ib.remote_info[i].qpnP) )
+				    ib_dev_ctx->remote_info[i].qpnP) )
     {
       return -1;
     }
@@ -951,9 +980,9 @@ pgaspi_dev_connect_context(gaspi_context_t const * const gctx, const int i)
   for(c = 0; c < gctx->config->queue_num; c++)
     {
       if( 0 != _pgaspi_dev_qp_set_ready(gctx,
-					glb_gaspi_ctx_ib.qpC[c][i],
+					ib_dev_ctx->qpC[c][i],
 					i,
-					glb_gaspi_ctx_ib.remote_info[i].qpnC[c]) )
+					ib_dev_ctx->remote_info[i].qpnC[c]) )
 	{
 	  return -1;
 	}
@@ -968,17 +997,19 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   int i;
   unsigned int c;
 
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+
   for(i = 0; i < gctx->tnc; i++)
     {
       if( GASPI_ENDPOINT_CREATED == gctx->ep_conn[i].istat )
 	{
-	  if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpGroups[i]))
+	  if(ibv_destroy_qp (ib_dev_ctx->qpGroups[i]))
 	    {
 	      gaspi_print_error ("Failed to destroy QP (libibverbs)");
 	      return -1;
 	    }
 
-	  if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpP[i]))
+	  if(ibv_destroy_qp (ib_dev_ctx->qpP[i]))
 	    {
 	      gaspi_print_error ("Failed to destroy QP (libibverbs)");
 	      return -1;
@@ -986,7 +1017,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
 
 	  for(c = 0; c < gctx->config->queue_num; c++)
 	    {
-	      if(ibv_destroy_qp (glb_gaspi_ctx_ib.qpC[c][i]))
+	      if(ibv_destroy_qp (ib_dev_ctx->qpC[c][i]))
 		{
 		  gaspi_print_error ("Failed to destroy QP (libibverbs)");
 		  return -1;
@@ -995,78 +1026,83 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
 	}
     }
 
-  free (glb_gaspi_ctx_ib.qpGroups);
-  glb_gaspi_ctx_ib.qpGroups = NULL;
+  free (ib_dev_ctx->qpGroups);
+  ib_dev_ctx->qpGroups = NULL;
 
-  free (glb_gaspi_ctx_ib.qpP);
-  glb_gaspi_ctx_ib.qpP = NULL;
+  free (ib_dev_ctx->qpP);
+  ib_dev_ctx->qpP = NULL;
 
   for(c = 0; c < gctx->config->queue_num; c++)
     {
-      free(glb_gaspi_ctx_ib.qpC[c]);
+      free(ib_dev_ctx->qpC[c]);
     }
 
-  if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqGroups))
+  if(ibv_destroy_cq (ib_dev_ctx->scqGroups))
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
       return -1;
     }
 
-  if(ibv_destroy_cq (glb_gaspi_ctx_ib.rcqGroups))
+  if(ibv_destroy_cq (ib_dev_ctx->rcqGroups))
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
       return -1;
     }
 
-  if(ibv_destroy_cq (glb_gaspi_ctx_ib.scqP))
+  if(ibv_destroy_cq (ib_dev_ctx->scqP))
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
       return -1;
     }
 
-  if(ibv_destroy_cq (glb_gaspi_ctx_ib.rcqP))
+  if(ibv_destroy_cq (ib_dev_ctx->rcqP))
     {
       gaspi_print_error ("Failed to destroy CQ (libibverbs)");
       return -1;
     }
 
-  if(ibv_destroy_srq (glb_gaspi_ctx_ib.srqP))
+  if(ibv_destroy_srq (ib_dev_ctx->srqP))
     {
       gaspi_print_error ("Failed to destroy SRQ (libibverbs)");
       return -1;
     }
 
-  if(ibv_dealloc_pd (glb_gaspi_ctx_ib.pd))
+  if(ibv_dealloc_pd (ib_dev_ctx->pd))
     {
       gaspi_print_error("Failed to de-allocate protection domain (libibverbs)");
       return -1;
     }
 
-  if(glb_gaspi_ctx_ib.channelP)
+  if(ib_dev_ctx->channelP)
     {
-      if(ibv_destroy_comp_channel (glb_gaspi_ctx_ib.channelP))
+      if(ibv_destroy_comp_channel (ib_dev_ctx->channelP))
 	{
 	  gaspi_print_error("Failed to destroy completion channel (libibverbs)");
 	  return -1;
 	}
     }
 
-  if(ibv_close_device (glb_gaspi_ctx_ib.context))
+  if(ibv_close_device (ib_dev_ctx->context))
     {
       gaspi_print_error ("Failed to close device (libibverbs)");
       return -1;
     }
 
-  if(glb_gaspi_ctx_ib.dev_list)
+  if(ib_dev_ctx->dev_list)
     {
-      ibv_free_device_list (glb_gaspi_ctx_ib.dev_list);
+      ibv_free_device_list (ib_dev_ctx->dev_list);
     }
 
-  free (glb_gaspi_ctx_ib.local_info);
-  glb_gaspi_ctx_ib.local_info = NULL;
+  free (ib_dev_ctx->local_info);
+  ib_dev_ctx->local_info = NULL;
 
-  free (glb_gaspi_ctx_ib.remote_info);
-  glb_gaspi_ctx_ib.remote_info = NULL;
+  free (ib_dev_ctx->remote_info);
+  ib_dev_ctx->remote_info = NULL;
+
+  free(gctx->device->ctx);
+  gctx->device->ctx = NULL;
+  free(gctx->device);
+  gctx->device = NULL;
 
   return 0;
 }

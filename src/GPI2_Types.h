@@ -93,6 +93,11 @@ typedef struct
 
 typedef struct
 {
+  void* ctx;
+} gaspi_device_t;
+
+typedef struct
+{
   int localSocket; //TODO: rename?
   int rank;
   int tnc;
@@ -144,6 +149,9 @@ typedef struct
 
   /* GASPI configuration */
   gaspi_config_t* config;
+
+  /* Device */
+  gaspi_device_t* device;
 
 } gaspi_context_t;
 

@@ -34,10 +34,12 @@ pgaspi_dev_write (gaspi_context_t * const gctx,
       return GASPI_QUEUE_FULL;
     }
 
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
   tcp_dev_wr_t wr =
     {
       .wr_id       = rank,
-      .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
+      .cq_handle   = tcp_dev_ctx->scqC[queue]->num,
       .source      = gctx->rank,
       .target      = rank,
       .local_addr  = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr + offset_local),
@@ -48,7 +50,7 @@ pgaspi_dev_write (gaspi_context_t * const gctx,
       .opcode      = POST_RDMA_WRITE
     } ;
 
-  if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+  if( write(tcp_dev_ctx->qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return GASPI_ERROR;
     }
@@ -73,10 +75,12 @@ pgaspi_dev_read (gaspi_context_t * const gctx,
       return GASPI_QUEUE_FULL;
     }
 
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
   tcp_dev_wr_t wr =
     {
       .wr_id       = rank,
-      .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
+      .cq_handle   = tcp_dev_ctx->scqC[queue]->num,
       .source      = gctx->rank,
       .target       = rank,
       .local_addr  = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr + offset_local),
@@ -87,7 +91,7 @@ pgaspi_dev_read (gaspi_context_t * const gctx,
       .opcode      = POST_RDMA_READ
     } ;
 
-  if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+  if( write(tcp_dev_ctx->qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return GASPI_ERROR;
     }
@@ -106,13 +110,15 @@ pgaspi_dev_purge (gaspi_context_t * const gctx,
   tcp_dev_wc_t wc;
   const int nr = gctx->ne_count_c[queue];
 
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
 
   for (i = 0; i < nr; i++)
     {
       do
 	{
-	  ne = tcp_dev_return_wc (glb_gaspi_ctx_tcp.scqC[queue], &wc);
+	  ne = tcp_dev_return_wc (tcp_dev_ctx->scqC[queue], &wc);
 	  gctx->ne_count_c[queue]-= ne;
 
 	  if( ne == 0 )
@@ -141,6 +147,8 @@ pgaspi_dev_wait (gaspi_context_t * const gctx,
   int ne = 0, i;
   tcp_dev_wc_t wc;
 
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
   const int nr = gctx->ne_count_c[queue];
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
 
@@ -148,7 +156,7 @@ pgaspi_dev_wait (gaspi_context_t * const gctx,
     {
       do
 	{
-	  ne = tcp_dev_return_wc (glb_gaspi_ctx_tcp.scqC[queue], &wc);
+	  ne = tcp_dev_return_wc (tcp_dev_ctx->scqC[queue], &wc);
 	  gctx->ne_count_c[queue] -= ne;
 
 	  if( ne == 0 )
@@ -188,13 +196,15 @@ pgaspi_dev_notify (gaspi_context_t * const gctx,
       return GASPI_QUEUE_FULL;
     }
 
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
   gaspi_notification_t *not_val_ptr = (gaspi_notification_t *)malloc(sizeof(notification_value));
   *not_val_ptr = notification_value;
 
   tcp_dev_wr_t wr =
     {
       .wr_id       = rank,
-      .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
+      .cq_handle   = tcp_dev_ctx->scqC[queue]->num,
       .source      = gctx->rank,
       .target      = rank,
       .local_addr  = (uintptr_t) not_val_ptr,
@@ -204,7 +214,7 @@ pgaspi_dev_notify (gaspi_context_t * const gctx,
       .opcode      = POST_RDMA_WRITE_INLINED
     } ;
 
-  if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+  if( write(tcp_dev_ctx->qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return GASPI_ERROR;
     }
@@ -232,12 +242,14 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
       return GASPI_QUEUE_FULL;
     }
 
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
   for (i = 0; i < num; i++)
     {
       tcp_dev_wr_t wr =
 	{
 	  .wr_id       = rank,
-	  .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
+	  .cq_handle   = tcp_dev_ctx->scqC[queue]->num,
 	  .source      = gctx->rank,
 	  .target        = rank,
 	  .local_addr  = (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr + offset_local[i]),
@@ -248,7 +260,7 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
 	  .opcode      = POST_RDMA_WRITE
 	} ;
 
-      if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+      if( write(tcp_dev_ctx->qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
 	{
 	  return GASPI_ERROR;
 	}
@@ -276,13 +288,14 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
     {
       return GASPI_QUEUE_FULL;
     }
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
 
   for (i = 0; i < num; i++)
     {
       tcp_dev_wr_t wr =
 	{
 	  .wr_id       = rank,
-	  .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
+	  .cq_handle   = tcp_dev_ctx->scqC[queue]->num,
 	  .source      = gctx->rank,
 	  .target        = rank,
 	  .local_addr  = (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr + offset_local[i]),
@@ -293,7 +306,7 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
 	  .opcode      = POST_RDMA_READ
 	} ;
 
-      if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+      if( write(tcp_dev_ctx->qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
 	{
 	  return GASPI_ERROR;
 	}
@@ -393,11 +406,13 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
       return ret;
     }
 
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
   //notification
   tcp_dev_wr_t wr =
     {
       .wr_id       = rank,
-      .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
+      .cq_handle   = tcp_dev_ctx->scqC[queue]->num,
       .source      = gctx->rank,
       .target      = rank,
       .local_addr  = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].notif_spc.addr + notification_id * sizeof(gaspi_notification_t)),
@@ -407,7 +422,7 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
       .opcode      = POST_RDMA_READ
     } ;
 
-  if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+  if( write(tcp_dev_ctx->qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return GASPI_ERROR;
     }
@@ -444,11 +459,13 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
       return ret;
     }
 
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
   //notification
   tcp_dev_wr_t wr =
     {
       .wr_id       = rank,
-      .cq_handle   = glb_gaspi_ctx_tcp.scqC[queue]->num,
+      .cq_handle   = tcp_dev_ctx->scqC[queue]->num,
       .source      = gctx->rank,
       .target      = rank,
       .local_addr  = (uintptr_t) (gctx->rrmd[segment_id_notification][gctx->rank].notif_spc.addr + notification_id * sizeof(gaspi_notification_t)),
@@ -458,7 +475,7 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
       .opcode      = POST_RDMA_READ
     } ;
 
-  if( write(glb_gaspi_ctx_tcp.qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+  if( write(tcp_dev_ctx->qpC[queue]->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return GASPI_ERROR;
     }

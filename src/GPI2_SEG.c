@@ -263,7 +263,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
   gctx->rrmd[segment_id][gctx->rank].data.addr += NOTIFY_OFFSET;
   gctx->rrmd[segment_id][gctx->rank].user_provided = 0;
 
-  if( pgaspi_dev_register_mem(&(gctx->rrmd[segment_id][gctx->rank])) < 0 )
+  if( pgaspi_dev_register_mem(gctx, &(gctx->rrmd[segment_id][gctx->rank])) < 0 )
     {
       goto endL;
     }
@@ -308,7 +308,7 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 #ifdef GPI2_CUDA
   eret = pgaspi_dev_segment_delete(segment_id);
 #else
-  if(pgaspi_dev_unregister_mem(&(gctx->rrmd[segment_id][gctx->rank])) < 0)
+  if(pgaspi_dev_unregister_mem(gctx, &(gctx->rrmd[segment_id][gctx->rank])) < 0)
     {
       unlock_gaspi (&(gctx->mseg_lock));
       return GASPI_ERR_DEVICE;
@@ -626,7 +626,7 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
   gctx->rrmd[segment_id][myrank].desc = memory_description;
 
   /* Register segment with the device */
-  if( pgaspi_dev_register_mem( &(gctx->rrmd[segment_id][myrank])) < 0)
+  if( pgaspi_dev_register_mem( gctx, &(gctx->rrmd[segment_id][myrank])) < 0)
     {
       eret = GASPI_ERR_DEVICE;
       goto endL;

@@ -34,6 +34,8 @@ pgaspi_dev_passive_send (gaspi_context_t * const gctx,
   const int bit_pos = rank - (byte_id * 8);
   const unsigned char bit_cmp = 1 << bit_pos;
 
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+
   if( gctx->ne_count_p[byte_id] & bit_cmp )
     {
       goto checkL;
@@ -42,7 +44,7 @@ pgaspi_dev_passive_send (gaspi_context_t * const gctx,
   tcp_dev_wr_t wr =
     {
       .wr_id       = rank,
-      .cq_handle   = glb_gaspi_ctx_tcp.scqP->num,
+      .cq_handle   = tcp_dev_ctx->scqP->num,
       .source      = gctx->rank,
       .target      = rank,
       .local_addr  = (uintptr_t) (gctx->rrmd[segment_id][gctx->rank].data.addr + offset_local),
@@ -53,7 +55,7 @@ pgaspi_dev_passive_send (gaspi_context_t * const gctx,
       .opcode      = POST_SEND
     } ;
 
-  if( write(glb_gaspi_ctx_tcp.qpP->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+  if( write(tcp_dev_ctx->qpP->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return GASPI_ERROR;
     }
@@ -68,7 +70,7 @@ pgaspi_dev_passive_send (gaspi_context_t * const gctx,
 
   do
     {
-      ne = tcp_dev_return_wc (glb_gaspi_ctx_tcp.scqP, &wc);
+      ne = tcp_dev_return_wc (tcp_dev_ctx->scqP, &wc);
 
       if(ne  == 0 )
 	{
@@ -104,11 +106,12 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
 {
   fd_set rfds;
   struct timeval tout;
+  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
 
   tcp_dev_wr_t wr =
     {
       .wr_id       = gctx->rank,
-      .cq_handle   = glb_gaspi_ctx_tcp.rcqP->num,
+      .cq_handle   = tcp_dev_ctx->rcqP->num,
       .source      = gctx->rank,
       .target      = 0,
       .local_addr  = (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].data.addr + offset_local),
@@ -119,13 +122,13 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
       .opcode      = POST_RECV
     } ;
 
-  if( write(glb_gaspi_ctx_tcp.srqP, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
+  if( write(tcp_dev_ctx->srqP, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
     {
       return GASPI_ERROR;
     }
 
   FD_ZERO(&rfds);
-  FD_SET(glb_gaspi_ctx_tcp.channelP->read, &rfds);
+  FD_SET(tcp_dev_ctx->channelP->read, &rfds);
 
   //TODO: repeated code
   const long ts = (timeout_ms / 1000);
@@ -147,7 +150,7 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
   /* ack returned event */
   {
     char buf;
-    if( read(glb_gaspi_ctx_tcp.channelP->read, &buf, 1) < 0 )
+    if( read(tcp_dev_ctx->channelP->read, &buf, 1) < 0 )
       {
 	return GASPI_ERROR;
       }
@@ -158,7 +161,7 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
 
   do
     {
-      ne = tcp_dev_return_wc (glb_gaspi_ctx_tcp.rcqP, &wc);
+      ne = tcp_dev_return_wc (tcp_dev_ctx->rcqP, &wc);
     }
   while (ne == 0);
 
