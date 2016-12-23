@@ -28,7 +28,6 @@ int main(int argc, char *argv[])
   gaspi_return_t ret;
 
   gaspi_config_get(&gconf);
-  gconf.mtu = 4096;
   gconf.queue_num = 1;
   gaspi_config_set(gconf);
 
@@ -75,18 +74,18 @@ int main(int argc, char *argv[])
 	    dt += (t1-t0);
 
 	    //useful work area
-	    
+
 	  }while(ret != GASPI_SUCCESS);
-	  
+
 	  delta[i] = dt;
 	}
 
       qsort (delta, (999), sizeof *delta, mcycles_compare);
-  
+
       const double div = 1.0 / cpu_freq;
       const double ts = (double) delta[500] * div * 0.5;
-      
-      if(0 == grank) 
+
+      if(0 == grank)
 	printf("%d\t%.2f\t%.2f usecs\n", elems, sum[0], ts);
 
     }
@@ -97,4 +96,3 @@ int main(int argc, char *argv[])
 
   return EXIT_SUCCESS;
 }
- 

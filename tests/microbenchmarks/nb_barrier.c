@@ -4,7 +4,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <sys/stat.h>
-#include <fcntl.h>   
+#include <fcntl.h>
 #include <sys/timeb.h>
 #include <time.h>
 #include <signal.h>
@@ -17,7 +17,7 @@
 #include <sys/syscall.h>
 #include <assert.h>
 
-#include <GASPI.h>                    
+#include <GASPI.h>
 #include <GASPI_Ext.h>
 
 #include "utils.h"
@@ -27,7 +27,7 @@
 
 #define GPI2_ASSERT(s) if(s != GASPI_SUCCESS) { gaspi_printf("GASPI error:" #s " %d\n",__LINE__); _exit(EXIT_FAILURE);}
 
-int 
+int
 main(int argc,char *argv[])
 {
 
@@ -40,9 +40,8 @@ main(int argc,char *argv[])
   mcycles_t t0,t1,dt;
   int amount_work = 1000;
   gaspi_float cpu_freq;
-  
+
   gaspi_config_get(&gconf);
-  gconf.mtu = 4096;
   gconf.queue_num = 1;
   gaspi_config_set(gconf);
 
@@ -94,4 +93,3 @@ main(int argc,char *argv[])
 
   return 0;
 }
-

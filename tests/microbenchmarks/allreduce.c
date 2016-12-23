@@ -26,7 +26,6 @@ int main(int argc, char *argv[])
   gaspi_cycles_t stamp[1024], delta[1024];
 
   gaspi_config_get(&gconf);
-  gconf.mtu = 4096;
   gconf.queue_num = 1;
   gaspi_config_set(gconf);
 
@@ -67,16 +66,16 @@ int main(int argc, char *argv[])
 			  GASPI_OP_SUM, GASPI_TYPE_DOUBLE, GASPI_GROUP_ALL, GASPI_BLOCK);
 	  gaspi_time_ticks(&(stamp[i]));
 	}
-      
+
       for (t = 0; t < (999); t++)
 	delta[t] = stamp[t + 1] - stamp[t];
-      
+
       qsort (delta, (999), sizeof *delta, mcycles_compare);
-  
+
       const double div = 1.0 / cpu_freq;
       const double ts = (double) delta[500] * div * 0.5;
-      
-      if(0 == grank) 
+
+      if(0 == grank)
 	printf("%d\t%.2f\t%.2f usecs\n", elems, sum[0], ts);
 
     }
@@ -87,4 +86,3 @@ int main(int argc, char *argv[])
 
   return EXIT_SUCCESS;
 }
- 
