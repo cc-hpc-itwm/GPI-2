@@ -318,7 +318,7 @@ gaspi_sn_readn(const int sockfd, const void * data_ptr, const size_t n)
 }
 
 static int
-_gaspi_sn_wait_connection(int port)
+_gaspi_sn_wait_connection(int port, gaspi_timeout_t timeout_ms)
 {
   struct sockaddr in_addr;
   struct sockaddr_in listeningAddress;
@@ -356,8 +356,30 @@ _gaspi_sn_wait_connection(int port)
       return -1;
     }
 
-  int nsock = accept( lsock, &in_addr, &in_len );
-  if( nsock < 0 )
+  fd_set rfds;
+  struct timeval tout;
+
+  FD_ZERO (&rfds);
+  FD_SET (lsock, &rfds);
+
+  const long ts = (timeout_ms / 1000);
+  const long tus = (timeout_ms - ts * 1000) * 1000;
+
+  tout.tv_sec = ts;
+  tout.tv_usec = tus;
+
+  const int selret = select (FD_SETSIZE, &rfds, NULL, NULL, &tout);
+  if( selret < 0 )
+    {
+      return -1;
+    }
+  if( selret == 0 )
+    {
+      return -2; //timeout
+    }
+
+  int nsock =  accept( lsock, &in_addr, &in_len );
+  if( nsock < 0  )
     {
       gaspi_print_error("Failed to accept connection.");
       close(lsock);
@@ -403,14 +425,13 @@ gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
 }
 
 static int
-gaspi_sn_recv_topology(gaspi_context_t * const gctx)
+gaspi_sn_recv_topology(gaspi_context_t * const gctx, const gaspi_timeout_t timeout_ms)
 {
   const int port_to_wait = gctx->config->sn_port + gctx->localSocket;
-  int nsock =  _gaspi_sn_wait_connection(port_to_wait);
+  int nsock =  _gaspi_sn_wait_connection(port_to_wait, timeout_ms);
   if( nsock < 0 )
     {
-      gaspi_print_error("Failed to wait for connection on %d.", port_to_wait);
-      return -1;
+      return nsock;
     }
 
   gaspi_cd_header cdh;
@@ -555,10 +576,17 @@ gaspi_sn_broadcast_topology(gaspi_context_t * const gctx, const gaspi_timeout_t 
 	      src += gctx->tnc;
 	    }
 
-	  if( gaspi_sn_recv_topology(gctx) != 0 )
+	  const int rres = gaspi_sn_recv_topology(gctx, timeout_ms);
+	  if( rres != 0 )
 	    {
-	      gaspi_print_error("Failed to receive topology.");
-	      return -1;
+	      if( rres == -1 )
+		{
+		  return GASPI_ERROR;
+		}
+	      if( rres == -2 )
+		{
+		  return GASPI_TIMEOUT;
+		}
 	    }
 	  break;
 	}
@@ -793,7 +821,7 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
   /* If odd number of ranks, the last rank must connect and then accept */
   if( (grp_ctx->rank % 2) == 0 && !( (grp_ctx->rank == grp_ctx->tnc - 1) && (grp_ctx->tnc % 2 != 0) ))
     {
-      left_sock = _gaspi_sn_wait_connection(port_to_wait);
+      left_sock = _gaspi_sn_wait_connection(port_to_wait, timeout_ms);
       if( left_sock < 0 )
 	{
 	  gaspi_print_error("Failed to accept connection on %d(%d).",
@@ -820,7 +848,7 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
 	  return -1;
 	}
 
-      left_sock = _gaspi_sn_wait_connection(port_to_wait);
+      left_sock = _gaspi_sn_wait_connection(port_to_wait, timeout_ms);
       if( left_sock < 0 )
 	{
 	  close(right_sock);
