@@ -119,10 +119,42 @@ extern "C"
     {
       GASPI_IB = 0,	  /* Infiniband */
       GASPI_ROCE = 1,	  /* RoCE */
-      GASPI_ETHERNET = 2,   /* Ethernet (TCP) */
+      GASPI_ETHERNET = 2, /* Ethernet (TCP) */
       GASPI_GEMINI = 3,	  /* Cray Gemini (not implemented) */
       GASPI_ARIES = 4	  /* Cray Aries (not implemented) */
     } gaspi_network_t;
+
+  /**
+   * Network Device configuration.
+   *
+   */
+  typedef struct
+    {
+      gaspi_network_t network_type;
+      union
+      {
+	struct
+	{
+	  gaspi_int netdev_id;   /* the network device to use */
+	  gaspi_uint mtu;        /* the MTU value to use */
+	  gaspi_uint port_check; /* flag to whether to perform a network check */
+	} ib;
+
+	struct
+	{
+	  /* The first port to use.  */
+	  /*NOTE: if more than one instance per node is used, the
+	    consecutive ports will be used:
+	    - inst 0: port
+	    - inst 1: port + 1
+	    - inst 2: port + 2
+	    - ....
+	  */
+	  gaspi_uint port;
+	} tcp;
+
+      } params;
+  } gaspi_dev_config_t;
 
   /**
    * Operations for Collective communication.
@@ -193,11 +225,10 @@ extern "C"
     gaspi_uint logger;	                      /* flag to set logging */
     gaspi_uint sn_port;                       /* port for internal comm */
     gaspi_uint net_info;                      /* flag to set network information display*/
-    gaspi_int netdev_id;                      /* the network device to use */
-    gaspi_uint mtu;	                      /* the MTU value to use */
-    gaspi_uint port_check;                    /* flag to whether to perform a network check */
     gaspi_uint user_net;                      /* flag if user has set the network */
     gaspi_int sn_persistent;                  /* flag whether sn connection is persistent */
+    gaspi_dev_config_t dev_config;            /* Specific, device-dependent params */
+
     /* GASPI specified */
     gaspi_network_t network;                  /* network type to be used */
     gaspi_uint queue_size_max;                /* the queue depth (size) to use */

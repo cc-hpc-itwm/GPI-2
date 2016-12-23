@@ -39,6 +39,7 @@ pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int i,
   return 0;
 }
 
+//TODO:
 int
 pgaspi_dev_disconnect_context(gaspi_context_t const * const gctx, const int i)
 {
@@ -48,7 +49,8 @@ pgaspi_dev_disconnect_context(gaspi_context_t const * const gctx, const int i)
 int
 pgaspi_dev_connect_context(gaspi_context_t const * const gctx, const int i)
 {
-  return tcp_dev_connect_to(i, pgaspi_gethostname(i), TCP_DEV_PORT + gctx->poff[i]);
+  return tcp_dev_connect_to(i, pgaspi_gethostname(i),
+			    gctx->config->dev_config.params.tcp.port + gctx->poff[i]);
 }
 
 int
@@ -150,7 +152,7 @@ pgaspi_dev_init_core(gaspi_context_t * const gctx)
 
   dev_args->peers_num = gctx->tnc;
   dev_args->id = gctx->rank;
-  dev_args->port = TCP_DEV_PORT + gctx->localSocket;
+  dev_args->port = gctx->config->dev_config.params.tcp.port + gctx->localSocket;
 
   tcp_dev_ctx->device_channel = tcp_dev_init_device(dev_args);
 
@@ -172,7 +174,7 @@ pgaspi_dev_init_core(gaspi_context_t * const gctx)
     }
 
   /* Passive channel (SRQ) */
-  tcp_dev_ctx->srqP = gaspi_sn_connect2port("localhost", TCP_DEV_PORT + gctx->localSocket, CONN_TIMEOUT);
+  tcp_dev_ctx->srqP = gaspi_sn_connect2port("localhost", gctx->config->dev_config.params.tcp.port + gctx->localSocket, CONN_TIMEOUT);
   if( tcp_dev_ctx->srqP == -1 )
     {
       gaspi_print_error("Failed to create passive channel connection");

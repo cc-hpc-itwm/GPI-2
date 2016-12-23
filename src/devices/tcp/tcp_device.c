@@ -39,7 +39,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 volatile gaspi_tcp_dev_status_t gaspi_tcp_dev_status = GASPI_TCP_DEV_STATUS_DOWN;
 tcp_dev_conn_state_t **rank_state = NULL;
 
-static int tcp_dev_port_in_use = TCP_DEV_PORT;
+static int tcp_dev_port_in_use;
 static int tcp_dev_num_peers;
 static int tcp_dev_id;
 

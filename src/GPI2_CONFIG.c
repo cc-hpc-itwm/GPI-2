@@ -32,15 +32,30 @@ gaspi_config_t glb_gaspi_cfg = {
   1,				//logout
   12121,                        //sn port
   0,				//netinfo
-  -1,				//netdev
-  0,				//mtu
-  1,				//port check
   0,				//user selected network
   1,                            //sn persistent
 #ifdef GPI2_DEVICE_IB
-  GASPI_IB,
-#else                           //network type
-  GASPI_ETHERNET,
+  {
+    GASPI_IB,
+    {
+      {
+	-1,	         	//netdev
+	0,			//mtu
+	1,                      //port check
+      }
+    }
+  },
+  GASPI_IB,                     //network type
+#else
+  {
+    GASPI_ETHERNET,
+    {
+      {
+	19000
+      }
+    }
+  },
+  GASPI_ETHERNET,               //network type
 #endif
   1024,				//queue size max
   8,				//queue count
@@ -58,17 +73,14 @@ gaspi_config_t glb_gaspi_cfg = {
 static void
 pgaspi_print_config(gaspi_config_t * const config)
 {
-  printf(" logger %u\nsn_port %u\nnet_info %u\nnetdev_id %d\n mtu %u\n \
-port_check %u\nuser_net %u\nsn persistent %d\nnetwork %d\nqueue_size_max %u\nqueue_num %u\n \
+  printf(" logger %u\nsn_port %u\nnet_info %u\n \
+user_net %u\nsn persistent %d\nnetwork %d\nqueue_size_max %u\nqueue_num %u\n \
 group_max %d\nsegment_max %d\ntransfer_size_max %lu\nnotification_num %u\n \
 passive_queue_size_max %u\npassive_transfer_size_max %u\nallreduce_buf_size %lu\n \
 allreduce_elem_max %u\nbuild_infrastructure %d\n",
 	 config->logger,
 	 config->sn_port,
 	 config->net_info,
-	 config->netdev_id,
-	 config->mtu,
-	 config->port_check,
 	 config->user_net,
 	 config->sn_persistent,
 	 config->network,
@@ -83,6 +95,19 @@ allreduce_elem_max %u\nbuild_infrastructure %d\n",
 	 config->allreduce_buf_size,
 	 config->allreduce_elem_max,
 	 config->build_infrastructure);
+
+  if( config->network == GASPI_IB )
+    {
+      printf("Device-dependent\n: netdev_id %d\n mtu %u\n port_check %u\n",
+	     config->dev_config.params.ib.netdev_id,
+	     config->dev_config.params.ib.mtu,
+	     config->dev_config.params.ib.port_check);
+    }
+  if( config->network == GASPI_ETHERNET )
+    {
+      printf("Device-dependent:\n: port %u\n",
+	     config->dev_config.params.tcp.port);
+    }
 }
 
 #pragma weak gaspi_config_get = pgaspi_config_get
@@ -105,9 +130,31 @@ pgaspi_config_set (const gaspi_config_t nconf)
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.build_infrastructure = nconf.build_infrastructure;
   glb_gaspi_cfg.logger = nconf.logger;
-  glb_gaspi_cfg.port_check = nconf.port_check;
 
 #ifdef GPI2_DEVICE_IB
+  if( nconf.dev_config.params.ib.mtu == 0 ||
+      nconf.dev_config.params.ib.mtu == 1024 ||
+      nconf.dev_config.params.ib.mtu == 2048 ||
+      nconf.dev_config.params.ib.mtu == 4096 )
+    {
+      glb_gaspi_cfg.dev_config.params.ib.mtu = nconf.dev_config.params.ib.mtu;
+    }
+  else
+    {
+      gaspi_print_error("Invalid value for parameter mtu (supported: 1024, 2048, 4096)");
+      return GASPI_ERR_CONFIG;
+    }
+
+  glb_gaspi_cfg.dev_config.params.ib.port_check = nconf.dev_config.params.ib.port_check;
+
+  glb_gaspi_cfg.dev_config.params.ib.netdev_id = nconf.dev_config.params.ib.netdev_id;
+  if( nconf.dev_config.params.ib.netdev_id > 1 )
+    {
+      gaspi_print_error("Invalid value for parameter netdev_id");
+      return GASPI_ERR_CONFIG;
+    }
+
+  glb_gaspi_cfg.dev_config.params.ib.port_check = nconf.dev_config.params.ib.port_check;
   if( GASPI_ETHERNET == nconf.network )
 #elif GPI2_DEVICE_TCP
     if( GASPI_ETHERNET != nconf.network )
@@ -119,13 +166,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   glb_gaspi_cfg.network = nconf.network;
   glb_gaspi_cfg.user_net = 1;
 
-  if( nconf.netdev_id > 1 )
-    {
-      gaspi_print_error("Invalid value for parameter netdev_id");
-      return GASPI_ERR_CONFIG;
-    }
 
-  glb_gaspi_cfg.netdev_id = nconf.netdev_id;
 
   if( nconf.queue_num > GASPI_MAX_QP || nconf.queue_num < 1 )
     {
@@ -143,16 +184,6 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   glb_gaspi_cfg.queue_size_max = nconf.queue_size_max;
 
-  if( nconf.mtu == 0 || nconf.mtu == 1024 || nconf.mtu == 2048 || nconf.mtu == 4096 )
-    {
-      glb_gaspi_cfg.mtu = nconf.mtu;
-    }
-  else
-    {
-      gaspi_print_error("Invalid value for parameter mtu (supported: 1024, 2048, 4096)");
-      return GASPI_ERR_CONFIG;
-    }
-
   if( nconf.sn_port < 1024 || nconf.sn_port > 65536 )
     {
       gaspi_print_error("Invalid value for parameter sn_port ( from 1024 to 65536)");
@@ -164,7 +195,6 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.logger = nconf.logger;
-  glb_gaspi_cfg.port_check = nconf.port_check;
 
   return GASPI_SUCCESS;
 }

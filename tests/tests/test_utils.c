@@ -16,13 +16,20 @@ static gaspi_config_t tsuite_default_config =
     1,			  //logout
     12121,                //sn port
     0,			  //netinfo
-    -1,			  //netdev
-    0,            	  //mtu
-    1,			  //port check
     0,			  //user selected network
     1,                    //sn persistent
-    GASPI_IB,		  //network typ
-    1024,		  //queue depth
+    {
+      GASPI_IB,
+      {
+	{
+	  -1,             //netdev
+	  0,		  //mtu
+	  1,              //port check
+	}
+      }
+    },
+    GASPI_IB,             //network type
+    1024,		  //queue size max
     8,			  //queue count
     32,                   //group_max
     32,		          //segment_max
@@ -31,8 +38,8 @@ static gaspi_config_t tsuite_default_config =
     1024,		  //passive_queue_size_max
     ((1ul<<16ul)-1ul),	  //passive_transfer_size_max
     278592,		  //allreduce_buf_size
-    255,		  //allreduce_elem_max
-    GASPI_TOPOLOGY_STATIC //build_infrastructure
+    255,		  //allreduce_elem_max;
+    GASPI_TOPOLOGY_STATIC //build_infrastructure;
   };
 
 void tsuite_do_backtrace(int id, gaspi_rank_t node, FILE * bt_file)

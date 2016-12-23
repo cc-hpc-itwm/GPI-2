@@ -115,22 +115,24 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
       return -1;
     }
 
-  if(gctx->config->netdev_id >= 0)
+  //  if(gctx->config->netdev_id >= 0)
+  if(gctx->config->dev_config.params.ib.netdev_id >= 0)
     {
-      if(gctx->config->netdev_id >= ib_dev_ctx->num_dev)
+      //     if(gctx->config->netdev_id >= ib_dev_ctx->num_dev)
+      if( gctx->config->dev_config.params.ib.netdev_id >= ib_dev_ctx->num_dev)
 	{
 	  gaspi_print_error ("Failed to get device (libibverbs)");
 	  return -1;
 	}
 
-      ib_dev_ctx->ib_dev = ib_dev_ctx->dev_list[gctx->config->netdev_id];
+      ib_dev_ctx->ib_dev = ib_dev_ctx->dev_list[gctx->config->dev_config.params.ib.netdev_id];
       if (!ib_dev_ctx->ib_dev)
 	{
 	  gaspi_print_error ("Failed to get device (libibverbs)");
 	  return -1;
 	}
 
-      dev_idx = gctx->config->netdev_id;
+      dev_idx = gctx->config->dev_config.params.ib.netdev_id;
     }
   else
     {
@@ -204,10 +206,10 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
       gaspi_printf ("\tib_dev     : %d (%s)\n",dev_idx,ibv_get_device_name(ib_dev_ctx->dev_list[dev_idx]));
       gaspi_printf ("\tca type    : %d\n",
 		    ib_dev_ctx->device_attr.vendor_part_id);
-      if(gctx->config->mtu==0)
+      if(gctx->config->dev_config.params.ib.mtu==0)
 	gaspi_printf ("\tmtu        : (active_mtu)\n");
       else
-	gaspi_printf ("\tmtu        : %d (user)\n", gctx->config->mtu);
+	gaspi_printf ("\tmtu        : %d (user)\n", gctx->config->dev_config.params.ib.mtu);
 
       gaspi_printf ("\tfw_version : %s\n",
 		    ib_dev_ctx->device_attr.fw_ver);
@@ -240,7 +242,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     }
 
   /* Port check */
-  if(gctx->config->port_check)
+  if(gctx->config->dev_config.params.ib.port_check)
     {
       if((ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE)&& (ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE))
 	{
@@ -311,18 +313,18 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
 
   if (gctx->config->network == GASPI_IB)
     {
-      if(gctx->config->mtu == 0)
+      if(gctx->config->dev_config.params.ib.mtu == 0)
 	{
 	  switch(ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].active_mtu){
 
 	  case IBV_MTU_1024:
-	    gctx->config->mtu = 1024;
+	    gctx->config->dev_config.params.ib.mtu = 1024;
 	    break;
 	  case IBV_MTU_2048:
-	    gctx->config->mtu = 2048;
+	    gctx->config->dev_config.params.ib.mtu = 2048;
 	    break;
 	  case IBV_MTU_4096:
-	    gctx->config->mtu = 4096;
+	    gctx->config->dev_config.params.ib.mtu = 4096;
 	    break;
 	  default:
 	    break;
@@ -330,14 +332,14 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
 	}
 
       if(gctx->config->net_info)
-	gaspi_printf ("\tmtu        : %d\n", gctx->config->mtu);
+	gaspi_printf ("\tmtu        : %d\n", gctx->config->dev_config.params.ib.mtu);
     }
 
 
   if(gctx->config->network == GASPI_ROCE)
     {
-      gctx->config->mtu = 1024;
-      if(gctx->config->net_info) gaspi_printf ("\teth. mtu   : %d\n", gctx->config->mtu);
+      gctx->config->dev_config.params.ib.mtu = 1024;
+      if(gctx->config->net_info) gaspi_printf ("\teth. mtu   : %d\n", gctx->config->dev_config.params.ib.mtu);
     }
 
   ib_dev_ctx->pd = ibv_alloc_pd (ib_dev_ctx->context);
@@ -500,7 +502,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
       srand48 (tv.tv_usec);
       ib_dev_ctx->local_info[i].psn = lrand48 () & 0xffffff;
 
-      if(gctx->config->port_check)
+      if(gctx->config->dev_config.params.ib.port_check)
 	{
 	  if(!ib_dev_ctx->local_info[i].lid && (gctx->config->network == GASPI_IB))
 	    {
@@ -859,7 +861,7 @@ _pgaspi_dev_qp_set_ready(gaspi_context_t const * const gctx, struct ibv_qp *qp, 
 
   memset(&qp_attr, 0, sizeof (qp_attr));
 
-  switch(gctx->config->mtu)
+  switch(gctx->config->dev_config.params.ib.mtu)
     {
     case 1024:
       qp_attr.path_mtu = IBV_MTU_1024;
@@ -872,7 +874,7 @@ _pgaspi_dev_qp_set_ready(gaspi_context_t const * const gctx, struct ibv_qp *qp, 
       break;
     default:
       {
-	gaspi_print_error("Invalid MTU in configuration (%d)", gctx->config->mtu);
+	gaspi_print_error("Invalid MTU in configuration (%d)", gctx->config->dev_config.params.ib.mtu);
 	return -1;
       }
   };
