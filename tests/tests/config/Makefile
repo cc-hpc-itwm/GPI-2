@@ -1,4 +1,4 @@
-BIN = get_config.bin set_config.bin config_netinfo.bin
+BIN = set_config.bin config_netinfo.bin
 
 CFLAGS+=-I../
 
