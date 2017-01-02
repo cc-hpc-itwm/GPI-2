@@ -34,12 +34,13 @@ gaspi_config_t glb_gaspi_cfg = {
   0,				//netinfo
   0,				//user selected network
   1,                            //sn persistent
+  30000,                        //sn timeout
 #ifdef GPI2_DEVICE_IB
   {
     GASPI_IB,
     {
       {
-	-1,	         	//netdev
+	-1,		//netdev
 	0,			//mtu
 	1,                      //port check
       }
@@ -192,6 +193,14 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   glb_gaspi_cfg.sn_port = nconf.sn_port;
   glb_gaspi_cfg.sn_persistent = nconf.sn_persistent;
+
+  if( nconf.sn_timeout < 0 )
+    {
+      gaspi_print_error("Invalid value for parameter sn_timeout ( must be > 0)");
+      return GASPI_ERR_CONFIG;
+    }
+
+  glb_gaspi_cfg.sn_timeout = nconf.sn_timeout;
 
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.logger = nconf.logger;

@@ -18,6 +18,7 @@ static gaspi_config_t tsuite_default_config =
     0,			  //netinfo
     0,			  //user selected network
     1,                    //sn persistent
+    30000,                //sn timeout
     {
       GASPI_IB,
       {

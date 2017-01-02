@@ -227,6 +227,7 @@ extern "C"
     gaspi_uint net_info;                      /* flag to set network information display*/
     gaspi_uint user_net;                      /* flag if user has set the network */
     gaspi_int sn_persistent;                  /* flag whether sn connection is persistent */
+    gaspi_timeout_t sn_timeout;               /* timeout value for internal sn operations */
     gaspi_dev_config_t dev_config;            /* Specific, device-dependent params */
 
     /* GASPI specified */

@@ -1318,6 +1318,8 @@ gaspi_sn_backend(void *arg)
   signal(SIGSTKFLT, gaspi_sn_cleanup);
   signal(SIGPIPE, SIG_IGN);
 
+  const gaspi_timeout_t sn_config_timeout = gctx->config->sn_timeout;
+
   //TODO: still needed? why?
   while(gctx->master_topo_data == 0)
     {
@@ -1509,7 +1511,7 @@ gaspi_sn_backend(void *arg)
 				    {
 				      if( GASPI_ENDPOINT_CONNECTED == gctx->ep_conn[mgmt->cdh.rank].cstat )
 					{
-					  if( pgaspi_local_disconnect(mgmt->cdh.rank, GASPI_BLOCK) != GASPI_SUCCESS )
+					  if( pgaspi_local_disconnect(mgmt->cdh.rank, sn_config_timeout) != GASPI_SUCCESS )
 					    {
 					      gaspi_print_error("Failed to disconnect with %u.", mgmt->cdh.rank);
 					    }
@@ -1552,7 +1554,7 @@ gaspi_sn_backend(void *arg)
 					{
 					  gaspi_dev_exch_info_t * const exch_info = &(gctx->ep_conn[mgmt->cdh.rank].exch_info);
 
-					  gaspi_return_t eret = pgaspi_create_endpoint_to(mgmt->cdh.rank, exch_info, GASPI_BLOCK);//TODO: timeout
+					  gaspi_return_t eret = pgaspi_create_endpoint_to(mgmt->cdh.rank, exch_info, sn_config_timeout);
 					  if( eret != GASPI_SUCCESS )
 					    {
 					      gaspi_print_error("Failed to create endpoint with %u\n", mgmt->cdh.rank);
@@ -1568,7 +1570,7 @@ gaspi_sn_backend(void *arg)
 					      break;
 					    }
 
-					  eret = pgaspi_connect_endpoint_to(mgmt->cdh.rank, GASPI_BLOCK);//TODO: timeout
+					  eret = pgaspi_connect_endpoint_to(mgmt->cdh.rank, sn_config_timeout);
 					  if( eret != GASPI_SUCCESS )
 					    {
 					      /* We set io_err, connection is closed and remote peer reads EOF */
