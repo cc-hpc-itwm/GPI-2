@@ -443,7 +443,7 @@ gaspi_sn_barrier(const gaspi_timeout_t timeout_ms)
 static int
 gaspi_sn_recv_topology(gaspi_context_t * const gctx, const gaspi_timeout_t timeout_ms)
 {
-  const int port_to_wait = gctx->config->sn_port + gctx->localSocket;
+  const int port_to_wait = gctx->config->sn_port + GASPI_MAX_PPN + gctx->localSocket;
   int nsock =  _gaspi_sn_wait_connection(port_to_wait, timeout_ms);
   if( nsock < 0 )
     {
@@ -499,7 +499,7 @@ static int
 gaspi_sn_send_topology(gaspi_context_t * const gctx, const int i, const gaspi_timeout_t timeout_ms)
 {
   if( (gctx->sockfd[i] = gaspi_sn_connect2port( pgaspi_gethostname(i),
-						(gctx->config->sn_port + gctx->poff[i]),
+						(gctx->config->sn_port + GASPI_MAX_PPN + gctx->poff[i]),
 						timeout_ms)) < 0 )
     {
       gaspi_print_error("Failed to connect to %d", i);
