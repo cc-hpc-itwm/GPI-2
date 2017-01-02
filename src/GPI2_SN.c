@@ -213,6 +213,9 @@ gaspi_sn_connect2port(const char * const hn, const unsigned short port, const un
   int sockfd = -1;
   struct timeb t0, t1;
 
+  const useconds_t max_backoff = 1000000;
+  useconds_t cur_backoff = 1000;
+
   ftime(&t0);
 
   while( -1 == sockfd )
@@ -230,7 +233,12 @@ gaspi_sn_connect2port(const char * const hn, const unsigned short port, const un
 	    }
 	}
 
-      gaspi_delay();
+      /* exponential backoff */
+      usleep(cur_backoff);
+      if( cur_backoff < max_backoff )
+	{
+	  cur_backoff *= 2;
+	}
     }
 
   signal(SIGPIPE, SIG_IGN);
