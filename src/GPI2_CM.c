@@ -34,6 +34,12 @@ pgaspi_create_endpoint_to(const gaspi_rank_t rank,
       return GASPI_TIMEOUT;
     }
 
+  if( gctx->ep_conn[i].istat == GASPI_ENDPOINT_CREATED )
+    {
+      unlock_gaspi(&(gctx->create_lock));
+      return GASPI_SUCCESS;
+    }
+
   if( pgaspi_dev_create_endpoint(gctx, i,
 				 &(info->local_info),
 				 &(info->remote_info),
