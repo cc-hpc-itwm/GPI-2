@@ -35,10 +35,6 @@ int main(int argc, char *argv[])
     {
       default_conf.dev_config.params.tcp.port = 30000;
     }
-  else
-    {
-      return EXIT_FAILURE;
-    }
 
   default_conf.sn_port = 21212;
   ASSERT (gaspi_config_set(default_conf));
