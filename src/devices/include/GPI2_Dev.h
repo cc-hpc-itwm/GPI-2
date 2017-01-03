@@ -29,16 +29,16 @@ int
 pgaspi_dev_cleanup_core(gaspi_context_t * const gctx);
 
 int
-pgaspi_dev_register_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t *seg);
+pgaspi_dev_register_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t* seg);
 
 int
-pgaspi_dev_unregister_mem(gaspi_context_t const * const gctx,const gaspi_rc_mseg_t * seg);
+pgaspi_dev_unregister_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t* seg);
 
 int
 pgaspi_dev_connect_context(gaspi_context_t const * const gctx, const int);
 
 int
-pgaspi_dev_disconnect_context(gaspi_context_t const * const gctx, const int);
+pgaspi_dev_disconnect_context(gaspi_context_t * const gctx, const int);
 
 int
 pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int i,
@@ -61,7 +61,7 @@ pgaspi_dev_poll_groups(gaspi_context_t * const gctx);
 int
 pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
 			    void *local_addr, int length,
-			    int dst, void *remote_addr, int g);
+			    int dst, void *remote_addr, unsigned char g);
 
 int
 pgaspi_dev_queue_size(const gaspi_queue_id_t);
@@ -169,7 +169,7 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
 			     const gaspi_notification_id_t notification_id,
 			     const gaspi_queue_id_t queue);
 gaspi_return_t
-pgaspi_dev_atomic_fetch_add (gaspi_context_t const * const gctx,
+pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
 			     const gaspi_segment_id_t,
 			     const gaspi_offset_t,
 			     const gaspi_rank_t,
@@ -177,7 +177,7 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t const * const gctx,
 
 
 gaspi_return_t
-pgaspi_dev_atomic_compare_swap (gaspi_context_t const * const gctx,
+pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
 				const gaspi_segment_id_t,
 				const gaspi_offset_t,
 				const gaspi_rank_t,

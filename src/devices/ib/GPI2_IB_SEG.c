@@ -33,7 +33,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_IB.h"
 
 int
-pgaspi_dev_register_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t *seg)
+pgaspi_dev_register_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t* seg)
 {
   gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
 
@@ -72,7 +72,7 @@ pgaspi_dev_register_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t *seg
 }
 
 int
-pgaspi_dev_unregister_mem(gaspi_context_t const * const gctx,const gaspi_rc_mseg_t * seg)
+pgaspi_dev_unregister_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t* seg)
 {
   if( seg->mr[0] != NULL)
     {

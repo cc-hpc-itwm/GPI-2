@@ -41,7 +41,7 @@ pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int i,
 
 //TODO:
 int
-pgaspi_dev_disconnect_context(gaspi_context_t const * const gctx, const int i)
+pgaspi_dev_disconnect_context(gaspi_context_t * const gctx, const int i)
 {
   return 0;
 }

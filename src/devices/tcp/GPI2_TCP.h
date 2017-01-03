@@ -20,6 +20,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define _GPI2_TCP_H_
 
 #include "GPI2.h"
+#include "GPI2_Dev.h"
 
 #include "tcp_device.h"
 

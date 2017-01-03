@@ -415,7 +415,7 @@ pgaspi_dev_write_notify (gaspi_context_t * const gctx,
 			 const gaspi_rank_t rank,
 			 const gaspi_segment_id_t segment_id_remote,
 			 const gaspi_offset_t offset_remote,
-			 const unsigned int size,
+			 const gaspi_size_t size,
 			 const gaspi_notification_id_t notification_id,
 			 const gaspi_notification_t notification_value,
 			 const gaspi_queue_id_t queue)
@@ -580,7 +580,7 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
 			const gaspi_rank_t rank,
 			const gaspi_segment_id_t segment_id_remote,
 			const gaspi_offset_t offset_remote,
-			const unsigned int size,
+			const gaspi_size_t size,
 			const gaspi_notification_id_t notification_id,
 			const gaspi_queue_id_t queue)
 {

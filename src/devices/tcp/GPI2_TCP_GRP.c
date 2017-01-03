@@ -21,7 +21,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 int
 pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
-			    void *local_addr, int length, int dst, void *remote_addr, int g)
+			    void *local_addr, int length, int dst, void *remote_addr, unsigned char g)
 {
   gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
 

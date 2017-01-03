@@ -814,7 +814,7 @@ pgaspi_dev_create_endpoint(gaspi_context_t const * const gctx, const int i,
 
 /* TODO: rename to endpoint */
 int
-pgaspi_dev_disconnect_context(gaspi_context_t const * const gctx, const int i)
+pgaspi_dev_disconnect_context(gaspi_context_t * const gctx, const int i)
 {
   gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
 
