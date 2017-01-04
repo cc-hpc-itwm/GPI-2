@@ -208,8 +208,8 @@ counter_info_t gpi2_counter_info[GASPI_STATS_COUNTER_NUM_MAX] =
     },
     {
       GASPI_STATISTIC_ARGUMENT_NONE,
-      "TimeInGaspi",
-      "Time spent inside gaspi calls by this rank",
+      "TimeWaitingInGaspi",
+      "Time spent inside gaspi waiting calls by this rank",
       1,
       {	0 }
     },
@@ -360,7 +360,7 @@ pgaspi_statistic_print_counters (void)
 			printf("Rank:%u: %23s:\t%10.2f\n", myrank, name,  _timers[GASPI_WAITSOME_TIMER].ttotal_ms);
 			break;
 		      }
-		    case(GASPI_STATS_TIME_ALL):
+		    case(GASPI_STATS_TIME_WAIT_ALL):
 		      {
 			printf("Rank:%u: %23s:\t%10.2f\n", myrank, name,  _timers[GASPI_ALL_TIMER].ttotal_ms);
 			break;

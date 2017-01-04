@@ -37,7 +37,7 @@ enum
     GASPI_STATS_TIME_BARRIER,             /* Time inside gaspi_barrier */
     GASPI_STATS_TIME_WAIT,                /* Time inside gaspi_wait */
     GASPI_STATS_TIME_WAITSOME,            /* Time inside gaspi_notify_waitsome */
-    GASPI_STATS_TIME_ALL,                 /* Time inside gaspi calls */
+    GASPI_STATS_TIME_WAIT_ALL,            /* Time inside gaspi waiting calls */
     GASPI_STATS_COUNTER_NUM_MAX
   };
 
@@ -89,7 +89,7 @@ gaspi_stats_get_timer_ms(enum gaspi_timer t);
     if(glb_gaspi_stats_verbosity_level)					\
       {									\
 	gpi2_counter_info[timer].value_f += val;			\
-	gpi2_counter_info[GASPI_STATS_TIME_ALL].value_f += val;		\
+	gpi2_counter_info[GASPI_STATS_TIME_WAIT_ALL].value_f += val;	\
       }									\
   } while(0);
 
