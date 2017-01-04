@@ -282,6 +282,9 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
   gctx->mseg_cnt++;
 
   eret = GASPI_SUCCESS;
+
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_SEG_ALLOC, 1);
+
  endL:
   unlock_gaspi (&(gctx->mseg_lock));
   return eret;
@@ -344,6 +347,8 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 
   gctx->mseg_cnt--;
 
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_SEG_DELETE, 1);
+
   unlock_gaspi (&(gctx->mseg_lock));
 
   return eret;
@@ -378,6 +383,8 @@ pgaspi_segment_register(const gaspi_segment_id_t segment_id,
   gaspi_return_t eret = gaspi_sn_command(GASPI_SN_SEG_REGISTER, rank, timeout_ms, (void *) &segment_id);
 
   gctx->rrmd[segment_id][rank].trans = 1;
+
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_SEG_REGISTER, 1);
 
   unlock_gaspi(&(gctx->ctx_lock));
 
@@ -550,6 +557,8 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 
   eret = pgaspi_barrier(group, timeout_ms);
 
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_SEG_CREATE, 1);
+
   return eret;
 }
 
@@ -641,6 +650,8 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 
   eret = GASPI_SUCCESS;
 
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_SEG_BIND, 1);
+
  endL:
   unlock_gaspi (&(gctx->mseg_lock));
   return eret;
@@ -668,6 +679,8 @@ pgaspi_segment_use ( gaspi_segment_id_t const segment_id,
     {
       return eret;
     }
+
+  GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_SEG_USE, 1);
 
   return gaspi_barrier( group, timeout);
 }

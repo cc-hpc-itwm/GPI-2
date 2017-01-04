@@ -145,6 +145,48 @@ counter_info_t gpi2_counter_info[GASPI_STATS_COUNTER_NUM_MAX] =
     },
     {
       GASPI_STATISTIC_ARGUMENT_NONE,
+      "NumberOfSegmentCreate",
+      "Number of times gaspi_segment_create was invoked by this rank",
+      1,
+      {	0 }
+    },
+    {
+      GASPI_STATISTIC_ARGUMENT_NONE,
+      "NumberOfSegmentAlloc",
+      "Number of times gaspi_segment_alloc was invoked by this rank",
+      1,
+      {	0 }
+    },
+    {
+      GASPI_STATISTIC_ARGUMENT_NONE,
+      "NumberOfSegmentRegister",
+      "Number of times gaspi_segment_register was invoked by this rank",
+      1,
+      {	0 }
+    },
+    {
+      GASPI_STATISTIC_ARGUMENT_NONE,
+      "NumberOfSegmentDelete",
+      "Number of times gaspi_segment_delete was invoked by this rank",
+      1,
+      {	0 }
+    },
+    {
+      GASPI_STATISTIC_ARGUMENT_NONE,
+      "NumberOfSegmentBind",
+      "Number of times gaspi_segment_bind was invoked by this rank",
+      1,
+      {	0 }
+    },
+    {
+      GASPI_STATISTIC_ARGUMENT_NONE,
+      "NumberOfSegmentUse",
+      "Number of times gaspi_segment_use was invoked by this rank",
+      1,
+      {	0 }
+    },
+    {
+      GASPI_STATISTIC_ARGUMENT_NONE,
       "TimeInBarrier",
       "Time spent inside gaspi_barrier by this rank",
       1,
