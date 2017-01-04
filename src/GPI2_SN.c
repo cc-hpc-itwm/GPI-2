@@ -932,18 +932,11 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
       recv_buf += size;
     }
 
-  if( grp_ctx->rank % 2 == 0 )
-    {
-      if( gaspi_sn_close(left_sock) != 0 )
-	{
-	  gaspi_print_error("Failed to close socket.");
-	}
+  shutdown(right_sock, SHUT_WR);
+  shutdown(left_sock, SHUT_RD);
 
-      if( gaspi_sn_close(right_sock) != 0 )
-	{
-	  gaspi_print_error("Failed to close socket.");
-	}
-    }
+  close(right_sock);
+  close(left_sock);
 
   return 0;
 }
