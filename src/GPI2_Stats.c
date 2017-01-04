@@ -56,6 +56,8 @@ gaspi_stats_start_timer(enum gaspi_timer t)
 void
 gaspi_stats_stop_timer(enum gaspi_timer t)
 {
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+
   if( !_timers[t].running )
     {
       return;
@@ -65,11 +67,11 @@ gaspi_stats_stop_timer(enum gaspi_timer t)
 
   _timers[t].tend = gaspi_get_cycles();
   _timers[t].ttotal += (_timers[t].tend - _timers[t].tstart);
-  _timers[t].ttotal_ms = (float) _timers[t].ttotal * glb_gaspi_ctx.cycles_to_msecs;
+  _timers[t].ttotal_ms = (float) _timers[t].ttotal * gctx->cycles_to_msecs;
   _timers[t].running = 0;
 
   _timers[GASPI_ALL_TIMER].ttotal += (_timers[t].tend - _timers[t].tstart);
-  _timers[GASPI_ALL_TIMER].ttotal_ms = (float) _timers[GASPI_ALL_TIMER].ttotal * glb_gaspi_ctx.cycles_to_msecs;
+  _timers[GASPI_ALL_TIMER].ttotal_ms = (float) _timers[GASPI_ALL_TIMER].ttotal * gctx->cycles_to_msecs;
   _timers[GASPI_ALL_TIMER].running = 0;
 
   unlock_gaspi(&gaspi_stats_lock);

@@ -36,7 +36,6 @@ static inline gaspi_return_t
 _gaspi_release_group_mem(gaspi_context_t const * const gctx,
 			 const gaspi_group_t group)
 {
-  //  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
   gaspi_group_ctx_t * const grp_ctx = &(glb_gaspi_group_ctx[group]);
 
   if( grp_ctx->rrcd != NULL )
@@ -583,7 +582,7 @@ _gaspi_sync_wait(gaspi_context_t * const gctx,
 }
 
 #define TOGGLE_SIZE 2
-#define GPI2_GRP_LOCAL_SYNC_ADDR(grp_ctx) (grp_ctx->rrcd[glb_gaspi_ctx.rank].data.buf + (TOGGLE_SIZE * grp_ctx->tnc + grp_ctx->togle))
+#define GPI2_GRP_LOCAL_SYNC_ADDR(myrank, grp_ctx) (grp_ctx->rrcd[myrank].data.buf + (TOGGLE_SIZE * grp_ctx->tnc + grp_ctx->togle))
 #define GPI2_GRP_REMOTE_SYNC_ADDR(grp_ctx, dst_rank) (grp_ctx->rrcd[dst_rank].data.addr + (TOGGLE_SIZE * grp_ctx->rank + grp_ctx->togle))
 #define GPI2_GRP_SYNC_POLL_ADDR(grp_ctx, src_rank) (grp_ctx->rrcd[gctx->rank].data.buf + (TOGGLE_SIZE * src_rank + grp_ctx->togle))
 
@@ -628,7 +627,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   const int grp_size = grp_ctx->tnc;
   const int rank_in_grp = grp_ctx->rank;
 
-  unsigned char* const barrier_ptr = GPI2_GRP_LOCAL_SYNC_ADDR(grp_ctx);
+  unsigned char* const barrier_ptr = GPI2_GRP_LOCAL_SYNC_ADDR(gctx->rank, grp_ctx);
   barrier_ptr[0] = grp_ctx->barrier_cnt;
 
   int mask = grp_ctx->lastmask & 0x7fffffff;
@@ -753,7 +752,7 @@ _gaspi_allreduce_write_and_sync(gaspi_context_t * const gctx,
       return GASPI_ERR_DEVICE;
     }
 
-  unsigned char *barrier_ptr = GPI2_GRP_LOCAL_SYNC_ADDR(grp_ctx);
+  unsigned char *barrier_ptr = GPI2_GRP_LOCAL_SYNC_ADDR(gctx->rank, grp_ctx);
   barrier_ptr[0] = grp_ctx->barrier_cnt;
 
   if( pgaspi_dev_post_group_write(gctx, barrier_ptr, 1, dst, (void*) GPI2_GRP_REMOTE_SYNC_ADDR(grp_ctx, dst), g) != 0 )

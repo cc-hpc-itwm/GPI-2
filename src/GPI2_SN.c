@@ -1121,6 +1121,8 @@ _gaspi_sn_group_check(const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms,
 static inline int
 _gaspi_sn_group_connect(const gaspi_rank_t rank, const void * const arg)
 {
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+
   int i = (int) rank;
 
   const gaspi_group_t group = *(gaspi_group_t *) arg;
@@ -1131,28 +1133,28 @@ _gaspi_sn_group_connect(const gaspi_rank_t rank, const void * const arg)
 
   cdh.op_len = sizeof(gaspi_rc_mseg_t);
   cdh.op = GASPI_SN_GRP_CONNECT;
-  cdh.rank = glb_gaspi_ctx.rank;
+  cdh.rank = gctx->rank;
   cdh.ret = group;
 
-  ssize_t ret = gaspi_sn_writen(glb_gaspi_ctx.sockfd[i], &cdh, sizeof(gaspi_cd_header));
+  ssize_t ret = gaspi_sn_writen(gctx->sockfd[i], &cdh, sizeof(gaspi_cd_header));
   if( ret != sizeof(gaspi_cd_header) )
     {
       gaspi_print_error("Failed to write to %u (%ld %d %p %lu)",
 			i,
 			ret,
-			glb_gaspi_ctx.sockfd[i],
+			gctx->sockfd[i],
 			&cdh,
 			sizeof(gaspi_cd_header));
       return GPI2_SN_ERROR;
     }
 
-  ssize_t rret = gaspi_sn_readn(glb_gaspi_ctx.sockfd[i], &group_to_commit->rrcd[i], sizeof(gaspi_rc_mseg_t));
+  ssize_t rret = gaspi_sn_readn(gctx->sockfd[i], &group_to_commit->rrcd[i], sizeof(gaspi_rc_mseg_t));
   if( rret != sizeof(gaspi_rc_mseg_t) )
     {
       gaspi_print_error("Failed to read from %d (%ld %d %p %lu)",
 			i,
 			ret,
-			glb_gaspi_ctx.sockfd[i],
+			gctx->sockfd[i],
 			&group_to_commit->rrcd[i],
 			sizeof(gaspi_rc_mseg_t));
       return GPI2_SN_ERROR;
@@ -1262,8 +1264,7 @@ gaspi_sn_cleanup(const int sig)
 static void
 gaspi_sn_fatal_error(int close_sockfd, enum gaspi_sn_status status, char* msg)
 {
-  fprintf(stderr,"[Rank %4u]: Error at (%s:%d): %s\n",
-	  glb_gaspi_ctx.rank, __FILE__, __LINE__, msg);
+  gaspi_print_error("SN fatal error.");
 
   gaspi_sn_status = status;
 

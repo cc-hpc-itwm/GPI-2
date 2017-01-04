@@ -49,6 +49,8 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
   int gaspi_log_socket = -1;
   int gaspi_log_rank = -1;
 
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+
   /* Logger disabled? */
   if( !glb_gaspi_cfg.logger )
     {
@@ -66,15 +68,15 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
       return;
     }
 
-  if( glb_gaspi_ctx.init )
+  if( gctx->init )
     {
-      gaspi_log_socket = glb_gaspi_ctx.localSocket;
-      gaspi_log_rank = glb_gaspi_ctx.rank;
+      gaspi_log_socket = gctx->localSocket;
+      gaspi_log_rank = gctx->rank;
     }
   else
     {
 #ifdef GPI2_WITH_MPI
-      gaspi_log_socket = glb_gaspi_ctx.localSocket;
+      gaspi_log_socket = gctx->localSocket;
 #else
       char *socket_num_str = getenv ("GASPI_SOCKET");
       if( socket_num_str != NULL )
@@ -92,7 +94,7 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
   vsnprintf (buf + sl, 1024 - sl, fmt, ap);
   va_end (ap);
 
-  if( !glb_gaspi_ctx.init )
+  if( !gctx->init )
     {
       fprintf(stdout, "%s", buf);
       fflush (stdout);

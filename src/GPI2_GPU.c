@@ -32,8 +32,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 gaspi_gpu_t*
 _gaspi_find_gpu(int dev_id)
 {
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+
   int i;
-  for (i = 0; i < glb_gaspi_ctx.gpu_count; i++)
+  for (i = 0; i < gctx->gpu_count; i++)
     if( gpus[i].device_id == dev_id )
       {
 	cudaSetDevice(dev_id);
@@ -256,7 +258,6 @@ pgaspi_gpu_write(const gaspi_segment_id_t segment_id_local,
   gaspi_verify_remote_off(offset_remote, segment_id_remote, rank, size);
   gaspi_verify_queue(queue);
   gaspi_verify_comm_size(size, segment_id_local, segment_id_remote, rank, GASPI_MAX_TSIZE_C);
-  /* gaspi_verify_queue_size_max(glb_gaspi_ctx.ne_count_c[queue]); */
 
   gaspi_return_t eret = GASPI_ERROR;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
@@ -309,7 +310,6 @@ pgaspi_gpu_write_notify(const gaspi_segment_id_t segment_id_local,
   gaspi_verify_remote_off(offset_remote, segment_id_remote, rank, size);
   gaspi_verify_queue(queue);
   gaspi_verify_comm_size(size, segment_id_local, segment_id_remote, rank, GASPI_MAX_TSIZE_C);
-  /* gaspi_verify_queue_size_max(glb_gaspi_ctx.ne_count_c[queue]); */
 
   if( notification_value == 0 )
     {

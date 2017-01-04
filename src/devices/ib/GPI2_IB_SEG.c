@@ -103,6 +103,7 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 			  const gaspi_alloc_t alloc_policy)
 {
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
 
   if (gctx->rrmd[segment_id] == NULL)
     {
@@ -157,7 +158,7 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 
       /* Register host memory */
       gctx->rrmd[segment_id][gctx->rank].host_mr =
-	ibv_reg_mr( glb_gaspi_ctx_ib.pd,
+	ibv_reg_mr( ib_dev_ctx->pd,
 		    gctx->rrmd[segment_id][gctx->rank].host_ptr,
 		    NOTIFY_OFFSET + size,
 		    IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
@@ -176,7 +177,7 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 
       /* Register device memory */
       gctx->rrmd[segment_id][gctx->rank].mr[0] =
-	ibv_reg_mr( glb_gaspi_ctx_ib.pd,
+	ibv_reg_mr( ib_dev_ctx->pd,
 		    gctx->rrmd[segment_id][gctx->rank].data.buf,
 		    size,
 		    IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |

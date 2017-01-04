@@ -487,7 +487,7 @@ pgaspi_segment_register_group(gaspi_context_t * const gctx,
       return GASPI_ERR_MEMALLOC;
     }
 
-  if( gaspi_sn_allgather(&glb_gaspi_ctx, &cdh, result, sizeof(gaspi_segment_descriptor_t), group, timeout_ms) != 0 )
+  if( gaspi_sn_allgather(gctx, &cdh, result, sizeof(gaspi_segment_descriptor_t), group, timeout_ms) != 0 )
     {
       free(result);
       unlock_gaspi(&(gctx->ctx_lock));
@@ -629,7 +629,7 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 
   gctx->rrmd[segment_id][myrank].notif_spc_size = NOTIFY_OFFSET;
 
-  gctx->rrmd[segment_id][glb_gaspi_ctx.rank].user_provided = 1;
+  gctx->rrmd[segment_id][gctx->rank].user_provided = 1;
 
   /* TODO: what to do with the memory description?? */
   gctx->rrmd[segment_id][myrank].desc = memory_description;
