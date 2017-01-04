@@ -347,30 +347,32 @@ pgaspi_statistic_print_counters (void)
 		    {
 		    case(GASPI_STATS_TIME_BARRIER):
 		      {
-			printf("Rank:%u: %20s:\t%10.2f\n", myrank, name,  _timers[GASPI_BARRIER_TIMER].ttotal_ms);
+			printf("Rank:%u: %23s:\t%10.2f\n", myrank, name,  _timers[GASPI_BARRIER_TIMER].ttotal_ms);
 			break;
 		      }
 		    case(GASPI_STATS_TIME_WAIT):
 		      {
-			printf("Rank:%u: %20s:\t%10.2f\n", myrank, name,  _timers[GASPI_WAIT_TIMER].ttotal_ms);
+			printf("Rank:%u: %23s:\t%10.2f\n", myrank, name,  _timers[GASPI_WAIT_TIMER].ttotal_ms);
 			break;
 		      }
 		    case(GASPI_STATS_TIME_WAITSOME):
 		      {
-			printf("Rank:%u: %20s:\t%10.2f\n", myrank, name,  _timers[GASPI_WAITSOME_TIMER].ttotal_ms);
+			printf("Rank:%u: %23s:\t%10.2f\n", myrank, name,  _timers[GASPI_WAITSOME_TIMER].ttotal_ms);
 			break;
 		      }
 		    case(GASPI_STATS_TIME_ALL):
 		      {
-			printf("Rank:%u: %20s:\t%10.2f\n", myrank, name,  _timers[GASPI_ALL_TIMER].ttotal_ms);
+			printf("Rank:%u: %23s:\t%10.2f\n", myrank, name,  _timers[GASPI_ALL_TIMER].ttotal_ms);
 			break;
 		      }
 
 		    default:
-		      printf("Rank:%u: %20s:\t%10lu\n", myrank, name, value);
+		      printf("Rank:%u: %23s:\t%10lu\n", myrank, name, value);
 		    }
 		}
 	    }
+
+	  printf("\n");
 	  fflush(stdout);
 	}
 
