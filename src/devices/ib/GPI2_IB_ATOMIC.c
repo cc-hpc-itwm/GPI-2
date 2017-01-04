@@ -59,7 +59,6 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
 #ifdef GPI2_EXP_VERBS
   if( ibv_exp_post_send (ib_dev_ctx->qpGroups[rank], &swr, &bad_wr) )
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = 1;
       return GASPI_ERROR;
     }
 #else
@@ -138,7 +137,6 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
 #ifdef GPI2_EXP_VERBS
   if (ibv_exp_post_send (ib_dev_ctx->qpGroups[rank], &swr, &bad_wr))
     {
-      glb_gaspi_ctx.qp_state_vec[GASPI_COLL_QP][rank] = 1;
       return GASPI_ERROR;
     }
 #else
