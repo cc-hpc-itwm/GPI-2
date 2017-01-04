@@ -825,7 +825,7 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
 {
   int left_sock = -1, right_sock = -1;
 
-  gaspi_group_ctx_t* grp_ctx = &(glb_gaspi_group_ctx[group]);
+  gaspi_group_ctx_t* grp_ctx = &(gctx->groups[group]);
 
   const int right_rank_in_group = (grp_ctx->rank  + grp_ctx->tnc + 1) % grp_ctx->tnc;
   const int right_rank = grp_ctx->rank_grp[right_rank_in_group];
@@ -1126,7 +1126,7 @@ _gaspi_sn_group_connect(const gaspi_rank_t rank, const void * const arg)
   int i = (int) rank;
 
   const gaspi_group_t group = *(gaspi_group_t *) arg;
-  const gaspi_group_ctx_t * const group_to_commit = &(glb_gaspi_group_ctx[group]);
+  const gaspi_group_ctx_t * const group_to_commit = &(gctx->groups[group]);
 
   gaspi_cd_header cdh;
   memset(&cdh, 0, sizeof(gaspi_cd_header));
@@ -1529,7 +1529,7 @@ gaspi_sn_backend(void *arg)
 					}
 				      else if( mgmt->cdh.op == GASPI_SN_GRP_CONNECT )
 					{
-					  const gaspi_group_ctx_t* grp_to_connect = &(glb_gaspi_group_ctx[mgmt->cdh.ret]);
+					  const gaspi_group_ctx_t* grp_to_connect = &(gctx->groups[mgmt->cdh.ret]);
 
 					  //TODO: to remove?
 					  while( (grp_to_connect->id == -1) )

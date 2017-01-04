@@ -70,7 +70,7 @@ pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
 
   slist.addr = (uintptr_t) local_addr;
   slist.length = length;
-  slist.lkey = ((struct ibv_mr *)glb_gaspi_group_ctx[group].rrcd[gctx->rank].mr[0])->lkey;
+  slist.lkey = ((struct ibv_mr *)gctx->groups[group].rrcd[gctx->rank].mr[0])->lkey;
 
   swr.sg_list = &slist;
   swr.num_sge = 1;
@@ -79,7 +79,7 @@ pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
   swr.next = NULL;
 
   swr.wr.rdma.remote_addr = (uint64_t) remote_addr;
-  swr.wr.rdma.rkey = glb_gaspi_group_ctx[group].rrcd[dst].rkey[0];
+  swr.wr.rdma.rkey = gctx->groups[group].rrcd[dst].rkey[0];
   swr.wr_id = dst;
 
   if (ibv_post_send ((struct ibv_qp *) ib_dev_ctx->qpGroups[dst], &swr, &bad_wr_send))

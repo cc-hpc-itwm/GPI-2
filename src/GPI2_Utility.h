@@ -149,7 +149,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define gaspi_verify_group(group)					\
   {									\
-    if( group >= GASPI_MAX_GROUPS || glb_gaspi_group_ctx[group].id < 0 ) \
+    if( group >= GASPI_MAX_GROUPS || glb_gaspi_ctx.groups[group].id < 0 ) \
       return GASPI_ERR_INV_GROUP;					\
   }
 

@@ -23,31 +23,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define GPI2_REDUX_BUF_SIZE 2048
 
-typedef enum {
-  GASPI_BARRIER = 1,
-  GASPI_ALLREDUCE = 2,
-  GASPI_ALLREDUCE_USER = 4,
-  GASPI_NONE = 7
-} gaspi_async_coll_t;
-
-typedef struct
-{
-  int id;
-  gaspi_lock_t gl;
-  gaspi_lock_t del;
-  volatile unsigned char barrier_cnt;
-  volatile unsigned char togle;
-  gaspi_async_coll_t coll_op;
-  int lastmask;
-  int level, tmprank, dsize, bid;
-  int rank, tnc;
-  int next_pof2;
-  int pof2_exp;
-  int *rank_grp;
-  int *committed_rank;
-  gaspi_rc_mseg_t *rrcd;
-} gaspi_group_ctx_t;
-
 typedef struct
 {
   gaspi_group_t group;

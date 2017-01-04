@@ -126,7 +126,7 @@ pgaspi_init_core(gaspi_context_t * const gctx)
   int i;
   for(i = 0; i < GASPI_MAX_GROUPS; i++)
     {
-      GASPI_RESET_GROUP(glb_gaspi_group_ctx, i);
+      GASPI_RESET_GROUP(gctx->groups, i);
     }
 
   /* Set number of "created" communication queues */
@@ -366,7 +366,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
     {
       /* just reserve GASPI_GROUP_ALL */
       gctx->group_cnt = 1;
-      glb_gaspi_group_ctx[GASPI_GROUP_ALL].id = -2;//disable
+      gctx->groups[GASPI_GROUP_ALL].id = -2;//disable
       eret = GASPI_SUCCESS;
     }
 
@@ -468,7 +468,7 @@ pgaspi_cleanup_core(gaspi_context_t * const gctx)
   /* Delete groups */
   for(i = 1; i < GASPI_MAX_GROUPS; i++)
     {
-      if( glb_gaspi_group_ctx[i].id >= 0 )
+      if( gctx->groups[i].id >= 0 )
 	{
 	  if( pgaspi_group_delete(i) != GASPI_SUCCESS )
 	    {

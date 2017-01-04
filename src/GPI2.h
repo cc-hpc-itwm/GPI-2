@@ -32,7 +32,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define NOTIFY_OFFSET     ((65536 * sizeof(gaspi_notification_t)) + (2 * sizeof(gaspi_notification_t)))
 
 gaspi_context_t glb_gaspi_ctx;
-gaspi_group_ctx_t glb_gaspi_group_ctx[GASPI_MAX_GROUPS];
 
 static inline gaspi_cycles_t
 gaspi_get_cycles (void)

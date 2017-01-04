@@ -480,7 +480,7 @@ pgaspi_segment_register_group(gaspi_context_t * const gctx,
   cdh.rkey[1] = mseg_info->rkey[1];
 #endif
 
-  gaspi_segment_descriptor_t* result = calloc(glb_gaspi_group_ctx[group].tnc, sizeof(gaspi_segment_descriptor_t));
+  gaspi_segment_descriptor_t* result = calloc(gctx->groups[group].tnc, sizeof(gaspi_segment_descriptor_t));
   if( result == NULL )
     {
       unlock_gaspi(&(gctx->ctx_lock));
@@ -495,7 +495,7 @@ pgaspi_segment_register_group(gaspi_context_t * const gctx,
     }
 
   int r;
-  for(r = 0; r < glb_gaspi_group_ctx[group].tnc; r++)
+  for(r = 0; r < gctx->groups[group].tnc; r++)
     {
       if( gaspi_segment_set(result[r]) < 0 )
 	{
@@ -545,9 +545,9 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
   if( GASPI_TOPOLOGY_STATIC == gctx->config->build_infrastructure )
     {
       int r;
-      for(r = glb_gaspi_group_ctx[group].rank; r < glb_gaspi_group_ctx[group].tnc; r++)
+      for(r = gctx->groups[group].rank; r < gctx->groups[group].tnc; r++)
 	{
-	  eret = pgaspi_connect(glb_gaspi_group_ctx[group].rank_grp[r], timeout_ms);
+	  eret = pgaspi_connect(gctx->groups[group].rank_grp[r], timeout_ms);
 	  if( eret != GASPI_SUCCESS )
 	    {
 	      return eret;

@@ -64,7 +64,7 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  if(lock_gaspi_tout (&glb_gaspi_group_ctx[0].gl, timeout_ms))
+  if(lock_gaspi_tout (&gctx->groups[0].gl, timeout_ms))
     return GASPI_TIMEOUT;
 
   if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
@@ -93,7 +93,7 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 #endif
 
  endL:
-  unlock_gaspi (&glb_gaspi_group_ctx[0].gl);
+  unlock_gaspi (&gctx->groups[0].gl);
   return eret;
 }
 
@@ -115,7 +115,7 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
   gaspi_return_t eret = GASPI_ERROR;
 
-  if(lock_gaspi_tout (&glb_gaspi_group_ctx[0].gl, timeout_ms))
+  if(lock_gaspi_tout (&gctx->groups[0].gl, timeout_ms))
     return GASPI_TIMEOUT;
 
   if( GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat )
@@ -142,6 +142,6 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 #endif
 
  endL:
-  unlock_gaspi (&glb_gaspi_group_ctx[0].gl);
+  unlock_gaspi (&gctx->groups[0].gl);
   return eret;
 }
