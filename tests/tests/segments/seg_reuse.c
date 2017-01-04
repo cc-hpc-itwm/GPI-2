@@ -6,7 +6,7 @@
 int
 main(int argc, char *argv[])
 {
-  int ntimes = 10;
+  int ntimes = 1000;
 
   gaspi_rank_t rank, nprocs;
   gaspi_notification_id_t id;
