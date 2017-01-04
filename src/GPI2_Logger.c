@@ -35,6 +35,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 static pthread_mutex_t gaspi_logger_lock = PTHREAD_MUTEX_INITIALIZER;
 
+extern gaspi_config_t glb_gaspi_cfg;
+
 #pragma weak gaspi_printf_to = pgaspi_printf_to
 void
 pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
@@ -50,7 +52,7 @@ pgaspi_printf_to(gaspi_rank_t log_rank, const char *fmt, ...)
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
   /* Logger disabled? */
-  if( !gctx->config->logger )
+  if( !glb_gaspi_cfg.logger )
     {
       return;
     }
