@@ -82,7 +82,7 @@ run_test(){
     fi
 
     TEST_RESULT=$?
-    kill -0 $TPID || let "TIMEDOUT=1"
+    kill -0 $TPID || TIMEDOUT=1
     if [ $TIMEDOUT = 1 ];then
 	TESTS_TIMEOUT=$(($TESTS_TIMEOUT+1))
 	printf '\033[33m'"TIMEOUT\n"
@@ -121,7 +121,7 @@ while getopts "e:vtn:fm:o:" option ; do
 	f ) TESTS_GO_FAST=1;opts_used=$(($opts_used + 1));;
 	m ) GPI2_TSUITE_MFILE=${OPTARG};opts_used=$(($opts_used + 2));;
 	o ) LOG_FILE=${OPTARG};opts_used=$(($opts_used + 2));;
-	\?) FAILED_OPTION=$(($OPTIND-1));echo;echo "Unknown option (${!FAILED_OPTION})";echo;exit 1;;
+	\?) shift $(($OPTIND-2));echo;echo "Unknown option ($1)";echo;exit 1;;
     esac
 done
 
@@ -132,12 +132,16 @@ fi
 
 #want to run particular tests
 if [ $(($# - $opts_used)) != 0 ]; then
-FIRST_TEST=$(($# - $(($# - $opts_used)) + 1))
-TESTS="${!FIRST_TEST}"
-for ((i=$FIRST_TEST+1;i<=$#;i++));
-do
-    TESTS="$TESTS ${!i}"
-done
+
+    # move to first testname
+    shift $(($OPTIND - 1))
+
+    TESTS=""
+    while [ "$1" != "" ]; do
+	TESTS="$TESTS $1"
+
+	shift
+    done
 fi
 
 #check machine file
@@ -181,7 +185,6 @@ done
 
 killall sleep 2>/dev/null
 
-echo
-echo -e "Run $NUM_TESTS tests:\n$TESTS_PASS passed\n$TESTS_FAIL failed\n$TESTS_TIMEOUT timed-out\n$TESTS_SKIPPED skipped\nTimeout $MAX_TIME (secs)\n"
+printf "Run $NUM_TESTS tests:\n$TESTS_PASS passed\n$TESTS_FAIL failed\n$TESTS_TIMEOUT timed-out\n$TESTS_SKIPPED skipped\nTimeout $MAX_TIME (secs)\n"
 
 exit 0
