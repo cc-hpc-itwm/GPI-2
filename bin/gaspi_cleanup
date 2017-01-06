@@ -34,7 +34,7 @@ validate_machinefile()
 	echo "Empty machine file ($1)"
 	exit 1
     fi
-    
+
     #valid hosts
     hlist=`cat $1`
     for i in $hlist
@@ -46,12 +46,13 @@ validate_machinefile()
     done
 }
 
-kill_procs()                                                                                                    
-{                                                                                                               
-    for i in $hlist                                                                                             
-    do                                                                                                          
-        ssh $i killall -s KILL $PRG > /dev/null 2>&1 &
-    done             
+kill_procs()
+{
+    for i in $hlist
+    do
+	P=`basename ${PRG}`
+	ssh $i killall -s KILL $PRG $P > /dev/null 2>&1 &
+    done
     wait
 }
 
@@ -63,7 +64,7 @@ fi
 
 
 if [ "$PRG" = "" ]; then
-    echo "Error: GASPI binary not found." 
+    echo "Error: GASPI binary not found."
     exit 1
 fi
 
@@ -71,11 +72,11 @@ while [ "$1" != "" ]; do
     case $1 in
 	-m | --machinefile)
 	    shift
- 	    if [ -r $1 ]; then
+	    if [ -r $1 ]; then
 		MFILE=$1
-            else
+	    else
 		echo "Error: Cannot read $1 (-m option) (or file does not exist)"
- 		exit 1
+		exit 1
 	    fi
 	    ;;
 	*)
@@ -86,9 +87,9 @@ while [ "$1" != "" ]; do
 done
 
 validate_machinefile $MFILE
-    
+
 hlist=`/bin/cat $MFILE`
-    
-kill_procs 
+
+kill_procs
 
 exit 0

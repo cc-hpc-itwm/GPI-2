@@ -50,18 +50,18 @@ print_error_exit()
 validate_machinefile()
 {
     if [ ! -s $MFILE ]; then
-        print_error_exit "Empty machine file ($1)"
+	print_error_exit "Empty machine file ($1)"
     fi
 
     while read LINE
     do
-        i=`echo $LINE | gawk '{print $1}'   `
-        if [ -n "$i" ]; then
-            ping -c 1 $i >/dev/null 2>&1 ||
-            {
-                print_error_exit "Host not reachable ($i)"
-            }
-        fi
+	i=`echo $LINE | gawk '{print $1}'   `
+	if [ -n "$i" ]; then
+	    ping -c 1 $i >/dev/null 2>&1 ||
+	    {
+		print_error_exit "Host not reachable ($i)"
+	    }
+	fi
     done < $MFILE
 }
 
@@ -78,15 +78,15 @@ while [ -n "$1" ]; do
 	    shift
 	    echo "Warning: option (-m, --machinefile) not used. Using Load Leveler settings."
 	    ;;
-        -N | --NUMA)
-            SET_NUMA=1
-            ;;
+	-N | --NUMA)
+	    SET_NUMA=1
+	    ;;
 	-d | --debug)
 	    echo "Warning: option (-d, --debug) not available (using Load Leveler)."
 	    ;;
-        -h | --help)
-            usage
-            ;;
+	-h | --help)
+	    usage
+	    ;;
 	-b | --binary)
 	    shift
 	    ;;
@@ -97,15 +97,15 @@ while [ -n "$1" ]; do
 	-p | --ping)
 	    VALIDATE_MACHINEFILE=1
 	    ;;
-        *) #Sucks! we're taking a small risk here
-            if [ -x $1 ]; then
+	*) #Sucks! we're taking a small risk here
+	    if [ -x $1 ]; then
 		PRG=$(readlink -f $1)
 		shift
 		PRG_ARGS="$*"
-                break
-            else
-                print_error_exit "Cannot execute $1 (or file does not exist)"
-            fi
+		break
+	    else
+		print_error_exit "Cannot execute $1 (or file does not exist)"
+	    fi
     esac
     shift
 done
@@ -118,11 +118,11 @@ fi
 if [ $SET_NUMA -eq 1 ]; then
     which numactl > /dev/null
     if [ $? = 0 ]; then
-        MAX_NUMA_NODES=`numactl --hardware|grep available|gawk '{print $2}'`
-        HAS_NUMA=1
+	MAX_NUMA_NODES=`numactl --hardware|grep available|gawk '{print $2}'`
+	HAS_NUMA=1
     else
-        MAX_NUMA_NODES=1
-        HAS_NUMA=0
+	MAX_NUMA_NODES=1
+	HAS_NUMA=0
     fi
 else
     MAX_NUMA_NODES=256

@@ -84,8 +84,8 @@ validate_machinefile()
     fi
     # newline at the end
     endl=`tail -c 1 $MFILE`
-    if [ "$endl" != "" ]; then 
-	print_error_exit "No newline at end of machine file ($1)"; 
+    if [ "$endl" != "" ]; then
+	print_error_exit "No newline at end of machine file ($1)";
     fi
 
     # create tmp_file
@@ -133,7 +133,8 @@ kill_procs()
 #    clean_exit 1
     for i in $(cat $UNIQ_MFILE)
     do
-	$GASPI_LAUNCHER $i "nohup killall -9 ${PRG} $(cat /dev/null)" > /dev/null 2>&1 &
+	P=`basename ${PRG}`
+       $GASPI_LAUNCHER $i "nohup killall -9 ${P}  ${PRG} $(cat /dev/null)" > /dev/null 2>&1 &
     done
     remove_temp_file
     wait
@@ -151,9 +152,9 @@ while [ -n "$1" ]; do
     case $1 in
 	-m | --machinefile)
 	    shift
- 	    if [ -r $1 ]; then
+	    if [ -r $1 ]; then
 		MFILE=$1
-            else
+	    else
 		print_error_exit "Cannot read $1 (-m option) (or file does not exist)"
 	    fi
 	    ;;
@@ -185,15 +186,15 @@ while [ -n "$1" ]; do
 	    VALIDATE_MACHINEFILE=1
 	    ;;
 	*) #Sucks! we're taking a small risk here
-            if [ -x $1 ]; then
+	    if [ -x $1 ]; then
 
 		PRG=$(readlink -f $1)
 		shift
 		PRG_ARGS="$*"
 		break
-            else
-                print_error_exit "Cannot execute $1 (or file does not exist)"
-            fi
+	    else
+		print_error_exit "Cannot execute $1 (or file does not exist)"
+	    fi
     esac
     shift
 done
@@ -270,7 +271,7 @@ do
 	else
 	    if [ $j -eq 0 ]; then
 		node=$((node+1))
-	        previous="$LINE"
+		previous="$LINE"
 		continue;
 	    else
 	    cmd="${location}/ssh.spawner ${master_node} 1 $(readlink -f $MFILE) $j "
@@ -280,9 +281,9 @@ do
 	node=$((node+1))
 	cmd="$cmd $node $rank $NNODES"
 	if [ $SET_NUMA -eq 1 ]; then
-     	    cmd="$cmd 1"
+	    cmd="$cmd 1"
 	else
-            cmd="$cmd 0"
+	    cmd="$cmd 0"
 	fi
 	cmd="$cmd ${PRG} ${PRG_ARGS}"
 
@@ -347,11 +348,11 @@ if [ "$master_node" != "$HN" ]; then
     cmd="$cmd; export GASPI_NRANKS=$NNODES"
 
     if [ $SET_NUMA -eq 1 ]; then
-        cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
+	cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
     fi
     cmd="$cmd; $MASTER_PRG $PRG_ARGS'"
     $GASPI_LAUNCHER $master_node $cmd
-   
+
     if [ $? != 0 ]; then
 	echo "Error: Failed to start $MASTER_PRG on $master_node"
 	clean_exit 1
@@ -374,7 +375,7 @@ else
 	$MASTER_PRG $PRG_ARGS
     fi
     if [ $? != 0 ]; then
- 	clean_exit 1
+	clean_exit 1
 	exit 1
     fi
 fi
