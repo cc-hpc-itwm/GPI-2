@@ -722,7 +722,7 @@ extern "C"
    *
    * @param buffer_send The buffer with data for the operation.
    * @param buffer_receive The buffer to receive the result of the operation.
-   * @param num The number of data elements in the buffer.
+   * @param num The number of data elements in the buffer (beware of maximum - use gaspi_allreduce_elem_max).
    * @param operation The type of operations (see gaspi_operation_t).
    * @param datatyp Type of data (see gaspi_datatype_t).
    * @param group The group involved in the operation.
