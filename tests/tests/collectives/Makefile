@@ -1,4 +1,5 @@
-BIN = barrier.bin allreduce.bin allreduce_user_fun.bin allreduce_utils.bin allreduce_user_type.bin
+BIN = barrier.bin allreduce.bin allreduce_user_fun.bin allreduce_utils.bin \
+	allreduce_user_type.bin allreduce_vlarge.bin
 
 CFLAGS+=-I../
 

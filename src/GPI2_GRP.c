@@ -29,11 +29,42 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_SN.h"
 #include "GPI2_Utility.h"
 
-#define GPI2_ALLREDUCE_ELEM_MAX ((1 << 8) - 1)
 const unsigned int glb_gaspi_typ_size[6] = { 4, 4, 4, 8, 8, 8 };
 
+#define TOGGLE_SIZE 2
+
+/* size of buffer for barrier communication */
+/* = total number of node (tnc) * toggling(2=TOGGLE_SIZE) + space for
+   the 2 current counters (TOGGLE_SIZE) */
+#define BARRIER_BUF_SIZE(tnc) (((tnc) * TOGGLE_SIZE) + TOGGLE_SIZE)
+
+/* size of buffer to hold data to send and receive (as they are equal)
+   for allreduce */
+/* = max_elems (usually from config) * sizeof(largest type(double, ulong) = 8) *
+   (peers to communicate) * toggling value(2) */
+#define DATA_BUF_SIZE(peers, max_elems) ((max_elems * sizeof(unsigned long) * (peers) * TOGGLE_SIZE))
+
+static inline int
+calc_next_pof2(int total)
+{
+  int next_pof2 = 1;
+  while( next_pof2 <= total )
+    {
+      next_pof2 <<= 1;
+    }
+  next_pof2 >>= 1;
+
+  return next_pof2;
+}
+
+static inline int
+calc_pof2_exp(int pof2)
+{
+  return (__builtin_clz (pof2) ^ 31U);
+}
+
 static inline gaspi_return_t
-_gaspi_release_group_mem(gaspi_context_t const * const gctx,
+_gaspi_release_group_mem(gaspi_context_t * const gctx,
 			 const gaspi_group_t group)
 {
   gaspi_group_ctx_t * const grp_ctx = &(gctx->groups[group]);
@@ -61,13 +92,45 @@ _gaspi_release_group_mem(gaspi_context_t const * const gctx,
   return GASPI_SUCCESS;
 }
 
+static gaspi_return_t
+pgaspi_alloc_group_comm_mem(gaspi_context_t * const gctx,
+			    gaspi_group_ctx_t * const group_ctx)
+{
+  const int pof2 = calc_next_pof2(gctx->tnc);
+  const int pof2_exp = calc_pof2_exp(pof2);
+
+  const size_t size = (BARRIER_BUF_SIZE(gctx->tnc)) + ((DATA_BUF_SIZE(pof2_exp+2,  gctx->config->allreduce_elem_max)) * 2);
+
+  group_ctx->rrcd = (gaspi_rc_mseg_t *) calloc ((size_t) gctx->tnc, sizeof (gaspi_rc_mseg_t));
+  if( group_ctx->rrcd == NULL )
+    {
+      return GASPI_ERR_MEMALLOC;
+    }
+
+  if( pgaspi_alloc_page_aligned(&(group_ctx->rrcd[gctx->rank].data.ptr), size) != 0 )
+    {
+      gaspi_print_error ("Memory allocation failed.");
+      return GASPI_ERR_MEMALLOC;
+    }
+
+  memset(group_ctx->rrcd[gctx->rank].data.buf, 0, size);
+
+  group_ctx->rrcd[gctx->rank].size = size;
+
+  if( pgaspi_dev_register_mem(gctx, &(group_ctx->rrcd[gctx->rank])) != GASPI_SUCCESS )
+    {
+      return GASPI_ERR_DEVICE;
+    }
+
+  return GASPI_SUCCESS;
+}
+
 /* Group utilities */
 #pragma weak gaspi_group_create = pgaspi_group_create
 gaspi_return_t
 pgaspi_group_create (gaspi_group_t * const group)
 {
   int i, id = GASPI_MAX_GROUPS;
-  const size_t size = NEXT_OFFSET;
   gaspi_return_t eret = GASPI_ERROR;
   gaspi_context_t * const gctx = &glb_gaspi_ctx;
 
@@ -104,33 +167,13 @@ pgaspi_group_create (gaspi_group_t * const group)
   new_grp_ctx->gl.lock = 0;
   new_grp_ctx->del.lock = 0;
 
-  /* TODO: dynamic space (re-)allocation to avoid reservation for all nodes */
-  /* or maybe gaspi_group_create should have the number of ranks as input ? */
-  new_grp_ctx->rrcd = (gaspi_rc_mseg_t *) calloc ((size_t) gctx->tnc, sizeof (gaspi_rc_mseg_t));
-  if( new_grp_ctx->rrcd == NULL )
-    {
-      eret = GASPI_ERR_MEMALLOC;
-      goto errL;
-    }
-
-  if( pgaspi_alloc_page_aligned(&(new_grp_ctx->rrcd[gctx->rank].data.ptr), size) != 0 )
-    {
-      gaspi_print_error ("Memory allocation failed.");
-      return GASPI_ERR_MEMALLOC;
-    }
-
-  memset(new_grp_ctx->rrcd[gctx->rank].data.buf, 0, size);
-
-  new_grp_ctx->rrcd[gctx->rank].size = size;
-
-  eret = pgaspi_dev_register_mem(gctx, &(new_grp_ctx->rrcd[gctx->rank]));
+  eret = pgaspi_alloc_group_comm_mem(gctx, new_grp_ctx);
   if( eret != GASPI_SUCCESS )
     {
-      eret = GASPI_ERR_DEVICE;
       goto errL;
     }
 
-  /* TODO: as above, more dynamic allocation */
+  /* TODO: more dynamic allocation to avoid reservation for all nodes */
   new_grp_ctx->rank_grp = (int *) malloc(gctx->tnc * sizeof (int));
   if( new_grp_ctx->rank_grp == NULL )
     {
@@ -138,6 +181,7 @@ pgaspi_group_create (gaspi_group_t * const group)
       goto errL;
     }
 
+  /* TODO: more dynamic allocation to avoid reservation for all nodes */
   new_grp_ctx->committed_rank = (int *) calloc(gctx->tnc, sizeof (int));
   if( new_grp_ctx->committed_rank == NULL )
     {
@@ -292,18 +336,10 @@ pgaspi_group_all_local_create(gaspi_context_t * const gctx,
     }
 
   grp_all_ctx->tnc = gctx->tnc;
-
-
   grp_all_ctx->rank = gctx->rank;
 
-  grp_all_ctx->next_pof2 = 1;
-  while( grp_all_ctx->next_pof2 <= grp_all_ctx->tnc )
-    {
-      grp_all_ctx->next_pof2 <<= 1;
-    }
-
-  grp_all_ctx->next_pof2 >>= 1;
-  grp_all_ctx->pof2_exp = (__builtin_clz (grp_all_ctx->next_pof2) ^ 31U);
+  grp_all_ctx->next_pof2 = calc_next_pof2(grp_all_ctx->tnc);
+  grp_all_ctx->pof2_exp = calc_pof2_exp(grp_all_ctx->next_pof2);
 
   unlock_gaspi (&(gctx->ctx_lock));
   return GASPI_SUCCESS;
@@ -416,15 +452,8 @@ pgaspi_group_commit (const gaspi_group_t group,
       goto endL;
     }
 
-  group_to_commit->next_pof2 = 1;
-
-  while(group_to_commit->next_pof2 <= group_to_commit->tnc)
-    {
-      group_to_commit->next_pof2 <<= 1;
-    }
-
-  group_to_commit->next_pof2 >>= 1;
-  group_to_commit->pof2_exp = (__builtin_clz (group_to_commit->next_pof2) ^ 31U);
+  group_to_commit->next_pof2 = calc_next_pof2(group_to_commit->tnc);
+  group_to_commit->pof2_exp = calc_pof2_exp(group_to_commit->next_pof2);
 
   gaspi_group_exch_info_t gb;
 
@@ -454,7 +483,7 @@ pgaspi_group_commit (const gaspi_group_t group,
 
       if( _pgaspi_group_commit_to(group, group_to_commit->rank_grp[rg], timeout_ms) != 0 )
 	{
-	  gaspi_print_error("Failed to commit to %d", group_to_commit->rank_grp[rg]);
+	  gaspi_print_error("Failed to commit group %u with rank %d", group,group_to_commit->rank_grp[rg]);
 	  eret = GASPI_ERROR;
 	  goto endL;
 	}
@@ -541,7 +570,9 @@ pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
   gaspi_verify_null_ptr(buf_size);
   gaspi_verify_init("gaspi_allreduce_buf_size");
 
-  *buf_size = GPI2_REDUX_BUF_SIZE;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+
+  *buf_size = ( gctx->config->allreduce_elem_max * sizeof(unsigned long));
 
   return GASPI_SUCCESS;
 }
@@ -553,7 +584,9 @@ pgaspi_allreduce_elem_max (gaspi_number_t * const elem_max)
   gaspi_verify_null_ptr(elem_max);
   gaspi_verify_init("gaspi_allreduce_elem_max");
 
-  *elem_max = GPI2_ALLREDUCE_ELEM_MAX;
+  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+
+  *elem_max =  gctx->config->allreduce_elem_max;
 
   return GASPI_SUCCESS;
 }
@@ -584,9 +617,8 @@ _gaspi_sync_wait(gaspi_context_t * const gctx,
   return GASPI_SUCCESS;
 }
 
-#define TOGGLE_SIZE 2
 #define GPI2_GRP_LOCAL_SYNC_ADDR(myrank, grp_ctx) (grp_ctx->rrcd[myrank].data.buf + (TOGGLE_SIZE * grp_ctx->tnc + grp_ctx->togle))
-#define GPI2_GRP_REMOTE_SYNC_ADDR(grp_ctx, dst_rank) (grp_ctx->rrcd[dst_rank].data.addr + (TOGGLE_SIZE * grp_ctx->rank + grp_ctx->togle))
+#define GPI2_GRP_REMOTE_SYNC_ADDR(grp_ctx, dst_rank) (grp_ctx->rrcd[dst_rank].data.buf + (TOGGLE_SIZE * grp_ctx->rank + grp_ctx->togle))
 #define GPI2_GRP_SYNC_POLL_ADDR(grp_ctx, src_rank) (grp_ctx->rrcd[gctx->rank].data.buf + (TOGGLE_SIZE * src_rank + grp_ctx->togle))
 
 #pragma weak gaspi_barrier = pgaspi_barrier
@@ -748,7 +780,11 @@ _gaspi_allreduce_write_and_sync(gaspi_context_t * const gctx,
 	}
     }
 
-  void* remote_addr = (void *)(grp_ctx->rrcd[dst].data.addr + (COLL_MEM_RECV + (TOGGLE_SIZE * bid + grp_ctx->togle) * GPI2_REDUX_BUF_SIZE));
+  void* remote_addr = (void *) (grp_ctx->rrcd[dst].data.addr +
+				((BARRIER_BUF_SIZE(gctx->tnc)) +
+				 (DATA_BUF_SIZE(grp_ctx->pof2_exp+2,  gctx->config->allreduce_elem_max)) +
+				 ((TOGGLE_SIZE * bid + grp_ctx->togle) *  gctx->config->allreduce_elem_max * sizeof(unsigned long))));
+
   if( pgaspi_dev_post_group_write(gctx, send_ptr, buf_size, dst, remote_addr, g) != 0 )
     {
       gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
@@ -781,7 +817,7 @@ _gaspi_apply_redux(gaspi_group_t g,
   gaspi_group_ctx_t * const grp_ctx = &(gctx->groups[g]);
   gaspi_return_t eret = GASPI_ERROR;
 
-  void * const dst_val = (void *) (recv_ptr + (2 * bid + grp_ctx->togle) * GPI2_REDUX_BUF_SIZE);
+  void * const dst_val = (void *) (recv_ptr + (2 * bid + grp_ctx->togle) *  gctx->config->allreduce_elem_max * sizeof(unsigned long));
   void * const local_val = (void *) *send_ptr;
 
   /* Note: we're updating these arguments */
@@ -833,8 +869,11 @@ _gaspi_allreduce (gaspi_context_t * const gctx,
 
   const int rank_in_grp = grp_ctx->rank;
 
-  unsigned char *send_ptr = grp_ctx->rrcd[gctx->rank].data.buf + COLL_MEM_SEND + (grp_ctx->togle * GASPI_COLL_OP_TYPES * GPI2_REDUX_BUF_SIZE);
-  unsigned char *recv_ptr = grp_ctx->rrcd[gctx->rank].data.buf + COLL_MEM_RECV;
+  unsigned char *send_ptr = grp_ctx->rrcd[gctx->rank].data.buf + (BARRIER_BUF_SIZE(gctx->tnc)) +
+    (grp_ctx->togle * ((DATA_BUF_SIZE(grp_ctx->pof2_exp+2, gctx->config->allreduce_elem_max)) / TOGGLE_SIZE));
+
+  unsigned char *recv_ptr = grp_ctx->rrcd[gctx->rank].data.buf + (BARRIER_BUF_SIZE(gctx->tnc)) +
+    (DATA_BUF_SIZE(grp_ctx->pof2_exp+2, gctx->config->allreduce_elem_max));
 
   const int dsize = r_args->elem_size * r_args->elem_cnt;
   memcpy (send_ptr, buf_send, dsize);
@@ -969,7 +1008,7 @@ _gaspi_allreduce (gaspi_context_t * const gctx,
 	    }
 
 	  bid += grp_ctx->pof2_exp;
-	  send_ptr = (recv_ptr + (2 * bid + grp_ctx->togle) * GPI2_REDUX_BUF_SIZE);
+	  send_ptr = (recv_ptr + (2 * bid + grp_ctx->togle) *  gctx->config->allreduce_elem_max * sizeof(unsigned long));
 	}
     }
 
@@ -1009,12 +1048,12 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
   gaspi_verify_null_ptr(buf_recv);
   gaspi_verify_group(g);
 
-  if( elem_cnt > GPI2_ALLREDUCE_ELEM_MAX )
+  if( elem_cnt >  gctx->config->allreduce_elem_max )
     {
       return GASPI_ERR_INV_NUM;
     }
 
-  if( lock_gaspi_tout (&gctx->groups[g].gl, timeout_ms ))
+  if( lock_gaspi_tout (&gctx->groups[g].gl, timeout_ms) )
     {
       return GASPI_TIMEOUT;
     }
@@ -1062,12 +1101,13 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
   gaspi_verify_null_ptr(buf_recv);
   gaspi_verify_group(g);
 
-  if( elem_cnt > GPI2_ALLREDUCE_ELEM_MAX )
+
+  if( elem_cnt > gctx->config->allreduce_elem_max )
     {
       return GASPI_ERR_INV_NUM;
     }
 
-  if( elem_size * elem_cnt > GPI2_REDUX_BUF_SIZE )
+  if( elem_size * elem_cnt > (gctx->config->allreduce_elem_max * sizeof(unsigned long)) )
     {
       return GASPI_ERR_INV_SIZE;
     }

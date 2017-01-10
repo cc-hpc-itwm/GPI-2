@@ -22,9 +22,9 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 //pre-defined coll. operations
 void
 opMinIntGASPI (void *res, void *localVal, void *dstVal,
-	       const unsigned char cnt)
+	       const int cnt)
 {
-  unsigned char i;
+  int i;
 
   int *rv = (int *) res;
   int *lv = (int *) localVal;
@@ -41,9 +41,9 @@ opMinIntGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opMaxIntGASPI (void *res, void *localVal, void *dstVal,
-	       const unsigned char cnt)
+	       const int cnt)
 {
-  unsigned char i;
+  int i;
 
   int *rv = (int *) res;
   int *lv = (int *) localVal;
@@ -60,9 +60,9 @@ opMaxIntGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opSumIntGASPI (void *res, void *localVal, void *dstVal,
-	       const unsigned char cnt)
+	       const int cnt)
 {
-  unsigned char i;
+  int i;
 
   int *rv = (int *) res;
   int *lv = (int *) localVal;
@@ -79,9 +79,9 @@ opSumIntGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opMinUIntGASPI (void *res, void *localVal, void *dstVal,
-		const unsigned char cnt)
+		const int cnt)
 {
-  unsigned char i;
+  int i;
 
   unsigned int *rv = (unsigned int *) res;
   unsigned int *lv = (unsigned int *) localVal;
@@ -98,9 +98,9 @@ opMinUIntGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opMaxUIntGASPI (void *res, void *localVal, void *dstVal,
-		const unsigned char cnt)
+		const int cnt)
 {
-  unsigned char i;
+  int i;
 
   unsigned int *rv = (unsigned int *) res;
   unsigned int *lv = (unsigned int *) localVal;
@@ -117,9 +117,9 @@ opMaxUIntGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opSumUIntGASPI (void *res, void *localVal, void *dstVal,
-		const unsigned char cnt)
+		const int cnt)
 {
-  unsigned char i;
+  int i;
 
   unsigned int *rv = (unsigned int *) res;
   unsigned int *lv = (unsigned int *) localVal;
@@ -136,9 +136,9 @@ opSumUIntGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opMinFloatGASPI (void *res, void *localVal, void *dstVal,
-		 const unsigned char cnt)
+		 const int cnt)
 {
-  unsigned char i;
+  int i;
 
   float *rv = (float *) res;
   float *lv = (float *) localVal;
@@ -155,9 +155,9 @@ opMinFloatGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opMaxFloatGASPI (void *res, void *localVal, void *dstVal,
-		 const unsigned char cnt)
+		 const int cnt)
 {
-  unsigned char i;
+  int i;
 
   float *rv = (float *) res;
   float *lv = (float *) localVal;
@@ -174,9 +174,9 @@ opMaxFloatGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opSumFloatGASPI (void *res, void *localVal, void *dstVal,
-		 const unsigned char cnt)
+		 const int cnt)
 {
-  unsigned char i;
+  int i;
 
   float *rv = (float *) res;
   float *lv = (float *) localVal;
@@ -193,9 +193,9 @@ opSumFloatGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opMinDoubleGASPI (void *res, void *localVal, void *dstVal,
-		  const unsigned char cnt)
+		  const int cnt)
 {
-  unsigned char i;
+  int i;
 
   double *rv = (double *) res;
   double *lv = (double *) localVal;
@@ -212,9 +212,9 @@ opMinDoubleGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opMaxDoubleGASPI (void *res, void *localVal, void *dstVal,
-		  const unsigned char cnt)
+		  const int cnt)
 {
-  unsigned char i;
+  int i;
 
   double *rv = (double *) res;
   double *lv = (double *) localVal;
@@ -231,9 +231,9 @@ opMaxDoubleGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opSumDoubleGASPI (void *res, void *localVal, void *dstVal,
-		  const unsigned char cnt)
+		  const int cnt)
 {
-  unsigned char i;
+  int i;
 
   double *rv = (double *) res;
   double *lv = (double *) localVal;
@@ -250,9 +250,9 @@ opSumDoubleGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opMinLongGASPI (void *res, void *localVal, void *dstVal,
-		const unsigned char cnt)
+		const int cnt)
 {
-  unsigned char i;
+  int i;
 
   long *rv = (long *) res;
   long *lv = (long *) localVal;
@@ -269,9 +269,9 @@ opMinLongGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opMaxLongGASPI (void *res, void *localVal, void *dstVal,
-		const unsigned char cnt)
+		const int cnt)
 {
-  unsigned char i;
+  int i;
 
   long *rv = (long *) res;
   long *lv = (long *) localVal;
@@ -288,9 +288,9 @@ opMaxLongGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opSumLongGASPI (void *res, void *localVal, void *dstVal,
-		const unsigned char cnt)
+		const int cnt)
 {
-  unsigned char i;
+  int i;
 
   long *rv = (long *) res;
   long *lv = (long *) localVal;
@@ -307,9 +307,9 @@ opSumLongGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opMinULongGASPI (void *res, void *localVal, void *dstVal,
-		 const unsigned char cnt)
+		 const int cnt)
 {
-  unsigned char i;
+  int i;
 
   unsigned long *rv = (unsigned long *) res;
   unsigned long *lv = (unsigned long *) localVal;
@@ -326,9 +326,9 @@ opMinULongGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opMaxULongGASPI (void *res, void *localVal, void *dstVal,
-		 const unsigned char cnt)
+		 const int cnt)
 {
-  unsigned char i;
+  int i;
 
   unsigned long *rv = (unsigned long *) res;
   unsigned long *lv = (unsigned long *) localVal;
@@ -345,9 +345,9 @@ opMaxULongGASPI (void *res, void *localVal, void *dstVal,
 
 void
 opSumULongGASPI (void *res, void *localVal, void *dstVal,
-		 const unsigned char cnt)
+		 const int cnt)
 {
-  unsigned char i;
+  int i;
 
   unsigned long *rv = (unsigned long *) res;
   unsigned long *lv = (unsigned long *) localVal;

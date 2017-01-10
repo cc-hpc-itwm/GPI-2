@@ -38,14 +38,14 @@ int main(int argc, char *argv[])
   gaspi_rank_t nprocs, myrank;
   gaspi_size_t buf_size;
   gaspi_number_t elem_max;
-  
+
   TSUITE_INIT(argc, argv);
 
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT(gaspi_proc_rank(&myrank));
-  
+
   ASSERT(gaspi_allreduce_buf_size (&buf_size));
   ASSERT(gaspi_allreduce_elem_max (&elem_max));
 
@@ -58,6 +58,11 @@ int main(int argc, char *argv[])
   for(n = 0; n < elem_max; n++)
     {
       a[n].a = b[n].a = myrank * 1.0;
+    }
+
+  if(sizeof(struct elem) * elem_max > buf_size)
+    {
+      elem_max = buf_size / sizeof(struct elem);
     }
 
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));

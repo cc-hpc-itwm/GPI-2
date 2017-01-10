@@ -21,8 +21,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GPI2_Types.h"
 
-#define GPI2_REDUX_BUF_SIZE 2048
-
 typedef struct
 {
   gaspi_group_t group;

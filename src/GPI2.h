@@ -26,9 +26,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GPI2_Stats.h"
 
-#define COLL_MEM_SEND     (131136)
-#define COLL_MEM_RECV     (COLL_MEM_SEND + 73728)
-#define NEXT_OFFSET       (COLL_MEM_RECV + 73728)
 #define NOTIFY_OFFSET     ((65536 * sizeof(gaspi_notification_t)) + (2 * sizeof(gaspi_notification_t)))
 
 gaspi_context_t glb_gaspi_ctx;

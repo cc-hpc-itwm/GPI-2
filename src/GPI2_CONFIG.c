@@ -66,7 +66,7 @@ gaspi_config_t glb_gaspi_cfg = {
   GASPI_MAX_NOTIFICATION,	//notification_num;
   1024,				//passive_queue_size_max;
   GASPI_MAX_TSIZE_P,		//passive_transfer_size_max;
-  NEXT_OFFSET,			//allreduce_buf_size;
+  (255*sizeof(unsigned long)),  //allreduce_buf_size;
   255,				//allreduce_elem_max;
   GASPI_TOPOLOGY_STATIC         //build_infrastructure;
 };
@@ -204,6 +204,8 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.logger = nconf.logger;
+
+  glb_gaspi_cfg.allreduce_elem_max = nconf.allreduce_elem_max;
 
   return GASPI_SUCCESS;
 }
