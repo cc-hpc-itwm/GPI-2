@@ -97,18 +97,18 @@ gaspi_return_t testOP(gaspi_operation_t op, gaspi_datatype_t type, gaspi_number_
   void * send_bf = malloc(elems * typeSize[type]);
   if (send_bf == NULL)
     return GASPI_ERROR;
-  
+
   void * recv_bf = malloc(elems * typeSize[type]);
   if(recv_bf == NULL)
     {
       free(send_bf);
       return GASPI_ERROR;
     }
-  
+
   gaspi_rank_t myrank, nprocs;
   ASSERT(gaspi_proc_rank(&myrank));
   ASSERT(gaspi_proc_num(&nprocs));
-  
+
   //init data
   switch(type)
     {
@@ -128,13 +128,13 @@ gaspi_return_t testOP(gaspi_operation_t op, gaspi_datatype_t type, gaspi_number_
 
   //sync
   ASSERT(gaspi_barrier(group, GASPI_BLOCK));
-  
+
   //allreduce
   ASSERT( gaspi_allreduce(send_bf, recv_bf, elems, op, type, group, GASPI_BLOCK));
-  
+
   //check data
-  
-  int ret; 
+
+  int ret;
   switch(type)
     {
     case GASPI_TYPE_INT: ret = CHECK_CALL(int, recv_bf, elems, op);
@@ -153,7 +153,7 @@ gaspi_return_t testOP(gaspi_operation_t op, gaspi_datatype_t type, gaspi_number_
 
   free(send_bf);
   free(recv_bf);
-  
+
   if(ret)
     return GASPI_SUCCESS;
   else
@@ -162,7 +162,6 @@ gaspi_return_t testOP(gaspi_operation_t op, gaspi_datatype_t type, gaspi_number_
 
 int main(int argc, char *argv[])
 {
-  //  gaspi_group_t g;
   gaspi_rank_t nprocs, myrank;
 
   TSUITE_INIT(argc, argv);
@@ -186,7 +185,6 @@ int main(int argc, char *argv[])
 	}
     }
 
-  //sync                                                                                                  
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 

@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 
   ASSERT(gaspi_proc_num(&nprocs));
   ASSERT(gaspi_proc_rank(&myrank));
-  
+
 
   int n;
   double * a = (double *) malloc(255 * sizeof(double));
@@ -50,18 +50,20 @@ int main(int argc, char *argv[])
     {
       a[n] = b[n] = myrank * 1.0;
     }
-    
+
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
-  
+
   for(n = 1; n <= 255; n++)
     {
       int i;
-      
+
       ASSERT(gaspi_allreduce_user(a, b, n, sizeof(double),
 				  (gaspi_reduce_operation_t) my_fun, NULL,
 				  GASPI_GROUP_ALL, GASPI_BLOCK));
       for(i = 0; i < n; i++)
-	assert(b[i] == nprocs - 1);
+	{
+	  assert(b[i] == ((nprocs - 1) * 1.0));
+	}
     }
 
   free(a);
