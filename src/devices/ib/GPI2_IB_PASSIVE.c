@@ -26,6 +26,7 @@ pgaspi_dev_passive_send (gaspi_context_t * const gctx,
 			 const gaspi_size_t size,
 			 const gaspi_timeout_t timeout_ms)
 {
+  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
 
   struct ibv_send_wr *bad_wr;
   struct ibv_sge slist;
@@ -54,7 +55,6 @@ pgaspi_dev_passive_send (gaspi_context_t * const gctx,
   swr.send_flags = IBV_SEND_SIGNALED;
   swr.next = NULL;
 
-  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
 
   if( ibv_post_send (ib_dev_ctx->qpP[rank], &swr, &bad_wr) )
     {
