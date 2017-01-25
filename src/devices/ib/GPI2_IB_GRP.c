@@ -22,8 +22,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GASPI.h"
 #include "GPI2_Coll.h"
 #include "GPI2_IB.h"
-/* #include "GPI2_SN.h" */
-
 
 /* Group utilities */
 int
@@ -36,11 +34,13 @@ pgaspi_dev_poll_groups(gaspi_context_t * const gctx)
 				gctx->ne_count_grp,
 				ib_dev_ctx->wc_grp_send );
 
-  if (pret < 0)
+  if( pret < 0 )
     {
-      for (i = 0; i < gctx->ne_count_grp; i++)
+      for(i = 0; i < gctx->ne_count_grp; i++)
 	{
-	  if (ib_dev_ctx->wc_grp_send[i].status != IBV_WC_SUCCESS)
+	  /* TODO: wc_grp_send is a [64] so we're basically assuming
+	     that ne_count_grp will never exceed that */
+	  if( ib_dev_ctx->wc_grp_send[i].status != IBV_WC_SUCCESS )
 	    {
 	      //TODO: for now here because we need to identify the erroneous rank
 	      // but has to go out of device
@@ -82,7 +82,7 @@ pgaspi_dev_post_group_write(gaspi_context_t * const gctx,
   swr.wr.rdma.rkey = gctx->groups[group].rrcd[dst].rkey[0];
   swr.wr_id = dst;
 
-  if (ibv_post_send ((struct ibv_qp *) ib_dev_ctx->qpGroups[dst], &swr, &bad_wr_send))
+  if( ibv_post_send ((struct ibv_qp *) ib_dev_ctx->qpGroups[dst], &swr, &bad_wr_send) )
     {
       return 1;
     }

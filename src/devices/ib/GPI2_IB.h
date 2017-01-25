@@ -32,6 +32,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define MAX_INLINE_BYTES  (128)
 #define GASPI_QP_TIMEOUT  (20)
 #define GASPI_QP_RETRY    (7)
+#define GASPI_MAX_PORTS   (2)
 
 /* IB-specific */
 struct ib_ctx_info
@@ -46,9 +47,6 @@ struct ib_ctx_info
 
 typedef struct
 {
-  int card_type;
-  int num_dev;
-  int max_rd_atomic;
   int ib_port;
   int num_queues;
 
@@ -58,8 +56,7 @@ typedef struct
   struct ibv_comp_channel *channelP;
   struct ibv_pd *pd;
   struct ibv_device_attr device_attr;
-  struct ibv_port_attr port_attr[2];
-  struct ibv_srq_init_attr srq_attr;
+  struct ibv_port_attr port_attr[GASPI_MAX_PORTS];
   struct ibv_cq *scqGroups, *rcqGroups;
   struct ibv_qp **qpGroups;
   struct ibv_wc wc_grp_send[64];

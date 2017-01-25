@@ -104,10 +104,8 @@ pgaspi_dev_comm_queue_create(gaspi_context_t const * const gctx,
 }
 
 static void
-pgaspi_dev_print_info()
+pgaspi_tcp_dev_print_info(gaspi_context_t const * const gctx)
 {
-  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
-
   gaspi_printf("<<<<<<<<<<<<<<<< TCP-info >>>>>>>>>>>>>>>>>>>\n");
   gaspi_printf("  Hostname: %s\n", pgaspi_gethostname(gctx->rank));
 
@@ -170,7 +168,7 @@ pgaspi_dev_init_core(gaspi_context_t * const gctx)
 
   if( gctx->config->net_info )
     {
-      pgaspi_dev_print_info();
+      pgaspi_tcp_dev_print_info(gctx);
     }
 
   /* Passive channel (SRQ) */

@@ -80,13 +80,71 @@ pgaspi_null_gid (union ibv_gid *gid)
 	   gid->raw[12] | gid->raw[13] | gid->raw[14] | gid->raw[15]);
 }
 
+static void
+pgaspi_ib_dev_print_info(gaspi_context_t * const gctx, gaspi_ib_ctx * const ib_dev_ctx, int dev_idx)
+{
+  char boardIDbuf[256];
+
+  gaspi_printf ("<<<<<<<<<<<<<<<<IB-info>>>>>>>>>>>>>>>>>>>\n");
+  gaspi_printf ("\tib_dev     : %d (%s)\n", dev_idx, ibv_get_device_name(ib_dev_ctx->dev_list[dev_idx]));
+  gaspi_printf ("\tca type    : %d\n", ib_dev_ctx->device_attr.vendor_part_id);
+
+  if( gctx->config->dev_config.params.ib.mtu == 0 )
+    gaspi_printf ("\tmtu        : (active_mtu)\n");
+  else
+    gaspi_printf ("\tmtu        : %d (user)\n", gctx->config->dev_config.params.ib.mtu);
+
+  gaspi_printf ("\tfw_version : %s\n", ib_dev_ctx->device_attr.fw_ver);
+  gaspi_printf ("\thw_version : %x\n", ib_dev_ctx->device_attr.hw_ver);
+
+  if( ibv_read_sysfs_file( ib_dev_ctx->ib_dev->ibdev_path, "board_id", boardIDbuf, sizeof (boardIDbuf)) > 0 )
+    {
+      gaspi_printf ("\tpsid       : %s\n", boardIDbuf);
+    }
+
+  gaspi_printf ("\t# ports    : %d\n", ib_dev_ctx->device_attr.phys_port_cnt);
+  gaspi_printf ("\t# rd_atom  : %d\n", ib_dev_ctx->device_attr.max_qp_rd_atom);
+
+  int id0[2] = { 0, 0 };
+  int id1[2] = { 0, 0 };
+
+  uint8_t p;
+  for(p = 0; p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, GASPI_MAX_PORTS); p++)
+    {
+      gaspi_printf ("\tport Nr    : %d\n", p + 1);
+
+      id0[p] = ib_dev_ctx->port_attr[p].state < 6 ? ib_dev_ctx->port_attr[p].state : 0;
+      gaspi_printf ("\t  state      : %s\n", port_state_str[id0[p]]);
+
+      id1[p] = ib_dev_ctx->port_attr[p].phys_state < 8 ? ib_dev_ctx->port_attr[p].phys_state : 3;
+      gaspi_printf ("\t  phy state  : %s\n", port_phy_state_str[id1[p]]);
+
+      gaspi_printf ("\t  link layer : %s\n", link_layer_str (ib_dev_ctx->port_attr[p].link_layer));
+    }
+
+  gaspi_printf ("\tusing port : %d\n", ib_dev_ctx->ib_port);
+  gaspi_printf ("\tmtu        : %d\n", gctx->config->dev_config.params.ib.mtu);
+
+  if( gctx->config->network == GASPI_ROCE )
+    {
+      if( !pgaspi_null_gid (&ib_dev_ctx->gid) )
+	{
+	  gaspi_printf ("gid[0]: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
+			ib_dev_ctx->gid.raw[0], ib_dev_ctx->gid.raw[1],
+			ib_dev_ctx->gid.raw[2], ib_dev_ctx->gid.raw[3],
+			ib_dev_ctx->gid.raw[4], ib_dev_ctx->gid.raw[5],
+			ib_dev_ctx->gid.raw[6], ib_dev_ctx->gid.raw[7],
+			ib_dev_ctx->gid.raw[8], ib_dev_ctx->gid.raw[9],
+			ib_dev_ctx->gid.raw[10], ib_dev_ctx->gid.raw[11],
+			ib_dev_ctx->gid.raw[12], ib_dev_ctx->gid.raw[13],
+			ib_dev_ctx->gid.raw[14], ib_dev_ctx->gid.raw[15]);
+	}
+    }
+}
+
 int
 pgaspi_dev_init_core (gaspi_context_t * const gctx)
 {
-  char boardIDbuf[256];
-  int i, p, dev_idx = 0;
-  unsigned int c;
-
   gctx->device = calloc(1, sizeof(gctx->device));
   if( NULL == gctx->device )
     {
@@ -102,260 +160,225 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
 
   gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
 
-  for (i = 0; i < 64; i++)
+  /* TODO: magic number */
+  int i;
+  for(i = 0; i < 64; i++)
     {
       ib_dev_ctx->wc_grp_send[i].status = IBV_WC_SUCCESS;
     }
 
-  /* Take care of IB device ( */
-  ib_dev_ctx->dev_list = ibv_get_device_list (&ib_dev_ctx->num_dev);
-  if (!ib_dev_ctx->dev_list)
+  /* Take care of IB device */
+  int avail_num_dev = -1;
+  ib_dev_ctx->dev_list = ibv_get_device_list (&avail_num_dev);
+  if( NULL == ib_dev_ctx->dev_list )
     {
       gaspi_print_error ("Failed to get device list (libibverbs)");
       return -1;
     }
 
-  //  if(gctx->config->netdev_id >= 0)
-  if(gctx->config->dev_config.params.ib.netdev_id >= 0)
+  gaspi_int configured_dev_id = gctx->config->dev_config.params.ib.netdev_id;
+
+  /* Has user configured which device to use ? */
+  if( configured_dev_id >= 0 )
     {
-      //     if(gctx->config->netdev_id >= ib_dev_ctx->num_dev)
-      if( gctx->config->dev_config.params.ib.netdev_id >= ib_dev_ctx->num_dev)
+      if( configured_dev_id >= avail_num_dev )
 	{
-	  gaspi_print_error ("Failed to get device (libibverbs)");
+	  gaspi_print_error ("Configured netdev_id not available (%d)", configured_dev_id);
 	  return -1;
 	}
 
-      ib_dev_ctx->ib_dev = ib_dev_ctx->dev_list[gctx->config->dev_config.params.ib.netdev_id];
-      if (!ib_dev_ctx->ib_dev)
+      ib_dev_ctx->ib_dev = ib_dev_ctx->dev_list[configured_dev_id];
+      if( NULL == ib_dev_ctx->ib_dev )
 	{
-	  gaspi_print_error ("Failed to get device (libibverbs)");
+	  gaspi_print_error ("Failed to get device %d (libibverbs)", configured_dev_id);
 	  return -1;
 	}
-
-      dev_idx = gctx->config->dev_config.params.ib.netdev_id;
     }
   else
     {
-      for (i = 0;i < ib_dev_ctx->num_dev; i++)
+      /* Look for one with IB Transport */
+      for(i = 0; i < avail_num_dev; i++)
 	{
 	  ib_dev_ctx->ib_dev = ib_dev_ctx->dev_list[i];
 
-	  if (!ib_dev_ctx->ib_dev)
+	  if( NULL == ib_dev_ctx->ib_dev ||
+	      ib_dev_ctx->ib_dev->transport_type != IBV_TRANSPORT_IB )
 	    {
-	      gaspi_print_error ("Failed to get device (libibverbs)");
 	      continue;
 	    }
 
-	  if (ib_dev_ctx->ib_dev->transport_type != IBV_TRANSPORT_IB)
-	    continue;
-	  else
-	    {
-	      dev_idx = i;
-	      break;
-	    }
+	  configured_dev_id = i;
+	  break;
 	}
     }
 
-  if (!ib_dev_ctx->ib_dev)
-    return -1;
-
-  if (ib_dev_ctx->ib_dev->transport_type != IBV_TRANSPORT_IB)
+  if( NULL == ib_dev_ctx->ib_dev )
     {
-      gaspi_print_error ("Device does not support IB transport");
+      gaspi_print_error("Failed to find IB device.");
       return -1;
     }
 
-  ib_dev_ctx->context = ibv_open_device (ib_dev_ctx->ib_dev);
-  if(!ib_dev_ctx->context)
+  if( ib_dev_ctx->ib_dev->transport_type != IBV_TRANSPORT_IB )
+    {
+      gaspi_print_error("Device does not support IB transport");
+      return -1;
+    }
+
+  ib_dev_ctx->context = ibv_open_device(ib_dev_ctx->ib_dev);
+  if( NULL == ib_dev_ctx->context )
     {
       gaspi_print_error ("Failed to open IB device (libibverbs)");
       return -1;
     }
 
-  /* Completion channel (for passive communication) */
-  ib_dev_ctx->channelP = ibv_create_comp_channel (ib_dev_ctx->context);
-  if(!ib_dev_ctx->channelP)
-    {
-      gaspi_print_error ("Failed to create completion channel (libibverbs)");
-      return -1;
-    }
-
-  /* Query device and print info */
-  if(ibv_query_device(ib_dev_ctx->context, &ib_dev_ctx->device_attr))
+  /* Query device */
+  if( ibv_query_device(ib_dev_ctx->context, &ib_dev_ctx->device_attr) )
     {
       gaspi_print_error ("Failed to query device (libibverbs)");
       return -1;
     }
 
-  ib_dev_ctx->card_type = ib_dev_ctx->device_attr.vendor_part_id;
-  ib_dev_ctx->max_rd_atomic = ib_dev_ctx->device_attr.max_qp_rd_atom;
-
-
-  for(p = 0; p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, 2); p++)
+  /* Query port(s) */
+  uint8_t p;
+  for(p = 0; p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, GASPI_MAX_PORTS); p++)
     {
-      if(ibv_query_port(ib_dev_ctx->context, (unsigned char) (p + 1),&ib_dev_ctx->port_attr[p]))
+      if( ibv_query_port(ib_dev_ctx->context, (p + 1), &ib_dev_ctx->port_attr[p]) )
 	{
-	  gaspi_print_error ("Failed to query port (libibverbs)");
+	  gaspi_print_error ("Failed to query port (%u) (libibverbs)", (p + 1));
 	  return -1;
 	}
     }
 
-  if (gctx->config->net_info)
+  /* Port check and set */
+  if( gctx->config->dev_config.params.ib.port_check )
     {
-      gaspi_printf ("<<<<<<<<<<<<<<<<IB-info>>>>>>>>>>>>>>>>>>>\n");
-      gaspi_printf ("\tib_dev     : %d (%s)\n",dev_idx,ibv_get_device_name(ib_dev_ctx->dev_list[dev_idx]));
-      gaspi_printf ("\tca type    : %d\n",
-		    ib_dev_ctx->device_attr.vendor_part_id);
-      if(gctx->config->dev_config.params.ib.mtu==0)
-	gaspi_printf ("\tmtu        : (active_mtu)\n");
-      else
-	gaspi_printf ("\tmtu        : %d (user)\n", gctx->config->dev_config.params.ib.mtu);
-
-      gaspi_printf ("\tfw_version : %s\n",
-		    ib_dev_ctx->device_attr.fw_ver);
-      gaspi_printf ("\thw_version : %x\n",
-		    ib_dev_ctx->device_attr.hw_ver);
-
-      if (ibv_read_sysfs_file
-	  (ib_dev_ctx->ib_dev->ibdev_path, "board_id", boardIDbuf,
-	   sizeof (boardIDbuf)) > 0)
-	gaspi_printf ("\tpsid       : %s\n", boardIDbuf);
-
-      gaspi_printf ("\t# ports    : %d\n",
-		    ib_dev_ctx->device_attr.phys_port_cnt);
-      gaspi_printf ("\t# rd_atom  : %d\n",
-		    ib_dev_ctx->device_attr.max_qp_rd_atom);
-
-      int id0[2] = { 0, 0 };
-      int id1[2] = { 0, 0 };
-
-      for(p = 0; p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, 2);p++)
+      if( (ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE) &&
+	  (ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE) )
 	{
-	  gaspi_printf ("\tport Nr    : %d\n", p + 1);
-	  id0[p] = ib_dev_ctx->port_attr[p].state <6 ? ib_dev_ctx->port_attr[p].state : 0;
-	  gaspi_printf ("\t  state      : %s\n", port_state_str[id0[p]]);
-
-	  id1[p] = ib_dev_ctx->port_attr[p].phys_state <8 ? ib_dev_ctx->port_attr[p].phys_state : 3;
-	  gaspi_printf ("\t  phy state  : %s\n", port_phy_state_str[id1[p]]);
-	  gaspi_printf ("\t  link layer : %s\n",link_layer_str (ib_dev_ctx->port_attr[p].link_layer));
-	}
-    }
-
-  /* Port check */
-  if(gctx->config->dev_config.params.ib.port_check)
-    {
-      if((ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE)&& (ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE))
-	{
-	  gaspi_print_error ("No IB active port found");
+	  gaspi_print_error ("No IB active port found.");
 	  return -1;
 	}
 
-      if((ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP)&& (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP))
+      if( (ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP) &&
+	  (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP) )
 	{
-	  gaspi_print_error ("No IB active link found");
+	  gaspi_print_error ("No IB active link found.");
 	  return -1;
 	}
 
       ib_dev_ctx->ib_port = 1;
 
-      if((ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE) || (ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP))
+      if( (ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE) ||
+	  (ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP) )
 	{
-
-	  if((ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE) || (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP))
+	  if( (ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE) ||
+	      (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP) )
 	    {
-	      gaspi_print_error ("No IB active port found");
+	      gaspi_print_error ("No IB active port with active link found.");
 	      return -1;
 	    }
 
 	  ib_dev_ctx->ib_port = 2;
 	}
 
-      /* user didnt choose something, so we use network type of first active port */
-      if(!gctx->config->user_net)
+      /* user didn't set network type, use the one set for the port */
+      if( !gctx->config->user_net )
 	{
-	  if(ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].link_layer == IBV_LINK_LAYER_INFINIBAND)
+	  if( ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].link_layer == IBV_LINK_LAYER_INFINIBAND )
 	    gctx->config->network = GASPI_IB;
 
-	  else if(ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].link_layer == IBV_LINK_LAYER_ETHERNET)
+	  else if( ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].link_layer == IBV_LINK_LAYER_ETHERNET )
 	    gctx->config->network = GASPI_ROCE;
 	}
 
-
-      if(gctx->config->network == GASPI_ROCE)
+      if( gctx->config->network == GASPI_ROCE )
 	{
-
 	  ib_dev_ctx->ib_port = 1;
 
-	  if((ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE)
-	     ||(ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP)
-	     ||(ib_dev_ctx->port_attr[0].link_layer != IBV_LINK_LAYER_ETHERNET)){
+	  if( (ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE)   ||
+	      (ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP) ||
+	      (ib_dev_ctx->port_attr[0].link_layer != IBV_LINK_LAYER_ETHERNET))
+	    {
+	      if( (ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE)   ||
+		  (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP) ||
+		  (ib_dev_ctx->port_attr[1].link_layer != IBV_LINK_LAYER_ETHERNET) )
+		{
+		  gaspi_print_error ("No active Ethernet (RoCE) port with active link found.");
+		  return -1;
+		}
 
-
-	    if((ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE)
-	       ||(ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP)
-	       ||(ib_dev_ctx->port_attr[1].link_layer != IBV_LINK_LAYER_ETHERNET)){
-
-	      gaspi_print_error ("No active Ethernet (RoCE) port found");
-	      return -1;
+	      ib_dev_ctx->ib_port = 2;
 	    }
-
-	    ib_dev_ctx->ib_port = 2;
-	  }
 	}
-    }/* if(gctx->config->port_check) */
+    }
   else
     {
+      gaspi_print_warning("No port(s) check! Using port 1.");
       ib_dev_ctx->ib_port = 1;
     }
 
-  if(gctx->config->net_info)
-    gaspi_printf ("\tusing port : %d\n", ib_dev_ctx->ib_port);
-
-  if (gctx->config->network == GASPI_IB)
+  /* Configure MTU */
+  if( gctx->config->network == GASPI_IB )
     {
-      if(gctx->config->dev_config.params.ib.mtu == 0)
+      if( gctx->config->dev_config.params.ib.mtu == 0 )
 	{
-	  switch(ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].active_mtu){
-
-	  case IBV_MTU_1024:
-	    gctx->config->dev_config.params.ib.mtu = 1024;
-	    break;
-	  case IBV_MTU_2048:
-	    gctx->config->dev_config.params.ib.mtu = 2048;
-	    break;
-	  case IBV_MTU_4096:
-	    gctx->config->dev_config.params.ib.mtu = 4096;
-	    break;
-	  default:
-	    break;
-	  };
+	  switch(ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].active_mtu)
+	    {
+	    case IBV_MTU_1024:
+	      gctx->config->dev_config.params.ib.mtu = 1024;
+	      break;
+	    case IBV_MTU_2048:
+	      gctx->config->dev_config.params.ib.mtu = 2048;
+	      break;
+	    case IBV_MTU_4096:
+	      gctx->config->dev_config.params.ib.mtu = 4096;
+	      break;
+	    default:
+	      break;
+	    };
 	}
-
-      if(gctx->config->net_info)
-	gaspi_printf ("\tmtu        : %d\n", gctx->config->dev_config.params.ib.mtu);
     }
 
-
-  if(gctx->config->network == GASPI_ROCE)
+  if( gctx->config->network == GASPI_ROCE )
     {
       gctx->config->dev_config.params.ib.mtu = 1024;
-      if(gctx->config->net_info) gaspi_printf ("\teth. mtu   : %d\n", gctx->config->dev_config.params.ib.mtu);
+
+      const int ret = ibv_query_gid (ib_dev_ctx->context, ib_dev_ctx->ib_port, GASPI_GID_INDEX, &ib_dev_ctx->gid);
+      if( ret )
+	{
+	  gaspi_print_error ("Failed to query gid (RoCE - libiverbs)");
+	  return -1;
+	}
+    }
+
+  /*  Print info  */
+  if( gctx->config->net_info )
+    {
+      pgaspi_ib_dev_print_info(gctx, ib_dev_ctx, configured_dev_id);
     }
 
   ib_dev_ctx->pd = ibv_alloc_pd (ib_dev_ctx->context);
-  if (!ib_dev_ctx->pd)
+  if( NULL == ib_dev_ctx->pd )
     {
       gaspi_print_error ("Failed to allocate protection domain (libibverbs)");
       return -1;
     }
 
-  memset (&ib_dev_ctx->srq_attr, 0, sizeof (struct ibv_srq_init_attr));
+  /* Completion channel (for passive communication) */
+  ib_dev_ctx->channelP = ibv_create_comp_channel (ib_dev_ctx->context);
+  if( NULL == ib_dev_ctx->channelP )
+    {
+      gaspi_print_error ("Failed to create completion channel (libibverbs)");
+      return -1;
+    }
 
-  ib_dev_ctx->srq_attr.attr.max_wr  = gctx->config->queue_size_max;
-  ib_dev_ctx->srq_attr.attr.max_sge = 1;
+  struct ibv_srq_init_attr srq_attr = { 0 };
 
-  ib_dev_ctx->srqP = ibv_create_srq (ib_dev_ctx->pd, &ib_dev_ctx->srq_attr);
-  if(!ib_dev_ctx->srqP)
+  srq_attr.attr.max_wr  = gctx->config->queue_size_max;
+  srq_attr.attr.max_sge = 1;
+
+  ib_dev_ctx->srqP = ibv_create_srq(ib_dev_ctx->pd, &srq_attr);
+  if( NULL == ib_dev_ctx->srqP )
     {
       gaspi_print_error ("Failed to create SRQ (libibverbs)");
       return -1;
@@ -367,64 +390,62 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   struct ibv_exp_cq_init_attr cqattr;
   memset(&cqattr, 0, sizeof(cqattr));
 
-  ib_dev_ctx->scqGroups = ibv_exp_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,NULL, 0, &cqattr);
-
-  if(!ib_dev_ctx->scqGroups)
+  ib_dev_ctx->scqGroups = ibv_exp_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL, NULL, 0, &cqattr);
+  if( NULL == ib_dev_ctx->scqGroups)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 
-  ib_dev_ctx->rcqGroups = ibv_exp_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,NULL, 0, &cqattr);
-
-  if(!ib_dev_ctx->rcqGroups)
+  ib_dev_ctx->rcqGroups = ibv_exp_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL, NULL, 0, &cqattr);
+  if( NULL == ib_dev_ctx->rcqGroups)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 #else
-  ib_dev_ctx->scqGroups = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,NULL, 0);
-
-  if(!ib_dev_ctx->scqGroups)
+  ib_dev_ctx->scqGroups = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL, NULL, 0);
+  if( NULL == ib_dev_ctx->scqGroups)
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 
-  ib_dev_ctx->rcqGroups = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,NULL, 0);
-  if(!ib_dev_ctx->rcqGroups)
+  ib_dev_ctx->rcqGroups = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL, NULL, 0);
+  if( NULL == ib_dev_ctx->rcqGroups )
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 #endif
+
   /* Passive */
-  ib_dev_ctx->scqP = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,NULL, 0);
-  if(!ib_dev_ctx->scqP)
+  ib_dev_ctx->scqP = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL, NULL, 0);
+  if( NULL == ib_dev_ctx->scqP )
     {
       gaspi_print_error ("Failed to create CQ (libibverbs)");
       return -1;
     }
 
   ib_dev_ctx->rcqP = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL, ib_dev_ctx->channelP, 0);
-
-  if(!ib_dev_ctx->rcqP)
+  if( NULL == ib_dev_ctx->rcqP )
     {
-      gaspi_print_error ("Failed to create CQ (libibverbs)");
+      gaspi_print_error("Failed to create CQ (libibverbs)");
       return -1;
     }
 
-  if(ibv_req_notify_cq (ib_dev_ctx->rcqP, 0))
+  if( ibv_req_notify_cq(ib_dev_ctx->rcqP, 0) )
     {
-      gaspi_print_error ("Failed to request CQ notifications (libibverbs)");
+      gaspi_print_error("Failed to request CQ notifications (libibverbs)");
       return 1;
     }
 
   /* One-sided Communication */
+  unsigned int c;
   for(c = 0; c < gctx->config->queue_num; c++)
     {
       ib_dev_ctx->scqC[c] = ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL, NULL, 0);
-      if(!ib_dev_ctx->scqC[c])
+      if( NULL == ib_dev_ctx->scqC[c] )
 	{
 	  gaspi_print_error ("Failed to create CQ (libibverbs)");
 	  return -1;
@@ -432,64 +453,46 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     }
 
   /* Allocate space for QPs */
-  //  gaspi_context_t * const gctx = &glb_gaspi_ctx;
+  //TODO: could be independent of tnc
   ib_dev_ctx->qpGroups = (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
-  if(!ib_dev_ctx->qpGroups)
+  if( NULL == ib_dev_ctx->qpGroups )
     {
+      gaspi_print_error("Failed to allocate memory.");
       return -1;
     }
 
   for(c = 0; c < gctx->config->queue_num; c++)
     {
       ib_dev_ctx->qpC[c] = (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
-      if(!ib_dev_ctx->qpC[c])
-	return -1;
+      if( NULL == ib_dev_ctx->qpC[c] )
+	{
+	  gaspi_print_error("Failed to allocate memory.");
+	  return -1;
+	}
     }
 
   ib_dev_ctx->qpP = (struct ibv_qp **) calloc (gctx->tnc , sizeof (struct ibv_qp *));
-  if(!ib_dev_ctx->qpP)
+  if( NULL == ib_dev_ctx->qpP )
     {
+      gaspi_print_error("Failed to allocate memory.");
       return -1;
     }
 
   /* Zero-fy QP creation state */
+  //TODO: could be independent of tnc
   memset(&(ib_dev_ctx->qpC_cstat), 0, GASPI_MAX_QP);
 
-  /* RoCE */
-  if(gctx->config->network == GASPI_ROCE)
-    {
-      const int ret = ibv_query_gid (ib_dev_ctx->context, ib_dev_ctx->ib_port,GASPI_GID_INDEX, &ib_dev_ctx->gid);
-      if(ret)
-	{
-	  gaspi_print_error ("Failed to query gid (RoCE - libiverbs)");
-	  return -1;
-	}
-
-      if (!pgaspi_null_gid (&ib_dev_ctx->gid))
-	{
-	  if (gctx->config->net_info)
-	    gaspi_printf
-	      ("gid[0]: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
-	       ib_dev_ctx->gid.raw[0], ib_dev_ctx->gid.raw[1],
-	       ib_dev_ctx->gid.raw[2], ib_dev_ctx->gid.raw[3],
-	       ib_dev_ctx->gid.raw[4], ib_dev_ctx->gid.raw[5],
-	       ib_dev_ctx->gid.raw[6], ib_dev_ctx->gid.raw[7],
-	       ib_dev_ctx->gid.raw[8], ib_dev_ctx->gid.raw[9],
-	       ib_dev_ctx->gid.raw[10], ib_dev_ctx->gid.raw[11],
-	       ib_dev_ctx->gid.raw[12], ib_dev_ctx->gid.raw[13],
-	       ib_dev_ctx->gid.raw[14], ib_dev_ctx->gid.raw[15]);
-	}
-    }
-
   ib_dev_ctx->local_info = (struct ib_ctx_info *) calloc (gctx->tnc, sizeof(struct ib_ctx_info));
-  if(!ib_dev_ctx->local_info)
+  if( NULL == ib_dev_ctx->local_info )
     {
+      gaspi_print_error("Failed to allocate memory.");
       return -1;
     }
 
   ib_dev_ctx->remote_info = (struct ib_ctx_info *) calloc (gctx->tnc, sizeof(struct ib_ctx_info));
-  if(!ib_dev_ctx->remote_info)
+  if( NULL == ib_dev_ctx->remote_info )
     {
+      gaspi_print_error("Failed to allocate memory.");
       return -1;
     }
 
@@ -502,16 +505,16 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
       srand48 (tv.tv_usec);
       ib_dev_ctx->local_info[i].psn = lrand48 () & 0xffffff;
 
-      if(gctx->config->dev_config.params.ib.port_check)
+      if( gctx->config->dev_config.params.ib.port_check )
 	{
-	  if(!ib_dev_ctx->local_info[i].lid && (gctx->config->network == GASPI_IB))
+	  if( !ib_dev_ctx->local_info[i].lid && (gctx->config->network == GASPI_IB) )
 	    {
 	      gaspi_print_error("Failed to find topology! Is subnet-manager running ?");
 	      return -1;
 	    }
 	}
 
-      if(gctx->config->network == GASPI_ROCE)
+      if( gctx->config->network == GASPI_ROCE )
 	{
 	  ib_dev_ctx->local_info[i].gid = ib_dev_ctx->gid;
 	}
@@ -883,7 +886,7 @@ _pgaspi_dev_qp_set_ready(gaspi_context_t const * const gctx, struct ibv_qp *qp, 
   qp_attr.qp_state = IBV_QPS_RTR;
   qp_attr.dest_qp_num = target_qp;
   qp_attr.rq_psn = ib_dev_ctx->remote_info[target].psn;
-  qp_attr.max_dest_rd_atomic = ib_dev_ctx->max_rd_atomic;
+  qp_attr.max_dest_rd_atomic = ib_dev_ctx->device_attr.max_qp_rd_atom;//ib_dev_ctx->max_rd_atomic;
   qp_attr.min_rnr_timer = 12;
 
   if(gctx->config->network == GASPI_IB)
@@ -921,7 +924,7 @@ _pgaspi_dev_qp_set_ready(gaspi_context_t const * const gctx, struct ibv_qp *qp, 
   qp_attr.rnr_retry = GASPI_QP_RETRY;
   qp_attr.qp_state = IBV_QPS_RTS;
   qp_attr.sq_psn = ib_dev_ctx->local_info[target].psn;
-  qp_attr.max_rd_atomic = ib_dev_ctx->max_rd_atomic;
+  qp_attr.max_rd_atomic = ib_dev_ctx->device_attr.max_qp_rd_atom;//ib_dev_ctx->max_rd_atomic;
 
   if(ibv_modify_qp( qp, &qp_attr,
 		    IBV_QP_STATE
