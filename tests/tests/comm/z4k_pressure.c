@@ -118,7 +118,11 @@ int main(int argc, char *argv[])
 
     /* check if data was written successfully */
     ASSERT (gaspi_read(0, offset_check, (myrank + 1) % highestnode,
-		       0, offset_read, GB,
+		       0, offset_read, GB / 2,
+		       0, GASPI_BLOCK));
+
+    ASSERT (gaspi_read(0, offset_check + (GB / 2), (myrank + 1) % highestnode,
+		       0, offset_read  + (GB / 2), GB / 2,
 		       0, GASPI_BLOCK));
 
     ASSERT (gaspi_wait(0, GASPI_BLOCK));
