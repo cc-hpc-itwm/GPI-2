@@ -108,15 +108,30 @@ module GASPI
       enumerator :: GASPI_STATISTIC_ARGUMENT_NONE
     end enum
 
+    type, bind(C) :: ib_dev_params_t
+      integer (gaspi_int) :: netdev_id
+      integer (gaspi_int) :: mtu
+      integer (gaspi_int) :: port_check
+    end type ib_dev_params_t
+
+    type, bind(C) :: tcp_dev_params_t
+      integer(gaspi_int) :: tcp_port
+    end type tcp_dev_params_t
+
+    type, bind(C) :: gaspi_dev_config_t
+      integer (gaspi_int) :: network
+      type (ib_dev_params_t) :: params_ib
+      type (tcp_dev_params_t) :: params_tcp
+    end type gaspi_dev_config_t
 
     type, bind(C) :: gaspi_config_t
       integer (gaspi_int)      :: logger
       integer (gaspi_int)      :: sn_port
       integer (gaspi_int)      :: net_info
-      integer (gaspi_int)      :: netdev_id
-      integer (gaspi_int)      :: mtu
-      integer (gaspi_int)      :: port_check
       integer (gaspi_int)      :: user_net
+      integer (gaspi_int)      :: sn_persistent
+      integer (c_int64_t)      :: sn_timeout
+      type (gaspi_dev_config_t):: dev_config
       integer (gaspi_int)      :: network
       integer (gaspi_int)      :: queue_size_max
       integer (gaspi_int)      :: queue_num
