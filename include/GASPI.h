@@ -131,7 +131,7 @@ extern "C"
   typedef struct
     {
       gaspi_network_t network_type;
-      union
+      struct
       {
 	struct
 	{

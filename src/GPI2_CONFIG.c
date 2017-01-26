@@ -43,6 +43,9 @@ gaspi_config_t glb_gaspi_cfg = {
 	-1,                     //netdev
 	0,			//mtu
 	1,                      //port check
+      },
+      {
+	0                       //port to use
       }
     }
   },
@@ -51,6 +54,11 @@ gaspi_config_t glb_gaspi_cfg = {
   {
     GASPI_ETHERNET,
     {
+      {
+	-1,                     //netdev
+	0,			//mtu
+	1,                      //port check
+      },
       {
 	19000                   //port to use
       }
