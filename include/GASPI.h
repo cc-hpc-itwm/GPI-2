@@ -142,7 +142,7 @@ extern "C"
 
 	struct
 	{
-	  /* The first port to use.  */
+	  /* The first port to use (default 19000).  */
 	  /*NOTE: if more than one instance per node is used, the
 	    consecutive ports will be used:
 	    - inst 0: port
