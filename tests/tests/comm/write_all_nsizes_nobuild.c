@@ -19,14 +19,14 @@ int main(int argc, char *argv[])
   ASSERT(gaspi_config_get(&config));
   config.build_infrastructure = GASPI_TOPOLOGY_NONE;
   ASSERT(gaspi_config_set(config));
-  
+
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
   ASSERT (gaspi_proc_num(&numranks));
   ASSERT (gaspi_proc_rank(&myrank));
 
   gaspi_rank_t i;
- 
+
   ASSERT (gaspi_segment_alloc(0, _8MB, GASPI_MEM_INITIALIZED));
   for(i = 0; i < numranks; i++)
     {
@@ -56,21 +56,24 @@ int main(int argc, char *argv[])
 
   ASSERT (gaspi_queue_size_max(&qmax));
 
+  gaspi_size_t minSize;
+  ASSERT(gaspi_transfer_size_min(&minSize));
+
   /* Connect and communicate */
-  for(commSize = 1; commSize <= _8MB; commSize *= 2 )
+  for(commSize = minSize; commSize <= _8MB; commSize *= 2 )
     {
       for(rankSend = 0; rankSend < numranks; rankSend++)
 	{
 	  ASSERT(gaspi_connect(rankSend, GASPI_BLOCK));
-	  
+
 	  gaspi_queue_size(0, &queueSize);
 	  if (queueSize > qmax - 24)
 	    ASSERT (gaspi_wait(0, GASPI_BLOCK));
-	  
+
 	  ASSERT (gaspi_write(0, localOff, rankSend, 0,  remOff,  commSize, 0, GASPI_BLOCK));
 	}
     }
-  
+
   ASSERT (gaspi_wait(0, GASPI_BLOCK));
 
   /* Sync */
@@ -78,7 +81,7 @@ int main(int argc, char *argv[])
     {
       if(rankSend == myrank)
 	continue;
-      
+
       ASSERT(gaspi_notify(0, rankSend, myrank, 1, 0, GASPI_BLOCK));
     }
 
@@ -88,7 +91,7 @@ int main(int argc, char *argv[])
     {
       if(rankSend == myrank)
 	continue;
-      
+
       gaspi_notification_id_t id;
       ASSERT(gaspi_notify_waitsome(0, rankSend, 1, &id, GASPI_BLOCK));
     }

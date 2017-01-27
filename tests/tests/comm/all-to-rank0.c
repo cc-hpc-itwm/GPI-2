@@ -17,8 +17,10 @@ int main(int argc, char *argv[])
 
   const gaspi_offset_t localOff = 0;
   const  gaspi_offset_t remOff   = 0;
-  const gaspi_offset_t size = 1;
+  gaspi_offset_t size;
   const  gaspi_queue_id_t q = 0;
+
+  ASSERT (gaspi_transfer_size_min(&size));
 
   if( myrank != 0 )
     {

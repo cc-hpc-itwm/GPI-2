@@ -17,9 +17,11 @@ int main(int argc, char *argv[])
 
   const gaspi_offset_t localOff = 0;
   const gaspi_offset_t remOff   = 0;
-  const gaspi_offset_t size = 1;
+  gaspi_size_t size;
   gaspi_number_t queueSize, qmax;
   const gaspi_queue_id_t q = 0;
+
+  ASSERT (gaspi_transfer_size_min(&size));
 
   ASSERT (gaspi_queue_size_max(&qmax));
 
