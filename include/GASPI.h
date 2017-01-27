@@ -1110,6 +1110,16 @@ extern "C"
    */
   gaspi_return_t gaspi_notification_num (gaspi_number_t * const notification_num);
 
+  /** Get the minimum allowed size (in bytes) allowed in passive communication.
+   *
+   *
+   * @param passive_transfer_size_min Output parameter with the
+   * minimum allowed size (in bytes) for passive communication.
+   *
+   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
+   */
+  gaspi_return_t gaspi_passive_transfer_size_min (gaspi_size_t * const passive_transfer_size_min);
+
   /** Get the maximum allowed size (in bytes) allowed in passive communication.
    *
    *

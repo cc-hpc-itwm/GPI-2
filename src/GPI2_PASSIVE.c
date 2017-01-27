@@ -20,6 +20,17 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Dev.h"
 #include "GPI2_Utility.h"
 
+#pragma weak gaspi_passive_transfer_size_min = pgaspi_passive_transfer_size_min
+gaspi_return_t
+pgaspi_passive_transfer_size_min (gaspi_size_t * const passive_transfer_size_min)
+{
+  gaspi_verify_null_ptr(passive_transfer_size_min);
+
+  *passive_transfer_size_min = GASPI_MIN_TSIZE_P;
+
+  return GASPI_SUCCESS;
+}
+
 #pragma weak gaspi_passive_transfer_size_max = pgaspi_passive_transfer_size_max
 gaspi_return_t
 pgaspi_passive_transfer_size_max (gaspi_size_t * const passive_transfer_size_max)
