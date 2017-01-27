@@ -74,7 +74,7 @@ pgaspi_transfer_size_min (gaspi_size_t * const transfer_size_min)
   gaspi_verify_null_ptr(transfer_size_min);
   gaspi_verify_init("gaspi_transfer_size_min");
 
-  *transfer_size_min = 1;
+  *transfer_size_min = GASPI_MIN_TSIZE_C;
   return GASPI_SUCCESS;
 }
 
