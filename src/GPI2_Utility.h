@@ -128,9 +128,9 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
       }								\
   }
 
-#define gaspi_verify_comm_size(sz, seg_id_loc, seg_id_rem, rnk, max)	\
+#define gaspi_verify_comm_size(sz, seg_id_loc, seg_id_rem, rnk, min, max) \
   {									\
-    if( sz < 1								\
+    if( sz < min							\
 	|| sz > max							\
 	|| sz > glb_gaspi_ctx.rrmd[seg_id_rem][rnk].size		\
 	|| sz > glb_gaspi_ctx.rrmd[seg_id_loc][glb_gaspi_ctx.rank].size) \
@@ -176,7 +176,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define gaspi_verify_unaligned_off(offset)
 #define gaspi_verify_local_off(off, seg_id, sz)
 #define gaspi_verify_remote_off(off, seg_id, rank, sz)
-#define gaspi_verify_comm_size(size, seg_id_loc, seg_id_rem, rank, max)
+#define gaspi_verify_comm_size(size, seg_id_loc, seg_id_rem, rank, min, max)
 #define gaspi_verify_segment_size(size)
 #define gaspi_verify_init(funcname)
 
