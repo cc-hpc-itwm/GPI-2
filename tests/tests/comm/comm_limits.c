@@ -26,6 +26,8 @@ main(int argc, char *argv[])
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   /* communicate minimum */
+  EXPECT_FAIL(gaspi_read(0, 0, rank2send, 0, 0, min_msg_size - 1, 0, GASPI_BLOCK));
+
   ASSERT(gaspi_read(0, 0, rank2send, 0, 0, min_msg_size, 0, GASPI_BLOCK));
   ASSERT(gaspi_wait(0, GASPI_BLOCK));
 
@@ -41,6 +43,8 @@ main(int argc, char *argv[])
   ASSERT (gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK));
 
   /* communicate with max size */
+  EXPECT_FAIL(gaspi_read(0, 0, rank2send, 0, 0, max_msg_size + 1, 0, GASPI_BLOCK));
+
   ASSERT(gaspi_read(0, max_msg_size, rank2send, 0, 0, max_msg_size, 0, GASPI_BLOCK));
   ASSERT(gaspi_wait(0, GASPI_BLOCK));
 
