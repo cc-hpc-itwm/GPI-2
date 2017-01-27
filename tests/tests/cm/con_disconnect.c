@@ -33,15 +33,9 @@ int main(int argc, char *argv[])
 
   ASSERT(gaspi_group_commit(g, GASPI_BLOCK));
 
-  ASSERT(gaspi_segment_create(0,
-			      _2MB,
-			      g,
-			      GASPI_BLOCK,
-			      GASPI_MEM_INITIALIZED));
+  ASSERT(gaspi_segment_create(0, _2MB, g, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
   gaspi_rank_t rankSend = (myrank + 1) % num;
-
-  //EXPECT_FAIL( gaspi_write(0, 0, rankSend, 0, 0, 2, 0, GASPI_BLOCK) );
 
   int i;
   for(i = 0; i < num; i++)
@@ -49,8 +43,7 @@ int main(int argc, char *argv[])
       ASSERT(gaspi_connect(i, GASPI_BLOCK));
     }
 
-  ASSERT( gaspi_write_notify(0, 0, rankSend, 0, 0, 2, rankSend, 1, 0, GASPI_BLOCK) );
-
+  ASSERT( gaspi_write_notify(0, 0, rankSend, 0, 0, 4, rankSend, 1, 0, GASPI_BLOCK) );
 
   gaspi_notification_id_t id;
   ASSERT( gaspi_notify_waitsome(0, myrank, 1, &id, GASPI_BLOCK));
@@ -62,8 +55,6 @@ int main(int argc, char *argv[])
     {
       ASSERT(gaspi_disconnect(i, GASPI_BLOCK));
     }
-
-  //  ASSERT (gaspi_barrier(g, GASPI_BLOCK));
 
   ASSERT (gaspi_proc_term(GASPI_BLOCK));
 
