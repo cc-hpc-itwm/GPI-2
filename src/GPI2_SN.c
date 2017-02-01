@@ -1352,7 +1352,7 @@ gaspi_sn_backend(void *arg)
       return NULL;
     }
 
-  if( listen(lsock, SOMAXCONN) < 0 )
+  if( listen(lsock, gctx->tnc) < 0 )
     {
       gaspi_sn_fatal_error(lsock, GASPI_SN_STATE_ERROR, "Failed to listen on socket.");
       return NULL;
