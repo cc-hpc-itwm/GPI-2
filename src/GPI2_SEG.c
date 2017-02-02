@@ -233,17 +233,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       goto endL;
     }
 
-  const long page_size = sysconf (_SC_PAGESIZE);
-
-  if( page_size < 0 )
-    {
-      gaspi_print_error ("Failed to get system's page size.");
-      goto endL;
-    }
-
-  if( posix_memalign((void **) &gctx->rrmd[segment_id][gctx->rank].data.ptr,
-		     page_size,
-		     size + NOTIFY_OFFSET) != 0 )
+  if( pgaspi_alloc_page_aligned(&(gctx->rrmd[segment_id][gctx->rank].data.ptr), size + NOTIFY_OFFSET ) != 0 )
     {
       gaspi_print_error ("Memory allocation (posix_memalign) failed");
       eret = GASPI_ERR_MEMALLOC;
