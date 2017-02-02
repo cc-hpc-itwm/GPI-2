@@ -26,7 +26,12 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GPI2_Stats.h"
 
-#define NOTIFY_OFFSET     ((65536 * sizeof(gaspi_notification_t)) + (2 * sizeof(gaspi_notification_t)))
+/* Notifications space size:
+   allowed number of number of notifications + read notification value
+   space. For the latter we use 64 though, to have a larger alignment
+   of the data space (hacky!).
+*/
+#define NOTIFY_OFFSET ((65536 * sizeof(gaspi_notification_t)) + (64))
 
 gaspi_context_t glb_gaspi_ctx;
 
