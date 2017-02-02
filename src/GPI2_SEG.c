@@ -242,7 +242,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 
   memset(gctx->rrmd[segment_id][gctx->rank].data.ptr, 0, NOTIFY_OFFSET);
 
-  if( alloc_policy == GASPI_MEM_INITIALIZED)
+  if( GASPI_MEM_INITIALIZED == alloc_policy )
     {
       memset (gctx->rrmd[segment_id][gctx->rank].data.ptr, 0, size + NOTIFY_OFFSET);
     }
