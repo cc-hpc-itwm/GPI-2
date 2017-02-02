@@ -255,6 +255,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 
   if( pgaspi_dev_register_mem(gctx, &(gctx->rrmd[segment_id][gctx->rank])) < 0 )
     {
+      free(gctx->rrmd[segment_id][gctx->rank].data.ptr);
       goto endL;
     }
 
