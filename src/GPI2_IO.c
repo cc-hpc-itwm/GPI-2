@@ -601,7 +601,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
       return GASPI_ERR_INV_NOTIF_ID;
     }
 
-  if( notification_begin + (gaspi_notification_id_t) num >= GASPI_MAX_NOTIFICATION )
+  if( notification_begin + (gaspi_notification_id_t) num > GASPI_MAX_NOTIFICATION )
     {
       return GASPI_ERR_INV_NOTIF_ID;
     }
