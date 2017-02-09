@@ -159,15 +159,6 @@ if [ "$TESTS" = "" ]; then
     exit 1
 fi
 
-which numactl > /dev/null
-if [ $? = 0 ]; then
-    MAX_NUMA_NODES=`numactl --hardware|grep available|gawk '{print $2}'`
-    HAS_NUMA=1
-fi
-
-if [ "$HAS_NUMA" = "1" ]; then
-    GASPI_RUN="${GASPI_RUN} -N"
-fi
 #run them
 for i in $TESTS
 do
