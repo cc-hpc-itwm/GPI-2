@@ -254,7 +254,7 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
   struct ibv_send_wr swr[256];
   gaspi_number_t i;
 
-  if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num + 1) )
+  if( gctx->ne_count_c[queue] + num > gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -289,7 +289,7 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
       return GASPI_ERROR;
     }
 
-  gctx->ne_count_c[queue] +=  num;
+  gctx->ne_count_c[queue] += num;
 
   return GASPI_SUCCESS;
 }
@@ -311,7 +311,7 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
   struct ibv_send_wr swr[256];
   gaspi_number_t i;
 
-  if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num + 1) )
+  if( gctx->ne_count_c[queue] + num > gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -424,7 +424,7 @@ pgaspi_dev_write_notify (gaspi_context_t * const gctx,
   struct ibv_sge slist, slistN;
   struct ibv_send_wr swr, swrN;
 
-  if( gctx->ne_count_c[queue] == gctx->config->queue_size_max - 1 )
+  if( gctx->ne_count_c[queue] + 2 > gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -504,7 +504,7 @@ pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
   struct ibv_send_wr swr[256], swrN;
   gaspi_number_t i;
 
-  if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 2) )
+  if( gctx->ne_count_c[queue] + num + 1 > gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -588,7 +588,7 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
   struct ibv_sge slist, slistN;
   struct ibv_send_wr swr, swrN;
 
-  if( gctx->ne_count_c[queue] == gctx->config->queue_size_max - 1 )
+  if( gctx->ne_count_c[queue] + 2 > gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -662,7 +662,7 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
   struct ibv_send_wr swr[256], swrN;
   gaspi_number_t i;
 
-  if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 2) )
+  if( gctx->ne_count_c[queue] + num + 1 > gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }

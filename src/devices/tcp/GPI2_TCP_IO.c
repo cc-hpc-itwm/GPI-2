@@ -237,7 +237,7 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
 {
   gaspi_number_t i;
 
-  if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 1) )
+  if( gctx->ne_count_c[queue] + num > gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -284,7 +284,7 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
 {
   gaspi_number_t i;
 
-  if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 1) )
+  if( gctx->ne_count_c[queue] + num > gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -329,7 +329,7 @@ pgaspi_dev_write_notify (gaspi_context_t * const gctx,
 			 const gaspi_notification_t notification_value,
 			 const gaspi_queue_id_t queue)
 {
-  if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - 1) )
+  if( gctx->ne_count_c[queue] + 2 > gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -361,7 +361,7 @@ pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
 			      const gaspi_notification_t notification_value,
 			      const gaspi_queue_id_t queue)
 {
-  if( gctx->ne_count_c[queue] == (gctx->config->queue_size_max - num - 2) )
+  if( gctx->ne_count_c[queue] + num + 1 > gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -391,7 +391,7 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
 			const gaspi_notification_id_t notification_id,
 			const gaspi_queue_id_t queue)
 {
-  if( gctx->ne_count_c[queue] == ( gctx->config->queue_size_max - 1) )
+  if( gctx->ne_count_c[queue] + 2 > gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
@@ -445,7 +445,7 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
 			     const gaspi_notification_id_t notification_id,
 			     const gaspi_queue_id_t queue)
 {
-  if( gctx->ne_count_c[queue] == ( gctx->config->queue_size_max - num - 2) )
+  if( gctx->ne_count_c[queue] + num + 1 > gctx->config->queue_size_max )
     {
       return GASPI_QUEUE_FULL;
     }
