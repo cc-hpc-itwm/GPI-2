@@ -1,5 +1,5 @@
 /*
-Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2016
+Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2017
 
 This file is part of GPI-2.
 
@@ -28,7 +28,7 @@ extern "C"
 
   /** Get thread identifier
    *
-   * 
+   *
    * @param Output parameter with thread identifier
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
@@ -37,19 +37,19 @@ extern "C"
   gaspi_threads_get_tid(gaspi_int * const tid);
 
   /** Get total number of threads
-   * 
-   * 
+   *
+   *
    * @param Output parameter with total number of threads
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t
   gaspi_threads_get_total(gaspi_int *const num);
-  
-  
+
+
   /** Get total number of available cpu cores
-   * 
-   * 
+   *
+   *
    * @param cores Output paramter with the number of cores.
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
@@ -58,8 +58,8 @@ extern "C"
   gaspi_threads_get_num_cores(gaspi_int * const cores);
 
   /** Initialize threads (in all available cores)
-   * 
-   * 
+   *
+   *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t
@@ -68,8 +68,8 @@ extern "C"
   //returns activated cores (specified by caller)
 
   /** Initialize threads (a particular number of threads)
-   * 
-   * 
+   *
+   *
    * @param use_nr_of_threads Number of threads to start.
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
@@ -78,16 +78,16 @@ extern "C"
   gaspi_threads_init_user(const unsigned int use_nr_of_threads);
 
   /** Finalize threads
-   * 
-   * 
+   *
+   *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t
   gaspi_threads_term(void);
 
   /** Run a particular task (function)
-   * 
-   * 
+   *
+   *
    * @param function The function to run.
    * @param arg The arguments of the function to run.
    *
@@ -97,8 +97,8 @@ extern "C"
   gaspi_threads_run(void* (*function)(void*), void *arg);
 
   /** Register a thread with the pool.
-   * 
-   * 
+   *
+   *
    * @param tid Output parameter with the thread identifier.
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
@@ -108,14 +108,14 @@ extern "C"
 
   /** Synchronize all local threads (local barrier).
    *
-   * 
+   *
    */
   void gaspi_threads_sync(void);
 
   /** Synchronize all threads in a group (global barrier).
    * Implies a gaspi_barrier within the group.
    *
-   * @param group The group involved in the barrier. 
+   * @param group The group involved in the barrier.
    * @param timeout The timeout to be applied in the global barrier(gaspi_barrier).
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
