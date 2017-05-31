@@ -26,6 +26,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_SN.h"
 #include "GPI2_SEG.h"
 
+#include <shared_memory_allocation_for_notifications.h>
+
 #pragma weak gaspi_segment_max = pgaspi_segment_max
 gaspi_return_t
 pgaspi_segment_max (gaspi_number_t * const segment_max)
@@ -311,7 +313,24 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   /* For both "normal" and user-provided segments, the notif_spc
      points to begin of memory and only the size changes.
   */
-  free (gctx->rrmd[segment_id][gctx->rank].notif_spc.buf);
+
+  if( gctx->rrmd[segment_id][gctx->rank].desc == GASPI_NODE_LOCAL )
+    {
+      if( free_shared_notification_area
+            ( gctx->rrmd[segment_id][gctx->rank].notif_spc.buf
+            , gctx->rrmd[segment_id][gctx->rank].shm_notif_fd
+            )
+        != GASPI_SUCCESS
+        )
+      {
+        //todo: should return a more specific error code
+        return GASPI_ERROR;
+      }
+    }
+    else
+      {
+        free (gctx->rrmd[segment_id][gctx->rank].notif_spc.buf);
+      }
 
   gctx->rrmd[segment_id][gctx->rank].data.buf = NULL;
   gctx->rrmd[segment_id][gctx->rank].notif_spc.buf = NULL;
@@ -603,16 +622,47 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
       goto endL;
     }
 
-  if( posix_memalign( (void **) &gctx->rrmd[segment_id][myrank].notif_spc.ptr,
-		      page_size,
-		      NOTIFY_OFFSET) != 0 )
+  if (memory_description == GASPI_NODE_LOCAL)
+  {
+    if( get_ptr_to_shared_notification_area
+          ( &gctx->rrmd[segment_id][myrank].notif_spc.ptr
+          , &gctx->rrmd[segment_id][myrank].shm_notif_fd
+          ) != GASPI_SUCCESS
+      )
+      {
+        gaspi_print_error ("Allocating shared memory for notifications failed.");
+        eret = GASPI_ERR_MEMALLOC;
+        goto endL;
+      }
+  }
+  else
+  {
+    if( posix_memalign ( (void **) &gctx->rrmd[segment_id][myrank].notif_spc.ptr
+                       , page_size
+                       , NOTIFY_OFFSET
+                       ) != 0
+      )
+      {
+        gaspi_print_error ("Memory allocation failed.");
+        eret = GASPI_ERR_MEMALLOC;
+        goto endL;
+      }
+  }
+
+  gaspi_rank_t gaspi_local_rank;
+  if( gaspi_proc_local_rank (&gaspi_local_rank) != GASPI_SUCCESS )
     {
-      gaspi_print_error ("Memory allocation failed.");
-      eret = GASPI_ERR_MEMALLOC;
+      gaspi_print_error ("Fail to get the local rank.");
+      eret = GASPI_ERROR;
       goto endL;
     }
 
-  memset (gctx->rrmd[segment_id][myrank].notif_spc.ptr, 0, NOTIFY_OFFSET);
+  if( (gaspi_local_rank == 0 && memory_description == GASPI_NODE_LOCAL)
+    || memory_description != GASPI_NODE_LOCAL
+    )
+    {
+      memset (gctx->rrmd[segment_id][myrank].notif_spc.ptr, 0, NOTIFY_OFFSET);
+    }
 
   /* Set the segment data pointer and size */
   gctx->rrmd[segment_id][myrank].data.ptr = pointer;
