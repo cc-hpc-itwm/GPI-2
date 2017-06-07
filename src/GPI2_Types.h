@@ -77,6 +77,7 @@ typedef struct
 
   unsigned long size;
   size_t notif_spc_size;
+  int shm_notif_fd;
   int trans; /* info transmitted */
 
   int user_provided;
