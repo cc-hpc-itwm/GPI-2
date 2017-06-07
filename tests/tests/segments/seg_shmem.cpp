@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 
   gaspi_segment_id_t const shmem_seg_id (0);
   gaspi_segment_id_t const usual_seg_id (1);
-  gaspi_memory_description_t const memory_description (0);
+  gaspi_memory_description_t const memory_description (GASPI_PROC_LOCAL);
 
   ASSERT( gaspi_segment_use ( shmem_seg_id, memory, size,
 			      GASPI_GROUP_ALL, GASPI_BLOCK,

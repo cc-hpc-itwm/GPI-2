@@ -66,7 +66,16 @@ extern "C"
   typedef unsigned int gaspi_statistic_counter_t;
   typedef char * gaspi_string_t;
 
-  typedef int gaspi_memory_description_t;
+  /**
+   * Memory description type
+   *
+   */
+   typedef enum
+     {
+       GASPI_PROC_LOCAL = 0,
+       GASPI_NODE_LOCAL = 1
+     } gaspi_memory_description_t;
+
 
   /* Typed constants */
   static const gaspi_group_t GASPI_GROUP_ALL = 0;
