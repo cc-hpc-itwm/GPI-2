@@ -1,7 +1,8 @@
 BIN = notify_all.bin notify_last.bin write_notify.bin write_notify_outstanding.bin	\
 	notify_null.bin not_zero_wait.bin notify_after_delete.bin	\
-	write_m_to_1.bin read_notify.bin
-
+	write_m_to_1.bin read_notify.bin \
+	shared_notifications_and_shared_memory_for_data.bin
+	
 CFLAGS+=-I../
 
 build: $(BIN)
@@ -10,6 +11,12 @@ notification_value.o: notification_value.cpp
 	$(CXX) -std=c++11 $(CFLAGS) -c $^
 
 notification_value.bin: notification_value.o ../test_utils.o
+	$(CXX) -std=c++11 $(CFLAGS) $(LIB_PATH) -o $@ $^ $(LIBS)
+
+shared_notifications_and_shared_memory_for_data.0: shared_notifications_and_shared_memory_for_data.cpp
+	$(CXX) -std=c++11 $(CFLAGS) -c $^
+
+shared_notifications_and_shared_memory_for_data.bin: shared_notifications_and_shared_memory_for_data.o
 	$(CXX) -std=c++11 $(CFLAGS) $(LIB_PATH) -o $@ $^ $(LIBS)
 
 %.o: %.c
