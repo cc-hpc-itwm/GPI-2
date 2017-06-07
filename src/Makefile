@@ -36,6 +36,7 @@ SRCS += GPI2_GRP.c
 SRCS += GPI2_CONFIG.c
 SRCS += GPI2_CM.c
 SRCS += GPI2.c
+SRCS += shared_memory_allocation_for_notifications.c
 
 HDRS += GPI2_Env.h
 HDRS += GPI2_Utility.h
@@ -44,6 +45,7 @@ HDRS += GPI2_SN.h
 HDRS += GPI2_Coll.h
 HDRS += GPI2_CM.h
 HDRS += GPI2.h
+HDRS += shared_memory_allocation_for_notifications.h
 
 OBJS = $(SRCS:.c=.o)
 OBJS_DBG = $(SRCS:.c=.dbg.o)
