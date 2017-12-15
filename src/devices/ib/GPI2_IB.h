@@ -20,7 +20,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define _GPI2_IB_H_
 
 #include <infiniband/verbs.h>
-#include <infiniband/driver.h>
 
 #define GASPI_GID_INDEX   (0)
 #define PORT_LINK_UP      (5)
