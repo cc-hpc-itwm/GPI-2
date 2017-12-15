@@ -23,7 +23,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <infiniband/verbs_exp.h>
 #endif
 #include <infiniband/verbs.h>
-#include <infiniband/driver.h>
 
 #include "GPI2_Dev.h"
 
