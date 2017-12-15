@@ -4,6 +4,7 @@
 
 #include <assert.h>
 #include <fcntl.h>
+#include <semaphore.h>
 #include <sys/shm.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -26,69 +27,95 @@
   } while (0)
 
 gaspi_return_t get_ptr_to_shared_notification_area
-  (void** ptr_ptr_to_shared_notification_area, int* shm_fd)
+(void** ptr_ptr_to_shared_notification_area, int* shm_fd)
 {
   gaspi_rank_t gaspi_local_rank;
   SUCCESS_OR_DIE (gaspi_proc_local_rank, &gaspi_local_rank);
 
   const char* const name = "/shared_notifications";
-  if(gaspi_local_rank == 0)
+
+  const char* const sem_name = "/gpi2_notif";
+
+  sem_t* sem = sem_open (sem_name, O_CREAT| O_RDWR, 0666, 0);
+
+  if( sem == SEM_FAILED )
     {
-      *shm_fd = shm_open (name, O_CREAT | O_RDWR, 0666);
-      if (*shm_fd == -1)
-        {
-          gaspi_print_error ("Shared memory for notifications failed!");
-          return GASPI_ERROR;
-        }
-
-      ftruncate (*shm_fd, NOTIFY_OFFSET);
-
-      *ptr_ptr_to_shared_notification_area = mmap ( 0
-                                                  , NOTIFY_OFFSET, PROT_READ | PROT_WRITE
-                                                  , MAP_SHARED
-                                                  , *shm_fd
-                                                  , 0
-                                                   );
-
-      if(*ptr_ptr_to_shared_notification_area == MAP_FAILED)
-        {
-          gaspi_print_error ("Allocating shared memory for notifications failed");
-          close (*shm_fd);
-          shm_unlink (name);
-          return GASPI_ERROR;
-        }
-
-      SUCCESS_OR_DIE (gaspi_barrier, GASPI_GROUP_ALL, GASPI_BLOCK) ;
+      goto sem_error;
     }
-    else
-      {
-        SUCCESS_OR_DIE (gaspi_barrier, GASPI_GROUP_ALL, GASPI_BLOCK) ;
 
-        *shm_fd = shm_open (name, O_RDWR, 0666);
-        if(*shm_fd == -1)
+  if( gaspi_local_rank != 0 && sem_wait (sem))
+    {
+      goto sem_error;
+    }
+
+  *shm_fd = shm_open (name, O_CREAT | O_RDWR, 0666);
+  if( *shm_fd == -1 )
+    {
+      gaspi_print_error ("Shared memory for notifications failed!");
+      return GASPI_ERROR;
+    }
+
+  ftruncate (*shm_fd, NOTIFY_OFFSET);
+
+  *ptr_ptr_to_shared_notification_area = mmap (0,
+                                               NOTIFY_OFFSET,
+                                               PROT_READ | PROT_WRITE,
+                                               MAP_SHARED,
+                                               *shm_fd,
+                                               0);
+
+  if( *ptr_ptr_to_shared_notification_area == MAP_FAILED )
+    {
+      gaspi_print_error ("Allocating shared memory for notifications failed");
+      close (*shm_fd);
+      shm_unlink (name);
+      return GASPI_ERROR;
+    }
+
+
+  if( gaspi_local_rank == 0 )
+    {
+      gaspi_rank_t local_ranks;
+      gaspi_proc_local_num (&local_ranks);
+      while ( local_ranks > 0 )
+        {
+          if( sem_post (sem) )
           {
-            gaspi_print_error ("Opening shared memory for notifications failed!");
-            return GASPI_ERROR;
+            goto sem_error;
           }
 
-        *ptr_ptr_to_shared_notification_area = mmap ( 0
-                                                    , NOTIFY_OFFSET
-                                                    , PROT_READ | PROT_WRITE
-                                                    , MAP_SHARED
-                                                    , *shm_fd
-                                                    , 0
-                                                    );
+          local_ranks--;
+        }
+    }
 
-        if(*ptr_ptr_to_shared_notification_area == MAP_FAILED)
-          {
-            gaspi_print_error ("Mapping shared memory for notifications failed!");
-            close (*shm_fd);
-            shm_unlink (name);
-            return GASPI_ERROR;
-          }
-      }
+  if( gaspi_local_rank != 0 && sem_close (sem))
+    {
+      goto sem_error;
+    }
+
+  if( gaspi_local_rank == 0 )
+    {
+      /* be the last one waiting on semaphore*/
+      int v;
+      do
+        {
+          sem_getvalue (sem, &v);
+        }
+      while (v != 1);
+
+      if( sem_wait (sem)       ||
+          sem_close (sem)      ||
+          sem_unlink (sem_name) )
+        {
+          goto sem_error;
+        }
+    }
 
   return GASPI_SUCCESS;
+
+ sem_error:
+  gaspi_print_error ("Failed to synchronize ranks");
+  return GASPI_ERROR;
 }
 
 gaspi_return_t free_shared_notification_area
