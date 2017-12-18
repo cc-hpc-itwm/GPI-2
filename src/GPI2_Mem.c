@@ -17,6 +17,14 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "GPI2_Mem.h"
+#include "GPI2_Utility.h"
+#include <GASPI_Ext.h>
+
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
+#include <semaphore.h>
 
 gaspi_size_t
 gaspi_get_system_mem(void)
@@ -99,4 +107,110 @@ pgaspi_alloc_page_aligned(void** ptr, size_t size)
     }
 
   return 0;
+}
+
+static const char* const shmem_name = "/gpi2_shared_space";
+static const char* const sem_name = "/gpi2_notif";
+
+int
+pgaspi_alloc_local_shared (void** ptr, size_t size)
+{
+  gaspi_rank_t gaspi_local_rank;
+
+  if( gaspi_proc_local_rank (&gaspi_local_rank) != GASPI_SUCCESS )
+    {
+      return -1;
+    }
+
+  sem_t* sem = sem_open (sem_name, O_CREAT| O_RDWR, 0666, 0);
+
+  if( sem == SEM_FAILED )
+    {
+      return -1;
+    }
+
+  if( gaspi_local_rank != 0 && sem_wait (sem))
+    {
+      sem_close (sem);
+      return -1;
+    }
+
+  int const shm_fd = shm_open (shmem_name, O_CREAT | O_RDWR, 0666);
+  if( shm_fd == -1 )
+    {
+      sem_close (sem);
+      return -1;
+    }
+
+  if ( ftruncate (shm_fd, size) )
+    {
+      sem_close (sem);
+      close (shm_fd);
+      shm_unlink (shmem_name);
+      return -1;
+    }
+
+  *ptr = mmap (0, size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+
+  if( *ptr == MAP_FAILED )
+    {
+      sem_close (sem);
+      close (shm_fd);
+      shm_unlink (shmem_name);
+      return -1;
+    }
+
+  if( gaspi_local_rank == 0 )
+    {
+      gaspi_rank_t local_ranks;
+      gaspi_proc_local_num (&local_ranks);
+
+      while ( local_ranks > 0 )
+        {
+          if( sem_post (sem) )
+          {
+            goto errL;
+          }
+
+          local_ranks--;
+        }
+    }
+
+  if( gaspi_local_rank != 0 && sem_close (sem))
+    {
+      goto errL;
+    }
+
+  if( gaspi_local_rank == 0 )
+    {
+      /* be the last one waiting on semaphore*/
+      int v;
+      do
+        {
+          sem_getvalue (sem, &v);
+        }
+      while (v != 1);
+
+      if( sem_wait (sem) || sem_close (sem) || sem_unlink (sem_name) )
+        {
+          goto errL;
+        }
+    }
+
+  return shm_fd;
+
+ errL:
+  sem_close (sem);
+  munmap (ptr, size);
+  close (shm_fd);
+  shm_unlink (shmem_name);
+
+  return -1;
+}
+
+int
+pgaspi_free_local_shared (void* ptr, size_t size, int shm_fd)
+{
+  shm_unlink (shmem_name);
+  return munmap (ptr, size) || close (shm_fd);
 }

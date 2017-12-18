@@ -22,11 +22,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "PGASPI.h"
 #include "GPI2.h"
 #include "GPI2_Dev.h"
+#include "GPI2_Mem.h"
 #include "GPI2_Utility.h"
 #include "GPI2_SN.h"
 #include "GPI2_SEG.h"
-
-#include <shared_memory_allocation_for_notifications.h>
 
 #pragma weak gaspi_segment_max = pgaspi_segment_max
 gaspi_return_t
@@ -316,16 +315,13 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 
   if( gctx->rrmd[segment_id][gctx->rank].desc == GASPI_NODE_LOCAL )
     {
-      if( free_shared_notification_area
-            ( gctx->rrmd[segment_id][gctx->rank].notif_spc.buf
-            , gctx->rrmd[segment_id][gctx->rank].shm_notif_fd
-            )
-        != GASPI_SUCCESS
-        )
-      {
-        //todo: should return a more specific error code
-        return GASPI_ERROR;
-      }
+      if( pgaspi_free_local_shared ( gctx->rrmd[segment_id][gctx->rank].notif_spc.buf,
+                                     NOTIFY_OFFSET,
+                                     gctx->rrmd[segment_id][gctx->rank].shm_notif_fd ))
+        {
+          gaspi_print_error ("free local failed");
+          return GASPI_ERR_MEMALLOC;
+        }
     }
     else
       {
@@ -624,11 +620,11 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 
   if (memory_description == GASPI_NODE_LOCAL)
   {
-    if( get_ptr_to_shared_notification_area
-          ( &gctx->rrmd[segment_id][myrank].notif_spc.ptr
-          , &gctx->rrmd[segment_id][myrank].shm_notif_fd
-          ) != GASPI_SUCCESS
-      )
+    gctx->rrmd[segment_id][myrank].shm_notif_fd =
+      pgaspi_alloc_local_shared ( &gctx->rrmd[segment_id][myrank].notif_spc.ptr,
+                                  NOTIFY_OFFSET);
+
+    if( gctx->rrmd[segment_id][myrank].shm_notif_fd < 0 )
       {
         gaspi_print_error ("Allocating shared memory for notifications failed.");
         eret = GASPI_ERR_MEMALLOC;
