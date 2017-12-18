@@ -55,7 +55,11 @@ gaspi_return_t get_ptr_to_shared_notification_area
       return GASPI_ERROR;
     }
 
-  ftruncate (*shm_fd, NOTIFY_OFFSET);
+  if (ftruncate (*shm_fd, NOTIFY_OFFSET) )
+    {
+      gaspi_print_error ("Failed to truncate notifications space.");
+      return GASPI_ERROR;
+    }
 
   *ptr_ptr_to_shared_notification_area = mmap (0,
                                                NOTIFY_OFFSET,
