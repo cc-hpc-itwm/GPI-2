@@ -9,28 +9,16 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#define SUCCESS_OR_DIE(f, args...)              \
-  do                                            \
-  {                                             \
-    gaspi_return_t const r = f (args);          \
-                                                \
-    if (r != GASPI_SUCCESS)                     \
-    {                                           \
-      gaspi_printf ( "Error[%s:%i]: %s\n"       \
-                   , __FILE__                   \
-                   , __LINE__                   \
-                   , gaspi_error_str (r)        \
-                   );                           \
-                                                \
-      exit (-1);                                \
-    }                                           \
-  } while (0)
-
 gaspi_return_t get_ptr_to_shared_notification_area
 (void** ptr_ptr_to_shared_notification_area, int* shm_fd)
 {
   gaspi_rank_t gaspi_local_rank;
-  SUCCESS_OR_DIE (gaspi_proc_local_rank, &gaspi_local_rank);
+
+  gaspi_return_t ret;
+  if (ret = gaspi_proc_local_rank (&gaspi_local_rank) != GASPI_SUCCESS)
+    {
+      return ret;
+    }
 
   const char* const name = "/shared_notifications";
 
