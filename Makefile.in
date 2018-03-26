@@ -78,7 +78,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@WITH_LOADLEVER_FALSE@am__append_1 = bin/ssh.spawner bin/gaspi_cleanup
+@WITH_LOADLEVER_FALSE@@WITH_SLURM_FALSE@am__append_1 = bin/ssh.spawner bin/gaspi_cleanup
 subdir = .
 DIST_COMMON = INSTALL NEWS README AUTHORS ChangeLog \
 	$(srcdir)/Makefile.in $(srcdir)/Makefile.am \
@@ -905,8 +905,13 @@ check :
 @WITH_LOADLEVER_TRUE@	cp bin/gaspi_run.poe $(DESTDIR)$(bindir)/gaspi_run
 @WITH_LOADLEVER_TRUE@	head -n 18 bin/gaspi_cleanup > $(DESTDIR)$(bindir)/gaspi_cleanup
 @WITH_LOADLEVER_TRUE@	chmod +x $(DESTDIR)$(bindir)/gaspi_cleanup
-@WITH_LOADLEVER_FALSE@install-exec-hook:
-@WITH_LOADLEVER_FALSE@	cp bin/gaspi_run.ssh $(DESTDIR)$(bindir)/gaspi_run
+@WITH_LOADLEVER_FALSE@@WITH_SLURM_TRUE@install-exec-hook:
+@WITH_LOADLEVER_FALSE@@WITH_SLURM_TRUE@	cp bin/gaspi_run.slurm $(DESTDIR)$(bindir)/gaspi_run
+@WITH_LOADLEVER_FALSE@@WITH_SLURM_TRUE@	cp bin/slurm.env $(DESTDIR)$(bindir)/
+@WITH_LOADLEVER_FALSE@@WITH_SLURM_TRUE@	head -n 18 bin/gaspi_cleanup > $(DESTDIR)$(bindir)/gaspi_cleanup
+@WITH_LOADLEVER_FALSE@@WITH_SLURM_TRUE@	chmod +x $(DESTDIR)$(bindir)/gaspi_cleanup
+@WITH_LOADLEVER_FALSE@@WITH_SLURM_FALSE@install-exec-hook:
+@WITH_LOADLEVER_FALSE@@WITH_SLURM_FALSE@	cp bin/gaspi_run.ssh $(DESTDIR)$(bindir)/gaspi_run
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

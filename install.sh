@@ -6,6 +6,7 @@ OFED=0
 WITH_MPI=0
 MPI_PATH=""
 WITH_LL=0
+WITH_SLURM=0
 WITH_F90=1
 GPI2_DEVICE=IB
 usage()
@@ -24,6 +25,8 @@ GPI2 Installation:
 
 	     --with-ll                      Use this option if you have Load Leveler as batch system.
 	                                    This integrates with Load Leveler and uses poe as application launcher.
+
+             --with-slurm                   Use this option if you have Slurm as batch system.
 
 	     --with-ethernet                Build GPI-2 for Ethernet (only if you don't have Infiniband).
 	                                    See README for more information.
@@ -98,6 +101,10 @@ while getopts ":hp:-:" opt; do
 		with-ll)
 		    echo "With Load Leveler" >&2;
 		    WITH_LL=1
+		    ;;
+		with-slurm)
+		    echo "With Slurm" >&2;
+		    WITH_SLURM=1
 		    ;;
 		with-ethernet)
 		    echo "With Ethernet support" >&2;
@@ -281,6 +288,12 @@ if [ $WITH_LL = 1 ]; then
     echo "DBG_CFLAGS += -DLOADLEVELER" >> src/make.inc
 fi
 
+#slurm
+if [ $WITH_SLURM = 1 ]; then
+    echo "Setup for Slurm" | tee -a install.log
+    echo "###### added by install script" >> src/make.inc
+fi
+
 #build everything
 make clean > /dev/null 2>&1
 which makedepend > /dev/null 2>&1
@@ -352,6 +365,12 @@ fi
 mkdir -p $GPI2_PATH/bin
 if [ $WITH_LL = 1 ]; then
     cp bin/gaspi_run.poe $GPI2_PATH/bin/gaspi_run
+    #create dummy cleanup
+    head -n 18 bin/gaspi_cleanup > $GPI2_PATH/bin/gaspi_cleanup
+    chmod +x $GPI2_PATH/bin/gaspi_cleanup
+elif [ $WITH_SLURM = 1 ]; then
+    cp bin/gaspi_run.slurm $GPI2_PATH/bin/gaspi_run
+    cp bin/slurm.env $GPI2_PATH/bin/
     #create dummy cleanup
     head -n 18 bin/gaspi_cleanup > $GPI2_PATH/bin/gaspi_cleanup
     chmod +x $GPI2_PATH/bin/gaspi_cleanup

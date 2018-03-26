@@ -641,6 +641,8 @@ HAVE_DOXYGEN_FALSE
 HAVE_DOXYGEN_TRUE
 DOT
 DOXYGEN
+WITH_SLURM_FALSE
+WITH_SLURM_TRUE
 WITH_LOADLEVER_FALSE
 WITH_LOADLEVER_TRUE
 ENABLE_STAT_FALSE
@@ -808,6 +810,7 @@ with_ethernet
 enable_debug
 enable_stat
 with_loadlever
+with_slurm
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1470,7 +1473,8 @@ Optional Packages:
   --with-fortran          compile Fortran modules (default)
   --with-infiniband       compile for infiniband (default)
   --with-ethernet         compile for ethernet
-  --with-loadlever        compile with loadlevel support.
+  --with-loadlever        compile with loadlevel support
+  --with-slurm            compile with slurm support
 
 Some influential environment variables:
   CC          C compiler command
@@ -18047,6 +18051,24 @@ else
 fi
 
 
+# SLURM
+
+# Check whether --with-slurm was given.
+if test "${with_slurm+set}" = set; then :
+  withval=$with_slurm; with_slurm=$withval
+else
+  with_slurm=no
+fi
+
+ if test $with_slurm = yes; then
+  WITH_SLURM_TRUE=
+  WITH_SLURM_FALSE='#'
+else
+  WITH_SLURM_TRUE='#'
+  WITH_SLURM_FALSE=
+fi
+
+
 # DOXYGEN
 for ac_prog in doxygen
 do
@@ -18335,6 +18357,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_LOADLEVER_TRUE}" && test -z "${WITH_LOADLEVER_FALSE}"; then
   as_fn_error $? "conditional \"WITH_LOADLEVER\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${WITH_SLURM_TRUE}" && test -z "${WITH_SLURM_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_SLURM\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${HAVE_DOXYGEN_TRUE}" && test -z "${HAVE_DOXYGEN_FALSE}"; then

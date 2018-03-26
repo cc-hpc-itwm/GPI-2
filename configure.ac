@@ -115,10 +115,16 @@ AC_ARG_ENABLE([stat],[AS_HELP_STRING([--disable-stat], [do not build/install sta
 AM_CONDITIONAL([ENABLE_STAT],[test $build_stat = yes])
 
 # LOADLEVER
-AC_ARG_WITH(loadlever,[AS_HELP_STRING([--with-loadlever],[compile with loadlevel support.])],
+AC_ARG_WITH(loadlever,[AS_HELP_STRING([--with-loadlever],[compile with loadlevel support])],
 		      [with_loadlever=$withval],
 		      [with_loadlever=no])
 AM_CONDITIONAL([WITH_LOADLEVER],[test $with_loadlever = yes])
+
+# SLURM
+AC_ARG_WITH(slurm,[AS_HELP_STRING([--with-slurm],[compile with slurm support])],
+		  [with_slurm=$withval],
+		  [with_slurm=no])
+AM_CONDITIONAL([WITH_SLURM],[test $with_slurm = yes])
 
 # DOXYGEN
 AC_CHECK_PROGS([DOXYGEN],[doxygen])
