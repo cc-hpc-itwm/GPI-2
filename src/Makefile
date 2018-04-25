@@ -79,7 +79,7 @@ $(OBJ_FORTRAN): GASPI.f90
 	echo "Fortran compiler (gfortran) not found!" ;\
 	false; \
 	fi;
-	$(FORTRANC) -O2 -I. -c $<  GASPI_Ext.f90 
+	$(FC) -O2 -I. -c $<  GASPI_Ext.f90 
 	cp gaspi.mod gaspi_types.mod gaspi_ext.mod ../include;
 
 mic: $(OBJS_MIC) $(OBJS_DBG_MIC)

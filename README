@@ -46,6 +46,15 @@ For example,
 
 installs GPI-2 under /prog/GPI2 instead of under the default location.
 
+Compiler selection
+------------------
+
+Using CC, CXX and FC, the compiler can be set for building GPI-2.
+For example,
+   CC=icc CXX=icpc FC=ifort ./install.sh -p /prog/GPI2
+
+Default is the GNU complier suite: CC=gcc, CXX=g++ and FC=gfortran.
+
 Infiniband support (default)
 ----------------------------
 

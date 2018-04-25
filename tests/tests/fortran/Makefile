@@ -1,4 +1,4 @@
-F90CC:=$(shell which $(CF))
+F90CC:=$(shell which $(FC))
 
 BIN =  fortran_use.bin fortran_allreduces.bin fortran_seg_ptr.bin fortran_seg_use.bin
 
@@ -8,7 +8,7 @@ build: $(BIN)
 
 %.bin: %.f90
 	@if test "$(F90CC)" != ""; then \
-	$(CF) $(CFLAGS) $(LIB_PATH) -o $@ $^ $(LIBS); \
+	$(FC) $(CFLAGS) $(LIB_PATH) -o $@ $^ $(LIBS); \
 	fi	
 
 

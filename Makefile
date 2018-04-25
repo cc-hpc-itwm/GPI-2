@@ -1,5 +1,5 @@
 DOXYGEN:=$(shell which doxygen)
-GFORTRAN:=$(shell which gfortran)
+GFORTRAN:=$(shell which $FC)
 
 all: gpi fortran tests
 

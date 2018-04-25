@@ -1,8 +1,6 @@
 OFED_PATH = /usr
 OFED_MIC_PATH = /opt/intel/mic/ofed/card/usr
-CC = gcc
-FORTRANC = gfortran
-HAS_FORTRAN:=$(shell which $(FORTRANC))
+HAS_FORTRAN:=$(shell which $(FC))
 GPI2_SRCDIR=$(CURDIR)
 
 CFLAGS += -Wall

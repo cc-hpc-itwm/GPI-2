@@ -66,9 +66,17 @@ clean_bak_files()
     fi
 }
 
+check_compilers()
+{
+  CC=${CC:-gcc}
+  CXX=${CXX:-g++}
+  FC=${FC:-gfortran}
+}
+
 #check some requirements
 check_util_exists gawk
 check_util_exists sed
+check_compilers
 
 while getopts ":hp:-:" opt; do
     case $opt in
@@ -195,7 +203,6 @@ cp src/make.inc src/make.inc.bak
 cp tests/make.defines tests/make.defines.bak
 
 echo "$0 $@" >> install.log
-gcc --version >> install.log
 
 if [ $GPI2_DEVICE = IB ]; then
 #check ofed installation
@@ -404,7 +411,7 @@ echo " done."
 
 
 printf "\nBuilding tests..."
-make -j$NCORES tests >> install.log 2>&1
+make -j$NCORES V=3 tests >> install.log 2>&1
 if [ $? != 0 ]; then
     echo "Compilation of tests failed (see install.log)"
     echo "Aborting..."
