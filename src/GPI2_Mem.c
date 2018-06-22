@@ -109,13 +109,15 @@ pgaspi_alloc_page_aligned(void** ptr, size_t size)
   return 0;
 }
 
-static const char* const shmem_name = "/gpi2_shared_space";
-static const char* const sem_name = "/gpi2_notif";
-
 int
-pgaspi_alloc_local_shared (void** ptr, size_t size)
+pgaspi_alloc_local_shared (gaspi_segment_id_t const segment_id, void** ptr, size_t size)
 {
   gaspi_rank_t gaspi_local_rank;
+
+  char shmem_name[50];
+  sprintf (shmem_name, "/gpi2_shared_space_%d", segment_id);
+  char sem_name[20];
+  sprintf (sem_name, "/gpi2_notif_%d", segment_id);
 
   if( gaspi_proc_local_rank (&gaspi_local_rank) != GASPI_SUCCESS )
     {
@@ -209,8 +211,11 @@ pgaspi_alloc_local_shared (void** ptr, size_t size)
 }
 
 int
-pgaspi_free_local_shared (void* ptr, size_t size, int shm_fd)
+pgaspi_free_local_shared (gaspi_segment_id_t const segment_id, void* ptr, size_t size, int shm_fd)
 {
+  char shmem_name[50];
+  sprintf (shmem_name, "/gpi2_shared_space_%d", segment_id);
+
   shm_unlink (shmem_name);
   return munmap (ptr, size) || close (shm_fd);
 }

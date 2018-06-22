@@ -315,7 +315,8 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 
   if( gctx->rrmd[segment_id][gctx->rank].desc == GASPI_NODE_LOCAL )
     {
-      if( pgaspi_free_local_shared ( gctx->rrmd[segment_id][gctx->rank].notif_spc.buf,
+      if( pgaspi_free_local_shared ( segment_id,
+                                     gctx->rrmd[segment_id][gctx->rank].notif_spc.buf,
                                      NOTIFY_OFFSET,
                                      gctx->rrmd[segment_id][gctx->rank].shm_notif_fd ))
         {
@@ -621,7 +622,8 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
   if (memory_description == GASPI_NODE_LOCAL)
   {
     gctx->rrmd[segment_id][myrank].shm_notif_fd =
-      pgaspi_alloc_local_shared ( &gctx->rrmd[segment_id][myrank].notif_spc.ptr,
+      pgaspi_alloc_local_shared ( segment_id,
+                                  &gctx->rrmd[segment_id][myrank].notif_spc.ptr,
                                   NOTIFY_OFFSET);
 
     if( gctx->rrmd[segment_id][myrank].shm_notif_fd < 0 )

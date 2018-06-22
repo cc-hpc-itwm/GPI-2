@@ -40,9 +40,9 @@ int
 pgaspi_alloc_page_aligned(void** ptr, size_t size);
 
 int
-pgaspi_alloc_local_shared(void**, size_t);
+pgaspi_alloc_local_shared(gaspi_segment_id_t const segment_id, void**, size_t);
 
 int
-pgaspi_free_local_shared(void*, size_t, int);
+pgaspi_free_local_shared(gaspi_segment_id_t const segment_id, void*, size_t, int);
 
 #endif //_GPI2_MEM_H_
