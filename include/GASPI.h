@@ -200,7 +200,6 @@ extern "C"
     {
       GASPI_MEM_UNINITIALIZED = 0, /* Memory will not be initialized */
       GASPI_MEM_INITIALIZED = 1, /* Memory will be initialized (zero-ed) */
-      GASPI_MEM_GPU = 2
     };
 
 #define GASPI_ALLOC_DEFAULT GASPI_MEM_UNINITIALIZED
