@@ -7,8 +7,6 @@ WITH_MPI=0
 MPI_PATH=""
 WITH_LL=0
 WITH_F90=1
-WITH_CUDA=0
-CUDA_PATH=""
 GPI2_DEVICE=IB
 usage()
 {
@@ -35,8 +33,6 @@ GPI2 Installation:
 
              --with-fortran=(true,false)    Enable/Disable Fortran bindings (default: enabled).
 
-	     --with-cuda<=path>             Use this option if you aim mixed use with CUDA and GPU support.
-	     	     
 EOF
 }
 
@@ -55,7 +51,7 @@ clean_bak_files()
 	cp src/make.inc src/make.inc.install
 	mv src/make.inc.bak src/make.inc
     fi
-    
+
     if [ -r tests/make.defines.bak ]; then
 	cp tests/make.defines tests/make.defines.install
 	mv tests/make.defines.bak tests/make.defines
@@ -133,32 +129,6 @@ while getopts ":hp:-:" opt; do
 		    sed -i "s,fortran,,g" tests/tests/Makefile
 		fi
 		;;
-		with-cuda)
-                    which nvcc > /dev/null 2>&1
-                    if [ $? != 0 ]; then
-                        echo "Couldn't find CUDA installation. Please provide path to your CUDA installation."
-			echo "    ./install.sh <other options> --with-cude=<Path to CUDA installation>"
-			echo ""
-                        exit 1
-                    fi
-		    NVCC_BIN=`which nvcc`
-		    CUDA_PATH=`dirname $NVCC_BIN`
-		    CUDA_PATH=`dirname $CUDA_PATH`
-		    
-                    echo "With CUDA at ${CUDA_PATH}" >&2;
-                    WITH_CUDA=1
-                    ;;
-                with-cuda=*)
-                val=${OPTARG#*=}
-                if [ "$val" = "" ]; then
-                    echo "Forgot to provide CUDA path?"
-                    exit 1
-                fi
-                CUDA_PATH=$val
-                opt=${OPTARG%=$val}
-                echo "With CUDA at ${CUDA_PATH}" >&2;
-                WITH_CUDA=1
-                ;;
 		*)
 		    if [ "$OPTERR" = 1 ] && [ "${optspec:0:1}" != ":" ]; then
 		        echo "Unknown option --${OPTARG}" >&2
@@ -289,7 +259,7 @@ if [ $WITH_MPI = 1 ]; then
 	    fi
 	fi
     fi
-    
+
     echo "Using MPI: ${MPI_PATH}" | tee -a install.log
     echo "###### added by install script" >> src/make.inc
     echo "CFLAGS += -DGPI2_WITH_MPI" >> src/make.inc
@@ -310,65 +280,6 @@ if [ $WITH_LL = 1 ]; then
     echo "CFLAGS += -DLOADLEVELER" >> src/make.inc
     echo "DBG_CFLAGS += -DLOADLEVELER" >> src/make.inc
 fi
-
-#CUDA/GPU support 
-if [ $WITH_CUDA = 1 ]; then
-    #check device: for now only IB is working
-    if [ $GPI2_DEVICE = TCP ]; then
-	echo "GPU (Cuda) support is only available with Infiniband."
-	echo ""
-	exit 1
-    fi
-    #check module
-    if [ `modprobe -l |grep nv_peer_mem` ]; then
-      echo "nv_peer_mem module is found, continue"
-    else
-      echo "cannot find nv_peer_mem module, return"
-      echo ""
-      exit 1
-   fi
-
-    if [ -r $CUDA_PATH/include/cuda.h ]; then
-	CUDA_INC_PATH=$CUDA_PATH/include
-    else
-	    echo "Cannot find cuda.h. Please provide path to CUDA installation."
-	    echo "    ./install.sh <other options> --with-cuda=<Path to CUDA installation>"
-	    echo ""
-	    exit 1
-    fi
-
-    if [ -r $CUDA_PATH/lib64/libcudart.so ] && [ -r $CUDA_PATH/lib64/libcuinj64.so ] ; then
-	CUDA_LIB_PATH=$CUDA_PATH/lib64
-    else
-	if [ -r $CUDA_PATH/lib/libcudart.so ] && [ -r $CUDA_PATH/li32/libcuinj32.so ] ; then
-	    CUDA_LIB_PATH=$CUDA_PATH/lib
-	else
-	    echo "Cannot find libcudart or libcuinj. Please provide path to CUDA installation."
-	    echo "    ./install.sh <other options> --with-cuda=<Path to CUDA installation>"
-	    echo ""
-	    exit 1
-	fi
-    fi
-   
-    echo "Using CUDA: ${CUDA_PATH}" | tee -a install.log
-    echo "###### added by install script" >> src/make.inc
-    echo "SRCS += GPI2_GPU.c" >>src/make.inc
-    echo "HDRS += GPI2_GPU.h" >>src/make.inc
-    echo "CFLAGS += -DGPI2_CUDA" >> src/make.inc
-    echo "DBG_CFLAGS += -DGPI2_CUDA" >> src/make.inc
-    echo "INCLUDES += -I${CUDA_INC_PATH}" >> src/make.inc
-
-    echo "###### added by install script" >> tests/make.defines
-    echo "CFLAGS += -DGPI2_CUDA -I${CUDA_INC_PATH}" >> tests/make.defines
-    echo "LIB_PATH += -L${CUDA_LIB_PATH}" >> tests/make.defines  
-    if [ -r $CUDA_PATH/lib64/libcuinj64.so ] ; then 
-	echo "LIBS += -lcudart -lcuinj64" >> tests/make.defines
-    else
-	echo "LIBS += -lcudart -lcuinj32" >> tests/make.defines
-    fi
-    echo "export" >> tests/make.defines
-fi
-
 
 #build everything
 make clean > /dev/null 2>&1
@@ -425,7 +336,7 @@ fi
 echo
 if [ ! -d "$GPI2_PATH" ]; then
     echo "Creating installation directory: ${GPI2_PATH}" |tee -a install.log
-    mkdir -p $GPI2_PATH 2>> install.log 
+    mkdir -p $GPI2_PATH 2>> install.log
     if [ "$?" != "0" ] ; then
 	echo
         echo "Failed to create directory (${GPI2_PATH}). Check your permissions or choose a different directory."
