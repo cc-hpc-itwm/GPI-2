@@ -1,10 +1,6 @@
 SUBDIRS = fortran init config groups collectives comm passive atomic lists segments notifications error_vec \
 	threads utils extensions cm
 
-ifneq (, $(findstring -DGPI2_CUDA,$(CFLAGS)))
-	SUBDIRS+=gpu
-endif
-
 ifneq (, $(findstring -DGPI2_WITH_MPI,$(CFLAGS)))
 	SUBDIRS+=mpi
 endif
