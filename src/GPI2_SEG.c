@@ -217,8 +217,6 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 
   gaspi_return_t eret = GASPI_ERROR;
 
-  /*  TODO: for now like this, but we need to change this */
-#ifndef GPI2_CUDA
   if( pgaspi_segment_create_desc(gctx, segment_id) != 0)
     {
       eret = GASPI_ERR_MEMALLOC;
@@ -264,12 +262,6 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
   gaspi_notification_t *p = (gaspi_notification_t *) segPtr;
   *p = 1;
 
-#else
-  eret = pgaspi_dev_segment_alloc(segment_id, size, alloc_policy);
-  if( eret != GASPI_SUCCESS )
-    goto endL;
-#endif /* GPI2_CUDA */
-
   gctx->mseg_cnt++;
 
   eret = GASPI_SUCCESS;
@@ -299,9 +291,6 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   lock_gaspi_tout(&(gctx->mseg_lock), GASPI_BLOCK);
 
   /*  TODO: for now like this but we need a better solution */
-#ifdef GPI2_CUDA
-  eret = pgaspi_dev_segment_delete(segment_id);
-#else
   if(pgaspi_dev_unregister_mem(gctx, &(gctx->rrmd[segment_id][gctx->rank])) < 0)
     {
       unlock_gaspi (&(gctx->mseg_lock));
@@ -334,7 +323,6 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
     }
 
   eret = GASPI_SUCCESS;
-#endif
 
   gctx->mseg_cnt--;
 
@@ -424,16 +412,6 @@ gaspi_segment_set(const gaspi_segment_descriptor_t snp)
   gctx->rrmd[snp.seg_id][snp.rank].rkey[1] = snp.rkey[1];
 #endif
 
-#ifdef GPI2_CUDA
-  gctx->rrmd[snp.seg_id][snp.rank].host_rkey = snp.host_rkey;
-  gctx->rrmd[snp.seg_id][snp.rank].host_addr = snp.host_addr;
-
-  if(snp.host_addr != 0 )
-    gctx->rrmd[snp.seg_id][snp.rank].cuda_dev_id = 1;
-  else
-    gctx->rrmd[snp.seg_id][snp.rank].cuda_dev_id = -1;
-#endif
-
   unlock_gaspi(&(gctx->mseg_lock));
   return 0;
 }
@@ -460,11 +438,6 @@ pgaspi_segment_register_group(gaspi_context_t * const gctx,
   cdh.addr = mseg_info->data.addr;
   cdh.notif_addr = mseg_info->notif_spc.addr;
   cdh.size = mseg_info->size;
-
-#ifdef GPI2_CUDA
-  cdh.host_rkey = mseg_info->host_rkey;
-  cdh.host_addr = mseg_info->host_addr;
-#endif
 
 #ifdef GPI2_DEVICE_IB
   cdh.rkey[0] = mseg_info->rkey[0];
@@ -555,7 +528,6 @@ pgaspi_segment_create(const gaspi_segment_id_t segment_id,
 
 /* Extensions */
 /* TODO: */
-/* - GPU case */
 /* - merge common/repetead code from other segment related function (create, alloc, ...) */
 /* - check/deal with alignment issues */
 #pragma weak gaspi_segment_bind = pgaspi_segment_bind

@@ -200,41 +200,4 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
 			    const gaspi_size_t size,
 			    const gaspi_timeout_t timeout_ms);
 
-#ifdef GPI2_CUDA
-gaspi_return_t
-pgaspi_dev_segment_alloc (const gaspi_segment_id_t,
-			  const gaspi_size_t,
-			  const gaspi_alloc_t);
-
-gaspi_return_t
-pgaspi_dev_segment_delete (const gaspi_segment_id_t);
-
-gaspi_return_t
-pgaspi_dev_gpu_write(gaspi_context_t * const gctx,
-		     const gaspi_segment_id_t segment_id_local,
-		     const gaspi_offset_t offset_local,
-		     const gaspi_rank_t rank,
-		     const gaspi_segment_id_t segment_id_remote,
-		     const gaspi_offset_t offset_remote,
-		     const gaspi_size_t size,
-		     const gaspi_queue_id_t queue,
-		     const gaspi_timeout_t timeout_ms);
-
-gaspi_return_t
-pgaspi_dev_gpu_write_notify(gaspi_context_t * const gctx,
-			    const gaspi_segment_id_t segment_id_local,
-			    const gaspi_offset_t offset_local,
-			    const gaspi_rank_t rank,
-			    const gaspi_segment_id_t segment_id_remote,
-			    const gaspi_offset_t offset_remote,
-			    const gaspi_size_t size,
-			    const gaspi_notification_id_t notification_id,
-			    const gaspi_notification_t notification_value,
-			    const gaspi_queue_id_t queue,
-			    const gaspi_timeout_t timeout_ms);
-int
-_gaspi_find_dev_numa_node(void);
-
-#endif //GPI2_CUDA
-
 #endif //_GPI2_DEV_H_

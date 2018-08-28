@@ -614,14 +614,6 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
   if(num == 0)
     return GASPI_SUCCESS;
 
-#ifdef GPI2_CUDA
-  if(gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id >=0 )
-    {
-      segPtr =  (volatile unsigned char*)gctx->rrmd[segment_id_local][gctx->rank].host_addr;
-    }
-  else
-#endif
-
   segPtr = (volatile unsigned char *) gctx->rrmd[segment_id_local][gctx->rank].notif_spc.addr;
 
   volatile unsigned int *p = (volatile unsigned int *) segPtr;
@@ -722,13 +714,8 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
 
   volatile unsigned char *segPtr;
 
-#ifdef GPI2_CUDA
-  if(gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id >= 0)
-    segPtr =  (volatile unsigned char*)gctx->rrmd[segment_id_local][gctx->rank].host_addr;
-  else
-#endif
-    segPtr = (volatile unsigned char *)
-	gctx->rrmd[segment_id_local][gctx->rank].notif_spc.addr;
+  segPtr = (volatile unsigned char *)
+    gctx->rrmd[segment_id_local][gctx->rank].notif_spc.addr;
 
   volatile unsigned int *p = (volatile unsigned int *) segPtr;
 

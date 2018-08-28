@@ -370,12 +370,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       eret = GASPI_SUCCESS;
     }
 
-#ifdef GPI2_CUDA
-  /* init GPU counts */
-  gctx->use_gpus = 0;
-  gctx->gpu_count = 0;
-#endif
-
   return eret;
 
  errL:

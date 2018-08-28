@@ -22,13 +22,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <sys/timeb.h>
 #include <unistd.h>
 
-#ifdef GPI2_CUDA
-#include <cuda.h>
-#include<cuda_runtime.h>
-#include "GASPI_GPU.h"
-#include "GPI2_GPU.h"
-#endif
-
 #ifdef GPI2_EXP_VERBS
 #include <math.h>
 #endif

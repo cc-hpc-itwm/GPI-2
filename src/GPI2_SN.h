@@ -51,11 +51,6 @@ typedef struct
   int ret, seg_id;
   unsigned long addr, size, notif_addr;
 
-#ifdef GPI2_CUDA
-  int host_rkey;
-  unsigned long host_addr;
-#endif
-
 #ifdef GPI2_DEVICE_IB
   int rkey[2];
 #endif

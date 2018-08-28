@@ -82,16 +82,6 @@ typedef struct
   int user_provided;
   gaspi_memory_description_t desc;
 
-#ifdef GPI2_CUDA
-  int cuda_dev_id; //cuda device id holding the memory
-  union
-  {
-    void *host_ptr;
-    unsigned long host_addr;
-  };
-  void *host_mr;
-  unsigned int host_rkey;
-#endif
 } gaspi_rc_mseg_t;
 
 typedef enum {
@@ -157,11 +147,6 @@ typedef struct
   gaspi_lock_t lockC[GASPI_MAX_QP];
 
   pthread_t snt;
-
-#ifdef GPI2_CUDA
-  gaspi_number_t gpu_count;
-  int use_gpus;
-#endif
 
   gaspi_rc_mseg_t nsrc;
   gaspi_rc_mseg_t* rrmd[GASPI_MAX_MSEGS];
