@@ -207,7 +207,7 @@ if [ $GPI2_DEVICE = IB ]; then
 	    OFED_PATH=$(${INFO} | grep -w prefix | cut -d '=' -f 2)
 	    echo "Found OFED installation in $OFED_PATH" | tee -a install.log
 	else
-	    if [ -r /usr/lib64/libibverbs.so ] && [ -r /usr/include/infiniband/verbs.h ]; then
+	    if [ -r /usr/lib64/libibverbs.so ] || [ -r /usr/lib64/libibverbs.a ] && [ -r /usr/include/infiniband/verbs.h ]; then
 		OFED_PATH=/usr/
 	    else
 		echo "Error: could not find libibverbs."
