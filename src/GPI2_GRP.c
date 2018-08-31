@@ -512,7 +512,7 @@ pgaspi_group_num (gaspi_number_t * const group_num)
 #pragma weak gaspi_group_size = pgaspi_group_size
 gaspi_return_t
 pgaspi_group_size (const gaspi_group_t group,
-		  gaspi_number_t * const group_size)
+                   gaspi_number_t * const group_size)
 {
   gaspi_verify_init("gaspi_group_size");
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
@@ -532,7 +532,7 @@ pgaspi_group_size (const gaspi_group_t group,
 #pragma weak gaspi_group_ranks = pgaspi_group_ranks
 gaspi_return_t
 pgaspi_group_ranks (const gaspi_group_t group,
-		   gaspi_rank_t * const group_ranks)
+                    gaspi_rank_t * const group_ranks)
 {
   gaspi_verify_init("gaspi_group_ranks");
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
@@ -615,11 +615,19 @@ _gaspi_sync_wait(gaspi_context_t * const gctx,
     }
 
   return GASPI_SUCCESS;
-}
+ }
 
-#define GPI2_GRP_LOCAL_SYNC_ADDR(myrank, grp_ctx) (grp_ctx->rrcd[myrank].data.buf + (TOGGLE_SIZE * grp_ctx->tnc + grp_ctx->togle))
-#define GPI2_GRP_REMOTE_SYNC_ADDR(grp_ctx, dst_rank) (grp_ctx->rrcd[dst_rank].data.buf + (TOGGLE_SIZE * grp_ctx->rank + grp_ctx->togle))
-#define GPI2_GRP_SYNC_POLL_ADDR(grp_ctx, src_rank) (grp_ctx->rrcd[gctx->rank].data.buf + (TOGGLE_SIZE * src_rank + grp_ctx->togle))
+#define GPI2_GRP_LOCAL_SYNC_ADDR(myrank, grp_ctx) \
+  (grp_ctx->rrcd[myrank].data.buf +               \
+   (TOGGLE_SIZE * grp_ctx->tnc + grp_ctx->togle))
+
+#define GPI2_GRP_REMOTE_SYNC_ADDR(grp_ctx, dst_rank) \
+  (grp_ctx->rrcd[dst_rank].data.buf +                \
+   (TOGGLE_SIZE * grp_ctx->rank + grp_ctx->togle))
+
+#define GPI2_GRP_SYNC_POLL_ADDR(grp_ctx, src_rank) \
+  (grp_ctx->rrcd[gctx->rank].data.buf + \
+   (TOGGLE_SIZE * src_rank + grp_ctx->togle))
 
 #pragma weak gaspi_barrier = pgaspi_barrier
 gaspi_return_t
