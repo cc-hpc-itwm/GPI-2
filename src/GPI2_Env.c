@@ -47,7 +47,7 @@ _gaspi_handle_env_mpi(gaspi_context_t *ctx)
 
   if(MPI_Initialized(&mpi_inited) != MPI_SUCCESS)
     {
-      gaspi_print_error("GPI-2 mixed-mode: MPI needs to be initialized first.");
+      gaspi_debug_print_error("GPI-2 mixed-mode: MPI needs to be initialized first.");
       return -1;
     }
 
@@ -108,7 +108,7 @@ _gaspi_handle_env_mpi(gaspi_context_t *ctx)
 
       if(strcmp(tmpfile,"") == 0)
 	{
-	  gaspi_print_error("Failed to create temp file");
+	  gaspi_debug_print_error("Failed to create temp file");
 	  return -1;
 	}
 
@@ -152,7 +152,7 @@ gaspi_handle_env(gaspi_context_t *ctx)
   const char* nranksPtr = getenv ("GASPI_NRANKS");
   if( nranksPtr == NULL )
     {
-      gaspi_print_error("Num of ranks not defined (GASPI_NRANKS).");
+      gaspi_debug_print_error("Num of ranks not defined (GASPI_NRANKS).");
       return -1;
     }
   ctx->tnc = atoi(nranksPtr);
@@ -164,7 +164,7 @@ gaspi_handle_env(gaspi_context_t *ctx)
 #endif
   if( rankPtr == NULL )
     {
-      gaspi_print_error("Rank not defined (GASPI_RANK).");
+      gaspi_debug_print_error("Rank not defined (GASPI_RANK).");
       return -1;
     }
 
@@ -198,7 +198,7 @@ gaspi_handle_env(gaspi_context_t *ctx)
     }
   else
     {
-      gaspi_print_error("No socket defined (GASPI_SOCKET)");
+      gaspi_debug_print_error("No socket defined (GASPI_SOCKET)");
       return -1;
     }
 
@@ -211,7 +211,7 @@ gaspi_handle_env(gaspi_context_t *ctx)
 	  cpu_set_t sock_mask;
 	  if( gaspi_get_affinity_mask (ctx->localSocket, &sock_mask) < 0 )
 	    {
-	      gaspi_print_error ("Failed to get affinity mask");
+	      gaspi_debug_print_error ("Failed to get affinity mask");
 	    }
 	  else
 	    {
@@ -221,7 +221,7 @@ gaspi_handle_env(gaspi_context_t *ctx)
 		{
 		  if( sched_setaffinity (0, sizeof (cpu_set_t), &sock_mask) != 0 )
 		    {
-		      gaspi_print_error ("Failed to set affinity (NUMA)");
+		      gaspi_debug_print_error ("Failed to set affinity (NUMA)");
 		    }
 		}
 	    }
@@ -232,7 +232,7 @@ gaspi_handle_env(gaspi_context_t *ctx)
   const char* mfilePtr = getenv ("GASPI_MFILE");
   if ( !mfilePtr )
     {
-      gaspi_print_error ("No machine file defined (GASPI_MFILE)");
+      gaspi_debug_print_error ("No machine file defined (GASPI_MFILE)");
       return -1;
     }
 

@@ -38,7 +38,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef DEBUG
 #include "GPI2.h"
-#define gaspi_print_error(msg, ...)					\
+#define gaspi_debug_print_error(msg, ...)                               \
   {									\
     int gaspi_debug_errsv = errno;					\
     if( gaspi_debug_errsv != 0 )					\
@@ -64,7 +64,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
   {									\
     if(ptr == NULL)							\
       {									\
-	gaspi_print_error ("Passed argument is a NULL pointer");	\
+	gaspi_debug_print_error ("Passed argument is a NULL pointer");	\
 	return GASPI_ERR_NULLPTR;					\
       }									\
   }
@@ -157,7 +157,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
   {									\
     if( !glb_gaspi_ctx.init )						\
       {									\
-	gaspi_print_error("Error: Invalid function (%s) before initialization", \
+	gaspi_debug_print_error("Error: Invalid function (%s) before initialization", \
 			  funcname);					\
 	return GASPI_ERR_NOINIT;					\
       }									\
@@ -165,7 +165,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #else
 
-#define gaspi_print_error(msg, ...)
+#define gaspi_debug_print_error(msg, ...)
 #define gaspi_print_warning(msg, ...)
 #define gaspi_verify_null_ptr(ptr)
 #define gaspi_verify_rank(rank)
@@ -186,7 +186,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
   {									\
     if( glb_gaspi_ctx.init )						\
       {									\
-	gaspi_print_error("Error: Invalid function (%s) after initialization", \
+	gaspi_debug_print_error("Error: Invalid function (%s) after initialization", \
 			  funcname);					\
 	return GASPI_ERR_INITED;					\
       }									\

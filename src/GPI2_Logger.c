@@ -170,7 +170,7 @@ gaspi_print_affinity_mask (void)
   //simple os view
   if( sched_getaffinity (0, sizeof (cpu_set_t), &node_mask) != 0)
     {
-      gaspi_print_error("Failed to get affinity mask");
+      gaspi_debug_print_error("Failed to get affinity mask");
       return;
     }
 

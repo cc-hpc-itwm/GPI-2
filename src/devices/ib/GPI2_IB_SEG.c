@@ -45,7 +45,7 @@ pgaspi_dev_register_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t* seg
 
   if (seg->mr[0] == NULL)
     {
-      gaspi_print_error ("Memory registration failed (libibverbs)");
+      gaspi_debug_print_error ("Memory registration failed (libibverbs)");
       return -1;
     }
 
@@ -61,7 +61,7 @@ pgaspi_dev_register_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t* seg
 
       if (seg->mr[1] == NULL)
 	{
-	  gaspi_print_error ("Memory registration failed (libibverbs)");
+	  gaspi_debug_print_error ("Memory registration failed (libibverbs)");
 	  return -1;
 	}
 
@@ -79,7 +79,7 @@ pgaspi_dev_unregister_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t* s
 
       if (ibv_dereg_mr ((struct ibv_mr *)seg->mr[0]))
 	{
-	  gaspi_print_error ("Memory de-registration failed (libibverbs)");
+	  gaspi_debug_print_error ("Memory de-registration failed (libibverbs)");
 	  return -1;
 	}
     }
@@ -88,7 +88,7 @@ pgaspi_dev_unregister_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t* s
     {
       if (ibv_dereg_mr ((struct ibv_mr *)seg->mr[1]))
 	{
-	  gaspi_print_error ("Memory de-registration failed (libibverbs)");
+	  gaspi_debug_print_error ("Memory de-registration failed (libibverbs)");
 	  return -1;
 	}
     }
@@ -122,35 +122,35 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
     {
       if( size > GASPI_GPU_MAX_SEG )
 	{
-	  gaspi_print_error("Segment size too large for GPU Segment (max %u).", GASPI_GPU_MAX_SEG);
+	  gaspi_debug_print_error("Segment size too large for GPU Segment (max %u).", GASPI_GPU_MAX_SEG);
 	  goto errL;
 	}
 
       cudaError_t cuda_error_id = cudaGetDevice(&gctx->rrmd[segment_id][gctx->rank].cuda_dev_id);
       if( cuda_error_id != cudaSuccess )
 	{
-	  gaspi_print_error("Failed cudaGetDevice." );
+	  gaspi_debug_print_error("Failed cudaGetDevice." );
 	  return GASPI_ERROR;
 	}
 
       gaspi_gpu_t* agpu =  _gaspi_find_gpu(gctx->rrmd[segment_id][gctx->rank].cuda_dev_id);
       if( !agpu )
 	{
-	  gaspi_print_error("No GPU found. Maybe forgot to call gaspi_init_GPUs?");
+	  gaspi_debug_print_error("No GPU found. Maybe forgot to call gaspi_init_GPUs?");
 	  goto errL;
 	}
 
       /* Allocate device memory for data */
       if( cudaMalloc((void**)&gctx->rrmd[segment_id][gctx->rank].data.ptr, size ) != 0)
 	{
-	  gaspi_print_error("GPU memory allocation (cudaMalloc) failed.");
+	  gaspi_debug_print_error("GPU memory allocation (cudaMalloc) failed.");
 	  goto errL;
 	}
 
       /* Allocate host memory for data and notifications */
       if( cudaMallocHost((void**)&gctx->rrmd[segment_id][gctx->rank].host_ptr, size + NOTIFY_OFFSET ) != 0)
 	{
-	  gaspi_print_error("Memory allocattion (cudaMallocHost)  failed.");
+	  gaspi_debug_print_error("Memory allocattion (cudaMallocHost)  failed.");
 	  goto errL;
 	}
 
@@ -166,7 +166,7 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 
       if( gctx->rrmd[segment_id][gctx->rank].host_mr == NULL )
 	{
-	  gaspi_print_error("Memory registration failed (libibverbs).");
+	  gaspi_debug_print_error("Memory registration failed (libibverbs).");
 	  goto errL;
 	}
 
@@ -185,7 +185,7 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 
       if( gctx->rrmd[segment_id][gctx->rank].mr[0] == NULL )
 	{
-	  gaspi_print_error ("Memory registration failed (libibverbs)");
+	  gaspi_debug_print_error ("Memory registration failed (libibverbs)");
 	  goto errL;
 	}
 
@@ -203,7 +203,7 @@ pgaspi_dev_segment_alloc (const gaspi_segment_id_t segment_id,
 	{
 	  if( cudaMallocHost((void**)&gctx->rrmd[segment_id][gctx->rank].data.ptr, size + NOTIFY_OFFSET))
 	    {
-	      gaspi_print_error("Memory allocation (cudaMallocHost) failed.");
+	      gaspi_debug_print_error("Memory allocation (cudaMallocHost) failed.");
 	      goto errL;
 	    }
 	}
@@ -246,7 +246,7 @@ pgaspi_dev_segment_delete (const gaspi_segment_id_t segment_id)
     {
       if( ibv_dereg_mr (gctx->rrmd[segment_id][gctx->rank].mr[0]) )
 	{
-	  gaspi_print_error ("Memory de-registration failed (libibverbs)");
+	  gaspi_debug_print_error ("Memory de-registration failed (libibverbs)");
 	  goto errL;
 	}
     }
@@ -255,7 +255,7 @@ pgaspi_dev_segment_delete (const gaspi_segment_id_t segment_id)
     {
       if( ibv_dereg_mr (gctx->rrmd[segment_id][gctx->rank].host_mr) )
 	{
-	  gaspi_print_error ("Memory de-registration failed (libibverbs)");
+	  gaspi_debug_print_error ("Memory de-registration failed (libibverbs)");
 	  goto errL;
 	}
 

@@ -109,7 +109,7 @@ pgaspi_alloc_group_comm_mem(gaspi_context_t * const gctx,
 
   if( pgaspi_alloc_page_aligned(&(group_ctx->rrcd[gctx->rank].data.ptr), size) != 0 )
     {
-      gaspi_print_error ("Memory allocation failed.");
+      gaspi_debug_print_error ("Memory allocation failed.");
       return GASPI_ERR_MEMALLOC;
     }
 
@@ -430,7 +430,7 @@ pgaspi_group_commit (const gaspi_group_t group,
 
   if( group_to_commit->tnc < 2 && gctx->tnc != 1 )
     {
-      gaspi_print_error("Group must have at least 2 ranks to be committed");
+      gaspi_debug_print_error("Group must have at least 2 ranks to be committed");
       eret = GASPI_ERR_INV_GROUP;
       goto endL;
     }
@@ -483,7 +483,7 @@ pgaspi_group_commit (const gaspi_group_t group,
 
       if( _pgaspi_group_commit_to(group, group_to_commit->rank_grp[rg], timeout_ms) != 0 )
 	{
-	  gaspi_print_error("Failed to commit group %u with rank %d", group,group_to_commit->rank_grp[rg]);
+	  gaspi_debug_print_error("Failed to commit group %u with rank %d", group,group_to_commit->rank_grp[rg]);
 	  eret = GASPI_ERROR;
 	  goto endL;
 	}
@@ -685,7 +685,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	{
 	  if( ( eret = pgaspi_connect((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS )
 	    {
-	      gaspi_print_error("Failed to connect to rank %u", dst);
+	      gaspi_debug_print_error("Failed to connect to rank %u", dst);
 	      unlock_gaspi (&grp_ctx->gl);
 	      return eret;
 	    }
@@ -695,7 +695,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 	{
 	  if( ( eret = _pgaspi_group_commit_to(g, dst, timeout_ms)) != GASPI_SUCCESS )
 	    {
-	      gaspi_print_error("Failed to commit to rank %u", dst);
+	      gaspi_debug_print_error("Failed to commit to rank %u", dst);
 	      unlock_gaspi (&grp_ctx->gl);
 	      return eret;
 	    }
@@ -765,7 +765,7 @@ _gaspi_allreduce_write_and_sync(gaspi_context_t * const gctx,
     {
       if( (eret = pgaspi_connect((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS )
 	{
-	  gaspi_print_error("Failed to connect to rank %u", dst);
+	  gaspi_debug_print_error("Failed to connect to rank %u", dst);
 	  return eret;
 	}
     }
@@ -774,7 +774,7 @@ _gaspi_allreduce_write_and_sync(gaspi_context_t * const gctx,
     {
       if( (eret = _pgaspi_group_commit_to(g, dst, timeout_ms)) != GASPI_SUCCESS )
 	{
-	  gaspi_print_error("Failed to commit to rank %u", dst);
+	  gaspi_debug_print_error("Failed to commit to rank %u", dst);
 	  unlock_gaspi (&grp_ctx->gl);
 	  return eret;
 	}

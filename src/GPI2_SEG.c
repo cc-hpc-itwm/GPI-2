@@ -235,7 +235,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 
   if( pgaspi_alloc_page_aligned(&(gctx->rrmd[segment_id][gctx->rank].data.ptr), size + NOTIFY_OFFSET ) != 0 )
     {
-      gaspi_print_error ("Memory allocation (posix_memalign) failed");
+      gaspi_debug_print_error ("Memory allocation (posix_memalign) failed");
       eret = GASPI_ERR_MEMALLOC;
       goto endL;
     }
@@ -599,7 +599,7 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 
   if( page_size < 0 )
     {
-      gaspi_print_error ("Failed to get system's page size.");
+      gaspi_debug_print_error ("Failed to get system's page size.");
       goto endL;
     }
 
@@ -607,7 +607,7 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 		      page_size,
 		      NOTIFY_OFFSET) != 0 )
     {
-      gaspi_print_error ("Memory allocation failed.");
+      gaspi_debug_print_error ("Memory allocation failed.");
       eret = GASPI_ERR_MEMALLOC;
       goto endL;
     }

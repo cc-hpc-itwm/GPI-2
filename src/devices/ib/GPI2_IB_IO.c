@@ -218,7 +218,7 @@ pgaspi_dev_wait (gaspi_context_t * const gctx,
 	  //TODO: for now here because we have to identify the rank
 	  // but should be out of device?
 	  gctx->qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
-	  gaspi_print_error("Failed request to %lu. Queue %d might be broken %s",
+	  gaspi_debug_print_error("Failed request to %lu. Queue %d might be broken %s",
 			    wc.wr_id, queue, ibv_wc_status_str(wc.status) );
 
 	  return GASPI_ERROR;
@@ -792,7 +792,7 @@ pgaspi_dev_gpu_write(gaspi_context_t * const gctx,
   gaspi_gpu_t* agpu = _gaspi_find_gpu(gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id);
   if( !agpu )
     {
-      gaspi_print_error("No GPU found or not initialized.");
+      gaspi_debug_print_error("No GPU found or not initialized.");
       return GASPI_ERROR;
     }
 
@@ -952,7 +952,7 @@ pgaspi_dev_gpu_write_notify(gaspi_context_t * const gctx,
   gaspi_gpu_t* agpu = _gaspi_find_gpu(gctx->rrmd[segment_id_local][gctx->rank].cuda_dev_id);
   if( !agpu )
     {
-      gaspi_print_error("No GPU found or not initialized.");
+      gaspi_debug_print_error("No GPU found or not initialized.");
       return GASPI_ERROR;
     }
 
@@ -1132,7 +1132,7 @@ _gaspi_find_dev_numa_node(void)
   sysfile = fopen(path, "r");
   if( sysfile == NULL )
     {
-      gaspi_print_error("Failed to open %s.", path);
+      gaspi_debug_print_error("Failed to open %s.", path);
       return -1;
     }
 

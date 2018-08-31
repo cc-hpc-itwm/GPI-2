@@ -380,7 +380,7 @@ pgaspi_statistic_print_counters (void)
 
       if( gaspi_barrier(GASPI_GROUP_ALL, GASPI_BLOCK) != GASPI_SUCCESS )
 	{
-	  gaspi_print_error("Failed internal statistics barrier.");
+	  gaspi_debug_print_error("Failed internal statistics barrier.");
 	  return;
 	}
     }

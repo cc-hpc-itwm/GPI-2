@@ -71,20 +71,20 @@ pgaspi_set_socket_affinity (const gaspi_uchar sock)
 
   if( sock >= GASPI_MAX_NUMAS )
     {
-      gaspi_print_error("GPI-2 only allows up to a maximum of %d NUMA sockets", GASPI_MAX_NUMAS);
+      gaspi_debug_print_error("GPI-2 only allows up to a maximum of %d NUMA sockets", GASPI_MAX_NUMAS);
       return GASPI_ERROR;
     }
 
   if( gaspi_get_affinity_mask (sock, &sock_mask) < 0 )
     {
-      gaspi_print_error ("Failed to get affinity mask");
+      gaspi_debug_print_error ("Failed to get affinity mask");
       return GASPI_ERROR;
     }
   else
     {
       if( sched_setaffinity (0, sizeof (cpu_set_t), &sock_mask) != 0 )
 	{
-	  gaspi_print_error ("Failed to set affinity");
+	  gaspi_debug_print_error ("Failed to set affinity");
 	  return GASPI_ERROR;
 	}
     }
@@ -109,7 +109,7 @@ pgaspi_numa_socket(gaspi_uchar * const sock)
 	}
     }
 
-  gaspi_print_error("NUMA was not enabled (-N option of gaspi_run)");
+  gaspi_debug_print_error("NUMA was not enabled (-N option of gaspi_run)");
 
   return GASPI_ERR_ENV;
 }
@@ -148,7 +148,7 @@ pgaspi_init_core(gaspi_context_t * const gctx)
 
   if( pgaspi_alloc_page_aligned(&gctx->nsrc.data.ptr, size) != 0 )
     {
-      gaspi_print_error ("Memory allocation failed.");
+      gaspi_debug_print_error ("Memory allocation failed.");
       return GASPI_ERR_MEMALLOC;
     }
 
@@ -161,7 +161,7 @@ pgaspi_init_core(gaspi_context_t * const gctx)
   /* Register internal memory */
   if( pgaspi_dev_register_mem(gctx, &(gctx->nsrc)) != 0 )
     {
-      gaspi_print_error ("Failed to register internal memory");
+      gaspi_debug_print_error ("Failed to register internal memory");
       return -1;
     }
 
@@ -184,7 +184,7 @@ pgaspi_parse_machinefile(gaspi_context_t * const gctx)
 {
   if( access (gctx->mfile, R_OK) == -1 )
     {
-      gaspi_print_error ("Incorrect permissions of machinefile");
+      gaspi_debug_print_error ("Incorrect permissions of machinefile");
       return -1;
     }
 
@@ -196,7 +196,7 @@ pgaspi_parse_machinefile(gaspi_context_t * const gctx)
   FILE *fp = fopen (gctx->mfile, "r");
   if( fp == NULL )
     {
-      gaspi_print_error("Failed to open machinefile");
+      gaspi_debug_print_error("Failed to open machinefile");
       return -1;
     }
 
@@ -205,7 +205,7 @@ pgaspi_parse_machinefile(gaspi_context_t * const gctx)
   gctx->hn_poff = (char *) calloc (gctx->tnc, 65);
   if( gctx->hn_poff == NULL )
     {
-      gaspi_print_error("Failed to allocate memory");
+      gaspi_debug_print_error("Failed to allocate memory");
       fclose(fp);
       return -1;
     }
@@ -269,7 +269,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       gctx->mhz = gaspi_get_cpufreq ();
       if( gctx->mhz == 0.0f )
 	{
-	  gaspi_print_error ("Failed to get CPU frequency");
+	  gaspi_debug_print_error ("Failed to get CPU frequency");
 	  goto errL;
 	}
 
@@ -277,7 +277,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
       if( gaspi_handle_env(gctx) )
 	{
-	  gaspi_print_error("Failed to handle environment");
+	  gaspi_debug_print_error("Failed to handle environment");
 	  eret = GASPI_ERR_ENV;
 	  goto errL;
 	}
@@ -285,7 +285,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       //start sn_backend
       if( pthread_create(&gctx->snt, NULL, gaspi_sn_backend, NULL) != 0 )
 	{
-	  gaspi_print_error("Failed to create SN thread");
+	  gaspi_debug_print_error("Failed to create SN thread");
 	  goto errL;
 	}
 
@@ -308,7 +308,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   eret = gaspi_sn_broadcast_topology(gctx, timeout_ms);
   if( eret != GASPI_SUCCESS )
     {
-      gaspi_print_error("Failed topology broadcast");
+      gaspi_debug_print_error("Failed topology broadcast");
       goto errL;
     }
 
@@ -345,7 +345,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       eret = pgaspi_group_all_local_create(gctx, timeout_ms);
       if( eret != GASPI_SUCCESS )
 	{
-	  gaspi_print_error("Failed to create GASPI_GROUP_ALL.");
+	  gaspi_debug_print_error("Failed to create GASPI_GROUP_ALL.");
 	}
 
       /* configuration tells us to pre-connect */
@@ -428,7 +428,7 @@ pgaspi_cleanup_core(gaspi_context_t * const gctx)
 	{
 	  if( pgaspi_dev_comm_queue_delete(gctx, q) != 0)
 	    {
-	      gaspi_print_error ("Failed to destroy queue.");
+	      gaspi_debug_print_error ("Failed to destroy queue.");
 	      return -1;
 	    }
 	}
@@ -437,7 +437,7 @@ pgaspi_cleanup_core(gaspi_context_t * const gctx)
   /* Unregister and release internal memory */
   if( pgaspi_dev_unregister_mem(gctx, &(gctx->nsrc)) != 0 )
     {
-      gaspi_print_error ("Failed to de-register internal memory");
+      gaspi_debug_print_error ("Failed to de-register internal memory");
       return -1;
     }
 
@@ -454,7 +454,7 @@ pgaspi_cleanup_core(gaspi_context_t * const gctx)
 	    {
 	      if( pgaspi_segment_delete(i) != GASPI_SUCCESS )
 		{
-		  gaspi_print_error("Failed to delete segment %d", i);
+		  gaspi_debug_print_error("Failed to delete segment %d", i);
 		}
 
 	    }
@@ -472,14 +472,14 @@ pgaspi_cleanup_core(gaspi_context_t * const gctx)
 	{
 	  if( pgaspi_group_delete(i) != GASPI_SUCCESS )
 	    {
-	      gaspi_print_error("Failed to delete group %u", i);
+	      gaspi_debug_print_error("Failed to delete group %u", i);
 	    }
 	}
     }
 
   if( pgaspi_group_all_delete(gctx) != GASPI_SUCCESS )
     {
-      gaspi_print_error("Failed to delete group GASPI_GROUP_ALL.");
+      gaspi_debug_print_error("Failed to delete group GASPI_GROUP_ALL.");
     }
 
   lock_gaspi_tout (&(gctx->ctx_lock), GASPI_BLOCK);
@@ -542,7 +542,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
     {
       if( remove(gctx->mfile) < 0 )
 	{
-	  gaspi_print_error("Failed to remove tmp file (%s)", gctx->mfile);
+	  gaspi_debug_print_error("Failed to remove tmp file (%s)", gctx->mfile);
 	}
     }
 #endif
@@ -601,7 +601,7 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
 
   if( rank == gctx->rank )
     {
-      gaspi_print_error("Invalid rank to kill");
+      gaspi_debug_print_error("Invalid rank to kill");
       return GASPI_ERR_INV_RANK;
     }
 
@@ -749,7 +749,7 @@ pgaspi_cpu_frequency (gaspi_float * const cpu_mhz)
 
   if( *cpu_mhz == 0.0f )
     {
-      gaspi_print_error ("Failed to get CPU frequency");
+      gaspi_debug_print_error ("Failed to get CPU frequency");
       return GASPI_ERROR;
     }
 

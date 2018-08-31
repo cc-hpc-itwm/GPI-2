@@ -150,7 +150,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
     }
   else
     {
-      gaspi_print_error("Invalid value for parameter mtu (supported: 1024, 2048, 4096)");
+      gaspi_debug_print_error("Invalid value for parameter mtu (supported: 1024, 2048, 4096)");
       return GASPI_ERR_CONFIG;
     }
 
@@ -159,7 +159,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   glb_gaspi_cfg.dev_config.params.ib.netdev_id = nconf.dev_config.params.ib.netdev_id;
   if( nconf.dev_config.params.ib.netdev_id > 1 )
     {
-      gaspi_print_error("Invalid value for parameter netdev_id");
+      gaspi_debug_print_error("Invalid value for parameter netdev_id");
       return GASPI_ERR_CONFIG;
     }
 
@@ -169,7 +169,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
     if( GASPI_ETHERNET != nconf.network )
 #endif
       {
-	gaspi_print_error("Invalid value for parameter network (%s)", gaspi_network_str[nconf.network]);
+	gaspi_debug_print_error("Invalid value for parameter network (%s)", gaspi_network_str[nconf.network]);
 	return GASPI_ERR_CONFIG;
       }
   glb_gaspi_cfg.network = nconf.network;
@@ -179,7 +179,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   if( nconf.queue_num > GASPI_MAX_QP || nconf.queue_num < 1 )
     {
-      gaspi_print_error("Invalid value for parameter queue_num (min=1 and max=GASPI_MAX_QP");
+      gaspi_debug_print_error("Invalid value for parameter queue_num (min=1 and max=GASPI_MAX_QP");
       return GASPI_ERR_CONFIG;
     }
 
@@ -187,7 +187,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   if( nconf.queue_size_max > GASPI_MAX_QSIZE || nconf.queue_size_max < 1 )
     {
-      gaspi_print_error("Invalid value for parameter queue_size_max (min=1 and max=GASPI_MAX_QSIZE");
+      gaspi_debug_print_error("Invalid value for parameter queue_size_max (min=1 and max=GASPI_MAX_QSIZE");
       return GASPI_ERR_CONFIG;
     }
 
@@ -195,7 +195,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   if( nconf.sn_port < 1024 || nconf.sn_port > 65536 )
     {
-      gaspi_print_error("Invalid value for parameter sn_port ( from 1024 to 65536)");
+      gaspi_debug_print_error("Invalid value for parameter sn_port ( from 1024 to 65536)");
       return GASPI_ERR_CONFIG;
     }
 
@@ -204,7 +204,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   if( nconf.sn_timeout < 0 )
     {
-      gaspi_print_error("Invalid value for parameter sn_timeout ( must be > 0)");
+      gaspi_debug_print_error("Invalid value for parameter sn_timeout ( must be > 0)");
       return GASPI_ERR_CONFIG;
     }
 
