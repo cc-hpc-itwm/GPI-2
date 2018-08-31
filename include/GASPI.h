@@ -51,7 +51,6 @@ extern "C"
   typedef unsigned char gaspi_group_t;
   typedef unsigned int gaspi_number_t;
   typedef void *gaspi_pointer_t;
-  typedef unsigned char *gaspi_state_vector_t;
   typedef void* gaspi_reduce_state_t;
   typedef unsigned char gaspi_queue_id_t;
   typedef unsigned long gaspi_size_t;
@@ -190,6 +189,8 @@ extern "C"
       GASPI_STATE_HEALTHY = 0,
       GASPI_STATE_CORRUPT = 1
     } gaspi_state_t;
+
+  typedef gaspi_state_t* gaspi_state_vector_t;
 
   /**
    * Memory allocation policy.

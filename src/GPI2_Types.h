@@ -144,7 +144,7 @@ typedef struct
   volatile int master_topo_data; //Do we have topology info from master?
 
   int mseg_cnt;
-  unsigned char *qp_state_vec[GASPI_MAX_QP + 3];
+  gaspi_state_t* qp_state_vec[GASPI_MAX_QP + 3];
   char mtyp[64];
 
   //locks
