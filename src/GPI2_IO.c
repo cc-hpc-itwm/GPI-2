@@ -162,7 +162,7 @@ pgaspi_queue_create(gaspi_queue_id_t * const queue_id, const gaspi_timeout_t tim
 	    {
 	      if( GASPI_ERROR == eret )
 		{
-		  gctx->qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
+		  gctx->state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
 		}
 
 	      unlock_gaspi(&(gctx->ctx_lock));
@@ -282,7 +282,7 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
 
   if( eret != GASPI_SUCCESS )
     {
-      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 
@@ -336,7 +336,7 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
 
   if( eret != GASPI_SUCCESS )
     {
-      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 
@@ -440,7 +440,7 @@ pgaspi_write_list (const gaspi_number_t num,
 
   if( eret != GASPI_SUCCESS )
     {
-      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 
@@ -502,7 +502,7 @@ pgaspi_read_list (const gaspi_number_t num,
 
   if( eret != GASPI_SUCCESS )
     {
-      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 
@@ -557,7 +557,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
 
   if( eret != GASPI_SUCCESS )
     {
-      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 
@@ -794,7 +794,7 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 
   if( eret != GASPI_SUCCESS )
     {
-      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 
@@ -872,7 +872,7 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 
   if( eret != GASPI_SUCCESS )
     {
-      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 
@@ -925,7 +925,7 @@ pgaspi_read_notify (const gaspi_segment_id_t segment_id_local,
 
   if( eret != GASPI_SUCCESS )
     {
-      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 
@@ -997,7 +997,7 @@ pgaspi_read_list_notify (const gaspi_number_t num,
 
   if( eret != GASPI_SUCCESS )
     {
-      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 

@@ -79,7 +79,7 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 
   if( eret == GASPI_ERROR )
     {
-      gctx->qp_state_vec[GASPI_PASSIVE_QP][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[GASPI_PASSIVE_QP][rank] = GASPI_STATE_CORRUPT;
     }
 
  endL:

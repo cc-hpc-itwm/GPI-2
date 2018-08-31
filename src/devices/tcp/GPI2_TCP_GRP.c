@@ -78,7 +78,7 @@ pgaspi_dev_poll_groups(gaspi_context_t * const gctx)
 	    }
 
 	  /* TODO: for now here because of id of erroneous rank, but has to go out of device */
-	  gctx->qp_state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
+	  gctx->state_vec[GASPI_COLL_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
 
 	  gaspi_debug_print_error("Failed request to %lu. Collectives queue might be broken",
 			    wc.wr_id);

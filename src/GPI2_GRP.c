@@ -706,7 +706,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 				      (void *) GPI2_GRP_REMOTE_SYNC_ADDR(grp_ctx, dst),
 				      g) != 0)
 	{
-	  gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
+	  gctx->state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	  unlock_gaspi (&grp_ctx->gl);
 	  return GASPI_ERR_DEVICE;
 	}
@@ -787,7 +787,7 @@ _gaspi_allreduce_write_and_sync(gaspi_context_t * const gctx,
 
   if( pgaspi_dev_post_group_write(gctx, send_ptr, buf_size, dst, remote_addr, g) != 0 )
     {
-      gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
       return GASPI_ERR_DEVICE;
     }
 
@@ -796,7 +796,7 @@ _gaspi_allreduce_write_and_sync(gaspi_context_t * const gctx,
 
   if( pgaspi_dev_post_group_write(gctx, barrier_ptr, 1, dst, (void*) GPI2_GRP_REMOTE_SYNC_ADDR(grp_ctx, dst), g) != 0 )
     {
-      gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
       return GASPI_ERR_DEVICE;
     }
 
@@ -904,7 +904,7 @@ _gaspi_allreduce (gaspi_context_t * const gctx,
 
 	  if( _gaspi_allreduce_write_and_sync(gctx, g, send_ptr, dsize, dst, bid, timeout_ms) != GASPI_SUCCESS )
 	    {
-	      gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
+	      gctx->state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	      return GASPI_ERR_DEVICE;
 	    }
 
@@ -962,7 +962,7 @@ _gaspi_allreduce (gaspi_context_t * const gctx,
 
 	  if( _gaspi_allreduce_write_and_sync(gctx, g, send_ptr, dsize, dst, bid, timeout_ms) != GASPI_SUCCESS )
 	    {
-	      gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
+	      gctx->state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	      return GASPI_ERR_DEVICE;
 	    }
 	J2:
@@ -996,7 +996,7 @@ _gaspi_allreduce (gaspi_context_t * const gctx,
 
 	  if( _gaspi_allreduce_write_and_sync(gctx, g, send_ptr, dsize, dst, bid, timeout_ms) != GASPI_SUCCESS )
 	    {
-	      gctx->qp_state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
+	      gctx->state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
 	      return GASPI_ERR_DEVICE;
 	    }
 	}

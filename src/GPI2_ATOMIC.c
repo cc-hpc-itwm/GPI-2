@@ -82,7 +82,7 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
 
   if( eret != GASPI_SUCCESS )
     {
-      gctx->qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 
@@ -132,7 +132,7 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
 
   if( eret != GASPI_SUCCESS )
     {
-      gctx->qp_state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[GASPI_COLL_QP][rank] = GASPI_STATE_CORRUPT;
       goto endL;
     }
 #ifdef GPI2_EXP_VERBS

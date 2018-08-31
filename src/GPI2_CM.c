@@ -128,7 +128,7 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
     {
       if( GASPI_ERROR == eret)
 	{
-	  gctx->qp_state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
+	  gctx->state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
 	}
 
       unlock_gaspi(&(gctx->ctx_lock));

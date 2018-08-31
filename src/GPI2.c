@@ -167,8 +167,8 @@ pgaspi_init_core(gaspi_context_t * const gctx)
 
   for(i = 0; i < GASPI_MAX_QP + 3; i++)
     {
-      gctx->qp_state_vec[i] = (unsigned char *) calloc (gctx->tnc, sizeof(unsigned char));
-      if( gctx->qp_state_vec[i] == NULL )
+      gctx->state_vec[i] = (gaspi_state_t*) calloc (gctx->tnc, sizeof(gaspi_state_t));
+      if( gctx->state_vec[i] == NULL )
 	{
 	  return GASPI_ERR_MEMALLOC;
 	}
@@ -498,8 +498,8 @@ pgaspi_cleanup_core(gaspi_context_t * const gctx)
 
   for(i = 0; i < GASPI_MAX_QP + 3; i++)
     {
-      free (gctx->qp_state_vec[i]);
-      gctx->qp_state_vec[i] = NULL;
+      free (gctx->state_vec[i]);
+      gctx->state_vec[i] = NULL;
     }
 
   return GASPI_SUCCESS;
@@ -582,7 +582,7 @@ pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   eret = gaspi_sn_command(GASPI_SN_PROC_PING, rank, timeout_ms, NULL);
   if( GASPI_ERROR == eret )
     {
-      gctx->qp_state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
     }
 
   unlock_gaspi (&(gctx->ctx_lock));
@@ -613,7 +613,7 @@ pgaspi_proc_kill (const gaspi_rank_t rank,const gaspi_timeout_t timeout_ms)
   eret = gaspi_sn_command(GASPI_SN_PROC_KILL, rank, timeout_ms, NULL);
   if( GASPI_ERROR == eret )
     {
-      gctx->qp_state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;
     }
 
   unlock_gaspi(&(gctx->ctx_lock));
@@ -833,14 +833,14 @@ pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
 
   gaspi_context_t const * const gctx = &glb_gaspi_ctx;
 
-  memset (state_vector, 0, (size_t) gctx->tnc);
+  memset (state_vector, 0,  gctx->tnc * sizeof(gaspi_state_t));
 
   int i, j;
   for (i = 0; i < gctx->tnc; i++)
     {
       for (j = 0; j < (GASPI_MAX_QP + 3); j++)
 	{
-	  state_vector[i] |= gctx->qp_state_vec[j][i];
+	  state_vector[i] |= gctx->state_vec[j][i];
 	}
     }
 

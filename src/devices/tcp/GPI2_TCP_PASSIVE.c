@@ -167,7 +167,7 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
 
   if( (ne < 0) || (wc.status != TCP_WC_SUCCESS) )
     {
-      gctx->qp_state_vec[GASPI_PASSIVE_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[GASPI_PASSIVE_QP][wc.wr_id] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 

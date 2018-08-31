@@ -175,7 +175,7 @@ pgaspi_dev_wait (gaspi_context_t * const gctx,
 
       if( (ne < 0) || (wc.status != TCP_WC_SUCCESS) )
 	{
-	  gctx->qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
+	  gctx->state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
 	  return GASPI_ERROR;
 	}
     }

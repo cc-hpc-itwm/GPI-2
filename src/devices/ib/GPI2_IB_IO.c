@@ -217,7 +217,7 @@ pgaspi_dev_wait (gaspi_context_t * const gctx,
 	{
 	  //TODO: for now here because we have to identify the rank
 	  // but should be out of device?
-	  gctx->qp_state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
+	  gctx->state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
 	  gaspi_debug_print_error("Failed request to %lu. Queue %d might be broken %s",
 			    wc.wr_id, queue, ibv_wc_status_str(wc.status) );
 
@@ -755,7 +755,7 @@ _gaspi_event_send(gaspi_context_t * const gctx, gaspi_cuda_event_t* event, int q
   if( ibv_post_send(ib_dev_ctx->qpC[queue][event->rank], &swr, &bad_wr) )
     {
       //TODO:not here
-      gctx->qp_state_vec[queue][event->rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[queue][event->rank] = GASPI_STATE_CORRUPT;
       return -1;
     }
 
@@ -844,7 +844,7 @@ pgaspi_dev_gpu_write(gaspi_context_t * const gctx,
 	  if( err != cudaSuccess )
 	    {
 	      //TODO: not here
-	      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+	      gctx->state_vec[queue][rank] = GASPI_STATE_CORRUPT;
 	      return GASPI_ERROR;
 	    }
 
@@ -1108,7 +1108,7 @@ pgaspi_dev_gpu_write_notify(gaspi_context_t * const gctx,
 
   if( ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swrN, &bad_wr) )
     {
-      gctx->qp_state_vec[queue][rank] = GASPI_STATE_CORRUPT;
+      gctx->state_vec[queue][rank] = GASPI_STATE_CORRUPT;
       return GASPI_ERROR;
     }
 

@@ -44,7 +44,7 @@ pgaspi_dev_poll_groups(gaspi_context_t * const gctx)
 	    {
 	      //TODO: for now here because we need to identify the erroneous rank
 	      // but has to go out of device
-	      gctx->qp_state_vec[GASPI_COLL_QP][ib_dev_ctx->wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
+	      gctx->state_vec[GASPI_COLL_QP][ib_dev_ctx->wc_grp_send[i].wr_id] = GASPI_STATE_CORRUPT;
 	    }
 	}
 
