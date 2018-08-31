@@ -53,6 +53,7 @@ extern "C"
   typedef void *gaspi_pointer_t;
   typedef void *gaspi_state_t;
   typedef unsigned char *gaspi_state_vector_t;
+  typedef void* gaspi_reduce_state_t;
   typedef unsigned char gaspi_queue_id_t;
   typedef unsigned long gaspi_size_t;
   typedef unsigned long gaspi_alloc_t;
@@ -262,7 +263,7 @@ extern "C"
   typedef gaspi_return_t (*gaspi_reduce_operation_t) (gaspi_pointer_t const operand_one,
 						      gaspi_pointer_t const operand_two,
 						      gaspi_pointer_t const result,
-						      gaspi_state_t const state,
+						      gaspi_reduce_state_t const state,
 						      const gaspi_number_t num,
 						      const gaspi_size_t element_size,
 						      const gaspi_timeout_t timeout_ms);
@@ -744,7 +745,7 @@ extern "C"
 				       const gaspi_number_t num,
 				       const gaspi_size_t element_size,
 				       gaspi_reduce_operation_t const reduce_operation,
-				       gaspi_state_t const reduce_state,
+				       gaspi_reduce_state_t const reduce_state,
 				       const gaspi_group_t group,
 				       const gaspi_timeout_t timeout_ms);
 

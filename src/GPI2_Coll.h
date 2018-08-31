@@ -49,7 +49,7 @@ struct redux_args
     struct
     {
       gaspi_reduce_operation_t user_fct;
-      gaspi_state_t rstate;
+      gaspi_reduce_state_t rstate;
     } ;
   } f_args;
 };

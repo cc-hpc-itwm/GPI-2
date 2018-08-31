@@ -180,7 +180,7 @@ extern "C"
 					const gaspi_size_t element_size,
 					gaspi_reduce_operation_t const
 					reduce_operation,
-					gaspi_state_t const reduce_state,
+					gaspi_reduce_state_t const reduce_state,
 					const gaspi_group_t group,
 					const gaspi_timeout_t timeout_ms);
 

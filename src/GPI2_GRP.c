@@ -1090,7 +1090,7 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
 		       const gaspi_number_t elem_cnt,
 		       const gaspi_size_t elem_size,
 		       gaspi_reduce_operation_t const user_fct,
-		       gaspi_state_t const rstate,
+		       gaspi_reduce_state_t const rstate,
 		       const gaspi_group_t g,
 		       const gaspi_timeout_t timeout_ms)
 {
