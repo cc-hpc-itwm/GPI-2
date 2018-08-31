@@ -820,7 +820,7 @@ gaspi_sn_allgather(gaspi_context_t const * const gctx,
 {
   int left_sock = -1, right_sock = -1;
 
-  gaspi_group_ctx_t* grp_ctx = &(gctx->groups[group]);
+  const gaspi_group_ctx_t* grp_ctx = &(gctx->groups[group]);
 
   const int right_rank_in_group = (grp_ctx->rank  + grp_ctx->tnc + 1) % grp_ctx->tnc;
   const int right_rank = grp_ctx->rank_grp[right_rank_in_group];
@@ -1252,7 +1252,7 @@ gaspi_sn_cleanup(const int sig)
 }
 
 static void
-gaspi_sn_fatal_error(int close_sockfd, enum gaspi_sn_status status, char* msg)
+gaspi_sn_fatal_error(int close_sockfd, enum gaspi_sn_status status, const char* msg)
 {
   gaspi_debug_print_error("SN fatal error.");
 
