@@ -2,9 +2,8 @@ TOPROOT = $(PWD)
 
 GPI_DIR = $(TOPROOT)/..
 OFED_PATH = /usr
-CC = gcc
+
 CF = gfortran
-CXX = g++
 
 CFLAGS = -g -I$(GPI_DIR)/include
 CPPFLAGS = -g -I$(GPI_DIR)/include
