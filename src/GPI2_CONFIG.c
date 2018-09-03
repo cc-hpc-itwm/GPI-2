@@ -76,7 +76,8 @@ gaspi_config_t glb_gaspi_cfg = {
   GASPI_MAX_TSIZE_P,		//passive_transfer_size_max;
   (255*sizeof(unsigned long)),  //allreduce_buf_size;
   255,				//allreduce_elem_max;
-  GASPI_TOPOLOGY_STATIC         //build_infrastructure;
+  GASPI_TOPOLOGY_STATIC,        //build_infrastructure;
+  NULL                          //user_defined
 };
 
 static void
