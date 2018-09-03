@@ -596,11 +596,6 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
       gaspi_print_warning("Waiting for 0 notifications (gaspi_notify_waitsome).");
     }
 
-  if( notification_begin >= GASPI_MAX_NOTIFICATION )
-    {
-      return GASPI_ERR_INV_NOTIF_ID;
-    }
-
   if( notification_begin + (gaspi_notification_id_t) num > GASPI_MAX_NOTIFICATION )
     {
       return GASPI_ERR_INV_NOTIF_ID;
