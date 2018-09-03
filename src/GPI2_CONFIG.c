@@ -163,12 +163,6 @@ pgaspi_config_set (const gaspi_config_t nconf)
   glb_gaspi_cfg.sn_port = nconf.sn_port;
   glb_gaspi_cfg.sn_persistent = nconf.sn_persistent;
 
-  if( nconf.sn_timeout < 0 )
-    {
-      gaspi_debug_print_error("Invalid value for parameter sn_timeout ( must be > 0)");
-      return GASPI_ERR_CONFIG;
-    }
-
   glb_gaspi_cfg.sn_timeout = nconf.sn_timeout;
 
   glb_gaspi_cfg.net_info = nconf.net_info;
