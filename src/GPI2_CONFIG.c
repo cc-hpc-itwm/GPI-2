@@ -80,46 +80,6 @@ gaspi_config_t glb_gaspi_cfg = {
   NULL                          //user_defined
 };
 
-static void
-pgaspi_print_config(gaspi_config_t * const config)
-{
-  printf(" logger %u\nsn_port %u\nnet_info %u\n \
-user_net %u\nsn persistent %d\nnetwork %d\nqueue_size_max %u\nqueue_num %u\n \
-group_max %d\nsegment_max %d\ntransfer_size_max %lu\nnotification_num %u\n \
-passive_queue_size_max %u\npassive_transfer_size_max %u\nallreduce_buf_size %lu\n \
-allreduce_elem_max %u\nbuild_infrastructure %d\n",
-	 config->logger,
-	 config->sn_port,
-	 config->net_info,
-	 config->user_net,
-	 config->sn_persistent,
-	 config->network,
-	 config->queue_size_max,
-	 config->queue_num,
-	 config->group_max,
-	 config->segment_max,
-	 config->transfer_size_max,
-	 config->notification_num,
-	 config->passive_queue_size_max,
-	 config->passive_transfer_size_max,
-	 config->allreduce_buf_size,
-	 config->allreduce_elem_max,
-	 config->build_infrastructure);
-
-  if( config->network == GASPI_IB )
-    {
-      printf("Device-dependent\n: netdev_id %d\n mtu %u\n port_check %u\n",
-	     config->dev_config.params.ib.netdev_id,
-	     config->dev_config.params.ib.mtu,
-	     config->dev_config.params.ib.port_check);
-    }
-  if( config->network == GASPI_ETHERNET )
-    {
-      printf("Device-dependent:\n: port %u\n",
-	     config->dev_config.params.tcp.port);
-    }
-}
-
 #pragma weak gaspi_config_get = pgaspi_config_get
 gaspi_return_t
 pgaspi_config_get (gaspi_config_t * const config)
