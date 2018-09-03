@@ -3,8 +3,6 @@ TOPROOT = $(PWD)
 GPI_DIR = $(TOPROOT)/..
 OFED_PATH = /usr
 
-CF = gfortran
-
 CFLAGS = -g -I$(GPI_DIR)/include
 CPPFLAGS = -g -I$(GPI_DIR)/include
 
