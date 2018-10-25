@@ -159,7 +159,7 @@ void must_return_err ( const char* file, const int line, const gaspi_return_t ec
     {
       gaspi_printf ("Expected %d(%s) but got %d(%s) in %s[%i]\n",
 		    err, gaspi_error_str(err),
-		    ec, gaspi_error_str(err),
+		    ec, gaspi_error_str(ec),
 		    file, line);
 
       exit (EXIT_FAILURE);
