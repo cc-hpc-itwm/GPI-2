@@ -563,7 +563,7 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
 
   if( gctx->rrmd[segment_id][myrank].size )
     {
-      eret = GASPI_SUCCESS;
+      eret = GASPI_ERR_INV_SEG;
       goto endL;
     }
 
