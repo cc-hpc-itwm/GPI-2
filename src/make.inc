@@ -1,5 +1,3 @@
-include make.inc.dev
-
 OFED_PATH = /usr
 OFED_MIC_PATH = /opt/intel/mic/ofed/card/usr
 
