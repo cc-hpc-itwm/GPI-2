@@ -224,11 +224,9 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
       goto endL;
     }
 
-  /* Already exists?*/
-  /* TODO: not really the right way */
   if( gctx->rrmd[segment_id][gctx->rank].size )
     {
-      eret = GASPI_SUCCESS;
+      eret = GASPI_ERR_INV_SEG;
       goto endL;
     }
 
