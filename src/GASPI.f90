@@ -94,7 +94,7 @@ module GASPI
       enumerator :: GASPI_TYPE_ULONG=5
     end enum
 
-    enum, bind(C) !:: gaspi_qp_state_t
+    enum, bind(C) !:: gaspi_state_t
       enumerator :: GASPI_STATE_HEALTHY=0
       enumerator :: GASPI_STATE_CORRUPT=1
     end enum
