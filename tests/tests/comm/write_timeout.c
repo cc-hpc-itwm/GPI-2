@@ -14,8 +14,9 @@ main(int argc, char *argv[])
   if( P < 2 )
     {
       gaspi_printf("Must have more than 1 procs\n");
-      return EXIT_FAILURE;
+      return EXIT_SUCCESS;
     }
+
   ASSERT(gaspi_segment_create(0,
 			      _8MB,
 			      GASPI_GROUP_ALL,

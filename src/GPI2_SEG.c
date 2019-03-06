@@ -421,6 +421,12 @@ pgaspi_segment_register_group(gaspi_context_t * const gctx,
 			      const gaspi_group_t group,
 			      const gaspi_timeout_t timeout_ms)
 {
+  if (gctx->tnc == 1)
+    {
+      gctx->rrmd[segment_id][gctx->rank].trans = 1;
+      return GASPI_SUCCESS;
+    }
+
   if( lock_gaspi_tout(&(gctx->ctx_lock), timeout_ms) )
     {
       return GASPI_TIMEOUT;
