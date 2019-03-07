@@ -157,8 +157,8 @@ typedef struct
   gaspi_number_t num_queues;
 
   /* Comm counters  */
-  int ne_count_grp;
-  int ne_count_c[GASPI_MAX_QP];
+  gaspi_uint ne_count_grp;
+  gaspi_uint ne_count_c[GASPI_MAX_QP];
   unsigned char ne_count_p[8192]; //TODO: dynamic size
 
   /* GASPI configuration */

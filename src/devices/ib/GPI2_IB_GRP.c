@@ -27,7 +27,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 int
 pgaspi_dev_poll_groups(gaspi_context_t * const gctx)
 {
-  int i;
   gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
 
   const int pret = ibv_poll_cq( ib_dev_ctx->scqGroups,
@@ -36,7 +35,8 @@ pgaspi_dev_poll_groups(gaspi_context_t * const gctx)
 
   if( pret < 0 )
     {
-      for(i = 0; i < gctx->ne_count_grp; i++)
+      gaspi_uint i;
+      for( i = 0; i < gctx->ne_count_grp; i++)
 	{
 	  /* TODO: wc_grp_send is a [64] so we're basically assuming
 	     that ne_count_grp will never exceed that */

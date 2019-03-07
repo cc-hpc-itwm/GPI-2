@@ -26,8 +26,6 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
 			     const gaspi_rank_t rank,
 			     const gaspi_atomic_value_t val_add)
 {
-  int i;
-
   struct ibv_sge slist;
   slist.addr = (uintptr_t) (gctx->nsrc.data.buf);
   slist.length = sizeof(gaspi_atomic_value_t);
@@ -72,7 +70,7 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
   gctx->ne_count_grp++;
 
   int ne = 0;
-  for (i = 0; i < gctx->ne_count_grp; i++)
+  for (gaspi_uint i = 0; i < gctx->ne_count_grp; i++)
     {
       do
 	{
@@ -102,8 +100,6 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
 				const gaspi_atomic_value_t comparator,
 				const gaspi_atomic_value_t val_new)
 {
-  int i;
-
   struct ibv_sge slist;
   slist.addr = (uintptr_t) (gctx->nsrc.data.buf);
   slist.length = sizeof(gaspi_atomic_value_t);
@@ -149,7 +145,7 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
   gctx->ne_count_grp++;
 
   int ne = 0;
-  for (i = 0; i < gctx->ne_count_grp; i++)
+  for (gaspi_uint i = 0; i < gctx->ne_count_grp; i++)
     {
       do
 	{
