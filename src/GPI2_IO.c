@@ -342,6 +342,7 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
 
   GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_NUM_READ, 1);
   GPI2_STATS_INC_COUNT(GASPI_STATS_COUNTER_BYTES_READ, size);
+
  endL:
   unlock_gaspi (&gctx->lockC[queue]);
   return eret;
@@ -707,16 +708,19 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
     }
 #endif
 
-  volatile unsigned char *segPtr;
+  volatile unsigned int *notf_addr =
+    (volatile unsigned int *) gctx->rrmd[segment_id_local][gctx->rank].notif_spc.buf;
 
-  segPtr = (volatile unsigned char *)
-    gctx->rrmd[segment_id_local][gctx->rank].notif_spc.addr;
+  // TODO: one way to make sure people don't com to reset without
+  // waitsome assert(p[notification_id] != 0);
 
-  volatile unsigned int *p = (volatile unsigned int *) segPtr;
+  const volatile gaspi_notification_t res =
+    __sync_val_compare_and_swap (&notf_addr[notification_id],
+                                  notf_addr[notification_id],
+                                 0);
 
-  // TODO: one way to make sure people don't com to reset without waitsome assert(p[notification_id] != 0);
-  const volatile unsigned int res = __sync_val_compare_and_swap (&p[notification_id], p[notification_id], 0);
-  //TODO: at this point, p[notification_id] should be 0 or something is wrong. And it cannot be the same as res
+  //TODO: at this point, p[notification_id] should be 0 or something
+  //is wrong. And it cannot be the same as res
 
   if(old_notification_val != NULL)
     *old_notification_val = res;
