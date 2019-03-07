@@ -141,7 +141,7 @@ pgaspi_init_core(gaspi_context_t * const gctx)
 {
   if( gctx->dev_init )
     {
-      return -1;
+      return GASPI_ERROR;;
     }
 
   int i;
@@ -183,7 +183,7 @@ pgaspi_init_core(gaspi_context_t * const gctx)
   if( pgaspi_dev_register_mem(gctx, &(gctx->nsrc)) != 0 )
     {
       gaspi_debug_print_error ("Failed to register internal memory");
-      return -1;
+      return GASPI_ERROR;
     }
 
   if( GASPI_SUCCESS != pgaspi_create_error_vector(gctx) )
