@@ -291,7 +291,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
       gctx->sn_init = 1;
 
-    }//glb_gaspi_sn_init
+    }
 
   if( gctx->rank == 0 )
     {
