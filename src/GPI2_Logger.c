@@ -154,7 +154,7 @@ pgaspi_printf (const char *fmt, ...)
   vsnprintf (buf, sizeof(buf), fmt, ap);
   va_end (ap);
 
-  return pgaspi_printf_to(0, buf);
+  pgaspi_printf_to(0, buf);
 }
 
 void
