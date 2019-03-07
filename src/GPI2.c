@@ -114,6 +114,27 @@ pgaspi_numa_socket(gaspi_uchar * const sock)
   return GASPI_ERR_ENV;
 }
 
+static gaspi_return_t
+pgaspi_create_error_vector (gaspi_context_t* gctx)
+{
+  for(int i = 0; i < GASPI_MAX_QP + 3; i++)
+    {
+      gctx->state_vec[i] = (gaspi_state_t*) calloc (gctx->tnc, sizeof(gaspi_state_t));
+
+      if( gctx->state_vec[i] == NULL )
+	{
+          //rollback and release memory
+          for (int j = i - 1; j >= 0; --j)
+            {
+              free (gctx->state_vec[i]);
+            }
+
+	  return GASPI_ERR_MEMALLOC;
+	}
+    }
+
+  return GASPI_SUCCESS;
+}
 
 static gaspi_return_t
 pgaspi_init_core(gaspi_context_t * const gctx)
@@ -165,13 +186,10 @@ pgaspi_init_core(gaspi_context_t * const gctx)
       return -1;
     }
 
-  for(i = 0; i < GASPI_MAX_QP + 3; i++)
+  if( GASPI_SUCCESS != pgaspi_create_error_vector(gctx) )
     {
-      gctx->state_vec[i] = (gaspi_state_t*) calloc (gctx->tnc, sizeof(gaspi_state_t));
-      if( gctx->state_vec[i] == NULL )
-	{
-	  return GASPI_ERR_MEMALLOC;
-	}
+      gaspi_debug_print_error ("Failed to create GASPI error vector");
+      return GASPI_ERROR;
     }
 
   gctx->dev_init = 1;
