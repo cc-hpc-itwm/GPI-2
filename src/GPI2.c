@@ -308,19 +308,15 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 	}
 
       gctx->sn_init = 1;
-
     }
 
-  if( gctx->rank == 0 )
+  if( gctx->rank == 0 && gctx->dev_init == 0 )
     {
-      if( gctx->dev_init == 0 )
-	{
-	  if( pgaspi_parse_machinefile(gctx) != 0 )
-	    {
-	      eret = GASPI_ERR_ENV;
-	      goto errL;
-	    }
-	}
+      if( pgaspi_parse_machinefile(gctx) != 0 )
+        {
+          eret = GASPI_ERR_ENV;
+          goto errL;
+        }
     }
 
   eret = gaspi_sn_broadcast_topology(gctx, timeout_ms);
