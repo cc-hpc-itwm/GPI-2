@@ -306,15 +306,6 @@ gaspi_sn_readn(const int sockfd, const void * data_ptr, const size_t n)
 
   while( left > 0 )
     {
-/*       if( (ndone = read( sockfd, ptr, left) ) <= 0 ) */
-/*	{ */
-/*	  if(ndone < 0 && errno == EAGAIN) */
-/*	    ndone = 0; */
-/*	  else */
-/*	    { */
-/*	      return (-1); */
-/*	    } */
-/*	} */
       if( (ndone = read( sockfd, ptr, left) ) < 0 )
 	{
 	  if(ndone < 0 && errno == EAGAIN)
