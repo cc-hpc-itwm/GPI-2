@@ -1,8 +1,7 @@
 BIN = seg_alloc_all.bin max_mem.bin seg_reuse.bin seg_alloc_diff.bin	\
 	seg_id_list.bin seg_create_all.bin seg_create_same.bin		\
 	seg_use_buffer.bin seg_subsegments.bin seg_shmem.bin		\
-	seg_reuse_buffer.bin
-
+	seg_reuse_buffer.bin seg_avail_locally.bin
 CFLAGS+=-I../
 
 build: $(BIN)

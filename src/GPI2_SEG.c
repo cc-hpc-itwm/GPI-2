@@ -249,6 +249,7 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
   gctx->rrmd[segment_id][gctx->rank].notif_spc.addr = gctx->rrmd[segment_id][gctx->rank].data.addr;
   gctx->rrmd[segment_id][gctx->rank].data.addr += NOTIFY_OFFSET;
   gctx->rrmd[segment_id][gctx->rank].user_provided = 0;
+  gctx->rrmd[segment_id][gctx->rank].trans = 1;
 
   if( pgaspi_dev_register_mem(gctx, &(gctx->rrmd[segment_id][gctx->rank])) < 0 )
     {
@@ -596,6 +597,8 @@ pgaspi_segment_bind ( gaspi_segment_id_t const segment_id,
   gctx->rrmd[segment_id][myrank].size = size;
 
   gctx->rrmd[segment_id][myrank].notif_spc_size = NOTIFY_OFFSET;
+
+  gctx->rrmd[segment_id][myrank].trans = 1;
 
   gctx->rrmd[segment_id][gctx->rank].user_provided = 1;
 
