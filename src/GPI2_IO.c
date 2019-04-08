@@ -387,6 +387,16 @@ pgaspi_wait (const gaspi_queue_id_t queue,
   return eret;
 }
 
+#ifdef DEBUG
+static int pgaspi_rw_list_num_invalid (gaspi_number_t num)
+{
+  gaspi_number_t max_allowed;
+  gaspi_rw_list_elem_max (&max_allowed);
+
+  return num > max_allowed;
+}
+#endif
+
 #pragma weak gaspi_write_list = pgaspi_write_list
 gaspi_return_t
 pgaspi_write_list (const gaspi_number_t num,
@@ -407,6 +417,11 @@ pgaspi_write_list (const gaspi_number_t num,
 #ifdef DEBUG
   gaspi_verify_init("gaspi_write_list");
   gaspi_verify_queue(queue);
+
+  if (pgaspi_rw_list_num_invalid (num))
+    {
+      return GASPI_ERR_INV_NUM;
+    }
 
   gaspi_number_t n;
   for(n = 0; n < num; n++)
@@ -470,6 +485,11 @@ pgaspi_read_list (const gaspi_number_t num,
 #ifdef DEBUG
   gaspi_verify_init("gaspi_read_list");
   gaspi_verify_queue(queue);
+
+  if (pgaspi_rw_list_num_invalid (num))
+    {
+      return GASPI_ERR_INV_NUM;
+    }
 
   gaspi_number_t n;
   for( n = 0; n < num; n++ )
@@ -823,6 +843,11 @@ pgaspi_write_list_notify (const gaspi_number_t num,
   gaspi_verify_init("gaspi_write_list_notify");
   gaspi_verify_queue(queue);
 
+  if (pgaspi_rw_list_num_invalid (num))
+    {
+      return GASPI_ERR_INV_NUM;
+    }
+
   gaspi_number_t n;
   for(n = 0; n < num; n++)
     {
@@ -947,6 +972,11 @@ pgaspi_read_list_notify (const gaspi_number_t num,
 #ifdef DEBUG
   gaspi_verify_init("gaspi_read_list_notify");
   gaspi_verify_queue(queue);
+
+  if (pgaspi_rw_list_num_invalid (num))
+    {
+      return GASPI_ERR_INV_NUM;
+    }
 
   gaspi_number_t n;
   for(n = 0; n < num; n++)

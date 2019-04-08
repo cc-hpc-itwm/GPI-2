@@ -1,4 +1,5 @@
-BIN = list_write.bin list_write_notify.bin list_read.bin list_read_notify.bin
+BIN = list_write.bin list_write_notify.bin list_read.bin	\
+      list_read_notify.bin list_limit.bin
 
 CFLAGS+=-I../
 
@@ -7,7 +8,7 @@ build: $(BIN)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $^
 
-%.bin: %.o ../test_utils.o  
+%.bin: %.o ../test_utils.o
 	$(CC) $(CFLAGS) $(LIB_PATH) -o $@ $^ $(LIBS)
 
 clean:
