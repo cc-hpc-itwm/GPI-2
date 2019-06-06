@@ -29,6 +29,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef GPI2_H
 #define GPI2_H
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -61,7 +63,7 @@ extern "C"
   typedef float gaspi_time_t;
   typedef unsigned long gaspi_cycles_t;
   typedef unsigned short gaspi_notification_id_t;
-  typedef unsigned int gaspi_notification_t;
+  typedef uint8_t gaspi_notification_t;
   typedef unsigned int gaspi_statistic_counter_t;
   typedef char * gaspi_string_t;
 
