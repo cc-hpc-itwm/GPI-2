@@ -339,7 +339,7 @@ pgaspi_dev_notify (gaspi_context_t * const gctx,
 
   slistN.addr = (uintptr_t) (gctx->nsrc.notif_spc.buf + notification_id * sizeof(gaspi_notification_t));
 
-  *((unsigned int *) slistN.addr) = notification_value;
+  *((gaspi_notification_t*) slistN.addr) = notification_value;
 
   slistN.length = sizeof(gaspi_notification_t);
   slistN.lkey = ((struct ibv_mr *) gctx->nsrc.mr[1])->lkey;
@@ -406,7 +406,7 @@ pgaspi_dev_write_notify (gaspi_context_t * const gctx,
 
   slistN.addr = (uintptr_t) (gctx->nsrc.notif_spc.buf + notification_id * sizeof(gaspi_notification_t));
 
-  *((unsigned int *) slistN.addr) = notification_value;
+  *((gaspi_notification_t *) slistN.addr) = notification_value;
 
   slistN.length = sizeof(gaspi_notification_t);
   slistN.lkey = ((struct ibv_mr *) gctx->nsrc.mr[1])->lkey;
@@ -483,7 +483,7 @@ pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
 
   slistN.addr = (uintptr_t) (gctx->nsrc.notif_spc.buf + notification_id * sizeof(gaspi_notification_t));
 
-  *((unsigned int *) slistN.addr) = notification_value;
+  *((gaspi_notification_t *) slistN.addr) = notification_value;
 
   slistN.length = sizeof(gaspi_notification_t);
   slistN.lkey = ((struct ibv_mr *) gctx->nsrc.mr[1])->lkey;

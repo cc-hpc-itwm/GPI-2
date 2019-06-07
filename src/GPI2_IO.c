@@ -632,7 +632,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 
   segPtr = (volatile unsigned char *) gctx->rrmd[segment_id_local][gctx->rank].notif_spc.addr;
 
-  volatile unsigned int *p = (volatile unsigned int *) segPtr;
+  volatile gaspi_notification_t *p = (volatile gaspi_notification_t *) segPtr;
 
   if (timeout_ms == GASPI_BLOCK)
     {
@@ -728,8 +728,8 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
     }
 #endif
 
-  volatile unsigned int *notf_addr =
-    (volatile unsigned int *) gctx->rrmd[segment_id_local][gctx->rank].notif_spc.buf;
+  volatile gaspi_notification_t *notf_addr =
+    (volatile gaspi_notification_t *) gctx->rrmd[segment_id_local][gctx->rank].notif_spc.buf;
 
   // TODO: one way to make sure people don't com to reset without
   // waitsome assert(p[notification_id] != 0);
