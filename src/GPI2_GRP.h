@@ -34,7 +34,7 @@ typedef struct
     group_ctx[i].rank_grp = NULL;					\
     group_ctx[i].committed_rank = NULL;					\
     group_ctx[i].id = -1;						\
-    group_ctx[i].togle = 0;						\
+    group_ctx[i].toggle = 0;						\
     group_ctx[i].barrier_cnt = 0;					\
     group_ctx[i].rank = 0;						\
     group_ctx[i].tnc = 0;						\

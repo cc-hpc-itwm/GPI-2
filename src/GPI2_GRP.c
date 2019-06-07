@@ -619,15 +619,15 @@ _gaspi_sync_wait(gaspi_context_t * const gctx,
 
 #define GPI2_GRP_LOCAL_SYNC_ADDR(myrank, grp_ctx) \
   (grp_ctx->rrcd[myrank].data.buf +               \
-   (TOGGLE_SIZE * grp_ctx->tnc + grp_ctx->togle))
+   (TOGGLE_SIZE * grp_ctx->tnc + grp_ctx->toggle))
 
 #define GPI2_GRP_REMOTE_SYNC_ADDR(grp_ctx, dst_rank) \
   (grp_ctx->rrcd[dst_rank].data.buf +                \
-   (TOGGLE_SIZE * grp_ctx->rank + grp_ctx->togle))
+   (TOGGLE_SIZE * grp_ctx->rank + grp_ctx->toggle))
 
 #define GPI2_GRP_SYNC_POLL_ADDR(grp_ctx, src_rank) \
   (grp_ctx->rrcd[gctx->rank].data.buf + \
-   (TOGGLE_SIZE * src_rank + grp_ctx->togle))
+   (TOGGLE_SIZE * src_rank + grp_ctx->toggle))
 
 #pragma weak gaspi_barrier = pgaspi_barrier
 gaspi_return_t
@@ -660,7 +660,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 
       /* We need to take care of the wraparound of the barrier_cnt. By
 	 increasing the counter we avoid seeing the same counter value
-	 in the same togle position. */
+	 in the same toggle position. */
       if( grp_ctx->barrier_cnt == 0 )
 	{
 	  grp_ctx->barrier_cnt++;
@@ -743,7 +743,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       return GASPI_ERR_DEVICE;
     }
 
-  grp_ctx->togle = (grp_ctx->togle ^ 0x1);
+  grp_ctx->toggle = (grp_ctx->toggle ^ 0x1);
   grp_ctx->coll_op = GASPI_NONE;
   grp_ctx->lastmask = 0x1;
 
@@ -791,7 +791,7 @@ _gaspi_allreduce_write_and_sync(gaspi_context_t * const gctx,
   void* remote_addr = (void *) (grp_ctx->rrcd[dst].data.addr +
 				((BARRIER_BUF_SIZE(gctx->tnc)) +
 				 (DATA_BUF_SIZE(grp_ctx->pof2_exp+2,  gctx->config->allreduce_elem_max)) +
-				 ((TOGGLE_SIZE * bid + grp_ctx->togle) *  gctx->config->allreduce_elem_max * sizeof(unsigned long))));
+				 ((TOGGLE_SIZE * bid + grp_ctx->toggle) *  gctx->config->allreduce_elem_max * sizeof(unsigned long))));
 
   if( pgaspi_dev_post_group_write(gctx, send_ptr, buf_size, dst, remote_addr, g) != 0 )
     {
@@ -825,7 +825,7 @@ _gaspi_apply_redux(gaspi_group_t g,
   gaspi_group_ctx_t * const grp_ctx = &(gctx->groups[g]);
   gaspi_return_t eret = GASPI_ERROR;
 
-  void * const dst_val = (void *) (recv_ptr + (2 * bid + grp_ctx->togle) *  gctx->config->allreduce_elem_max * sizeof(unsigned long));
+  void * const dst_val = (void *) (recv_ptr + (2 * bid + grp_ctx->toggle) *  gctx->config->allreduce_elem_max * sizeof(unsigned long));
   void * const local_val = (void *) *send_ptr;
 
   /* Note: we're updating these arguments */
@@ -878,7 +878,7 @@ _gaspi_allreduce (gaspi_context_t * const gctx,
   const int rank_in_grp = grp_ctx->rank;
 
   unsigned char *send_ptr = grp_ctx->rrcd[gctx->rank].data.buf + (BARRIER_BUF_SIZE(gctx->tnc)) +
-    (grp_ctx->togle * ((DATA_BUF_SIZE(grp_ctx->pof2_exp+2, gctx->config->allreduce_elem_max)) / TOGGLE_SIZE));
+    (grp_ctx->toggle * ((DATA_BUF_SIZE(grp_ctx->pof2_exp+2, gctx->config->allreduce_elem_max)) / TOGGLE_SIZE));
 
   unsigned char *recv_ptr = grp_ctx->rrcd[gctx->rank].data.buf + (BARRIER_BUF_SIZE(gctx->tnc)) +
     (DATA_BUF_SIZE(grp_ctx->pof2_exp+2, gctx->config->allreduce_elem_max));
@@ -1016,7 +1016,7 @@ _gaspi_allreduce (gaspi_context_t * const gctx,
 	    }
 
 	  bid += grp_ctx->pof2_exp;
-	  send_ptr = (recv_ptr + (2 * bid + grp_ctx->togle) *  gctx->config->allreduce_elem_max * sizeof(unsigned long));
+	  send_ptr = (recv_ptr + (2 * bid + grp_ctx->toggle) *  gctx->config->allreduce_elem_max * sizeof(unsigned long));
 	}
     }
 
@@ -1026,7 +1026,7 @@ _gaspi_allreduce (gaspi_context_t * const gctx,
       return GASPI_ERR_DEVICE;
     }
 
-  grp_ctx->togle = (grp_ctx->togle ^ 0x1);
+  grp_ctx->toggle = (grp_ctx->toggle ^ 0x1);
 
   grp_ctx->coll_op = GASPI_NONE;
   grp_ctx->lastmask = 0x1;

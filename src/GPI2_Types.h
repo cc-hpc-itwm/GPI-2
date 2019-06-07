@@ -97,7 +97,7 @@ typedef struct
   gaspi_lock_t gl;
   gaspi_lock_t del;
   volatile unsigned char barrier_cnt;
-  volatile unsigned char togle;
+  volatile unsigned char toggle;
   gaspi_async_coll_t coll_op;
   int lastmask;
   int level, tmprank, dsize, bid;
