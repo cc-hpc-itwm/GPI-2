@@ -27,8 +27,9 @@ LT_INIT
 
 # Checks for programs.
 AC_PROG_CC
+AX_CHECK_STDC
+# AC_PROG_CC_C99
 # AC_PROG_CC_STDC
-AC_PROG_CC_C99
 # AM_PROG_CC_C_O
 AC_PROG_FC
 AC_PROG_AWK
@@ -36,31 +37,31 @@ AC_PROG_SED
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
-dnl # Checks for libraries.
-dnl # FIXME: Replace `main' with a function in `-lm':
-dnl AC_CHECK_LIB([m], [main])
-dnl # FIXME: Replace `main' with a function in `-lrt':
-dnl AC_CHECK_LIB([rt], [main])
+# Checks for libraries.
+# FIXME: Replace `main' with a function in `-lm':
+AC_CHECK_LIB([m], [main])
+# FIXME: Replace `main' with a function in `-lrt':
+AC_CHECK_LIB([rt], [main])
 
-dnl # Checks for header files.
-dnl AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h sys/timeb.h unistd.h])
+# Checks for header files.
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h sys/timeb.h unistd.h sys/signal.h])
 
 dnl # Checks for typedefs, structures, and compiler characteristics.
-dnl AC_C_INLINE
-dnl AC_TYPE_OFF_T
-dnl AC_TYPE_PID_T
-dnl AC_TYPE_SIZE_T
-dnl AC_TYPE_SSIZE_T
-dnl AC_TYPE_UINT16_T
-dnl AC_TYPE_UINT32_T
-dnl AC_TYPE_UINT64_T
-dnl AC_TYPE_UINT8_T
+AC_C_INLINE
+AC_TYPE_OFF_T
+AC_TYPE_PID_T
+AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
+AC_TYPE_UINT16_T
+AC_TYPE_UINT32_T
+AC_TYPE_UINT64_T
+AC_TYPE_UINT8_T
 
-dnl # Checks for library functions.
-dnl AC_FUNC_ERROR_AT_LINE
-dnl AC_FUNC_MALLOC
-dnl AC_FUNC_MMAP
-dnl AC_CHECK_FUNCS([ftime ftruncate gethostbyname gethostname gettimeofday inet_ntoa memmove memset pow select socket sqrt strerror strtol uname mktemp])
+# Checks for library functions.
+AC_FUNC_ERROR_AT_LINE
+AC_FUNC_MALLOC
+AC_FUNC_MMAP
+AC_CHECK_FUNCS([ftime ftruncate gethostbyname gethostname gettimeofday inet_ntoa memmove memset pow select socket sqrt strerror strtol uname mktemp])
 
 
 # CHECKS INFINIBAND

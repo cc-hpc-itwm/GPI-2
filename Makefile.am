@@ -1,3 +1,4 @@
+CFLAGS += -std=c99
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = autogen.sh
