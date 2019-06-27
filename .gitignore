@@ -4,8 +4,11 @@
 
 .deps/
 .libs/
+.dirstamp
 
 *.in
+!tests/tests/compile_rules.in
+!tests/microbenchmarks/compile_rules.in
 *.a
 *.la
 

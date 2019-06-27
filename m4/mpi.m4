@@ -14,8 +14,8 @@ AX_PROG_CC_MPI([test "x$with_mpi" != xno],[],[
 use_mpi=no
 if test x"$with_mpi" = xyes; then
 AC_MSG_FAILURE([MPI compiler requested, but couldn't use MPI.])
-dnl else
-dnl AC_MSG_WARN([No MPI compiler found, won't use MPI.])
+# else
+# AC_MSG_WARN([No MPI compiler found, won't use MPI.])
 fi
 ])
 fi

@@ -1,10 +1,11 @@
 #include <GASPI.h>
-
+#include <GASPI_Ext.h>
 #include <algorithm>
 #include <exception>
 #include <iostream>
 #include <string>
 #include <thread>
+#include <numeric>
 
 namespace
 {

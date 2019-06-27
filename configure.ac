@@ -12,11 +12,11 @@ AC_CONFIG_HEADERS([config.h])
 AC_USE_SYSTEM_EXTENSIONS
 AM_INIT_AUTOMAKE([subdir-objects])
 AC_CONFIG_FILES([Makefile
+		src/Makefile
+		tests/Makefile
+		tests/tests/Makefile
+		tests/microbenchmarks/Makefile
 		 ])
-		 dnl src/Makefile
-                 dnl tests/Makefile
-                 dnl tests/tests/Makefile
-                 dnl tests/tests/init/Makefile
 
 AM_MAINTAINER_MODE([enable])
 
@@ -32,6 +32,7 @@ AX_CHECK_STDC
 # AC_PROG_CC_STDC
 # AM_PROG_CC_C_O
 AC_PROG_FC
+AC_PROG_CXX
 AC_PROG_AWK
 AC_PROG_SED
 AC_PROG_INSTALL
@@ -46,7 +47,7 @@ AC_CHECK_LIB([rt], [main])
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h sys/timeb.h unistd.h sys/signal.h])
 
-dnl # Checks for typedefs, structures, and compiler characteristics.
+# Checks for typedefs, structures, and compiler characteristics.
 AC_C_INLINE
 AC_TYPE_OFF_T
 AC_TYPE_PID_T
@@ -99,11 +100,11 @@ AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],[compile with MPI (parallelization
 [with_mpi=$withval],
 [with_mpi=no])
 ## TODO: SET AUTOMATICALLY CC to mpicc
-dnl if test x"$with_mpi" == xyes; then
-dnl AC_CHECK_PROGS([CCio], [mpicc mpixlc_r mpixlc hcc mpxlc_r mpxlc sxmpicc mpifcc mpgcc mpcc cmpicc cc gcc])
-dnl AC_SUBST([CC],[$CCio])
-dnl echo $CC
-dnl fi
+# if test x"$with_mpi" == xyes; then
+# AC_CHECK_PROGS([CCio], [mpicc mpixlc_r mpixlc hcc mpxlc_r mpxlc sxmpicc mpifcc mpgcc mpcc cmpicc cc gcc])
+# AC_SUBST([CC],[$CCio])
+# echo $CC
+# fi
 ACX_MPI
 AM_CONDITIONAL([WITH_MPI], test x${HAVE_MPI} = x1)
 
@@ -119,31 +120,5 @@ AC_ARG_WITH([fortran],AS_HELP_STRING([--with-fortran], [compile Fortran modules]
 [with_fortran=yes])
 ACX_FORTRAN
 AM_CONDITIONAL([WITH_FORTRAN], test x${HAVE_FORTRAN} = x1)
-
-
-dnl AC_CONFIG_FILES([Makefile])
-                 dnl src/Makefile
-                 dnl docs/latex/Makefile
-                 dnl tests/microbenchmarks/Makefile
-                 dnl tests/tests/atomic/Makefile
-                 dnl tests/tests/cm/Makefile
-                 dnl tests/tests/collectives/Makefile
-                 dnl tests/tests/comm/Makefile
-                 dnl tests/tests/config/Makefile
-                 dnl tests/tests/error_vec/Makefile
-                 dnl tests/tests/extensions/Makefile
-                 dnl tests/tests/fortran/Makefile
-                 dnl tests/tests/groups/Makefile
-                 dnl tests/tests/lists/Makefile
-                 dnl tests/tests/mpi/Makefile
-                 dnl tests/tests/notifications/Makefile
-                 dnl tests/tests/passive/Makefile
-                 dnl tests/tests/segments/Makefile
-                 dnl tests/tests/threads/Makefile
-                 dnl tests/tests/utils/Makefile
-                 dnl tutorial/code/advanced/Makefile
-                 dnl tutorial/code/basic/Makefile
-                 dnl tutorial/code/ring-1d/gaspi/Makefile
-                 dnl tutorial/code/ring-1d/mpi/Makefile
 
 AC_OUTPUT
