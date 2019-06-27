@@ -1,4 +1,3 @@
-CFLAGS += -std=c99
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = autogen.sh
@@ -9,11 +8,14 @@ SRCS = src/GPI2_Env.c src/GPI2_Utility.c src/GPI2_SN.c src/GPI2_Logger.c src/GPI
 	src/GPI2_PASSIVE.c src/GPI2_SEG.c src/GPI2_GRP.c src/GPI2_CONFIG.c src/GPI2_CM.c \
 	src/GPI2.c
 
+# HEADERS TO INSTALL
+gaspi_headers_dir = src/gaspi/include
+include_HEADERS = $(gaspi_headers_dir)/GASPI.h $(gaspi_headers_dir)/GASPI_Ext.h $(gaspi_headers_dir)/GASPI_Threads.h $(gaspi_headers_dir)/PGASPI.h
+
 # GENERAL C FLAGS
-lib_gaspi_device_includes = -Iinclude/ -Isrc/devices/include
+lib_gaspi_device_includes = -I$(gaspi_headers_dir) -Isrc/devices/include
 lib_default_cflags = -Wall -D_GNU_SOURCE
 lib_debug_flags = -g -O0
-# CFLAGS =
 
 # MPI MODE
 if WITH_MPI
@@ -59,50 +61,54 @@ libGPI2stat_la_CFLAGS = $(lib_default_cflags) $(lib_debug_flags) -DDEGUB -DGPI2_
 libGPI2stat_la_CPPFLAGS = $(lib_gaspi_device_includes)
 endif
 
-# tests/tests/test_utils.o : tests/tests/test_utils.c
-# 	$(CC) $(CFLAGS) $(AM_CPPFLAGS) -Itests/tests -c $<
-# BUILT_SOURCES = tests/tests/test_utils.o
-
 # FORTRAN MODULES
 if WITH_FORTRAN
-FMODDIR=include/
-src/GASPI.o : src/GASPI.f90
-	$(FC) $(FCFLAGS) @ac_cv_fc_module_output_flag@ $(FMODDIR) -O2 -c $< -o $@
-src/GASPI_Ext.o : src/GASPI_Ext.f90 src/GASPI.o
-	$(FC) $(FCFLAGS) @ac_cv_fc_module_output_flag@ $(FMODDIR) -O2 -c $< -o $@
-all-local : src/GASPI.o src/GASPI_Ext.o
+FMODDIR=$(gaspi_headers_dir)
+$(FMODDIR)/gaspi_types.mod : src/GASPI_types.f90
+	$(FC) $(FCFLAGS) @ac_cv_fc_module_output_flag@ $(FMODDIR) -O2 -c $<
+$(FMODDIR)/gaspi.mod : src/GASPI.f90 $(FMODDIR)/gaspi_types.mod
+	$(FC) $(FCFLAGS) @ac_cv_fc_module_output_flag@ $(FMODDIR) -O2 -c $<
+$(FMODDIR)/gaspi_ext.mod : src/GASPI_Ext.f90 $(FMODDIR)/gaspi_types.mod $(FMODDIR)/gaspi.mod
+	$(FC) $(FCFLAGS) @ac_cv_fc_module_output_flag@ $(FMODDIR) -O2 -c $<
+include_HEADERS += $(FMODDIR)/gaspi_types.mod $(FMODDIR)/gaspi.mod $(FMODDIR)/gaspi_ext.mod
 endif
 
 # TESTS
-# TODO: Call only when checking
-tests/tests/test_utils.o : tests/tests/test_utils.c
-	$(CC) $(CFLAGS) -Iinclude/ -Itests/tests/ -c $< -o $@
-
-all-local : tests/tests/test_utils.o
-
-# TESTS_ENVIRONMENT = \
-# 	buildir=$(top_builddir)/tests
-
-# AM_TESTS_ENVIRONMENT = \
-# 	$(CC) $(CFLAGS) -I. -c tests/tests/test_utils.c
-
 ## TESTS SUBDIR
+tests_subdir = tests/tests
 ### INIT
-test_BUILT_TESTS = \
-	tests/tests/init/proc_init.bin \
-	# tests/tests/init/proc_init_timeout.bin \
-	# tests/tests/init/cmd_line_args.bin \
-	# tests/tests/init/kill_procs.bin \
-	# tests/tests/init/print_to.bin \
-	# tests/tests/init/null_ptrs.bin \
-	# tests/tests/init/numa_check.bin \
-	# tests/tests/init/strong_sym.bin \
-	# tests/tests/init/local_rank.bin \
-	# tests/tests/init/initialized.bin
+init_tests = \
+	tests/bin/proc_init.bin \
+	tests/bin/proc_init_timeout.bin \
+	tests/bin/cmd_line_args.bin \
+	tests/bin/kill_procs.bin \
+	tests/bin/print_to.bin \
+	tests/bin/null_ptrs.bin \
+	tests/bin/numa_check.bin \
+	tests/bin/strong_sym.bin \
+	tests/bin/local_rank.bin \
+	tests/bin/initialized.bin
 
-check_PROGRAMS = $(test_BUILT_TESTS)
-TESTS = $(test_BUILT_TESTS)
-LOG_DRIVER = cd tests; ./runtests.sh -m machinefile
+tests_bin_proc_init_bin_SOURCES = tests/tests/init/proc_init.c $(lib_LTLIBRARIES)
+tests_bin_proc_init_timeout_bin_SOURCES = tests/tests/init/proc_init_timeout.c $(lib_LTLIBRARIES)
+tests_bin_cmd_line_args_bin_SOURCES = tests/tests/init/cmd_line_args.c $(lib_LTLIBRARIES)
+tests_bin_kill_procs_bin_SOURCES = tests/tests/init/kill_procs.c $(lib_LTLIBRARIES)
+tests_bin_print_to_bin_SOURCES = tests/tests/init/print_to.c $(lib_LTLIBRARIES)
+tests_bin_null_ptrs_bin_SOURCES = tests/tests/init/null_ptrs.c $(lib_LTLIBRARIES)
+tests_bin_numa_check_bin_SOURCES = tests/tests/init/numa_check.c $(lib_LTLIBRARIES)
+tests_bin_strong_sym_bin_SOURCES = tests/tests/init/strong_sym.c $(lib_LTLIBRARIES)
+tests_bin_local_rank_bin_SOURCES = tests/tests/init/local_rank.c $(lib_LTLIBRARIES)
+tests_bin_initialized_bin_SOURCES = tests/tests/init/initialized.c $(lib_LTLIBRARIES)
+
+### CONFIG
+config_tests = \
+	tests/bin/set_config.bin \
+	tests/bin/config_netinfo.bin \
+	tests/bin/print_config.bin ##Not include before?
+
+tests_bin_set_config_bin_SOURCES = tests/tests/config/set_config.c
+tests_bin_config_netinfo_bin_SOURCES = tests/tests/config/config_netinfo.c
+tests_bin_print_config_bin_SOURCES = tests/tests/config/print_config.c
 
 LDADD = tests/tests/test_utils.o -lGPI2dbg -lpthread
 if WITH_INFINIBAND
@@ -111,11 +117,20 @@ endif
 AM_CFLAGS = $(libGPI2_la_CFLAGS)
 AM_CPPFLAGS = -Itests/tests $(libGPI2_la_CPPFLAGS)
 
-check : $(lib_LTLIBRARIES) $(test_BUILT_TESTS)
-	cp $(test_BUILT_TESTS) tests/bin
+noinst_PROGRAMS = $(init_tests) $(config_tests)
 
 
-CLEANFILES = *~ *.bak src/*.o src/*.mod include/*.mod \
+
+# check_PROGRAMS = $(test_BUILT_TESTS)
+# TESTS = $(test_BUILT_TESTS)
+# LOG_DRIVER = cd tests; ./runtests.sh -m machinefile
+
+# check : $(lib_LTLIBRARIES) $(test_BUILT_TESTS)
+# 	cp $(test_BUILT_TESTS) tests/bin
+
+CLEANFILES = *~ *.bak *.mod \
+	rm -fr .deps/ \
+	$(gaspi_headers_dir)/*.mod \
 	tests/tests/*.o
 
 
