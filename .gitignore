@@ -17,5 +17,5 @@
 *.log
 *.install
 
-docs/*
+docs/doxygen-doc/
 #build-aux/*

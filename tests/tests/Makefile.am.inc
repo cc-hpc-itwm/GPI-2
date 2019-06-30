@@ -1,5 +1,3 @@
-include compile_rules.in
-
 LDADD = -L$(top_builddir)/src/.libs -lGPI2dbg -lpthread
 if WITH_INFINIBAND
 LDADD += -L@ac_lib_infiniband@ -libverbs
@@ -7,7 +5,7 @@ endif
 AM_CXXFLAGS = -std=c++11 $(AM_CFLAGS) $(AM_CPPFLAGS)
 
 # TESTS
-auxSRCS = test_utils.c test_utils.h
+auxSRCS = test_utils.c
 
 ## ATOMIC
 atomic_tests = ../bin/atomic_fail_no_seg.bin \

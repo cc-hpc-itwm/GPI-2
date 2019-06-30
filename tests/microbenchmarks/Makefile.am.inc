@@ -1,12 +1,10 @@
-include compile_rules.in
-
 LDADD = -L$(top_builddir)/src/.libs -lGPI2 -lpthread
 if WITH_INFINIBAND
 LDADD += -L@ac_lib_infiniband@ -libverbs
 endif
 
 # MICROBENCHMARKS
-auxMICSRCS = common.c common.h utils.h
+auxMICSRCS = common.c
 
 micro_tests = allreduce.bin \
      barrier.bin \

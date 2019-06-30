@@ -10,15 +10,26 @@ AC_CONFIG_HEADERS([config.h])
 
 #AC_REQUIRE_AUX_FILE([runtests.sh])
 AC_USE_SYSTEM_EXTENSIONS
-AM_INIT_AUTOMAKE([subdir-objects])
+# DYNAMICAL COMPILATION RULES FOR TESTS
+AC_CONFIG_COMMANDS_PRE([echo "# RULES " > tests/tests/compile_rules.in])
+AC_CONFIG_COMMANDS_PRE([rm -fv tests/tests/Makefile.am])
+AC_CONFIG_COMMANDS_PRE([echo "include compile_rules.in" > tests/tests/Makefile.am])
+AC_CONFIG_COMMANDS_PRE([cat tests/tests/Makefile.am.inc >> tests/tests/Makefile.am])
+AC_CONFIG_COMMANDS_PRE([echo "# RULES " > tests/microbenchmarks/compile_rules.in])
+AC_CONFIG_COMMANDS_PRE([rm -fv tests/microbenchmarks/Makefile.am])
+AC_CONFIG_COMMANDS_PRE([echo "include compile_rules.in" > tests/microbenchmarks/Makefile.am])
+AC_CONFIG_COMMANDS_PRE([cat tests/microbenchmarks/Makefile.am.inc >> tests/microbenchmarks/Makefile.am])
+# THE MAKEFILE.AM'S
 AC_CONFIG_FILES([Makefile
-		src/Makefile
-		tests/Makefile
-		tests/tests/Makefile
-		tests/microbenchmarks/Makefile
-		 ])
+	src/Makefile
+	tests/Makefile
+	tests/tests/Makefile
+	tests/microbenchmarks/Makefile
+	docs/Makefile
+	])
+AM_INIT_AUTOMAKE([subdir-objects])
 
-AM_MAINTAINER_MODE([enable])
+#AM_MAINTAINER_MODE([enable])
 
 # Static lib
 AC_DISABLE_SHARED
@@ -63,7 +74,6 @@ AC_FUNC_ERROR_AT_LINE
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([ftime ftruncate gethostbyname gethostname gettimeofday inet_ntoa memmove memset pow select socket sqrt strerror strtol uname mktemp])
-
 
 # CHECKS INFINIBAND
 AC_ARG_WITH([infiniband],AS_HELP_STRING([--with-infiniband], [compile for infiniband (default)]),
@@ -115,10 +125,17 @@ AC_ARG_WITH(loadlever, [AS_HELP_STRING([--with-loadlever],[compile with loadleve
 AM_CONDITIONAL([WITH_LOADLEVER], test x${HAVE_LOADLEVER} = x1)
 
 # FORTRAN
-AC_ARG_WITH([fortran],AS_HELP_STRING([--with-fortran], [compile Fortran modules]),
+AC_ARG_WITH([fortran],AS_HELP_STRING([--with-fortran], [compile Fortran modules (default)]),
 [with_fortran=$withval],
 [with_fortran=yes])
 ACX_FORTRAN
 AM_CONDITIONAL([WITH_FORTRAN], test x${HAVE_FORTRAN} = x1)
+
+# DOXYGEN
+DX_HTML_FEATURE(ON)
+DX_DOT_FEATURE(ON)
+DX_MAN_FEATURE(OFF)
+DX_PDF_FEATURE(ON)
+DX_INIT_DOXYGEN(GPI-2, [docs/Doxyfile], [docs/doxygen-doc])
 
 AC_OUTPUT

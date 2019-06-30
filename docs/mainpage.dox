@@ -10,36 +10,58 @@
  * @image html new_arch.png
  *
  * \section install_sec Installation
- * The easiest way to install GPI-2 is by using the install.sh script. The default settings install GPI-2 under /opt/GPI2/. This location can be easily modified by passing the location with the -p option to the install script.
  *
- * For example,
+ * To install GPI-2, it needs to be configured using the script `./configure`.
+ * The available options and the relevant environment variables are printed
+ * by `./configure --help`.
+ * 
+ * By default the production, debugging and statistic libraries are compiled
+ * for infiniband. Fortran modules are also build by default, as well as the
+ * html documentation, if Fortran compilers and doxygen, respectively, are
+ * available. Support for MPI (mixed mode) is also available if it is requested
+ * and the libraries (compilers) are found. Thus for example, the command line:
+ * 
+ * `CC=mpiicc FC=mpiifort ./configure --prefix=$HOME/local --with-infiniband=/usr --with-mpi --with-slurm`
+ * 
+ * will do the configuration using MPI-Intel compilers, the path to infiniband `/usr`
+ * and `slurm` as batch system, using as target directory `$HOME/local`.
+ * The command line:
+ * `./configure --with-ethernet`
+ * will configure the (environment defined) CC and FC compilers for a TCP connection,
+ * using as target directory `/usr/local`.
+ * 
+ * As it is usual, after configuration, the command line:
  *
- *   ./install.sh -p /prog/GPI2
+ * `make -j$NPROC`
  *
- * installs GPI-2 under /prog/GPI2 instead of under the default location.
+ * will compile in parallel the libraries, the Fortran modules, the tests, the documentation and
+ * the tutorial code.
+ * 
+ * After succesful completion, the user can define the working hosts in `tests/machines`
+ * and run the predefined tests by:
+ *
+ * `make check`
+ * 
+ * Finally
+ *
+ * `make install`
+ *
+ * will install the `gaspi_*` scripts (according to the batch system) in
+ * the EPREFIX/bin directory, the libraries in EPREFIX/lib, and the headers and Fortran modules in
+ * EPREFIX/include.
  *
  * \subsection reqs Requirements
  *
  * The current version of GPI-2 has the following requirements.
  *
  * Software:
+ * - C compiler
  * - libibverbs (Verbs library from OFED).
  *
  * Hardware:
  * - Infiniband or RoCE devices.
  *
- * \section buildgpi Building GPI-2
  *
- *
- * You can build GPI2 on your own. There are the following make targets:
- *
-\li all	     - Build everything
-\li gpi	     - Build the GPI-2 library (including debug version)
-\li tests    - Build provided tests
-\li mic	     - Build the GPI-2 library for the MIC
-\li docs     - Generate documentation (requires doxygen)
-\li clean    - Clean-up
-
  * \section Building GPI-2 applications
  *
  *

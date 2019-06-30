@@ -1,11 +1,15 @@
-SUBDIRS = src tests
-
 ACLOCAL_AMFLAGS = -I m4
+
+include $(top_srcdir)/amdoxygen.am
+
+SUBDIRS = src tests docs
 
 dist_bin_SCRIPTS = bin/*
 
-EXTRA_DIST = autogen.sh tests/tests/compile_rules.in tests/microbenchmarks/compile_rules.in
-
+EXTRA_DIST = autogen.sh \
+	tests/tests/compile_rules.in tests/microbenchmarks/compile_rules.in \
+	tutorial \
+	$(DX_CONFIG)
 
 # TESTS
 # include tests/Makefile.am.inc
@@ -17,6 +21,7 @@ EXTRA_DIST = autogen.sh tests/tests/compile_rules.in tests/microbenchmarks/compi
 check :
 	$(shell cd tests/; ./runtests.sh)
 
+MOSTLYCLEANFILES = $(DX_CLEANFILES)
 CLEANFILES = *~ *.bak
 
 # all: gpi
