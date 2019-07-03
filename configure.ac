@@ -10,15 +10,6 @@ AC_CONFIG_HEADERS([config.h])
 
 #AC_REQUIRE_AUX_FILE([runtests.sh])
 AC_USE_SYSTEM_EXTENSIONS
-# DYNAMICAL COMPILATION RULES FOR TESTS
-AC_CONFIG_COMMANDS_PRE([echo "# RULES " > tests/tests/compile_rules.in])
-AC_CONFIG_COMMANDS_PRE([rm -fv tests/tests/Makefile.am])
-AC_CONFIG_COMMANDS_PRE([echo "include compile_rules.in" > tests/tests/Makefile.am])
-AC_CONFIG_COMMANDS_PRE([cat tests/tests/Makefile.am.inc >> tests/tests/Makefile.am])
-AC_CONFIG_COMMANDS_PRE([echo "# RULES " > tests/microbenchmarks/compile_rules.in])
-AC_CONFIG_COMMANDS_PRE([rm -fv tests/microbenchmarks/Makefile.am])
-AC_CONFIG_COMMANDS_PRE([echo "include compile_rules.in" > tests/microbenchmarks/Makefile.am])
-AC_CONFIG_COMMANDS_PRE([cat tests/microbenchmarks/Makefile.am.inc >> tests/microbenchmarks/Makefile.am])
 # THE MAKEFILE.AM'S
 AC_CONFIG_FILES([Makefile
 	src/Makefile
@@ -81,16 +72,22 @@ AC_ARG_WITH([infiniband],AS_HELP_STRING([--with-infiniband], [compile for infini
 [with_infiniband=yes])
 ACX_INFINIBAND
 AM_CONDITIONAL([WITH_INFINIBAND], test x${HAVE_INFINIBAND} = x1)
+if test x${HAVE_INFINIBAND} = x1; then
+  cp tests/defs/default_ib.def tests/defs/default.def
+fi
 
 # CHECKS ETHERNET
 AC_ARG_WITH([ethernet],AS_HELP_STRING([--with-ethernet], [compile for ethernet]),
 [with_ethernet=$withval],
 [with_ethernet=no])
 #  FALLBACK OR EXPLICITLY CHOSEN TCP
-if test x${HAVE_INFINIBAND} = x0; then
+if test x${HAVE_INFINIBAND} = x0 || test x${with_ethernet} != xno; then
    AC_CHECK_HEADER(netinet/tcp.h,[HAVE_TCP=1],[AC_MSG_ERROR([There is no TCP connection neither])])
 fi
 AM_CONDITIONAL([WITH_ETHERNET], test x${HAVE_TCP} = x1)
+if test x${HAVE_TCP} = x1; then
+   cp tests/defs/default_tcp.def tests/defs/default.def
+fi
 
 # BUILD DEBUG AND STAT LIBRARIES
 AC_ARG_ENABLE([debug],

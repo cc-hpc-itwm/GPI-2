@@ -84,12 +84,12 @@ endif
 
 # FLAGS FOR TESTING
 tests_flags :
-	$(shell echo "AM_CFLAGS = $(libGPI2dbg_la_CFLAGS)" > ../tests/tests/compile_rules.in)
-	$(shell echo "AM_CPPFLAGS = $(libGPI2dbg_la_CPPFLAGS)" >> ../tests/tests/compile_rules.in)
+	$(shell echo "$(libGPI2dbg_la_CFLAGS)" > ../tests/tests/compile_rules.in)
+	$(shell echo "$(libGPI2dbg_la_CPPFLAGS)" >> ../tests/tests/compile_rules.in)
 
 microbenchmarks_flags :
-	$(shell echo "AM_CFLAGS = $(libGPI2_la_CFLAGS)" > ../tests/microbenchmarks/compile_rules.in)
-	$(shell echo "AM_CPPFLAGS = $(libGPI2_la_CPPFLAGS)" >> ../tests/microbenchmarks/compile_rules.in)
+	$(shell echo "$(libGPI2_la_CFLAGS)" > ../tests/microbenchmarks/compile_rules.in)
+	$(shell echo "$(libGPI2_la_CPPFLAGS)" >> ../tests/microbenchmarks/compile_rules.in)
 
 all-local : tests_flags microbenchmarks_flags
 

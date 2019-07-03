@@ -2,13 +2,7 @@
 *.lo
 *.mod
 
-.deps/
-.libs/
-.dirstamp
-
 *.in
-!tests/tests/compile_rules.in
-!tests/microbenchmarks/compile_rules.in
 *.a
 *.la
 
@@ -18,4 +12,13 @@
 *.install
 
 docs/doxygen-doc/
-#build-aux/*
+
+.deps/
+.libs/
+.dirstamp
+Makefile
+libtool
+config.h
+config.status
+stamp-h1
+/tests/defs/default.def

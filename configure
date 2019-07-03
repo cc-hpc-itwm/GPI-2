@@ -1520,7 +1520,7 @@ Optional Features:
   --enable-doxygen-chi    generate doxygen seperate compressed HTML help index
                           file
   --disable-doxygen-html  don't generate doxygen plain HTML documentation
-  --enable-doxygen-ps     generate doxygen PostScript documentation
+  --disable-doxygen-ps    don't generate doxygen PostScript documentation
   --disable-doxygen-pdf   don't generate doxygen PDF documentation
 
 Optional Packages:
@@ -3942,6 +3942,7 @@ $as_echo "$ac_cv_safe_to_define___extensions__" >&6; }
   $as_echo "#define _TANDEM_SOURCE 1" >>confdefs.h
 
 
+# THE MAKEFILE.AM'S
 ac_config_files="$ac_config_files Makefile src/Makefile tests/Makefile tests/tests/Makefile tests/microbenchmarks/Makefile docs/Makefile"
 
 am__api_version='1.13'
@@ -20966,6 +20967,9 @@ else
   WITH_INFINIBAND_FALSE=
 fi
 
+if test x${HAVE_INFINIBAND} = x1; then
+  cp tests/defs/default_ib.def tests/defs/default.def
+fi
 
 # CHECKS ETHERNET
 
@@ -20977,7 +20981,7 @@ else
 fi
 
 #  FALLBACK OR EXPLICITLY CHOSEN TCP
-if test x${HAVE_INFINIBAND} = x0; then
+if test x${HAVE_INFINIBAND} = x0 || test x${with_ethernet} != xno; then
    ac_fn_c_check_header_mongrel "$LINENO" "netinet/tcp.h" "ac_cv_header_netinet_tcp_h" "$ac_includes_default"
 if test "x$ac_cv_header_netinet_tcp_h" = xyes; then :
   HAVE_TCP=1
@@ -20995,6 +20999,9 @@ else
   WITH_ETHERNET_FALSE=
 fi
 
+if test x${HAVE_TCP} = x1; then
+   cp tests/defs/default_tcp.def tests/defs/default.def
+fi
 
 # BUILD DEBUG AND STAT LIBRARIES
 # Check whether --enable-debug was given.
@@ -23034,11 +23041,6 @@ fi
 
 
 
-
-
-
-
-
 # Files:
 DX_PROJECT=GPI-2
 
@@ -23991,7 +23993,7 @@ esac
 
 else
 
-DX_FLAG_ps=0
+DX_FLAG_ps=1
 
 
 test "$DX_FLAG_doc" = "1" || DX_FLAG_ps=0

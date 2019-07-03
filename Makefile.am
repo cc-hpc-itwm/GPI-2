@@ -7,7 +7,6 @@ SUBDIRS = src tests docs
 dist_bin_SCRIPTS = bin/*
 
 EXTRA_DIST = autogen.sh \
-	tests/tests/compile_rules.in tests/microbenchmarks/compile_rules.in \
 	tutorial \
 	$(DX_CONFIG)
 

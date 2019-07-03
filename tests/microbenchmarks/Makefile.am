@@ -1,4 +1,6 @@
-include compile_rules.in
+file = compile_rules.in
+AM_CFLAGS = $(shell cat ${file} | head -n 1)
+AM_CPPFLAGS = $(shell cat ${file} | tail -n 1)
 
 LDADD = -L$(top_builddir)/src/.libs -lGPI2 -lpthread
 if WITH_INFINIBAND
