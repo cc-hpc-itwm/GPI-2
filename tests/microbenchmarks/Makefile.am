@@ -1,10 +1,13 @@
-file = compile_rules.in
-AM_CFLAGS = $(shell cat ${file} | head -n 1)
-AM_CPPFLAGS = $(shell cat ${file} | tail -n 1)
+AM_CFLAGS = -g
+AM_CPPFLAGS = -I$(top_builddir)/src/include
 
 LDADD = -L$(top_builddir)/src/.libs -lGPI2 -lpthread
 if WITH_INFINIBAND
 LDADD += -L@ac_lib_infiniband@ -libverbs
+endif
+
+if WITH_MPI
+AM_CPPFLAGS += -DGPI2_WITH_MPI
 endif
 
 # MICROBENCHMARKS

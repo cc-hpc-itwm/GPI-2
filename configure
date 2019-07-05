@@ -2693,6 +2693,16 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 ac_config_headers="$ac_config_headers config.h"
 
 
+if test -z "${CFLAGS}"; then
+CFLAGS=
+fi
+if test -z "${FCFLAGS}"; then
+FCFLAGS=
+fi
+if test -z "${CXXFLAGS}"; then
+CXXFLAGS=
+fi
+
 #AC_REQUIRE_AUX_FILE([runtests.sh])
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -22844,6 +22854,86 @@ ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest
 ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 
   FCFLAGS="${acx_save_fcflags}"
+
+
+
+
+if test -z "${FCFLAGS}"; then
+  case "${FC}" in
+    gfortran*)
+      FCFLAGS+=" -O2"
+      # FCFLAGS="-pipe -O3 -funroll-loops -ffast-math -ffree-line-length-none"
+      ;;
+    openf9*)
+      FCFLAGS="-O3 -funroll-loops -ffast-math"
+      ;;
+    g95*)
+      FCFLAGS="-pipe -O3 -funroll-loops -ffast-math"
+      ;;
+    efc*|ifc*|ifort*)
+      case "${host}" in
+        x86_64*)
+          FCFLAGS+=" -O2"
+          # FCFLAGS="-u -fpp1 -nbs -pc80 -pad -align -unroll -O3 -ip -no-fp-port -mno-ieee-fp -vec-report0 -no-prec-div"
+          ;;
+        i?86*linux*)
+          FCFLAGS="-u -fpp1 -nbs -pc80 -pad -align -unroll -O3 -ip -no-fp-port -mno-ieee-fp -vec-report0 -no-prec-div"
+          a=`echo $host | sed "s/^i//" | sed "s/86.*//"`
+          if test "$a" -gt 5 ; then
+            FCFLAGS="$FCFLAGS -tpp7 -xW"
+          fi
+          ;;
+        ia64*)
+          FCFLAGS="-O3 -ip -IPF_fp_relaxed -ftz -fpp -u -align all -pad"
+         ;;
+      esac
+      ;;
+    sun*)
+      case "${host}" in
+        i?86*linux*|x86_64*)
+          FCFLAGS="-fast -xprefetch -xvector=simd"
+          ;;
+        sparc*)
+          FCFLAGS="-fast"
+          ;;
+      esac
+      ;;
+    pathf9*)
+      FCFLAGS="-O3 -march=auto -mcpu=auto -OPT:Ofast -fno-math-errno -LNO:simd=2 -OPT:align_unsafe=ON"
+      ;;
+    pgf90*)
+      FCFLAGS="-O4 -fast -Munroll -Mnoframe -Mdalign"
+      ;;
+    abf90*)
+      FCFLAGS="-O3 -YEXT_NAMES=LCS -YEXT_SFX=_"
+      ;;
+    xlf*)
+      FCFLAGS="-O3 -qarch=auto -qtune=auto -qcache=auto -qxlf90=autodealloc"
+      ;;
+    f9*)
+      case "${host}" in
+        alphaev*)
+          FCFLAGS="-align dcommons -fast -tune host -arch host -noautomatic"
+          ;;
+        mips*)
+          FCFLAGS="-Ofast -O3"
+          ;;
+        sparc*)
+          FCFLAGS="-fast"
+          ;;
+        *)
+          FCFLAGS="-O3"
+          ;;
+      esac
+      ;;
+    *)
+       FCFLAGS="-O3"
+       ;;
+  esac
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Using FCFLAGS=\"$FCFLAGS\"" >&5
+$as_echo "$as_me: Using FCFLAGS=\"$FCFLAGS\"" >&6;}
+
 
   # Check flag for out module dir
 

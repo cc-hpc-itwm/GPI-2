@@ -16,6 +16,8 @@ if test "x$with_fortran" == xyes; then
   AC_FC_SRCEXT(f90)
   FCFLAGS="${acx_save_fcflags}"
 
+  ACX_FCFLAGS
+
   # Check flag for out module dir
   AC_FC_MODULE_OUTPUT_FLAG([AC_SUBST([ac_cv_fc_module_output_flag])],[])
   dnl Fortran default flags

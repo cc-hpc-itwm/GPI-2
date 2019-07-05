@@ -18,7 +18,7 @@ EXTRA_DIST = autogen.sh \
 # LOG_DRIVER = cd tests; ./runtests.sh -m machinefile
 
 check :
-	$(shell cd tests/; ./runtests.sh)
+	cd tests/; ./runtests.sh
 
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
 CLEANFILES = *~ *.bak

@@ -1357,6 +1357,7 @@ AC_SUBST([am__untar])
 ]) # _AM_PROG_TAR
 
 m4_include([m4/c11.m4])
+m4_include([m4/fcflags.m4])
 m4_include([m4/fortran.m4])
 m4_include([m4/infiniband.m4])
 m4_include([m4/libtool.m4])

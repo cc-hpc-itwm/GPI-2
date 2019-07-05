@@ -4,9 +4,8 @@
 
 *.in
 *.a
+*.so
 *.la
-
-*.bin
 
 *.log
 *.install
@@ -21,4 +20,6 @@ libtool
 config.h
 config.status
 stamp-h1
+
+*.bin
 /tests/defs/default.def

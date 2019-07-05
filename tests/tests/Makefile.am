@@ -1,11 +1,20 @@
-file = compile_rules.in
-AM_CFLAGS = $(shell cat ${file} | head -n 1)
-AM_CPPFLAGS = $(shell cat ${file} | tail -n 1)
+AM_CFLAGS = -g
+AM_CPPFLAGS = -I$(top_builddir)/src/include
 
-LDADD = -L$(top_builddir)/src/.libs -lGPI2dbg -lpthread
+LDADD = -L$(top_builddir)/src/.libs -lGPI2-dbg -lpthread
 if WITH_INFINIBAND
 LDADD += -L@ac_lib_infiniband@ -libverbs
 endif
+
+if WITH_FORTRAN
+AM_FCFLAGS = -I$(top_builddir)/src/include -fno-range-check \
+	 @ac_cv_fc_module_output_flag@ fortran/
+endif
+
+if WITH_MPI
+AM_CPPFLAGS += -DGPI2_WITH_MPI
+endif
+
 AM_CXXFLAGS = -std=c++11 $(AM_CFLAGS) $(AM_CPPFLAGS)
 
 # TESTS
@@ -67,7 +76,7 @@ comm_tests = \
 	../bin/read_write.bin \
 	../bin/small_writes_notify.bin \
 	../bin/strings.bin \
-	../bin/write.bin \
+../bin/write.bin \
 	../bin/write_all.bin \
 	../bin/write_all_mtt.bin \
 	../bin/write_all_nsizes.bin \
@@ -327,7 +336,6 @@ noinst_PROGRAMS = $(atomic_tests) \
 		$(utils_tests)
 
 if WITH_FORTRAN
-AM_FCFLAGS = -I$(abs_top_builddir)/src/gaspi/include
 noinst_PROGRAMS += $(fortran_tests)
 endif
 
@@ -335,4 +343,4 @@ if WITH_MPI
 noinst_PROGRAMS += $(mpi_tests)
 endif
 
-CLEANFILES = *~ *.bak *.bin
+CLEANFILES = *~ *.bak *.bin fortran/*.mod

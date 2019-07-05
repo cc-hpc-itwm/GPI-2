@@ -8,6 +8,16 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 
+if test -z "${CFLAGS}"; then
+CFLAGS=
+fi
+if test -z "${FCFLAGS}"; then
+FCFLAGS=
+fi
+if test -z "${CXXFLAGS}"; then
+CXXFLAGS=
+fi
+
 #AC_REQUIRE_AUX_FILE([runtests.sh])
 AC_USE_SYSTEM_EXTENSIONS
 # THE MAKEFILE.AM'S

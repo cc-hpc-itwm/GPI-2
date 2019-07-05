@@ -79,23 +79,24 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @WITH_INFINIBAND_TRUE@am__append_1 = -L@ac_lib_infiniband@ -libverbs
+@WITH_MPI_TRUE@am__append_2 = -DGPI2_WITH_MPI
 noinst_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
 	$(am__EXEEXT_4) $(am__EXEEXT_5) $(am__EXEEXT_6) \
 	$(am__EXEEXT_7) $(am__EXEEXT_8) $(am__EXEEXT_9) \
 	$(am__EXEEXT_10) $(am__EXEEXT_11) $(am__EXEEXT_12) \
 	$(am__EXEEXT_13) $(am__EXEEXT_14) $(am__EXEEXT_15) \
 	$(am__EXEEXT_17) $(am__EXEEXT_19)
-@WITH_FORTRAN_TRUE@am__append_2 = $(fortran_tests)
-@WITH_MPI_TRUE@am__append_3 = $(mpi_tests)
+@WITH_FORTRAN_TRUE@am__append_3 = $(fortran_tests)
+@WITH_MPI_TRUE@am__append_4 = $(mpi_tests)
 subdir = tests/tests
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/build-aux/depcomp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/c11.m4 \
-	$(top_srcdir)/m4/fortran.m4 $(top_srcdir)/m4/infiniband.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
-	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
-	$(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/fcflags.m4 $(top_srcdir)/m4/fortran.m4 \
+	$(top_srcdir)/m4/infiniband.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
 	$(top_srcdir)/m4/m4_ax_prog_doxygen.m4 $(top_srcdir)/m4/mpi.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -1355,11 +1356,13 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-file = compile_rules.in
-AM_CFLAGS = $(shell cat ${file} | head -n 1)
-AM_CPPFLAGS = $(shell cat ${file} | tail -n 1)
-LDADD = -L$(top_builddir)/src/.libs -lGPI2dbg -lpthread \
+AM_CFLAGS = -g
+AM_CPPFLAGS = -I$(top_builddir)/src/include $(am__append_2)
+LDADD = -L$(top_builddir)/src/.libs -lGPI2-dbg -lpthread \
 	$(am__append_1)
+@WITH_FORTRAN_TRUE@AM_FCFLAGS = -I$(top_builddir)/src/include -fno-range-check \
+@WITH_FORTRAN_TRUE@	 @ac_cv_fc_module_output_flag@ fortran/
+
 AM_CXXFLAGS = -std=c++11 $(AM_CFLAGS) $(AM_CPPFLAGS)
 
 # TESTS
@@ -1412,7 +1415,7 @@ comm_tests = \
 	../bin/read_write.bin \
 	../bin/small_writes_notify.bin \
 	../bin/strings.bin \
-	../bin/write.bin \
+../bin/write.bin \
 	../bin/write_all.bin \
 	../bin/write_all_mtt.bin \
 	../bin/write_all_nsizes.bin \
@@ -1622,8 +1625,7 @@ ___bin_error_str_bin_SOURCES = utils/error_str.c $(auxSRCS)
 ___bin_print_error_bin_SOURCES = utils/print_error.c $(auxSRCS)
 ___bin_print_error2_bin_SOURCES = utils/print_error2.c $(auxSRCS)
 ___bin_time_get_bin_SOURCES = utils/time_get.c $(auxSRCS)
-@WITH_FORTRAN_TRUE@AM_FCFLAGS = -I$(abs_top_builddir)/src/gaspi/include
-CLEANFILES = *~ *.bak *.bin
+CLEANFILES = *~ *.bak *.bin fortran/*.mod
 all: all-am
 
 .SUFFIXES:
