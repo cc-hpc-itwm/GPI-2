@@ -7,12 +7,15 @@ LDADD += -L@ac_lib_infiniband@ -libverbs
 endif
 
 if WITH_FORTRAN
-AM_FCFLAGS = -I$(top_builddir)/src/include -fno-range-check \
+AM_FCFLAGS = -I$(top_builddir)/src/include @FCFLAGS_TESTS@ \
 	 @ac_cv_fc_module_output_flag@ fortran/
 endif
 
 if WITH_MPI
 AM_CPPFLAGS += -DGPI2_WITH_MPI
+if WITH_FORTRAN
+AM_FCFLAGS += -DGPI2_WITH_MPI
+endif
 endif
 
 AM_CXXFLAGS = -std=c++11 $(AM_CFLAGS) $(AM_CPPFLAGS)

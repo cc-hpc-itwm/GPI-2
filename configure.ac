@@ -126,7 +126,7 @@ AM_CONDITIONAL([WITH_MPI], test x${HAVE_MPI} = x1)
 AC_ARG_WITH(loadlever, [AS_HELP_STRING([--with-loadlever],[compile with loadlevel support.])],
 [with_loadlever=$withval],
 [with_loadlever=no])
-AM_CONDITIONAL([WITH_LOADLEVER], test x${HAVE_LOADLEVER} = x1)
+AM_CONDITIONAL([WITH_LOADLEVER], test $with_loadlever = yes)
 
 # FORTRAN
 AC_ARG_WITH([fortran],AS_HELP_STRING([--with-fortran], [compile Fortran modules (default)]),

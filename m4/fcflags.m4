@@ -28,6 +28,7 @@ if test -z "${FCFLAGS}"; then
   case "${FC}" in
     gfortran*)
       FCFLAGS+=" -O2"
+      AC_SUBST([FCFLAGS_TESTS],["-fno-range-check"])
       # FCFLAGS="-pipe -O3 -funroll-loops -ffast-math -ffree-line-length-none"
       ;;
     openf9*)
@@ -40,6 +41,7 @@ if test -z "${FCFLAGS}"; then
       case "${host}" in
         x86_64*)
           FCFLAGS+=" -O2"
+	  AC_SUBST([FCFLAGS_TESTS],["-nocheck bounds"])
           # FCFLAGS="-u -fpp1 -nbs -pc80 -pad -align -unroll -O3 -ip -no-fp-port -mno-ieee-fp -vec-report0 -no-prec-div"
           ;;
         i?86*linux*)
