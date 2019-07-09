@@ -21935,7 +21935,7 @@ $as_echo "$ac_res" >&6; }
 if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
 
 else
-  HAVE_INFINIBAND=0
+  HAVE_MPI=0
 fi
 
 ac_lib_mpi=$with_mpi/lib64
@@ -21959,7 +21959,7 @@ $as_echo "$ac_res" >&6; }
 if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
 
 else
-  HAVE_INFINIBAND=0
+  HAVE_MPI=0
 fi
 
 else
@@ -22112,7 +22112,7 @@ else
   with_loadlever=no
 fi
 
- if test x${HAVE_LOADLEVER} = x1; then
+ if test $with_loadlever = yes; then
   WITH_LOADLEVER_TRUE=
   WITH_LOADLEVER_FALSE='#'
 else
@@ -23045,7 +23045,7 @@ ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 
 if test -z "${FCFLAGS}"; then
   case "${FC}" in
-    gfortran*)
+    gfortran|mpif90*)
       FCFLAGS+=" -O2"
       FCFLAGS_TESTS="-fno-range-check"
 
@@ -23057,7 +23057,7 @@ if test -z "${FCFLAGS}"; then
     g95*)
       FCFLAGS="-pipe -O3 -funroll-loops -ffast-math"
       ;;
-    efc*|ifc*|ifort*)
+    efc*|ifc*|ifort*|mpiifort*)
       case "${host}" in
         x86_64*)
           FCFLAGS+=" -O2"
@@ -23116,7 +23116,7 @@ if test -z "${FCFLAGS}"; then
       esac
       ;;
     *)
-       FCFLAGS="-O3"
+       FCFLAGS="-O2"
        ;;
   esac
 fi

@@ -26,7 +26,7 @@ AC_REQUIRE([AC_CANONICAL_HOST])
 
 if test -z "${FCFLAGS}"; then
   case "${FC}" in
-    gfortran*)
+    gfortran|mpif90*)
       FCFLAGS+=" -O2"
       AC_SUBST([FCFLAGS_TESTS],["-fno-range-check"])
       # FCFLAGS="-pipe -O3 -funroll-loops -ffast-math -ffree-line-length-none"
@@ -37,7 +37,7 @@ if test -z "${FCFLAGS}"; then
     g95*)
       FCFLAGS="-pipe -O3 -funroll-loops -ffast-math"
       ;;
-    efc*|ifc*|ifort*)
+    efc*|ifc*|ifort*|mpiifort*)
       case "${host}" in
         x86_64*)
           FCFLAGS+=" -O2"
@@ -95,7 +95,7 @@ if test -z "${FCFLAGS}"; then
       esac
       ;;
     *)
-       FCFLAGS="-O3"
+       FCFLAGS="-O2"
        ;;
   esac
 fi
