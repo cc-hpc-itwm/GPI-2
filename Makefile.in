@@ -421,7 +421,6 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-ACLOCAL_AMFLAGS = -I m4
 @DX_COND_doc_TRUE@@DX_COND_html_TRUE@DX_CLEAN_HTML = @DX_DOCDIR@/html
 @DX_COND_chm_TRUE@@DX_COND_doc_TRUE@DX_CLEAN_CHM = @DX_DOCDIR@/chm
 @DX_COND_chi_TRUE@@DX_COND_chm_TRUE@@DX_COND_doc_TRUE@DX_CLEAN_CHI = @DX_DOCDIR@/@PACKAGE@.chi
@@ -446,14 +445,20 @@ ACLOCAL_AMFLAGS = -I m4
 @DX_COND_doc_TRUE@    $(DX_CLEAN_PDF) \
 @DX_COND_doc_TRUE@    $(DX_CLEAN_LATEX)
 
-SUBDIRS = src tests docs
-dist_bin_SCRIPTS = bin/*
-EXTRA_DIST = autogen.sh \
-	tutorial \
-	$(DX_CONFIG)
 
+# INCLUDES
+ACLOCAL_AMFLAGS = -I m4
+
+# TARGETS
+SUBDIRS = src tests docs
+
+# FOR DISTRIBUTION
+dist_bin_SCRIPTS = bin/*
+EXTRA_DIST = autogen.sh tutorial $(DX_CONFIG)
+
+# CLEAN
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
-CLEANFILES = *~ *.bak
+CLEANFILES = *~ *.bak m4/*~
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -1016,45 +1021,9 @@ uninstall-am: uninstall-dist_binSCRIPTS
 @DX_COND_doc_TRUE@	rm -rf @DX_DOCDIR@
 @DX_COND_doc_TRUE@	$(DX_ENV) $(DX_DOXYGEN) $(srcdir)/$(DX_CONFIG)
 
-# TESTS
-# include tests/Makefile.am.inc
-
-# check_PROGRAMS = $(test_BUILT_TESTS)
-# TESTS = $(test_BUILT_TESTS)
-# LOG_DRIVER = cd tests; ./runtests.sh -m machinefile
-
+# TESTING
 check :
 	cd tests/; ./runtests.sh
-
-# all: gpi
-# #fortran tests
-
-# gpi:
-# $(MAKE) -C src gpi
-
-# fortran:
-# $(MAKE) -C src fortran
-
-# mic:
-# $(MAKE) -C src mic
-
-# tests: gpi
-# cd tests && $(MAKE) && cd ..
-
-# docs:
-# @if test "$(DOXYGEN)" = ""; then \
-# echo "Doxygen not found."; \
-# echo "Install doxygen to be able to generate documentation."; \
-# echo "Or consult it online at: http://www.gpi-site.com/gpi2/docs/";\
-# false; \
-# fi
-# doxygen Doxyfile
-
-# clean:
-# $(MAKE) -C src clean
-# $(MAKE) -C tests clean
-
-# .PHONY: all tests docs clean
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

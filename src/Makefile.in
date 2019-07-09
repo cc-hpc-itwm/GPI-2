@@ -552,10 +552,10 @@ libGPI2_la_SOURCES = $(SRCS)
 libGPI2_la_CFLAGS = $(lib_default_cflags) -O2
 libGPI2_la_CPPFLAGS = $(default_includes)
 @ENABLE_DEBUG_TRUE@libGPI2_dbg_la_SOURCES = $(SRCS)
-@ENABLE_DEBUG_TRUE@libGPI2_dbg_la_CFLAGS = $(lib_default_cflags) -g -O0 -DDEGUB
+@ENABLE_DEBUG_TRUE@libGPI2_dbg_la_CFLAGS = $(lib_default_cflags) -g -O0 -DDEBUG
 @ENABLE_DEBUG_TRUE@libGPI2_dbg_la_CPPFLAGS = $(default_includes)
 @ENABLE_STAT_TRUE@libGPI2_stats_la_SOURCES = $(SRCS)
-@ENABLE_STAT_TRUE@libGPI2_stats_la_CFLAGS = $(lib_default_cflags) -g -O0 -DGPI2_STATS -DDEGUB
+@ENABLE_STAT_TRUE@libGPI2_stats_la_CFLAGS = $(lib_default_cflags) -g -O0 -DGPI2_STATS -DDEBUG
 @ENABLE_STAT_TRUE@libGPI2_stats_la_CPPFLAGS = $(default_includes)
 
 # FORTRAN MODULES

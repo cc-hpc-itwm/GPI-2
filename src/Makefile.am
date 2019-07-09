@@ -57,14 +57,14 @@ libGPI2_la_CPPFLAGS = $(default_includes)
 if ENABLE_DEBUG
 lib_LTLIBRARIES += libGPI2-dbg.la
 libGPI2_dbg_la_SOURCES = $(SRCS)
-libGPI2_dbg_la_CFLAGS = $(lib_default_cflags) -g -O0 -DDEGUB
+libGPI2_dbg_la_CFLAGS = $(lib_default_cflags) -g -O0 -DDEBUG
 libGPI2_dbg_la_CPPFLAGS = $(default_includes)
 endif
 
 if ENABLE_STAT
 lib_LTLIBRARIES += libGPI2-stats.la
 libGPI2_stats_la_SOURCES = $(SRCS)
-libGPI2_stats_la_CFLAGS = $(lib_default_cflags) -g -O0 -DGPI2_STATS -DDEGUB
+libGPI2_stats_la_CFLAGS = $(lib_default_cflags) -g -O0 -DGPI2_STATS -DDEBUG
 libGPI2_stats_la_CPPFLAGS = $(default_includes)
 endif
 
