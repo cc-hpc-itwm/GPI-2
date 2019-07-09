@@ -665,6 +665,7 @@ libGPI2_la_CPPFLAGS = $(default_includes)
 @ENABLE_STAT_TRUE@libGPI2_stats_la_CPPFLAGS = $(default_includes)
 
 # FORTRAN MODULES
+EXTRA_DIST = GASPI_types.f90 GASPI.f90 GASPI_Ext.f90
 @WITH_FORTRAN_TRUE@FMODDIR = include
 @WITH_FORTRAN_TRUE@nodist_include_HEADERS = $(FMODDIR)/gaspi_types.mod $(FMODDIR)/gaspi.mod $(FMODDIR)/gaspi_ext.mod
 

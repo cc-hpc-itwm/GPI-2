@@ -69,6 +69,7 @@ libGPI2_stats_la_CPPFLAGS = $(default_includes)
 endif
 
 # FORTRAN MODULES
+EXTRA_DIST = GASPI_types.f90 GASPI.f90 GASPI_Ext.f90
 if WITH_FORTRAN
 FMODDIR=include
 $(FMODDIR)/gaspi_types.mod : GASPI_types.f90

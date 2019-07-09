@@ -118,6 +118,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@WITH_LOADLEVER_FALSE@am__append_1 = bin/ssh.spawner bin/gaspi_cleanup
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/c11.m4 \
@@ -468,18 +469,7 @@ SUBDIRS = src tests docs
 EXTRA_DIST = autogen.sh tutorial $(DX_CONFIG) bin/*
 
 # RUN SCRIPTS
-# dist_bin_SCRIPTS = bin/*
-bin_SCRIPTS = bin/gaspi_logger
-# if WITH_LOADLEVER
-# install-exec-hook:
-# 	cp bin/gaspi_run.poe $(DESTDIR)$(bindir)/gaspi_run
-# 	head -n 18 bin/gaspi_cleanup > $(DESTDIR)$(bindir)/gaspi_cleanup
-# 	chmod +x $(DESTDIR)$(bindir)/gaspi_cleanup
-# else
-# bin_SCRIPTS += bin/ssh.spawner bin/gaspi_cleanup
-# install-exec-hook:
-# 	cp bin/gaspi_run.ssh $(DESTDIR)$(bindir)/gaspi_run
-# endif
+bin_SCRIPTS = bin/gaspi_logger $(am__append_1)
 
 # CLEAN
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
@@ -948,7 +938,8 @@ install-dvi: install-dvi-recursive
 install-dvi-am:
 
 install-exec-am: install-binSCRIPTS
-
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
 install-html: install-html-recursive
 
 install-html-am:
@@ -989,7 +980,8 @@ ps-am:
 
 uninstall-am: uninstall-binSCRIPTS
 
-.MAKE: $(am__recursive_targets) all install-am install-strip
+.MAKE: $(am__recursive_targets) all install-am install-exec-am \
+	install-strip
 
 .PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am \
 	am--refresh check check-am clean clean-cscope clean-generic \
@@ -1000,13 +992,13 @@ uninstall-am: uninstall-binSCRIPTS
 	distdir distuninstallcheck dvi dvi-am html html-am info \
 	info-am install install-am install-binSCRIPTS install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-binSCRIPTS
+	install-exec-am install-exec-hook install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs installdirs-am \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-am uninstall uninstall-am uninstall-binSCRIPTS
 
 .PRECIOUS: Makefile
 
@@ -1060,6 +1052,12 @@ uninstall-am: uninstall-binSCRIPTS
 # TESTING
 check :
 	cd tests/; ./runtests.sh
+@WITH_LOADLEVER_TRUE@install-exec-hook:
+@WITH_LOADLEVER_TRUE@	cp bin/gaspi_run.poe $(DESTDIR)$(bindir)/gaspi_run
+@WITH_LOADLEVER_TRUE@	head -n 18 bin/gaspi_cleanup > $(DESTDIR)$(bindir)/gaspi_cleanup
+@WITH_LOADLEVER_TRUE@	chmod +x $(DESTDIR)$(bindir)/gaspi_cleanup
+@WITH_LOADLEVER_FALSE@install-exec-hook:
+@WITH_LOADLEVER_FALSE@	cp bin/gaspi_run.ssh $(DESTDIR)$(bindir)/gaspi_run
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
