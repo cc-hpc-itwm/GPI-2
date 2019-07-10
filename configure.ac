@@ -69,61 +69,57 @@ AC_FUNC_MMAP
 AC_CHECK_FUNCS([ftime ftruncate gethostbyname gethostname gettimeofday inet_ntoa memmove memset pow select socket sqrt strerror strtol uname mktemp])
 
 # MPI
-AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],[compile with MPI support])],
-[with_mpi=$withval],
-[with_mpi=no])
+AC_ARG_WITH(mpi,[AS_HELP_STRING([--with-mpi],[compile with MPI support])],
+		[with_mpi=$withval],
+		[with_mpi=no])
 ACX_MPI
 AM_CONDITIONAL([WITH_MPI],[test x${HAVE_MPI} = x1])
 AM_CONDITIONAL([WITH_MPI_USER],[test x${HAVE_MPI_USER} != x0])
 
+# FORTRAN
+AC_ARG_WITH([fortran],[AS_HELP_STRING([--with-fortran], [compile Fortran modules (default)])],
+	 	      [with_fortran=$withval],
+		      [with_fortran=yes])
+ACX_FORTRAN
+AM_CONDITIONAL([WITH_FORTRAN],[test x${HAVE_FORTRAN} = x1])
+
 # CHECKS INFINIBAND
-AC_ARG_WITH([infiniband],AS_HELP_STRING([--with-infiniband], [compile for infiniband (default)]),
-[with_infiniband=$withval],
-[with_infiniband=yes])
+AC_ARG_WITH([infiniband],[AS_HELP_STRING([--with-infiniband], [compile for infiniband (default)])],
+			 [with_infiniband=$withval],
+			 [with_infiniband=yes])
 ACX_INFINIBAND
-AM_CONDITIONAL([WITH_INFINIBAND], test x${HAVE_INFINIBAND} = x1)
+AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
 if test x${HAVE_INFINIBAND} = x1; then
-  cp tests/defs/default_ib.def tests/defs/default.def
+   cp tests/defs/default_ib.def tests/defs/default.def
 fi
 
 # CHECKS ETHERNET
-AC_ARG_WITH([ethernet],AS_HELP_STRING([--with-ethernet], [compile for ethernet]),
-[with_ethernet=$withval],
-[with_ethernet=no])
-#  FALLBACK OR EXPLICITLY CHOSEN TCP
-if test x${HAVE_INFINIBAND} = x0 || test x${with_ethernet} != xno; then
-   AC_CHECK_HEADER(netinet/tcp.h,[HAVE_TCP=1],[AC_MSG_ERROR([There is no TCP connection neither])])
-fi
+AC_ARG_WITH([ethernet],[AS_HELP_STRING([--with-ethernet], [compile for ethernet])],
+		       [with_ethernet=$withval],
+		       [with_ethernet=no])
+ACX_ETHERNET
 AM_CONDITIONAL([WITH_ETHERNET], test x${HAVE_TCP} = x1)
 if test x${HAVE_TCP} = x1; then
    cp tests/defs/default_tcp.def tests/defs/default.def
 fi
 
-# BUILD DEBUG AND STAT LIBRARIES
-AC_ARG_ENABLE([debug],
-	AS_HELP_STRING([--disable-debug], [don't build/install debug libraries]),
-	[ac_cv_build_debug=$enableval],
-	[ac_cv_build_debug=yes])
-AM_CONDITIONAL([ENABLE_DEBUG], [test $ac_cv_build_debug = yes])
+# BUILD DEBUG LIBRARY
+AC_ARG_ENABLE([debug],AS_HELP_STRING([--disable-debug], [do not build/install debug library (it is used by tests!)]),
+	      [build_debug=$enableval],
+	      [build_debug=yes])
+AM_CONDITIONAL([ENABLE_DEBUG],[test $build_debug = yes])
 
-AC_ARG_ENABLE([stat],
-	AS_HELP_STRING([--disable-stat], [don't build/install stat libraries]),
-	[ac_cv_build_stat=$enableval],
-	[ac_cv_build_stat=yes])
-AM_CONDITIONAL([ENABLE_STAT], [test $ac_cv_build_stat = yes])
+# BUILD STAT LIBRARY
+AC_ARG_ENABLE([stat],[AS_HELP_STRING([--disable-stat], [do not build/install statistic library])],
+		     [build_stat=$enableval],
+		     [build_stat=yes])
+AM_CONDITIONAL([ENABLE_STAT],[test $build_stat = yes])
 
 # LOADLEVER
-AC_ARG_WITH(loadlever, [AS_HELP_STRING([--with-loadlever],[compile with loadlevel support.])],
-[with_loadlever=$withval],
-[with_loadlever=no])
-AM_CONDITIONAL([WITH_LOADLEVER], test $with_loadlever = yes)
-
-# FORTRAN
-AC_ARG_WITH([fortran],AS_HELP_STRING([--with-fortran], [compile Fortran modules (default)]),
-[with_fortran=$withval],
-[with_fortran=yes])
-ACX_FORTRAN
-AM_CONDITIONAL([WITH_FORTRAN], test x${HAVE_FORTRAN} = x1)
+AC_ARG_WITH(loadlever,[AS_HELP_STRING([--with-loadlever],[compile with loadlevel support.])],
+		      [with_loadlever=$withval],
+		      [with_loadlever=no])
+AM_CONDITIONAL([WITH_LOADLEVER],[test $with_loadlever = yes])
 
 # DOXYGEN
 DX_HTML_FEATURE(ON)

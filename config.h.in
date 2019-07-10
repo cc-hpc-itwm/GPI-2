@@ -1,19 +1,5 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
-/* Define to dummy `main' function (if any) required to link to the Fortran
-   libraries. */
-#undef FC_DUMMY_MAIN
-
-/* Define if F77 and FC dummy `main' functions are identical. */
-#undef FC_DUMMY_MAIN_EQ_F77
-
-/* Define to a macro mangling the given C identifier (in lower and upper
-   case), which must not contain underscores, for linking with Fortran. */
-#undef FC_FUNC
-
-/* As FC_FUNC, but for C identifiers containing underscores. */
-#undef FC_FUNC_
-
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
@@ -25,9 +11,6 @@
 
 /* Define to 1 if you have the <float.h> header file. */
 #undef HAVE_FLOAT_H
-
-/* GPI compiled with fortran support */
-#undef HAVE_FORTRAN
 
 /* Define to 1 if you have the `ftime' function. */
 #undef HAVE_FTIME
@@ -49,9 +32,6 @@
 
 /* Define to 1 if you have the `inet_ntoa' function. */
 #undef HAVE_INET_NTOA
-
-/* Infiniband */
-#undef HAVE_INFINIBAND
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
@@ -152,9 +132,6 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
-
-/* compiler supports Fortran 2003 iso_c_binding */
-#undef ISO_C_BINDING
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR

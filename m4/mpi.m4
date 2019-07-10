@@ -17,5 +17,7 @@ AC_DEFUN([ACX_MPI],[
 	   if test x${HAVE_MPI} = x0; then
 	      AC_MSG_FAILURE([MPI compiler requested, but could not use it])
 	   fi
+	else
+	   HAVE_MPI=0
 	fi
 	])
