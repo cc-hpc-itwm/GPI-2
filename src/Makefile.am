@@ -39,7 +39,10 @@ endif
 
 # MPI MODE
 if WITH_MPI
-lib_default_cflags += -I@ac_inc_mpi@ -DGPI2_WITH_MPI
+lib_default_cflags += -DGPI2_WITH_MPI
+if WITH_MPI_USER
+lib_default_cflags += -I@ac_inc_mpi@
+endif
 endif
 
 # LOADLEVER SUPPORT

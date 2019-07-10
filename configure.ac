@@ -69,18 +69,12 @@ AC_FUNC_MMAP
 AC_CHECK_FUNCS([ftime ftruncate gethostbyname gethostname gettimeofday inet_ntoa memmove memset pow select socket sqrt strerror strtol uname mktemp])
 
 # MPI
-AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],[compile with MPI (parallelization) support.])],
+AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],[compile with MPI support])],
 [with_mpi=$withval],
 [with_mpi=no])
-## TODO: SET AUTOMATICALLY CC to mpicc
-# if test x"$with_mpi" == xyes; then
-# AC_CHECK_PROGS([CCio], [mpicc mpixlc_r mpixlc hcc mpxlc_r mpxlc sxmpicc mpifcc mpgcc mpcc cmpicc cc gcc])
-# AC_SUBST([CC],[$CCio])
-# echo $CC
-# fi
 ACX_MPI
-AM_CONDITIONAL([WITH_MPI], test x${HAVE_MPI} = x1)
-
+AM_CONDITIONAL([WITH_MPI],[test x${HAVE_MPI} = x1])
+AM_CONDITIONAL([WITH_MPI_USER],[test x${HAVE_MPI_USER} != x0])
 
 # CHECKS INFINIBAND
 AC_ARG_WITH([infiniband],AS_HELP_STRING([--with-infiniband], [compile for infiniband (default)]),

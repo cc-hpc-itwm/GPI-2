@@ -12,7 +12,11 @@ AM_FCFLAGS = -I$(top_builddir)/src/include @FCFLAGS_TESTS@ \
 endif
 
 if WITH_MPI
-AM_CPPFLAGS += -DGPI2_WITH_MPI
+AM_CFLAGS += -DGPI2_WITH_MPI
+if WITH_MPI_USER
+AM_CFLAGS += -I@ac_inc_mpi@
+LDADD += -L@ac_lib_mpi@ -lmpi
+endif
 if WITH_FORTRAN
 AM_FCFLAGS += -DGPI2_WITH_MPI
 endif

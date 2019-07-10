@@ -7,7 +7,11 @@ LDADD += -L@ac_lib_infiniband@ -libverbs
 endif
 
 if WITH_MPI
-AM_CPPFLAGS += -DGPI2_WITH_MPI
+AM_CFLAGS += -DGPI2_WITH_MPI
+if WITH_MPI_USER
+AM_CFLAGS += -I@ac_inc_mpi@
+LDADD += -L@ac_lib_mpi@ -lmpi
+endif
 endif
 
 # MICROBENCHMARKS
