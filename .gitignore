@@ -15,11 +15,17 @@ docs/doxygen-doc/
 .deps/
 .libs/
 .dirstamp
-Makefile
 libtool
 config.h
 config.status
 stamp-h1
+Makefile
 
 *.bin
+*.exe
 /tests/defs/default.def
+
+!tutorial/code/basic/Makefile
+!tutorial/code/ring-1d/gaspi/Makefile
+!tutorial/code/ring-1d/mpi/Makefile
+!tutorial/code/advanced/Makefile

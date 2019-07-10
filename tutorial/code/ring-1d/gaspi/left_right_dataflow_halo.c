@@ -101,7 +101,7 @@ int main (int argc, char *argv[])
   double time = -now();
 
 #pragma omp parallel default (none) firstprivate (buffer_id, queue_id)  \
-  shared (array, left_data_available, right_data_available, ssl, stderr)
+  shared (array, left_data_available, right_data_available, ssl, stderr, num)
   {
     slice* sl;
 

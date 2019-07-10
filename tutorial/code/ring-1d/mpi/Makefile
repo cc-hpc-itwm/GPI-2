@@ -1,3 +1,9 @@
+test:
+ifeq ($(shell test "$CC" == "mpiicc"), 1)
+	@echo "MUST USE MPI INTEL"
+	exit 1
+endif
+
 ifndef CMD_RUN
   CMD_RUN = mpirun -hostfile $$PBS_NODEFILE -ppn 1
 endif
@@ -7,8 +13,6 @@ NAME += left_right_double_buffer
 NAME += left_right_double_buffer_req_free
 NAME += left_right_double_buffer_funneled
 NAME += left_right_double_buffer_multiple
-
-CC = mpiicc
 
 CFLAGS += -Wall
 CFLAGS += -Wextra

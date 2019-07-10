@@ -27,6 +27,7 @@ AC_CONFIG_FILES([Makefile
 	tests/tests/Makefile
 	tests/microbenchmarks/Makefile
 	docs/Makefile
+	tutorial/code/Makefile
 	])
 AM_INIT_AUTOMAKE([subdir-objects])
 
