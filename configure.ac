@@ -1,6 +1,4 @@
-#                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
-
+# INITS
 AC_PREREQ([2.69])
 AC_INIT([GPI], [1.3.0], [http://gpi-site.com.www488.your-server.de/contact/])
 AC_CONFIG_SRCDIR([src/GPI2.c])
@@ -8,6 +6,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 
+# HACK LIBTOOL FLAGS
 if test -z "${CFLAGS}"; then
 CFLAGS=
 fi
@@ -18,9 +17,8 @@ if test -z "${CXXFLAGS}"; then
 CXXFLAGS=
 fi
 
-#AC_REQUIRE_AUX_FILE([runtests.sh])
+# AUTOMAKE
 AC_USE_SYSTEM_EXTENSIONS
-# THE MAKEFILE.AM'S
 AC_CONFIG_FILES([Makefile
 	src/Makefile
 	tests/Makefile
@@ -30,20 +28,16 @@ AC_CONFIG_FILES([Makefile
 	tutorial/code/Makefile
 	])
 AM_INIT_AUTOMAKE([subdir-objects])
-
 #AM_MAINTAINER_MODE([enable])
 
-# Static lib
+# LIBTOOL
 AC_DISABLE_SHARED
 LT_PREREQ([2.2])
 LT_INIT
 
-# Checks for programs.
+# CHECKS FOR PROGRAMS.
 AC_PROG_CC
-AX_CHECK_STDC
-# AC_PROG_CC_C99
-# AC_PROG_CC_STDC
-# AM_PROG_CC_C_O
+ACX_CFLAGS dnl CHOOSE C STD
 AC_PROG_FC
 AC_PROG_CXX
 AC_PROG_AWK
@@ -51,13 +45,13 @@ AC_PROG_SED
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
-# Checks for libraries.
+# CHECKS FOR LIBRARIES.
 AC_CHECK_LIB([m], [sqrt])
 
-# Checks for header files.
+# CHECKS FOR HEADER FILES.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h sys/timeb.h unistd.h sys/signal.h])
 
-# Checks for typedefs, structures, and compiler characteristics.
+# CHECKS FOR TYPEDEFS, STRUCTURES, AND COMPILER CHARACTERISTICS.
 AC_C_INLINE
 AC_TYPE_OFF_T
 AC_TYPE_PID_T
@@ -68,11 +62,25 @@ AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
 AC_TYPE_UINT8_T
 
-# Checks for library functions.
+# CHECKS FOR LIBRARY FUNCTIONS.
 AC_FUNC_ERROR_AT_LINE
 AC_FUNC_MALLOC
 AC_FUNC_MMAP
 AC_CHECK_FUNCS([ftime ftruncate gethostbyname gethostname gettimeofday inet_ntoa memmove memset pow select socket sqrt strerror strtol uname mktemp])
+
+# MPI
+AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],[compile with MPI (parallelization) support.])],
+[with_mpi=$withval],
+[with_mpi=no])
+## TODO: SET AUTOMATICALLY CC to mpicc
+# if test x"$with_mpi" == xyes; then
+# AC_CHECK_PROGS([CCio], [mpicc mpixlc_r mpixlc hcc mpxlc_r mpxlc sxmpicc mpifcc mpgcc mpcc cmpicc cc gcc])
+# AC_SUBST([CC],[$CCio])
+# echo $CC
+# fi
+ACX_MPI
+AM_CONDITIONAL([WITH_MPI], test x${HAVE_MPI} = x1)
+
 
 # CHECKS INFINIBAND
 AC_ARG_WITH([infiniband],AS_HELP_STRING([--with-infiniband], [compile for infiniband (default)]),
@@ -109,19 +117,6 @@ AC_ARG_ENABLE([stat],
 	[ac_cv_build_stat=$enableval],
 	[ac_cv_build_stat=yes])
 AM_CONDITIONAL([ENABLE_STAT], [test $ac_cv_build_stat = yes])
-
-# MPI
-AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],[compile with MPI (parallelization) support.])],
-[with_mpi=$withval],
-[with_mpi=no])
-## TODO: SET AUTOMATICALLY CC to mpicc
-# if test x"$with_mpi" == xyes; then
-# AC_CHECK_PROGS([CCio], [mpicc mpixlc_r mpixlc hcc mpxlc_r mpxlc sxmpicc mpifcc mpgcc mpcc cmpicc cc gcc])
-# AC_SUBST([CC],[$CCio])
-# echo $CC
-# fi
-ACX_MPI
-AM_CONDITIONAL([WITH_MPI], test x${HAVE_MPI} = x1)
 
 # LOADLEVER
 AC_ARG_WITH(loadlever, [AS_HELP_STRING([--with-loadlever],[compile with loadlevel support.])],

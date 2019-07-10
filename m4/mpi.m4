@@ -1,5 +1,4 @@
 AC_DEFUN([ACX_MPI],[
-
 HAVE_MPI=0
 if test "x$with_mpi" != xno; then
 HAVE_MPI=1

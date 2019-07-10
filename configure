@@ -693,11 +693,6 @@ FCFLAGS_TESTS
 FCFLAGS_f90
 WITH_LOADLEVER_FALSE
 WITH_LOADLEVER_TRUE
-WITH_MPI_FALSE
-WITH_MPI_TRUE
-MPICC
-ac_lib_mpi
-ac_inc_mpi
 ENABLE_STAT_FALSE
 ENABLE_STAT_TRUE
 ENABLE_DEBUG_FALSE
@@ -708,6 +703,11 @@ WITH_INFINIBAND_FALSE
 WITH_INFINIBAND_TRUE
 ac_lib_infiniband
 ac_inc_infiniband
+WITH_MPI_FALSE
+WITH_MPI_TRUE
+MPICC
+ac_lib_mpi
+ac_inc_mpi
 LIBOBJS
 CXXCPP
 am__fastdepCXX_FALSE
@@ -845,11 +845,11 @@ with_aix_soname
 with_gnu_ld
 with_sysroot
 enable_libtool_lock
+with_mpi
 with_infiniband
 with_ethernet
 enable_debug
 enable_stat
-with_mpi
 with_loadlever
 with_fortran
 enable_doxygen_doc
@@ -1535,9 +1535,9 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld [default=no]
   --with-sysroot[=DIR]    Search for dependent libraries within DIR (or the
                           compiler's sysroot if not specified).
+  --with-mpi              compile with MPI (parallelization) support.
   --with-infiniband       compile for infiniband (default)
   --with-ethernet         compile for ethernet
-  --with-mpi              compile with MPI (parallelization) support.
   --with-loadlever        compile with loadlevel support.
   --with-fortran          compile Fortran modules (default)
 
@@ -2694,6 +2694,7 @@ ac_configure="$SHELL $ac_aux_dir/configure"  # Please don't use this var.
 ac_config_headers="$ac_config_headers config.h"
 
 
+# HACK LIBTOOL FLAGS
 if test -z "${CFLAGS}"; then
 CFLAGS=
 fi
@@ -2704,7 +2705,7 @@ if test -z "${CXXFLAGS}"; then
 CXXFLAGS=
 fi
 
-#AC_REQUIRE_AUX_FILE([runtests.sh])
+# AUTOMAKE
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -3953,7 +3954,6 @@ $as_echo "$ac_cv_safe_to_define___extensions__" >&6; }
   $as_echo "#define _TANDEM_SOURCE 1" >>confdefs.h
 
 
-# THE MAKEFILE.AM'S
 ac_config_files="$ac_config_files Makefile src/Makefile tests/Makefile tests/tests/Makefile tests/microbenchmarks/Makefile docs/Makefile tutorial/code/Makefile"
 
 am__api_version='1.13'
@@ -4684,10 +4684,9 @@ fi
 
 
 
-
 #AM_MAINTAINER_MODE([enable])
 
-# Static lib
+# LIBTOOL
 # Check whether --enable-shared was given.
 if test "${enable_shared+set}" = set; then :
   enableval=$enable_shared; p=${PACKAGE-default}
@@ -12365,7 +12364,7 @@ CC=$lt_save_CC
 
 
 
-# Checks for programs.
+# CHECKS FOR PROGRAMS.
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -12905,209 +12904,25 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -std=gnu11" >&5
-$as_echo_n "checking whether C compiler accepts -std=gnu11... " >&6; }
-if ${ax_cv_check_cflags___std_gnu11+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
 
-  ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS  -std=gnu11"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
 
-int
-main ()
-{
 
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ax_cv_check_cflags___std_gnu11=yes
-else
-  ax_cv_check_cflags___std_gnu11=no
+if test -z "${CFLAGS}"; then
+  case "${CC}" in
+    gcc|mpicc*)
+      CFLAGS+=" "
+      ;;
+    icc*|mpiicc*)
+        CFLAGS+=" -std=gnu11"
+      ;;
+    *)
+        CFLAGS=" -std=c99"
+       ;;
+  esac
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CFLAGS=$ax_check_save_flags
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___std_gnu11" >&5
-$as_echo "$ax_cv_check_cflags___std_gnu11" >&6; }
-if test "x$ax_cv_check_cflags___std_gnu11" = xyes; then :
-
-if ${CFLAGS+:} false; then :
-
-  case " $CFLAGS " in #(
-  *" -std=gnu11 "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS already contains -std=gnu11"; } >&5
-  (: CFLAGS already contains -std=gnu11) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append CFLAGS " -std=gnu11"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS=\"\$CFLAGS\""; } >&5
-  (: CFLAGS="$CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  CFLAGS=-std=gnu11
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS=\"\$CFLAGS\""; } >&5
-  (: CFLAGS="$CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -std=c11" >&5
-$as_echo_n "checking whether C compiler accepts -std=c11... " >&6; }
-if ${ax_cv_check_cflags___std_c11+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS  -std=c11"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ax_cv_check_cflags___std_c11=yes
-else
-  ax_cv_check_cflags___std_c11=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CFLAGS=$ax_check_save_flags
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___std_c11" >&5
-$as_echo "$ax_cv_check_cflags___std_c11" >&6; }
-if test "x$ax_cv_check_cflags___std_c11" = xyes; then :
-
-if ${CFLAGS+:} false; then :
-
-  case " $CFLAGS " in #(
-  *" -std=c11 "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS already contains -std=c11"; } >&5
-  (: CFLAGS already contains -std=c11) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append CFLAGS " -std=c11"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS=\"\$CFLAGS\""; } >&5
-  (: CFLAGS="$CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  CFLAGS=-std=c11
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS=\"\$CFLAGS\""; } >&5
-  (: CFLAGS="$CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -std=c99" >&5
-$as_echo_n "checking whether C compiler accepts -std=c99... " >&6; }
-if ${ax_cv_check_cflags___std_c99+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS  -std=c99"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ax_cv_check_cflags___std_c99=yes
-else
-  ax_cv_check_cflags___std_c99=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CFLAGS=$ax_check_save_flags
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___std_c99" >&5
-$as_echo "$ax_cv_check_cflags___std_c99" >&6; }
-if test "x$ax_cv_check_cflags___std_c99" = xyes; then :
-
-if ${CFLAGS+:} false; then :
-
-  case " $CFLAGS " in #(
-  *" -std=c99 "*) :
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS already contains -std=c99"; } >&5
-  (: CFLAGS already contains -std=c99) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; } ;; #(
-  *) :
-
-     as_fn_append CFLAGS " -std=c99"
-     { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS=\"\$CFLAGS\""; } >&5
-  (: CFLAGS="$CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-     ;;
-esac
-
-else
-
-  CFLAGS=-std=c99
-  { { $as_echo "$as_me:${as_lineno-$LINENO}: : CFLAGS=\"\$CFLAGS\""; } >&5
-  (: CFLAGS="$CFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-
-fi
-
-else
-  as_fn_error $? "C compiled does not support at least C99!" "$LINENO" 5
-fi
-
-
-fi
-
-
-fi
-
-
-# AC_PROG_CC_C99
-# AC_PROG_CC_STDC
-# AM_PROG_CC_C_O
-ac_ext=${ac_fc_srcext-f}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: Using std CFLAGS=\"$CFLAGS\"" >&5
+$as_echo "$as_me: Using std CFLAGS=\"$CFLAGS\"" >&6;}
+ ac_ext=${ac_fc_srcext-f}
 ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
 ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_fc_compiler_gnu
@@ -20258,7 +20073,7 @@ $as_echo "no" >&6; }
 fi
 
 
-# Checks for libraries.
+# CHECKS FOR LIBRARIES.
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for sqrt in -lm" >&5
 $as_echo_n "checking for sqrt in -lm... " >&6; }
 if ${ac_cv_lib_m_sqrt+:} false; then :
@@ -20305,7 +20120,7 @@ _ACEOF
 fi
 
 
-# Checks for header files.
+# CHECKS FOR HEADER FILES.
 for ac_header in arpa/inet.h fcntl.h float.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h sys/timeb.h unistd.h sys/signal.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -20320,7 +20135,7 @@ fi
 done
 
 
-# Checks for typedefs, structures, and compiler characteristics.
+# CHECKS FOR TYPEDEFS, STRUCTURES, AND COMPILER CHARACTERISTICS.
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for inline" >&5
 $as_echo_n "checking for inline... " >&6; }
 if ${ac_cv_c_inline+:} false; then :
@@ -20462,7 +20277,7 @@ _ACEOF
   esac
 
 
-# Checks for library functions.
+# CHECKS FOR LIBRARY FUNCTIONS.
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for error_at_line" >&5
 $as_echo_n "checking for error_at_line... " >&6; }
 if ${ac_cv_lib_error_at_line+:} false; then :
@@ -20777,239 +20592,6 @@ _ACEOF
 
 fi
 done
-
-
-# CHECKS INFINIBAND
-
-# Check whether --with-infiniband was given.
-if test "${with_infiniband+set}" = set; then :
-  withval=$with_infiniband; with_infiniband=$withval
-else
-  with_infiniband=yes
-fi
-
-
-
-HAVE_INFINIBAND=0
-if test "x$with_infiniband" != xno && test "x$with_ethernet" != xyes; then
-   HAVE_INFINIBAND=1
-
-$as_echo "#define HAVE_INFINIBAND 1" >>confdefs.h
-
-   if test "x$with_infiniband" != xyes; then
-      ac_inc_infiniband=$with_infiniband/include/infiniband
-      as_ac_File=`$as_echo "ac_cv_file_$ac_inc_infiniband/verbs.h" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_inc_infiniband/verbs.h" >&5
-$as_echo_n "checking for $ac_inc_infiniband/verbs.h... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$ac_inc_infiniband/verbs.h"; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-
-OLD_CFLAGS=$CFLAGS
-CFLAGS="$AM_CFLAGS $CFLAGS -I$ac_inc_infiniband"
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether verbs.h contains IBV_LINK_LAYER_ETHERNET" >&5
-$as_echo_n "checking whether verbs.h contains IBV_LINK_LAYER_ETHERNET... " >&6; }
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <verbs.h>
-int
-main ()
-{
-int a = IBV_LINK_LAYER_ETHERNET;
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-CFLAGS=$OLD_CFLAGS;
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-CFLAGS=$OLD_CFLAGS;
-HAVE_INFINIBAND=0;
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-
-
-else
-  HAVE_INFINIBAND=0
-fi
-
-      ac_lib_infiniband=$with_infiniband/lib64
-      as_ac_File=`$as_echo "ac_cv_file_$ac_lib_infiniband/libibverbs.so" | $as_tr_sh`
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_lib_infiniband/libibverbs.so" >&5
-$as_echo_n "checking for $ac_lib_infiniband/libibverbs.so... " >&6; }
-if eval \${$as_ac_File+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  test "$cross_compiling" = yes &&
-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
-if test -r "$ac_lib_infiniband/libibverbs.so"; then
-  eval "$as_ac_File=yes"
-else
-  eval "$as_ac_File=no"
-fi
-fi
-eval ac_res=\$$as_ac_File
-	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-$as_echo "$ac_res" >&6; }
-if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
-
-else
-  HAVE_INFINIBAND=0
-fi
-
-   else
-      ## TODO HOW TO EXTRACT INCLUDE AND LIB PATH
-      ac_fn_c_check_header_mongrel "$LINENO" "infiniband/verbs.h" "ac_cv_header_infiniband_verbs_h" "$ac_includes_default"
-if test "x$ac_cv_header_infiniband_verbs_h" = xyes; then :
-
-else
-  HAVE_INFINIBAND=0
-fi
-
-
-      echo "$ac_cv_header_float"
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ibv_open_device in -libverbs" >&5
-$as_echo_n "checking for ibv_open_device in -libverbs... " >&6; }
-if ${ac_cv_lib_ibverbs_ibv_open_device+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-libverbs  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char ibv_open_device ();
-int
-main ()
-{
-return ibv_open_device ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_lib_ibverbs_ibv_open_device=yes
-else
-  ac_cv_lib_ibverbs_ibv_open_device=no
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ibverbs_ibv_open_device" >&5
-$as_echo "$ac_cv_lib_ibverbs_ibv_open_device" >&6; }
-if test "x$ac_cv_lib_ibverbs_ibv_open_device" = xyes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBIBVERBS 1
-_ACEOF
-
-  LIBS="-libverbs $LIBS"
-
-else
-  HAVE_INFINIBAND=0
-fi
-
-   fi
-fi
-
- if test x${HAVE_INFINIBAND} = x1; then
-  WITH_INFINIBAND_TRUE=
-  WITH_INFINIBAND_FALSE='#'
-else
-  WITH_INFINIBAND_TRUE='#'
-  WITH_INFINIBAND_FALSE=
-fi
-
-if test x${HAVE_INFINIBAND} = x1; then
-  cp tests/defs/default_ib.def tests/defs/default.def
-fi
-
-# CHECKS ETHERNET
-
-# Check whether --with-ethernet was given.
-if test "${with_ethernet+set}" = set; then :
-  withval=$with_ethernet; with_ethernet=$withval
-else
-  with_ethernet=no
-fi
-
-#  FALLBACK OR EXPLICITLY CHOSEN TCP
-if test x${HAVE_INFINIBAND} = x0 || test x${with_ethernet} != xno; then
-   ac_fn_c_check_header_mongrel "$LINENO" "netinet/tcp.h" "ac_cv_header_netinet_tcp_h" "$ac_includes_default"
-if test "x$ac_cv_header_netinet_tcp_h" = xyes; then :
-  HAVE_TCP=1
-else
-  as_fn_error $? "There is no TCP connection neither" "$LINENO" 5
-fi
-
-
-fi
- if test x${HAVE_TCP} = x1; then
-  WITH_ETHERNET_TRUE=
-  WITH_ETHERNET_FALSE='#'
-else
-  WITH_ETHERNET_TRUE='#'
-  WITH_ETHERNET_FALSE=
-fi
-
-if test x${HAVE_TCP} = x1; then
-   cp tests/defs/default_tcp.def tests/defs/default.def
-fi
-
-# BUILD DEBUG AND STAT LIBRARIES
-# Check whether --enable-debug was given.
-if test "${enable_debug+set}" = set; then :
-  enableval=$enable_debug; ac_cv_build_debug=$enableval
-else
-  ac_cv_build_debug=yes
-fi
-
- if test $ac_cv_build_debug = yes; then
-  ENABLE_DEBUG_TRUE=
-  ENABLE_DEBUG_FALSE='#'
-else
-  ENABLE_DEBUG_TRUE='#'
-  ENABLE_DEBUG_FALSE=
-fi
-
-
-# Check whether --enable-stat was given.
-if test "${enable_stat+set}" = set; then :
-  enableval=$enable_stat; ac_cv_build_stat=$enableval
-else
-  ac_cv_build_stat=yes
-fi
-
- if test $ac_cv_build_stat = yes; then
-  ENABLE_STAT_TRUE=
-  ENABLE_STAT_FALSE='#'
-else
-  ENABLE_STAT_TRUE='#'
-  ENABLE_STAT_FALSE=
-fi
 
 
 # MPI
@@ -21687,7 +21269,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-
 HAVE_MPI=0
 if test "x$with_mpi" != xno; then
 HAVE_MPI=1
@@ -21881,6 +21462,240 @@ fi
 else
   WITH_MPI_TRUE='#'
   WITH_MPI_FALSE=
+fi
+
+
+
+# CHECKS INFINIBAND
+
+# Check whether --with-infiniband was given.
+if test "${with_infiniband+set}" = set; then :
+  withval=$with_infiniband; with_infiniband=$withval
+else
+  with_infiniband=yes
+fi
+
+
+
+HAVE_INFINIBAND=0
+if test "x$with_infiniband" != xno && test "x$with_ethernet" != xyes; then
+   HAVE_INFINIBAND=1
+
+$as_echo "#define HAVE_INFINIBAND 1" >>confdefs.h
+
+   if test "x$with_infiniband" != xyes; then
+      ac_inc_infiniband=$with_infiniband/include/infiniband
+      as_ac_File=`$as_echo "ac_cv_file_$ac_inc_infiniband/verbs.h" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_inc_infiniband/verbs.h" >&5
+$as_echo_n "checking for $ac_inc_infiniband/verbs.h... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$ac_inc_infiniband/verbs.h"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+
+OLD_CFLAGS=$CFLAGS
+CFLAGS="$AM_CFLAGS $CFLAGS -I$ac_inc_infiniband"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether verbs.h contains IBV_LINK_LAYER_ETHERNET" >&5
+$as_echo_n "checking whether verbs.h contains IBV_LINK_LAYER_ETHERNET... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <verbs.h>
+int
+main ()
+{
+int a = IBV_LINK_LAYER_ETHERNET;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+CFLAGS=$OLD_CFLAGS;
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+CFLAGS=$OLD_CFLAGS;
+HAVE_INFINIBAND=0;
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+else
+  HAVE_INFINIBAND=0
+fi
+
+      ac_lib_infiniband=$with_infiniband/lib64
+      as_ac_File=`$as_echo "ac_cv_file_$ac_lib_infiniband/libibverbs.so" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_lib_infiniband/libibverbs.so" >&5
+$as_echo_n "checking for $ac_lib_infiniband/libibverbs.so... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$ac_lib_infiniband/libibverbs.so"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+
+else
+  HAVE_INFINIBAND=0
+fi
+
+   else
+      ## TODO HOW TO EXTRACT INCLUDE AND LIB PATH
+      ac_fn_c_check_header_mongrel "$LINENO" "infiniband/verbs.h" "ac_cv_header_infiniband_verbs_h" "$ac_includes_default"
+if test "x$ac_cv_header_infiniband_verbs_h" = xyes; then :
+
+else
+  HAVE_INFINIBAND=0
+fi
+
+
+      echo "$ac_cv_header_float"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ibv_open_device in -libverbs" >&5
+$as_echo_n "checking for ibv_open_device in -libverbs... " >&6; }
+if ${ac_cv_lib_ibverbs_ibv_open_device+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-libverbs  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char ibv_open_device ();
+int
+main ()
+{
+return ibv_open_device ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ibverbs_ibv_open_device=yes
+else
+  ac_cv_lib_ibverbs_ibv_open_device=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ibverbs_ibv_open_device" >&5
+$as_echo "$ac_cv_lib_ibverbs_ibv_open_device" >&6; }
+if test "x$ac_cv_lib_ibverbs_ibv_open_device" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBIBVERBS 1
+_ACEOF
+
+  LIBS="-libverbs $LIBS"
+
+else
+  HAVE_INFINIBAND=0
+fi
+
+   fi
+fi
+
+ if test x${HAVE_INFINIBAND} = x1; then
+  WITH_INFINIBAND_TRUE=
+  WITH_INFINIBAND_FALSE='#'
+else
+  WITH_INFINIBAND_TRUE='#'
+  WITH_INFINIBAND_FALSE=
+fi
+
+if test x${HAVE_INFINIBAND} = x1; then
+  cp tests/defs/default_ib.def tests/defs/default.def
+fi
+
+# CHECKS ETHERNET
+
+# Check whether --with-ethernet was given.
+if test "${with_ethernet+set}" = set; then :
+  withval=$with_ethernet; with_ethernet=$withval
+else
+  with_ethernet=no
+fi
+
+#  FALLBACK OR EXPLICITLY CHOSEN TCP
+if test x${HAVE_INFINIBAND} = x0 || test x${with_ethernet} != xno; then
+   ac_fn_c_check_header_mongrel "$LINENO" "netinet/tcp.h" "ac_cv_header_netinet_tcp_h" "$ac_includes_default"
+if test "x$ac_cv_header_netinet_tcp_h" = xyes; then :
+  HAVE_TCP=1
+else
+  as_fn_error $? "There is no TCP connection neither" "$LINENO" 5
+fi
+
+
+fi
+ if test x${HAVE_TCP} = x1; then
+  WITH_ETHERNET_TRUE=
+  WITH_ETHERNET_FALSE='#'
+else
+  WITH_ETHERNET_TRUE='#'
+  WITH_ETHERNET_FALSE=
+fi
+
+if test x${HAVE_TCP} = x1; then
+   cp tests/defs/default_tcp.def tests/defs/default.def
+fi
+
+# BUILD DEBUG AND STAT LIBRARIES
+# Check whether --enable-debug was given.
+if test "${enable_debug+set}" = set; then :
+  enableval=$enable_debug; ac_cv_build_debug=$enableval
+else
+  ac_cv_build_debug=yes
+fi
+
+ if test $ac_cv_build_debug = yes; then
+  ENABLE_DEBUG_TRUE=
+  ENABLE_DEBUG_FALSE='#'
+else
+  ENABLE_DEBUG_TRUE='#'
+  ENABLE_DEBUG_FALSE=
+fi
+
+
+# Check whether --enable-stat was given.
+if test "${enable_stat+set}" = set; then :
+  enableval=$enable_stat; ac_cv_build_stat=$enableval
+else
+  ac_cv_build_stat=yes
+fi
+
+ if test $ac_cv_build_stat = yes; then
+  ENABLE_STAT_TRUE=
+  ENABLE_STAT_FALSE='#'
+else
+  ENABLE_STAT_TRUE='#'
+  ENABLE_STAT_FALSE=
 fi
 
 
@@ -25066,6 +24881,10 @@ if test -z "${am__fastdepCXX_TRUE}" && test -z "${am__fastdepCXX_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCXX\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${WITH_MPI_TRUE}" && test -z "${WITH_MPI_FALSE}"; then
+  as_fn_error $? "conditional \"WITH_MPI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${WITH_INFINIBAND_TRUE}" && test -z "${WITH_INFINIBAND_FALSE}"; then
   as_fn_error $? "conditional \"WITH_INFINIBAND\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -25080,10 +24899,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_STAT_TRUE}" && test -z "${ENABLE_STAT_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_STAT\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${WITH_MPI_TRUE}" && test -z "${WITH_MPI_FALSE}"; then
-  as_fn_error $? "conditional \"WITH_MPI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${WITH_LOADLEVER_TRUE}" && test -z "${WITH_LOADLEVER_FALSE}"; then
