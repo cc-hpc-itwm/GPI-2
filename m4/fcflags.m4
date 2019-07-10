@@ -41,7 +41,7 @@ if test -z "${FCFLAGS}"; then
       case "${host}" in
         x86_64*)
           FCFLAGS+=" -O2"
-	  AC_SUBST([FCFLAGS_TESTS],["-nocheck bounds"])
+	  AC_SUBST([FCFLAGS_TESTS],["-mcmodel=medium"])
           # FCFLAGS="-u -fpp1 -nbs -pc80 -pad -align -unroll -O3 -ip -no-fp-port -mno-ieee-fp -vec-report0 -no-prec-div"
           ;;
         i?86*linux*)

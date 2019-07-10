@@ -18,7 +18,7 @@ AM_FCFLAGS += -DGPI2_WITH_MPI
 endif
 endif
 
-AM_CXXFLAGS = -std=c++11 $(AM_CFLAGS) $(AM_CPPFLAGS)
+AM_CXXFLAGS = -std=c++11 $(AM_CFLAGS) -fpermissive
 
 # TESTS
 auxSRCS = test_utils.c test_utils.h
@@ -242,11 +242,11 @@ notifications_tests = ../bin/not_zero_wait.bin \
       ../bin/read_notify.bin \
       ../bin/write_m_to_1.bin \
       ../bin/write_notify.bin \
-      ../bin/write_notify_outstanding.bin
-#      ../bin/notification_value.bin
+      ../bin/write_notify_outstanding.bin \
+      ../bin/notification_value.bin
 
 ___bin_not_zero_wait_bin_SOURCES =                   notifications/not_zero_wait.c $(auxSRCS)
-#___bin_notification_value_bin_SOURCES =    	        notifications/notification_value.cpp $(auxSRCS)
+___bin_notification_value_bin_SOURCES =    	        notifications/notification_value.cpp $(auxSRCS)
 ___bin_notify_after_delete_bin_SOURCES =             notifications/notify_after_delete.c $(auxSRCS)
 ___bin_notify_all_bin_SOURCES =                      notifications/notify_all.c $(auxSRCS)
 ___bin_notify_last_bin_SOURCES =                     notifications/notify_last.c $(auxSRCS)
@@ -288,7 +288,6 @@ segments_tests = ../bin/max_mem.bin \
       ../bin/seg_reuse_buffer.bin \
       ../bin/seg_subsegments.bin \
       ../bin/seg_use_buffer.bin
-
 #      ../bin/seg_shmem.bin
 
 ___bin_max_mem_bin_SOURCES =                   segments/max_mem.c $(auxSRCS)
@@ -300,7 +299,7 @@ ___bin_seg_create_same_bin_SOURCES =           segments/seg_create_same.c $(auxS
 ___bin_seg_id_list_bin_SOURCES =               segments/seg_id_list.c $(auxSRCS)
 ___bin_seg_reuse_bin_SOURCES =                 segments/seg_reuse.c $(auxSRCS)
 ___bin_seg_reuse_buffer_bin_SOURCES =          segments/seg_reuse_buffer.c $(auxSRCS)
-#___bin_seg_shmem_bin_SOURCES =                segments/seg_shmem.cpp $(auxSRCS)
+#___bin_seg_shmem_bin_SOURCES =                 segments/seg_shmem.cpp $(auxSRCS)
 ___bin_seg_subsegments_bin_SOURCES =           segments/seg_subsegments.c $(auxSRCS)
 ___bin_seg_use_buffer_bin_SOURCES =            segments/seg_use_buffer.c $(auxSRCS)
 
