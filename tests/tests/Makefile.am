@@ -246,11 +246,11 @@ notifications_tests = ../bin/not_zero_wait.bin \
       ../bin/read_notify.bin \
       ../bin/write_m_to_1.bin \
       ../bin/write_notify.bin \
-      ../bin/write_notify_outstanding.bin \
-      ../bin/notification_value.bin
+      ../bin/write_notify_outstanding.bin
+#      ../bin/notification_value.bin
 
 ___bin_not_zero_wait_bin_SOURCES =                   notifications/not_zero_wait.c $(auxSRCS)
-___bin_notification_value_bin_SOURCES =    	        notifications/notification_value.cpp $(auxSRCS)
+#___bin_notification_value_bin_SOURCES =    	        notifications/notification_value.cpp $(auxSRCS)
 ___bin_notify_after_delete_bin_SOURCES =             notifications/notify_after_delete.c $(auxSRCS)
 ___bin_notify_all_bin_SOURCES =                      notifications/notify_all.c $(auxSRCS)
 ___bin_notify_last_bin_SOURCES =                     notifications/notify_last.c $(auxSRCS)

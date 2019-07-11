@@ -183,8 +183,7 @@ am__EXEEXT_11 = ../bin/not_zero_wait.bin$(EXEEXT) \
 	../bin/read_notify.bin$(EXEEXT) \
 	../bin/write_m_to_1.bin$(EXEEXT) \
 	../bin/write_notify.bin$(EXEEXT) \
-	../bin/write_notify_outstanding.bin$(EXEEXT) \
-	../bin/notification_value.bin$(EXEEXT)
+	../bin/write_notify_outstanding.bin$(EXEEXT)
 am__EXEEXT_12 = ../bin/passive.bin$(EXEEXT) \
 	../bin/passive_limits.bin$(EXEEXT) \
 	../bin/passive_n.bin$(EXEEXT) \
@@ -611,13 +610,6 @@ ___bin_not_zero_wait_bin_OBJECTS =  \
 	$(am____bin_not_zero_wait_bin_OBJECTS)
 ___bin_not_zero_wait_bin_LDADD = $(LDADD)
 ___bin_not_zero_wait_bin_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am____bin_notification_value_bin_OBJECTS =  \
-	notifications/notification_value.$(OBJEXT) $(am__objects_1)
-___bin_notification_value_bin_OBJECTS =  \
-	$(am____bin_notification_value_bin_OBJECTS)
-___bin_notification_value_bin_LDADD = $(LDADD)
-___bin_notification_value_bin_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 am____bin_notify_after_delete_bin_OBJECTS =  \
 	notifications/notify_after_delete.$(OBJEXT) $(am__objects_1)
@@ -1061,24 +1053,6 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
-	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
-LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CXXFLAGS) $(CXXFLAGS)
-AM_V_CXX = $(am__v_CXX_@AM_V@)
-am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
-am__v_CXX_0 = @echo "  CXX     " $@;
-am__v_CXX_1 = 
-CXXLD = $(CXX)
-CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
-	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
-am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
-am__v_CXXLD_0 = @echo "  CXXLD   " $@;
-am__v_CXXLD_1 = 
 FCCOMPILE = $(FC) $(AM_FCFLAGS) $(FCFLAGS)
 LTFCCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=compile $(FC) $(AM_FCFLAGS) $(FCFLAGS)
@@ -1149,7 +1123,6 @@ SOURCES = $(___bin_all_to_all_bin_SOURCES) \
 	$(___bin_mpi_allreduce_bin_SOURCES) \
 	$(___bin_mpi_barrier_bin_SOURCES) \
 	$(___bin_not_zero_wait_bin_SOURCES) \
-	$(___bin_notification_value_bin_SOURCES) \
 	$(___bin_notify_after_delete_bin_SOURCES) \
 	$(___bin_notify_all_bin_SOURCES) \
 	$(___bin_notify_last_bin_SOURCES) \
@@ -1262,7 +1235,6 @@ DIST_SOURCES = $(___bin_all_to_all_bin_SOURCES) \
 	$(am_____bin_mpi_allreduce_bin_SOURCES_DIST) \
 	$(am_____bin_mpi_barrier_bin_SOURCES_DIST) \
 	$(___bin_not_zero_wait_bin_SOURCES) \
-	$(___bin_notification_value_bin_SOURCES) \
 	$(___bin_notify_after_delete_bin_SOURCES) \
 	$(___bin_notify_all_bin_SOURCES) \
 	$(___bin_notify_last_bin_SOURCES) \
@@ -1359,10 +1331,6 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
-CXX = @CXX@
-CXXCPP = @CXXCPP@
-CXXDEPMODE = @CXXDEPMODE@
-CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -1448,7 +1416,6 @@ abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
-ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 ac_ct_FC = @ac_ct_FC@
 ac_cv_fc_module_output_flag = @ac_cv_fc_module_output_flag@
@@ -1701,11 +1668,11 @@ notifications_tests = ../bin/not_zero_wait.bin \
       ../bin/read_notify.bin \
       ../bin/write_m_to_1.bin \
       ../bin/write_notify.bin \
-      ../bin/write_notify_outstanding.bin \
-      ../bin/notification_value.bin
+      ../bin/write_notify_outstanding.bin
 
+#      ../bin/notification_value.bin
 ___bin_not_zero_wait_bin_SOURCES = notifications/not_zero_wait.c $(auxSRCS)
-___bin_notification_value_bin_SOURCES = notifications/notification_value.cpp $(auxSRCS)
+#___bin_notification_value_bin_SOURCES =    	        notifications/notification_value.cpp $(auxSRCS)
 ___bin_notify_after_delete_bin_SOURCES = notifications/notify_after_delete.c $(auxSRCS)
 ___bin_notify_all_bin_SOURCES = notifications/notify_all.c $(auxSRCS)
 ___bin_notify_last_bin_SOURCES = notifications/notify_last.c $(auxSRCS)
@@ -1775,7 +1742,7 @@ CLEANFILES = *~ *.bak *.bin fortran/*.mod
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .cpp .f90 .lo .o .obj
+.SUFFIXES: .c .f90 .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -2240,13 +2207,6 @@ notifications/not_zero_wait.$(OBJEXT): notifications/$(am__dirstamp) \
 ../bin/not_zero_wait.bin$(EXEEXT): $(___bin_not_zero_wait_bin_OBJECTS) $(___bin_not_zero_wait_bin_DEPENDENCIES) $(EXTRA____bin_not_zero_wait_bin_DEPENDENCIES) ../bin/$(am__dirstamp)
 	@rm -f ../bin/not_zero_wait.bin$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(___bin_not_zero_wait_bin_OBJECTS) $(___bin_not_zero_wait_bin_LDADD) $(LIBS)
-notifications/notification_value.$(OBJEXT):  \
-	notifications/$(am__dirstamp) \
-	notifications/$(DEPDIR)/$(am__dirstamp)
-
-../bin/notification_value.bin$(EXEEXT): $(___bin_notification_value_bin_OBJECTS) $(___bin_notification_value_bin_DEPENDENCIES) $(EXTRA____bin_notification_value_bin_DEPENDENCIES) ../bin/$(am__dirstamp)
-	@rm -f ../bin/notification_value.bin$(EXEEXT)
-	$(AM_V_CXXLD)$(CXXLINK) $(___bin_notification_value_bin_OBJECTS) $(___bin_notification_value_bin_LDADD) $(LIBS)
 notifications/notify_after_delete.$(OBJEXT):  \
 	notifications/$(am__dirstamp) \
 	notifications/$(DEPDIR)/$(am__dirstamp)
@@ -2744,7 +2704,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@mpi/$(DEPDIR)/mpi_barrier.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@mpi/$(DEPDIR)/with_mpi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@notifications/$(DEPDIR)/not_zero_wait.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@notifications/$(DEPDIR)/notification_value.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@notifications/$(DEPDIR)/notify_after_delete.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@notifications/$(DEPDIR)/notify_all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@notifications/$(DEPDIR)/notify_last.Po@am__quote@
@@ -2803,30 +2762,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
-
-.cpp.o:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
-
-.cpp.obj:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.cpp.lo:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
-@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
 .f90.o:
 	$(AM_V_FC)$(FCCOMPILE) -c -o $@ $<
