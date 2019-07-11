@@ -712,6 +712,11 @@ LIBOBJS
 ac_ct_FC
 FCFLAGS
 FC
+HAVE_CGNU_FALSE
+HAVE_CGNU_TRUE
+HAVE_CINTEL_FALSE
+HAVE_CINTEL_TRUE
+NON_MPI_CC
 LT_SYS_LIBRARY_PATH
 OTOOL64
 OTOOL
@@ -12775,9 +12780,21 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 	   CCLOC=`basename ${CC}`
 	   case "${CCLOC}" in
 	     gcc|mpicc*)
+		NON_MPI_CC=gcc
+
 		CFLAGS+=" "
 	  	;;
 	     icc*|mpiicc*)
+	    	 if 1; then
+  HAVE_CINTEL_TRUE=
+  HAVE_CINTEL_FALSE='#'
+else
+  HAVE_CINTEL_TRUE='#'
+  HAVE_CINTEL_FALSE=
+fi
+
+	     	NON_MPI_CC=icc
+
 	        CFLAGS+=" -std=gnu99"
       		;;
     	     *)
@@ -12787,6 +12804,24 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 	fi
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: Using std CFLAGS=\"$CFLAGS\"" >&5
 $as_echo "$as_me: Using std CFLAGS=\"$CFLAGS\"" >&6;}
+
+	 if test ${NON_MPI_CC} = gcc; then
+  HAVE_CGNU_TRUE=
+  HAVE_CGNU_FALSE='#'
+else
+  HAVE_CGNU_TRUE='#'
+  HAVE_CGNU_FALSE=
+fi
+
+	 if test ${NON_MPI_CC} = icc; then
+  HAVE_CINTEL_TRUE=
+  HAVE_CINTEL_FALSE='#'
+else
+  HAVE_CINTEL_TRUE='#'
+  HAVE_CINTEL_FALSE=
+fi
+
+
 	 ac_ext=${ac_fc_srcext-f}
 ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
 ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
@@ -17924,7 +17959,7 @@ else
 fi
 
 
-      	      echo "HERRERE $ac_cv_header_infiniband_verbs_h"
+      	      # echo "HERRERE $ac_cv_header_infiniband_verbs_h"
       	      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ibv_open_device in -libverbs" >&5
 $as_echo_n "checking for ibv_open_device in -libverbs... " >&6; }
 if ${ac_cv_lib_ibverbs_ibv_open_device+:} false; then :
@@ -17972,7 +18007,7 @@ else
   HAVE_INFINIBAND=0
 fi
 
-	      echo "HERRERE $ac_cv_lib_ibv_open_device"
+	      # echo "HERRERE $ac_cv_lib_ibv_open_device"
    	   fi
 	fi
 
@@ -20046,6 +20081,18 @@ else
   am__EXEEXT_FALSE=
 fi
 
+if test -z "${HAVE_CINTEL_TRUE}" && test -z "${HAVE_CINTEL_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_CINTEL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_CGNU_TRUE}" && test -z "${HAVE_CGNU_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_CGNU\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${HAVE_CINTEL_TRUE}" && test -z "${HAVE_CINTEL_FALSE}"; then
+  as_fn_error $? "conditional \"HAVE_CINTEL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${WITH_MPI_TRUE}" && test -z "${WITH_MPI_FALSE}"; then
   as_fn_error $? "conditional \"WITH_MPI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5

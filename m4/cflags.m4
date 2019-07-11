@@ -6,9 +6,12 @@ AC_DEFUN([ACX_CFLAGS],[
 	   CCLOC=`basename ${CC}`
 	   case "${CCLOC}" in
 	     gcc|mpicc*)
+		AC_SUBST([NON_MPI_CC],gcc)
 		CFLAGS+=" "
 	  	;;
 	     icc*|mpiicc*)
+	    	AM_CONDITIONAL([HAVE_CINTEL],1)
+	     	AC_SUBST([NON_MPI_CC],icc)
 	        CFLAGS+=" -std=gnu99"
       		;;
     	     *)
@@ -17,4 +20,8 @@ AC_DEFUN([ACX_CFLAGS],[
   	   esac
 	fi
 	AC_MSG_NOTICE([Using std CFLAGS="$CFLAGS"])
+
+	AM_CONDITIONAL([HAVE_CGNU],[test ${NON_MPI_CC} = gcc])
+	AM_CONDITIONAL([HAVE_CINTEL],[test ${NON_MPI_CC} = icc])
+
 	])

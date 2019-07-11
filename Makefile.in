@@ -340,6 +340,7 @@ MKDIR_P = @MKDIR_P@
 MPICC = @MPICC@
 NM = @NM@
 NMEDIT = @NMEDIT@
+NON_MPI_CC = @NON_MPI_CC@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OTOOL = @OTOOL@
@@ -446,8 +447,7 @@ top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
 
 # TARGETS
-SUBDIRS = src tests docs
-#tutorial/code
+SUBDIRS = src tests docs tutorial/code
 
 # FOR DISTRIBUTION
 EXTRA_DIST = autogen.sh tutorial $(DX_CONFIG) bin/*

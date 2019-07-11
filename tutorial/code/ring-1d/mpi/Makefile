@@ -1,9 +1,3 @@
-test:
-ifeq ($(shell test "$CC" == "mpiicc"), 1)
-	@echo "MUST USE MPI INTEL"
-	exit 1
-endif
-
 ifndef CMD_RUN
   CMD_RUN = mpirun -hostfile $$PBS_NODEFILE -ppn 1
 endif
@@ -18,8 +12,8 @@ CFLAGS += -Wall
 CFLAGS += -Wextra
 CFLAGS += -Wshadow
 CFLAGS += -O3
-CFLAGS += -fopenmp
-CFLAGS += -std=c99
+CFLAGS += -qopenmp
+CFLAGS += -std=gnu99
 
 CFLAGS_MULTIPLE += -mt_mpi
 
@@ -28,9 +22,7 @@ CFLAGS_MULTIPLE += -mt_mpi
 INCLUDE_DIR += ..
 LDFLAGS += $(addprefix -L,$(LIBRARY_DIR))
 
-ifeq "$(CC)" "icc"
-  LDFLAGS += -openmp-link static
-endif
+LDFLAGS += -openmp-link static
 
 CFLAGS += $(addprefix -I,$(INCLUDE_DIR))
 

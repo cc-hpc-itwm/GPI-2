@@ -8,7 +8,7 @@ CFLAGS += -Wall
 CFLAGS += -Wextra
 CFLAGS += -Wshadow
 CFLAGS += -O0 -g
-CFLAGS += -std=c99
+CFLAGS += -std=gnu99
 
 ###############################################################################
 

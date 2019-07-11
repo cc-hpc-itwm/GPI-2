@@ -17,9 +17,9 @@ AC_DEFUN([ACX_INFINIBAND],[
    	   else
 	      ## TODO HOW TO EXTRACT INCLUDE AND LIB PATH
       	      AC_CHECK_HEADER([infiniband/verbs.h],[],[HAVE_INFINIBAND=0])
-      	      echo "HERRERE $ac_cv_header_infiniband_verbs_h"
+      	      # echo "HERRERE $ac_cv_header_infiniband_verbs_h"
       	      AC_CHECK_LIB([ibverbs],[ibv_open_device],[],[HAVE_INFINIBAND=0])
-	      echo "HERRERE $ac_cv_lib_ibv_open_device"
+	      # echo "HERRERE $ac_cv_lib_ibv_open_device"
    	   fi
 	fi
 	])
