@@ -8,7 +8,7 @@ endif
 
 NAME += left_right_double_buffer_funneled
 NAME += left_right_double_buffer_multiple
-NAME += left_right_dataflow_halo
+# NAME += left_right_dataflow_halo
 
 CFLAGS += -Wall
 CFLAGS += -Wextra
