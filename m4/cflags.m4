@@ -10,7 +10,6 @@ AC_DEFUN([ACX_CFLAGS],[
 		CFLAGS+=" "
 	  	;;
 	     icc*|mpiicc*)
-	    	AM_CONDITIONAL([HAVE_CINTEL],1)
 	     	AC_SUBST([NON_MPI_CC],icc)
 	        CFLAGS+=" -std=gnu99"
       		;;

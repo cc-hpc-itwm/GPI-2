@@ -25,6 +25,7 @@ Makefile
 *.bin
 *.exe
 /tests/defs/default.def
+machines
 
 !tutorial/code/basic/Makefile
 !tutorial/code/ring-1d/gaspi/Makefile
