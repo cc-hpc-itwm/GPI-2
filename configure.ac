@@ -24,7 +24,6 @@ AC_CONFIG_FILES([Makefile
 	tests/Makefile
 	tests/tests/Makefile
 	tests/microbenchmarks/Makefile
-	docs/Makefile
 	tutorial/code/Makefile
 	])
 AM_INIT_AUTOMAKE([subdir-objects])
@@ -89,7 +88,7 @@ AC_ARG_WITH([infiniband],[AS_HELP_STRING([--with-infiniband], [compile for infin
 			 [with_infiniband=yes])
 ACX_INFINIBAND
 AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
-if test x${HAVE_INFINIBAND} = x1; then
+if [test x${HAVE_INFINIBAND} = x1]; then
    cp tests/defs/default_ib.def tests/defs/default.def
 fi
 
@@ -99,7 +98,7 @@ AC_ARG_WITH([ethernet],[AS_HELP_STRING([--with-ethernet], [compile for ethernet]
 		       [with_ethernet=no])
 ACX_ETHERNET
 AM_CONDITIONAL([WITH_ETHERNET], test x${HAVE_TCP} = x1)
-if test x${HAVE_TCP} = x1; then
+if [test x${HAVE_TCP} = x1]; then
    cp tests/defs/default_tcp.def tests/defs/default.def
 fi
 
@@ -122,10 +121,16 @@ AC_ARG_WITH(loadlever,[AS_HELP_STRING([--with-loadlever],[compile with loadlevel
 AM_CONDITIONAL([WITH_LOADLEVER],[test $with_loadlever = yes])
 
 # DOXYGEN
-DX_HTML_FEATURE(ON)
-DX_DOT_FEATURE(ON)
-DX_MAN_FEATURE(OFF)
-DX_PDF_FEATURE(ON)
-DX_INIT_DOXYGEN(GPI-2, [docs/Doxyfile], [docs/doxygen-doc])
+AC_CHECK_PROGS([DOXYGEN],[doxygen])
+if test -z "$DOXYGEN"; then
+   AC_MSG_WARN([Doxygen not found])
+fi
+AC_CHECK_PROGS([DOT],[dot])
+if test -z "$DOT"; then
+   AC_MSG_WARN([Dot not found])
+fi
+AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN" -a -n "$DOT"])
+AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([docs/Doxyfile])])
+AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([docs/Makefile])])
 
 AC_OUTPUT

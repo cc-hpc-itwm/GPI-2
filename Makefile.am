@@ -1,9 +1,8 @@
 # INCLUDES
-include $(top_srcdir)/amdoxygen.am
 ACLOCAL_AMFLAGS = -I m4
 
 # TARGETS
-SUBDIRS = src tests docs tutorial/code
+SUBDIRS = src tests tutorial/code docs
 
 # FOR DISTRIBUTION
 EXTRA_DIST = autogen.sh tutorial $(DX_CONFIG) bin/*
