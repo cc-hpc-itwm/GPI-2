@@ -5,11 +5,11 @@ AC_DEFUN([ACX_CFLAGS],[
 	if test -z "${CFLAGS}"; then
 	   CCLOC=`basename ${CC}`
 	   case "${CCLOC}" in
-	     gcc|mpicc*)
+	     gcc|mpicc)
 		AC_SUBST([NON_MPI_CC],gcc)
-		CFLAGS+=" "
+		CFLAGS+=" -std=gnu99"
 	  	;;
-	     icc*|mpiicc*)
+	     icc|mpiicc)
 	     	AC_SUBST([NON_MPI_CC],icc)
 	        CFLAGS+=" -std=gnu99"
       		;;
