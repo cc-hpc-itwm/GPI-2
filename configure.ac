@@ -3,7 +3,7 @@ AC_PREREQ([2.69])
 AC_INIT([GPI], [1.3.0], [http://gpi-site.com.www488.your-server.de/contact/])
 AC_CONFIG_SRCDIR([src/GPI2.c])
 AC_CONFIG_AUX_DIR([build-aux])
-AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_MACRO_DIR([config])
 AC_CONFIG_HEADERS([config.h])
 
 # HACK LIBTOOL FLAGS
@@ -87,10 +87,6 @@ AC_ARG_WITH([infiniband],[AS_HELP_STRING([--with-infiniband], [compile for infin
 			 [with_infiniband=$withval],
 			 [with_infiniband=yes])
 ACX_INFINIBAND
-AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
-if [test x${HAVE_INFINIBAND} = x1]; then
-   cp tests/defs/default_ib.def tests/defs/default.def
-fi
 
 # CHECKS ETHERNET
 AC_ARG_WITH([ethernet],[AS_HELP_STRING([--with-ethernet], [compile for ethernet])],
@@ -100,6 +96,10 @@ ACX_ETHERNET
 AM_CONDITIONAL([WITH_ETHERNET], test x${HAVE_TCP} = x1)
 if [test x${HAVE_TCP} = x1]; then
    cp tests/defs/default_tcp.def tests/defs/default.def
+fi
+AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
+if [test x${HAVE_INFINIBAND} = x1]; then
+   cp tests/defs/default_ib.def tests/defs/default.def
 fi
 
 # BUILD DEBUG LIBRARY

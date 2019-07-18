@@ -1,5 +1,5 @@
 # INCLUDES
-ACLOCAL_AMFLAGS = -I m4
+ACLOCAL_AMFLAGS = -I config
 
 # TARGETS
 SUBDIRS = src tests tutorial/code docs
