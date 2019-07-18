@@ -5,12 +5,12 @@ doxyfile-stamp: Doxyfile
 	$(DOXYGEN) $^
 	date > $@
 
-all-local: doxyfile-stamp
+#all-local: doxyfile-stamp
 
-clean-local:
-	-rm -rf docs/doxygen
+clean:
+	-rm -rf doxygen doxyfile-stamp Doxyfile
 endif
 
 EXTRA_DIST = mainpage.dox
 
-CLEANFILES = *~ *.bak doxyfile-stamp
+CLEANFILES = *~ *.bak doxyfile-stamp Doxyfile

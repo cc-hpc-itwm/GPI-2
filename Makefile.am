@@ -2,7 +2,15 @@
 ACLOCAL_AMFLAGS = -I config
 
 # TARGETS
-SUBDIRS = src tests tutorial/code docs
+SUBDIRS = src tests
+
+docs :
+	make -C docs docs/doxygen
+
+tutorial:
+	make -C tutorial/code
+
+.PHONY : docs tutorial
 
 # FOR DISTRIBUTION
 EXTRA_DIST = autogen.sh tutorial $(DX_CONFIG) bin/*
@@ -35,3 +43,15 @@ endif
 # CLEAN
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
 CLEANFILES = *~ *.bak m4/*~
+
+clean-docs :
+	make -C docs clean
+
+clean-tutorial :
+	make -C tutorial/code clean
+
+.PHONY +: clean-docs clean-tutorial
+
+clean-local :
+	make -C docs clean
+	make -C tutorial/code clean

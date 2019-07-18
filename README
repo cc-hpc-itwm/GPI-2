@@ -59,13 +59,14 @@ As it is usual, after configuration, the command line:
 
 `make -j$NPROC`
 
-will compile in parallel the libraries, the Fortran modules, the tests, the documentation and
-the tutorial code.
-
+will compile in parallel the libraries, the Fortran modules and the tests
 After succesful completion, the user can define the working hosts in `tests/machines`
 and run the predefined tests by:
 
 `make check`
+
+The (doxygen) documentation and the tutorial code are built through `make docs` and
+`make tutorial`, respectively.
 
 Finally
 
