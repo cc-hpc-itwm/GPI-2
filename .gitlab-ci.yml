@@ -1,0 +1,45 @@
+stages:
+  - configure
+  - build
+  - install
+  - test
+
+minimal_configure:
+  stage: configure
+  before_script:
+    -  ./autogen.sh
+  script: ./configure --prefix=$PWD/gpi2-install-dir --with-ethernet
+  tags:
+    - centos-6.5
+    - gcc-5.3.0
+  cache:
+    untracked: true
+
+minimal_build:
+  stage: build
+  script: make
+  tags:
+    - centos-6.5
+    - gcc-5.3.0
+  cache:
+    untracked: true
+
+minimal_install:
+  stage: install
+  script: make install
+  tags:
+    - centos-6.5
+    - gcc-5.3.0
+  cache:
+    untracked: true
+
+minimal_test:
+  stage: test
+  script:
+    - for i in `seq 2`; do  hostname -f >> tests/machines; done
+    - make check
+  tags:
+    - centos-6.5
+    - gcc-5.3.0
+  cache:
+    untracked: true
