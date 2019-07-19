@@ -7,20 +7,8 @@ SRCS += GPI2_CM.h GPI2_Coll.h GPI2_Env.h GPI2_GRP.h \
 	GPI2.h GPI2_Mem.h GPI2_SEG.h GPI2_SN.h GPI2_Stats.h \
 	GPI2_Types.h GPI2_Utility.h
 
-# DEVICES SPECIFICS
-SRCS += devices/include/GPI2_Dev.h \
-	devices/ib/GPI2_IB.h \
-	devices/tcp/GPI2_TCP.h devices/tcp/list.h devices/tcp/rb.h devices/tcp/tcp_device.h
-
-if WITH_INFINIBAND
-SRCS += devices/ib/GPI2_IB_IO.c devices/ib/GPI2_IB_PASSIVE.c devices/ib/GPI2_IB_ATOMIC.c \
-	devices/ib/GPI2_IB_GRP.c devices/ib/GPI2_IB_SEG.c devices/ib/GPI2_IB.c
-else
-SRCS += devices/tcp/list.c devices/tcp/rb.c devices/tcp/tcp_device.c \
-	devices/tcp/GPI2_TCP.c devices/tcp/GPI2_TCP_IO.c devices/tcp/GPI2_TCP_SEG.c \
-	devices/tcp/GPI2_TCP_PASSIVE.c devices/tcp/GPI2_TCP_ATOMIC.c \
-	devices/tcp/GPI2_TCP_GRP.c
-endif
+# DEVICES GENERIC
+SRCS += devices/include/GPI2_Dev.h
 
 # HEADERS TO INSTALL
 include_HEADERS = include/GASPI.h include/GASPI_Ext.h include/GASPI_Threads.h \
@@ -32,8 +20,16 @@ lib_default_cflags = -Wall -D_GNU_SOURCE
 
 # DEVICES SPECIFICS
 if WITH_INFINIBAND
+SRCS += devices/ib/GPI2_IB_IO.c devices/ib/GPI2_IB_PASSIVE.c devices/ib/GPI2_IB_ATOMIC.c \
+devices/ib/GPI2_IB_GRP.c devices/ib/GPI2_IB_SEG.c devices/ib/GPI2_IB.c
+SRCS += devices/ib/GPI2_IB.h
 default_includes += -Idevices/ib -I@ac_inc_infiniband@ -DGPI2_DEVICE_IB
 else
+SRCS += devices/tcp/list.c devices/tcp/rb.c devices/tcp/tcp_device.c \
+devices/tcp/GPI2_TCP.c devices/tcp/GPI2_TCP_IO.c devices/tcp/GPI2_TCP_SEG.c \
+devices/tcp/GPI2_TCP_PASSIVE.c devices/tcp/GPI2_TCP_ATOMIC.c \
+devices/tcp/GPI2_TCP_GRP.c
+SRCS += devices/tcp/GPI2_TCP.h devices/tcp/list.h devices/tcp/rb.h devices/tcp/tcp_device.h
 default_includes += -Idevices/tcp -DGPI2_DEVICE_TCP
 endif
 

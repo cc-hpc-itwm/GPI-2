@@ -1,5 +1,5 @@
 # INITS
-AC_PREREQ([2.69])
+AC_PREREQ([2.60])
 AC_INIT([GPI], [1.3.0], [http://gpi-site.com.www488.your-server.de/contact/])
 AC_CONFIG_SRCDIR([src/GPI2.c])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -45,27 +45,27 @@ AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
 # CHECKS FOR LIBRARIES.
-AC_CHECK_LIB([m], [sqrt])
+#AC_CHECK_LIB([m], [sqrt])
 
 # CHECKS FOR HEADER FILES.
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h sys/timeb.h unistd.h sys/signal.h])
+#AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h netdb.h netinet/in.h stddef.h stdint.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h sys/timeb.h unistd.h sys/signal.h])
 
 # CHECKS FOR TYPEDEFS, STRUCTURES, AND COMPILER CHARACTERISTICS.
-AC_C_INLINE
-AC_TYPE_OFF_T
-AC_TYPE_PID_T
-AC_TYPE_SIZE_T
-AC_TYPE_SSIZE_T
-AC_TYPE_UINT16_T
-AC_TYPE_UINT32_T
-AC_TYPE_UINT64_T
-AC_TYPE_UINT8_T
+#AC_C_INLINE
+#AC_TYPE_OFF_T
+#AC_TYPE_PID_T
+#AC_TYPE_SIZE_T
+#AC_TYPE_SSIZE_T
+#AC_TYPE_UINT16_T
+#AC_TYPE_UINT32_T
+#AC_TYPE_UINT64_T
+#AC_TYPE_UINT8_T
 
 # CHECKS FOR LIBRARY FUNCTIONS.
-AC_FUNC_ERROR_AT_LINE
-AC_FUNC_MALLOC
-AC_FUNC_MMAP
-AC_CHECK_FUNCS([ftime ftruncate gethostbyname gethostname gettimeofday inet_ntoa memmove memset pow select socket sqrt strerror strtol uname mktemp])
+#AC_FUNC_ERROR_AT_LINE
+#AC_FUNC_MALLOC
+#AC_FUNC_MMAP
+#AC_CHECK_FUNCS([ftime ftruncate gethostbyname gethostname gettimeofday inet_ntoa memmove memset pow select socket sqrt strerror strtol uname mktemp])
 
 # MPI
 AC_ARG_WITH(mpi,[AS_HELP_STRING([--with-mpi],[compile with MPI support])],
