@@ -23,7 +23,7 @@ if WITH_INFINIBAND
 SRCS += devices/ib/GPI2_IB_IO.c devices/ib/GPI2_IB_PASSIVE.c devices/ib/GPI2_IB_ATOMIC.c \
 devices/ib/GPI2_IB_GRP.c devices/ib/GPI2_IB_SEG.c devices/ib/GPI2_IB.c
 SRCS += devices/ib/GPI2_IB.h
-default_includes += -Idevices/ib -I@ac_inc_infiniband@ -DGPI2_DEVICE_IB
+default_includes += -Idevices/ib @ac_inc_infiniband@ -DGPI2_DEVICE_IB
 else
 SRCS += devices/tcp/list.c devices/tcp/rb.c devices/tcp/tcp_device.c \
 devices/tcp/GPI2_TCP.c devices/tcp/GPI2_TCP_IO.c devices/tcp/GPI2_TCP_SEG.c \

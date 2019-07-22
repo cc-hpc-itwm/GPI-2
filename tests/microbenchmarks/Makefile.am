@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(top_builddir)/src/include
 
 LDADD = -L$(top_builddir)/src/.libs -lGPI2 -lpthread
 if WITH_INFINIBAND
-LDADD += -L@ac_lib_infiniband@ -libverbs
+LDADD += @ac_lib_infiniband@ -libverbs
 endif
 
 if WITH_MPI
