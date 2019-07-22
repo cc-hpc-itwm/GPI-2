@@ -5,8 +5,6 @@ doxyfile-stamp: Doxyfile
 	$(DOXYGEN) $^
 	date > $@
 
-#all-local: doxyfile-stamp
-
 clean:
 	-rm -rf doxygen doxyfile-stamp Doxyfile
 endif

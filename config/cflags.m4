@@ -20,6 +20,7 @@ AC_DEFUN([ACX_CFLAGS],[
 	fi
 	AC_MSG_NOTICE([Using std CFLAGS="$CFLAGS"])
 
+	# USED FOR tutorial/code
 	AM_CONDITIONAL([HAVE_CGNU],[test ${NON_MPI_CC} = gcc])
 	AM_CONDITIONAL([HAVE_CINTEL],[test ${NON_MPI_CC} = icc])
 

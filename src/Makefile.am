@@ -70,15 +70,14 @@ endif
 # FORTRAN MODULES
 EXTRA_DIST = GASPI_types.f90 GASPI.f90 GASPI_Ext.f90
 if WITH_FORTRAN
-FMODDIR=include
-$(FMODDIR)/gaspi_types.mod : GASPI_types.f90
-	$(FC) $(FCFLAGS) @ac_cv_fc_module_output_flag@ $(FMODDIR) -O2 -c $< -o GASPI_types.o
-$(FMODDIR)/gaspi.mod : GASPI.f90 $(FMODDIR)/gaspi_types.mod
-	$(FC) $(FCFLAGS) @ac_cv_fc_module_output_flag@ $(FMODDIR) -O2 -c $< -o GASPI.o
-$(FMODDIR)/gaspi_ext.mod : GASPI_Ext.f90 $(FMODDIR)/gaspi_types.mod $(FMODDIR)/gaspi.mod
-	$(FC) $(FCFLAGS) @ac_cv_fc_module_output_flag@ $(FMODDIR) -O2 -c $< -o GASPI_Ext.o
-nodist_include_HEADERS = $(FMODDIR)/gaspi_types.mod $(FMODDIR)/gaspi.mod $(FMODDIR)/gaspi_ext.mod
+gaspi_types.mod : GASPI_types.f90
+	$(FC) $(FCFLAGS) -O2 -c $< -o GASPI_types.o
+gaspi.mod : GASPI.f90 gaspi_types.mod
+	$(FC) $(FCFLAGS) -O2 -c $< -o GASPI.o
+gaspi_ext.mod : GASPI_Ext.f90 gaspi_types.mod gaspi.mod
+	$(FC) $(FCFLAGS) -O2 -c $< -o GASPI_Ext.o
+nodist_include_HEADERS = gaspi_types.mod gaspi.mod gaspi_ext.mod
 endif
 
 # CLEAN
-CLEANFILES = *~ *.bak include/*.mod
+CLEANFILES = *~ *.bak *.mod

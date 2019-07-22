@@ -7,7 +7,7 @@ LDADD += -L@ac_lib_infiniband@ -libverbs
 endif
 
 if WITH_FORTRAN
-AM_FCFLAGS = -I$(top_builddir)/src/include @FCFLAGS_TESTS@
+AM_FCFLAGS = -I$(top_builddir)/src @FCFLAGS_TESTS@
 endif
 
 if WITH_MPI
