@@ -22,7 +22,7 @@ CFLAGS_MULTIPLE += -mt_mpi
 INCLUDE_DIR += ..
 LDFLAGS += $(addprefix -L,$(LIBRARY_DIR))
 
-LDFLAGS += -openmp-link static
+LDFLAGS += -qopenmp-link static
 
 CFLAGS += $(addprefix -I,$(INCLUDE_DIR))
 

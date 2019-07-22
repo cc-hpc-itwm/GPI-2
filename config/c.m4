@@ -1,16 +1,18 @@
 ################################################
 # Set default C std flag
 # ----------------------------------
-AC_DEFUN([ACX_CFLAGS],[
+AC_DEFUN([ACX_C],[
 	if test -z "${CFLAGS}"; then
 	   CCLOC=`basename ${CC}`
 	   case "${CCLOC}" in
 	     gcc|mpicc)
 		AC_SUBST([NON_MPI_CC],gcc)
+		AS_IF([test "x${CC}" = xmpicc],with_mpi=yes)
 		CFLAGS+=" -std=gnu99"
 	  	;;
 	     icc|mpiicc)
 	     	AC_SUBST([NON_MPI_CC],icc)
+		AS_IF([test "x${CC}" = xmpiicc],with_mpi=yes)
 	        CFLAGS+=" -std=gnu99"
       		;;
     	     *)

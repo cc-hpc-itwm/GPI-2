@@ -6,10 +6,9 @@
 # ----------------------------------
 AC_DEFUN([ACX_FORTRAN],[
 	HAVE_FORTRAN=0
-	if test "x$with_fortran" == xyes; then
-	   if test x"$FC" = x; then
+	if test x"$FC" = x; then
     	      AC_MSG_NOTICE([Could not find Fortran 90 compiler])
-	   else
+	else
 	      AC_LANG_PUSH(Fortran)
 	         ACX_FC_ISO_C()
 		 if test ${HAVE_ISOC_FORTRAN} = 1; then
@@ -17,7 +16,6 @@ AC_DEFUN([ACX_FORTRAN],[
 	      	    HAVE_FORTRAN=1
 		 fi
   	      AC_LANG_POP([Fortran])
-           fi
         fi
 	])
 

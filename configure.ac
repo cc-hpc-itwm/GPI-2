@@ -34,9 +34,6 @@ LT_PREREQ([2.2])
 LT_INIT
 
 # CHECKS FOR PROGRAMS.
-AC_PROG_CC
-ACX_CFLAGS dnl CHOOSE C STD
-AC_PROG_FC
 #AC_PROG_CXX
 AC_PROG_AWK
 AC_PROG_SED
@@ -67,18 +64,31 @@ AC_CHECK_HEADERS([arpa/inet.h fcntl.h float.h netdb.h netinet/in.h stddef.h stdi
 #AC_CHECK_FUNCS([ftime ftruncate gethostbyname gethostname gettimeofday inet_ntoa memmove memset pow select socket sqrt strerror strtol uname mktemp])
 
 # MPI
+AC_ARG_WITH(mpi_extra_flags,[AS_HELP_STRING([--with-mpi-extra-flags],[add MPI fine tuning])],
+			    [with_mpi_extra_flags=$withval],
+			    [with_mpi_extra_flags=no])
+if test "x$with_mpi_extra_flags" != xno; then
+   AC_SUBST([mpi_extra_flags],[$with_mpi_extra_flags])
+fi
+
 AC_ARG_WITH(mpi,[AS_HELP_STRING([--with-mpi],[compile with MPI support])],
 		[with_mpi=$withval],
 		[with_mpi=no])
-ACX_MPI
+ACX_C
+AM_PROG_CC_C_O
+if test "x$with_mpi" != xno; then
+   ACX_MPI
+fi
 AM_CONDITIONAL([WITH_MPI],[test x${HAVE_MPI} = x1])
-AM_CONDITIONAL([WITH_MPI_USER],[test x${HAVE_MPI_USER} != x0])
 
 # FORTRAN
 AC_ARG_WITH([fortran],[AS_HELP_STRING([--with-fortran], [compile Fortran modules (default)])],
 	 	      [with_fortran=$withval],
 		      [with_fortran=yes])
-ACX_FORTRAN
+if test "x$with_fortran" == xyes; then
+   AC_PROG_FC
+   ACX_FORTRAN
+fi
 AM_CONDITIONAL([WITH_FORTRAN],[test x${HAVE_FORTRAN} = x1])
 
 # CHECKS INFINIBAND

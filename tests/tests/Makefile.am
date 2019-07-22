@@ -12,10 +12,8 @@ endif
 
 if WITH_MPI
 AM_CFLAGS += -DGPI2_WITH_MPI
-if WITH_MPI_USER
-AM_CFLAGS += -I@ac_inc_mpi@
-LDADD += -L@ac_lib_mpi@ -lmpi
-endif
+AM_CFLAGS += @ac_inc_mpi@
+LDADD += @ac_lib_mpi@ @mpi_extra_flags@
 if WITH_FORTRAN
 AM_FCFLAGS += -DGPI2_WITH_MPI
 endif
