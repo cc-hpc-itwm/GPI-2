@@ -35,7 +35,7 @@ AC_DEFUN([ACX_FC_ISO_C],[
 	AC_MSG_RESULT([$iso_c])
 
 	if test x"$iso_c" != xyes; then
-	   AC_MSG_WARN([No iso C Fortran module])
+	   AC_MSG_NOTICE([No iso C Fortran module])
            HAVE_ISOC_FORTRAN=0
 	else
            HAVE_ISOC_FORTRAN=1
