@@ -49,7 +49,7 @@ pgaspi_dev_poll_groups (gaspi_context_t * const gctx)
       }
     }
 
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Failed request to %lu. Collectives queue might be broken",
        ib_dev_ctx->wc_grp_send[i].wr_id);
     return -1;

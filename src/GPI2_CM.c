@@ -101,7 +101,7 @@ pgaspi_connect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   gaspi_return_t eret = GASPI_ERROR;
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_connect");
+  GASPI_VERIFY_INIT ("gaspi_connect");
 
   const int i = (int) rank;
 
@@ -181,7 +181,7 @@ pgaspi_disconnect (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
   gaspi_return_t eret = GASPI_ERROR;
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_disconnect");
+  GASPI_VERIFY_INIT ("gaspi_disconnect");
 
   const int i = rank;
 

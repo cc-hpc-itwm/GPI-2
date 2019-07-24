@@ -25,7 +25,7 @@ gaspi_return_t
 pgaspi_passive_transfer_size_min (gaspi_size_t *
                                   const passive_transfer_size_min)
 {
-  gaspi_verify_null_ptr (passive_transfer_size_min);
+  GASPI_VERIFY_NULL_PTR (passive_transfer_size_min);
 
   *passive_transfer_size_min = GASPI_MIN_TSIZE_P;
 
@@ -37,7 +37,7 @@ gaspi_return_t
 pgaspi_passive_transfer_size_max (gaspi_size_t *
                                   const passive_transfer_size_max)
 {
-  gaspi_verify_null_ptr (passive_transfer_size_max);
+  GASPI_VERIFY_NULL_PTR (passive_transfer_size_max);
 
   *passive_transfer_size_max = GASPI_MAX_TSIZE_P;
 
@@ -54,13 +54,13 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_passive_send");
-  gaspi_verify_local_off (offset_local, segment_id_local, size);
-  gaspi_verify_comm_size (size,
+  GASPI_VERIFY_INIT ("gaspi_passive_send");
+  GASPI_VERIFY_LOCAL_OFF (offset_local, segment_id_local, size);
+  GASPI_VERIFY_COMM_SIZE (size,
                           segment_id_local,
                           segment_id_local,
                           gctx->rank, GASPI_MIN_TSIZE_P, GASPI_MAX_TSIZE_P);
-  gaspi_verify_rank (rank);
+  GASPI_VERIFY_RANK (rank);
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -102,9 +102,9 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_passive_receive");
-  gaspi_verify_local_off (offset_local, segment_id_local, size);
-  gaspi_verify_comm_size (size,
+  GASPI_VERIFY_INIT ("gaspi_passive_receive");
+  GASPI_VERIFY_LOCAL_OFF (offset_local, segment_id_local, size);
+  GASPI_VERIFY_COMM_SIZE (size,
                           segment_id_local,
                           segment_id_local,
                           gctx->rank, GASPI_MIN_TSIZE_P, GASPI_MAX_TSIZE_P);

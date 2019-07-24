@@ -135,13 +135,13 @@ tcp_dev_create_cq (int elems, struct tcp_passive_channel *pchannel)
 {
   if (elems > CQ_MAX_SIZE)
   {
-    gaspi_debug_print_error ("Too many elems for completion.");
+    GASPI_DEBUG_PRINT_ERROR ("Too many elems for completion.");
     return NULL;
   }
 
   if (cq_ref_counter >= CQ_MAX_NUM)
   {
-    gaspi_debug_print_error ("Reached max number of CQs.");
+    GASPI_DEBUG_PRINT_ERROR ("Reached max number of CQs.");
     return NULL;
   }
 
@@ -149,7 +149,7 @@ tcp_dev_create_cq (int elems, struct tcp_passive_channel *pchannel)
 
   if (cq == NULL)
   {
-    gaspi_debug_print_error ("Failed to alloc memory for completion queue.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to alloc memory for completion queue.");
     return NULL;
   }
 
@@ -157,7 +157,7 @@ tcp_dev_create_cq (int elems, struct tcp_passive_channel *pchannel)
 
   if (rb == NULL)
   {
-    gaspi_debug_print_error ("Failed to alloc memory for completion queue.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to alloc memory for completion queue.");
     free (cq);
     return NULL;
   }
@@ -165,7 +165,7 @@ tcp_dev_create_cq (int elems, struct tcp_passive_channel *pchannel)
   rb->cells = (rb_cell *) malloc ((elems * 2 + 1) * sizeof (rb_cell));
   if (rb->cells == NULL)
   {
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Failed to alloc memory for completion queue elems (%d).", elems);
     free (rb);
     free (cq);
@@ -211,7 +211,7 @@ tcp_dev_create_queue (struct tcp_cq *send_cq, struct tcp_cq *recv_cq)
 
   if (qs_ref_counter >= QP_MAX_NUM)
   {
-    gaspi_debug_print_error ("Too many created queues.");
+    GASPI_DEBUG_PRINT_ERROR ("Too many created queues.");
     return NULL;
   }
 
@@ -264,7 +264,7 @@ _tcp_dev_alloc_remote_states (int n)
     (tcp_dev_conn_state_t **) calloc (n, sizeof (tcp_dev_conn_state_t *));
   if (rank_state == NULL)
   {
-    gaspi_debug_print_error ("Failed to allocate memory");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to allocate memory");
     return 1;
   }
 
@@ -374,7 +374,7 @@ tcp_dev_get_local_ip (char const *const host)
 
   if ((err = getaddrinfo (host, NULL, &hints, &res)) != 0)
   {
-    gaspi_debug_print_error ("Failed to get address info for %s.", host);
+    GASPI_DEBUG_PRINT_ERROR ("Failed to get address info for %s.", host);
     return NULL;
   }
 
@@ -406,7 +406,7 @@ tcp_dev_connect_to (const int i, char const *const host, const int port)
 
   if (conn_sock == -1)
   {
-    gaspi_debug_print_error ("Error connecting to %s on port %i.", host, port);
+    GASPI_DEBUG_PRINT_ERROR ("Error connecting to %s on port %i.", host, port);
     return 1;
   }
 
@@ -426,7 +426,7 @@ tcp_dev_connect_to (const int i, char const *const host, const int port)
 
   if (write (conn_sock, &wr, sizeof (tcp_dev_wr_t)) < 0)
   {
-    gaspi_debug_print_error ("Failed to send registration request to %s.",
+    GASPI_DEBUG_PRINT_ERROR ("Failed to send registration request to %s.",
                              host);
     close (conn_sock);
     return 1;
@@ -441,7 +441,7 @@ tcp_dev_connect_to (const int i, char const *const host, const int port)
   if (nstate == NULL)
   {
     close (conn_sock);
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Failed to add new connection (%s) to events instance", host);
     return 1;
   }
@@ -459,7 +459,7 @@ tcp_dev_return_wc (struct tcp_cq *cq, tcp_dev_wc_t * wc)
 
   if (cq->rbuf == NULL)
   {
-    gaspi_debug_print_error ("Wrong completion queue.");
+    GASPI_DEBUG_PRINT_ERROR ("Wrong completion queue.");
     return -1;
   }
 
@@ -483,7 +483,7 @@ _tcp_dev_post_wc (uint64_t wr_id,
 
   if (wc == NULL)
   {
-    gaspi_debug_print_error ("Failed to allocate WC.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to allocate WC.");
     return 1;
   }
 
@@ -957,7 +957,7 @@ _tcp_dev_process_sent_data (int pollfd, tcp_dev_conn_state_t * estate)
 
   if (epoll_ctl (pollfd, EPOLL_CTL_MOD, estate->fd, &ev) < 0)
   {
-    gaspi_debug_print_error ("Failed to modify events instance.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to modify events instance.");
     return 1;
   }
 
@@ -994,7 +994,7 @@ _tcp_dev_process_delayed (int pollfd)
           (wr.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE,
            wr.cq_handle) != 0)
       {
-        gaspi_debug_print_error ("Failed to post completion error.");
+        GASPI_DEBUG_PRINT_ERROR ("Failed to post completion error.");
         return 1;
       }
 
@@ -1008,7 +1008,7 @@ _tcp_dev_process_delayed (int pollfd)
 
         if (rwr.length < wr.length)
         {
-          gaspi_debug_print_error ("Size mismath between work requests.");
+          GASPI_DEBUG_PRINT_ERROR ("Size mismath between work requests.");
           return 1;
         }
 
@@ -1038,7 +1038,7 @@ _tcp_dev_process_delayed (int pollfd)
         }
         else
         {
-          gaspi_debug_print_error ("invalid CQ for recv request.");
+          GASPI_DEBUG_PRINT_ERROR ("invalid CQ for recv request.");
         }
 
         /* release memory of inlined writes */
@@ -1062,7 +1062,7 @@ _tcp_dev_process_delayed (int pollfd)
 
         if (bytes_sent <= 0 && !(errno == EAGAIN || errno == EWOULDBLOCK))
         {
-          gaspi_debug_print_error
+          GASPI_DEBUG_PRINT_ERROR
             ("writing to %d (total %u sent %ld remain %lu).", wr.target,
              element->wr.length, done, sizeof (tcp_dev_wr_t) - done);
 
@@ -1070,7 +1070,7 @@ _tcp_dev_process_delayed (int pollfd)
               (wr.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE,
                wr.cq_handle) != 0)
           {
-            gaspi_debug_print_error ("Failed to post completion error.");
+            GASPI_DEBUG_PRINT_ERROR ("Failed to post completion error.");
           }
 
           found_error = 1;
@@ -1097,7 +1097,7 @@ _tcp_dev_process_delayed (int pollfd)
 
           if (bytes_sent <= 0 && !(errno == EAGAIN || errno == EWOULDBLOCK))
           {
-            gaspi_debug_print_error
+            GASPI_DEBUG_PRINT_ERROR
               ("writing to %d (total %u sent %ld remain %lu).", wr.target,
                element->wr.length, sdone, element->wr.length - sdone);
 
@@ -1105,7 +1105,7 @@ _tcp_dev_process_delayed (int pollfd)
                 (wr.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE,
                  wr.cq_handle) != 0)
             {
-              gaspi_debug_print_error ("Failed to post completion error.");
+              GASPI_DEBUG_PRINT_ERROR ("Failed to post completion error.");
             }
 
             /* TODO: better handling */
@@ -1128,7 +1128,7 @@ _tcp_dev_process_delayed (int pollfd)
             (element->wr.wr_id, TCP_WC_SUCCESS, TCP_DEV_WC_RDMA_WRITE,
              element->wr.cq_handle) != 0)
         {
-          gaspi_debug_print_error ("Failed to post completion success.");
+          GASPI_DEBUG_PRINT_ERROR ("Failed to post completion success.");
           return 1;
         }
 
@@ -1167,7 +1167,7 @@ _tcp_dev_process_delayed (int pollfd)
 
           if (epoll_ctl (pollfd, EPOLL_CTL_MOD, state->fd, &ev) < 0)
           {
-            gaspi_debug_print_error
+            GASPI_DEBUG_PRINT_ERROR
               ("Failed to modify events instance for %d fd %d.", state->rank,
                state->fd);
             close (state->fd);
@@ -1341,7 +1341,7 @@ _tcp_dev_bring_down (int pollfd, int num_peers)
            synchronization issue at application level (which we
            avoid to do here). Still, we emit a warning... */
 
-        gaspi_print_warning
+        GASPI_PRINT_WARNING
           ("%d incoming request(s) from %d during device shutdown.",
            outstanding_in, p);
       }
@@ -1356,13 +1356,13 @@ _tcp_dev_bring_down (int pollfd, int num_peers)
     {
       if (shutdown (rank_state[p]->fd, SHUT_RDWR) != 0)
       {
-        gaspi_debug_print_error ("Shutdown with %d (%d)", p,
+        GASPI_DEBUG_PRINT_ERROR ("Shutdown with %d (%d)", p,
                                  rank_state[p]->fd);
       }
 
       if (close (rank_state[p]->fd) != 0)
       {
-        gaspi_debug_print_error ("Close with %d", p);
+        GASPI_DEBUG_PRINT_ERROR ("Close with %d", p);
       }
 #ifdef TCP_DEV_DEBUG
       tcp_dev_active_closed_connections++;
@@ -1372,7 +1372,7 @@ _tcp_dev_bring_down (int pollfd, int num_peers)
     {
       if (gaspi_sn_set_blocking (rank_state[p]->fd))
       {
-        gaspi_debug_print_error ("Failed to set as blocking.");
+        GASPI_DEBUG_PRINT_ERROR ("Failed to set as blocking.");
       }
 
       ssize_t final_read = -1;
@@ -1381,7 +1381,7 @@ _tcp_dev_bring_down (int pollfd, int num_peers)
       final_read = read (rank_state[p]->fd, &final_request, 64);
       if (final_read != 0)
       {
-        gaspi_debug_print_error ("Unexpected incoming data from %d (%ld)", p,
+        GASPI_DEBUG_PRINT_ERROR ("Unexpected incoming data from %d (%ld)", p,
                                  final_read);
       }
 #ifdef TCP_DEV_DEBUG
@@ -1397,7 +1397,7 @@ _tcp_dev_bring_down (int pollfd, int num_peers)
   if ((tcp_dev_active_closed_connections +
        tcp_dev_passive_closed_connections) != (num_peers - 1))
   {
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Detected mismatch of closed connections (%d + %d = %d -> %d %d ).",
        tcp_dev_active_closed_connections, tcp_dev_passive_closed_connections,
        num_peers - 1, (num_peers - 1) - tcp_dev_id, tcp_dev_id - 1);
@@ -1412,7 +1412,7 @@ _tcp_dev_bring_down (int pollfd, int num_peers)
 
   if (delayedList.count > 0)
   {
-    gaspi_print_warning ("Still delayed wrs %d.\n", delayedList.count);
+    GASPI_PRINT_WARNING ("Still delayed wrs %d.\n", delayedList.count);
   }
 
   list_clear (&delayedList);
@@ -1427,7 +1427,7 @@ tcp_dev_init_device (struct tcp_dev_args *dev_args)
 
   if (pipe (pipefd) == -1)
   {
-    gaspi_debug_print_error ("Failed to create device channel.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create device channel.");
     return -1;
   }
 
@@ -1436,7 +1436,7 @@ tcp_dev_init_device (struct tcp_dev_args *dev_args)
   /* start virtual device (thread) */
   if (pthread_create (&tcp_dev_thread, NULL, tcp_virt_dev, dev_args) != 0)
   {
-    gaspi_debug_print_error ("Failed to open (virtual) device.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to open (virtual) device.");
     return -1;
   }
 
@@ -1457,7 +1457,7 @@ tcp_dev_stop_device (int device_channel)
 
   while (GASPI_TCP_DEV_STATUS_UP == gaspi_tcp_dev_status_get())
   {
-    gaspi_delay();
+    GASPI_DELAY();
   }
 
   int s;
@@ -1466,7 +1466,7 @@ tcp_dev_stop_device (int device_channel)
   s = pthread_join (tcp_dev_thread, &res);
   if (s != 0)
   {
-    gaspi_debug_print_error ("Failed to wait device.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to wait device.");
     return -1;
   }
 
@@ -1487,7 +1487,7 @@ tcp_virt_dev (void *args)
 
   if (listen_sock < 0)
   {
-    gaspi_debug_print_error ("Failed to create socket.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create socket.");
     gaspi_tcp_dev_status_set (GASPI_TCP_DEV_STATUS_FAILED);
     return NULL;
   }
@@ -1498,7 +1498,7 @@ tcp_virt_dev (void *args)
       0)
   {
     close (listen_sock);
-    gaspi_debug_print_error ("Failed to modify socket.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to modify socket.");
     gaspi_tcp_dev_status_set (GASPI_TCP_DEV_STATUS_FAILED);
     return NULL;
   }
@@ -1507,7 +1507,7 @@ tcp_virt_dev (void *args)
       0)
   {
     close (listen_sock);
-    gaspi_debug_print_error ("Failed to modify socket.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to modify socket.");
     gaspi_tcp_dev_status_set (GASPI_TCP_DEV_STATUS_FAILED);
     return NULL;
   }
@@ -1524,7 +1524,7 @@ tcp_virt_dev (void *args)
       (listen_sock, (struct sockaddr *) (&listenAddr),
        sizeof (listenAddr)) < 0)
   {
-    gaspi_debug_print_error ("Failed to bind to port %d\n",
+    GASPI_DEBUG_PRINT_ERROR ("Failed to bind to port %d\n",
                              tcp_dev_port_in_use);
     close (listen_sock);
     gaspi_tcp_dev_status_set (GASPI_TCP_DEV_STATUS_FAILED);
@@ -1536,7 +1536,7 @@ tcp_virt_dev (void *args)
   if (listen (listen_sock, SOMAXCONN) < 0)
   {
     close (listen_sock);
-    gaspi_debug_print_error ("Failed to listen on socket");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to listen on socket");
     gaspi_tcp_dev_status_set (GASPI_TCP_DEV_STATUS_FAILED);
     return NULL;
   }
@@ -1545,7 +1545,7 @@ tcp_virt_dev (void *args)
   if (epollfd == -1)
   {
     close (listen_sock);
-    gaspi_debug_print_error ("Failed to create events instance.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create events instance.");
     gaspi_tcp_dev_status_set (GASPI_TCP_DEV_STATUS_FAILED);
     return NULL;
   }
@@ -1556,7 +1556,7 @@ tcp_virt_dev (void *args)
   {
     close (listen_sock);
     close (epollfd);
-    gaspi_debug_print_error ("Failed to allocate memory.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to allocate memory.");
     gaspi_tcp_dev_status_set (GASPI_TCP_DEV_STATUS_FAILED);
     return NULL;
   }
@@ -1571,14 +1571,14 @@ tcp_virt_dev (void *args)
 
   if (epoll_ctl (epollfd, EPOLL_CTL_ADD, listen_sock, &lev) < 0)
   {
-    gaspi_debug_print_error ("Failed to add socket to event instance.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to add socket to event instance.");
     gaspi_tcp_dev_status_set (GASPI_TCP_DEV_STATUS_FAILED);
     return NULL;
   }
 
   if (_tcp_dev_alloc_remote_states (tcp_dev_num_peers) != 0)
   {
-    gaspi_debug_print_error ("Failed to allocate states buffer");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to allocate states buffer");
     gaspi_tcp_dev_status_set (GASPI_TCP_DEV_STATUS_FAILED);
     return NULL;
   }
@@ -1591,7 +1591,7 @@ tcp_virt_dev (void *args)
 
   if (epoll_ctl (epollfd, EPOLL_CTL_ADD, dev_args->oob_fd, &ev) == -1)
   {
-    gaspi_debug_print_error ("Failed to add channel.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to add channel.");
     return NULL;
   }
 
@@ -1600,7 +1600,7 @@ tcp_virt_dev (void *args)
     calloc (MAX_EVENTS, sizeof (struct epoll_event));
   if (events == NULL)
   {
-    gaspi_debug_print_error ("Failed to allocate events buffer");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to allocate events buffer");
     gaspi_tcp_dev_status_set (GASPI_TCP_DEV_STATUS_FAILED);
     return NULL;
   }
@@ -1614,7 +1614,7 @@ tcp_virt_dev (void *args)
 
     if (nfds < 0)
     {
-      gaspi_debug_print_error ("Event handler error.");
+      GASPI_DEBUG_PRINT_ERROR ("Event handler error.");
     }
 
     int n;
@@ -1628,7 +1628,7 @@ tcp_virt_dev (void *args)
 
         if (0 == flag)
         {
-          gaspi_debug_print_error ("Detected inconsistency.");
+          GASPI_DEBUG_PRINT_ERROR ("Detected inconsistency.");
         }
 
         gaspi_tcp_dev_status_set (GASPI_TCP_DEV_STATUS_GOING_DOWN);
@@ -1667,7 +1667,7 @@ tcp_virt_dev (void *args)
               break;
             }
 
-            gaspi_debug_print_error ("Failed to accept connection.");
+            GASPI_DEBUG_PRINT_ERROR ("Failed to accept connection.");
             continue;
           }
 
@@ -1676,7 +1676,7 @@ tcp_virt_dev (void *args)
           if (_tcp_dev_add_new_conn (-1, conn_sock, epollfd) == NULL)
           {
             close (conn_sock);
-            gaspi_debug_print_error
+            GASPI_DEBUG_PRINT_ERROR
               ("Failed to add connection to events instance");
           }
         }
@@ -1726,7 +1726,7 @@ tcp_virt_dev (void *args)
             }
             else if (bytesReceived <= 0)
             {
-              gaspi_debug_print_error
+              GASPI_DEBUG_PRINT_ERROR
                 ("reading from %d (total %u recvd %ld remain %u).",
                  event_rank, estate->read.length, bytesReceived,
                  bytesRemaining);
@@ -1752,7 +1752,7 @@ tcp_virt_dev (void *args)
 
               if (ret != 0)
               {
-                gaspi_debug_print_error ("Failed to process received data.");
+                GASPI_DEBUG_PRINT_ERROR ("Failed to process received data.");
                 /* TODO: better error? exit? */
               }
 
@@ -1782,7 +1782,7 @@ tcp_virt_dev (void *args)
             }
             else if (bytesSent <= 0)
             {
-              gaspi_debug_print_error
+              GASPI_DEBUG_PRINT_ERROR
                 ("writing to %d (total %u sent %ld remain %u).", event_rank,
                  estate->write.length, bytesSent, bytesRemaining);
               io_err = 1;
@@ -1798,7 +1798,7 @@ tcp_virt_dev (void *args)
             {
               if (_tcp_dev_process_sent_data (epollfd, estate) != 0)
               {
-                gaspi_debug_print_error ("Failed to process sent data.");
+                GASPI_DEBUG_PRINT_ERROR ("Failed to process sent data.");
                 /* TODO: better error handling? */
               }
               break;
@@ -1822,13 +1822,13 @@ tcp_virt_dev (void *args)
           int error = 0;
           socklen_t errlen = sizeof (error);
 
-          gaspi_debug_print_error ("Unexpected error with rank %d.",
+          GASPI_DEBUG_PRINT_ERROR ("Unexpected error with rank %d.",
                                    event_rank);
 
           if (getsockopt
               (event_fd, SOL_SOCKET, SO_ERROR, (void *) &error, &errlen) != 0)
           {
-            gaspi_debug_print_error ("socket error with rank %d = %d: %s",
+            GASPI_DEBUG_PRINT_ERROR ("socket error with rank %d = %d: %s",
                                      event_rank, error, strerror (error));
           }
         }
@@ -1840,7 +1840,7 @@ tcp_virt_dev (void *args)
               (estate->write.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE,
                estate->write.cq_handle) != 0)
           {
-            gaspi_debug_print_error ("Failed to post completion.");
+            GASPI_DEBUG_PRINT_ERROR ("Failed to post completion.");
           }
 
           estate->write.wr_id = 0;
@@ -1860,7 +1860,7 @@ tcp_virt_dev (void *args)
                 (estate->read.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_READ,
                  estate->read.cq_handle) != 0)
             {
-              gaspi_debug_print_error ("Failed to post completion.");
+              GASPI_DEBUG_PRINT_ERROR ("Failed to post completion.");
             }
           }
 
@@ -1869,7 +1869,7 @@ tcp_virt_dev (void *args)
                 (estate->read.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RECV,
                  estate->read.cq_handle) != 0)
             {
-              gaspi_debug_print_error ("Failed to post completion.");
+              GASPI_DEBUG_PRINT_ERROR ("Failed to post completion.");
             }
         }
 
@@ -1888,7 +1888,7 @@ tcp_virt_dev (void *args)
     /* handle delayed operations */
     if (_tcp_dev_process_delayed (epollfd) > 0)
     {
-      /* gaspi_debug_print_error("Failed to process delayed events."); */
+      /* GASPI_DEBUG_PRINT_ERROR("Failed to process delayed events."); */
     }
   }                             /* device event loop */
 

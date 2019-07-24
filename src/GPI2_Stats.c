@@ -251,7 +251,7 @@ pgaspi_statistic_verbosity_level (gaspi_number_t verbosity_level)
 gaspi_return_t
 pgaspi_statistic_counter_max (gaspi_number_t * counter_max)
 {
-  gaspi_verify_null_ptr (counter_max);
+  GASPI_VERIFY_NULL_PTR (counter_max);
 
   *counter_max = GASPI_STATS_COUNTER_NUM_MAX;
 
@@ -406,7 +406,7 @@ pgaspi_statistic_print_counters (void)
 
     if (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK) != GASPI_SUCCESS)
     {
-      gaspi_debug_print_error ("Failed internal statistics barrier.");
+      GASPI_DEBUG_PRINT_ERROR ("Failed internal statistics barrier.");
       return;
     }
   }

@@ -40,7 +40,7 @@ pgaspi_dev_register_mem (gaspi_context_t const *const gctx,
 
   if (seg->mr[0] == NULL)
   {
-    gaspi_debug_print_error ("Memory registration failed (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Memory registration failed (libibverbs)");
     return -1;
   }
 
@@ -57,7 +57,7 @@ pgaspi_dev_register_mem (gaspi_context_t const *const gctx,
 
     if (seg->mr[1] == NULL)
     {
-      gaspi_debug_print_error ("Memory registration failed (libibverbs)");
+      GASPI_DEBUG_PRINT_ERROR ("Memory registration failed (libibverbs)");
       return -1;
     }
 
@@ -76,7 +76,7 @@ pgaspi_dev_unregister_mem (gaspi_context_t const *const gctx,
 
     if (ibv_dereg_mr ((struct ibv_mr *) seg->mr[0]))
     {
-      gaspi_debug_print_error ("Memory de-registration failed (libibverbs)");
+      GASPI_DEBUG_PRINT_ERROR ("Memory de-registration failed (libibverbs)");
       return -1;
     }
   }
@@ -85,7 +85,7 @@ pgaspi_dev_unregister_mem (gaspi_context_t const *const gctx,
   {
     if (ibv_dereg_mr ((struct ibv_mr *) seg->mr[1]))
     {
-      gaspi_debug_print_error ("Memory de-registration failed (libibverbs)");
+      GASPI_DEBUG_PRINT_ERROR ("Memory de-registration failed (libibverbs)");
       return -1;
     }
   }

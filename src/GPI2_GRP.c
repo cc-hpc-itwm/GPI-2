@@ -118,7 +118,7 @@ pgaspi_alloc_group_comm_mem (gaspi_context_t * const gctx,
   if (pgaspi_alloc_page_aligned (&(group_ctx->rrcd[gctx->rank].data.ptr), size)
       != 0)
   {
-    gaspi_debug_print_error ("Memory allocation failed.");
+    GASPI_DEBUG_PRINT_ERROR ("Memory allocation failed.");
     return GASPI_ERR_MEMALLOC;
   }
 
@@ -143,8 +143,8 @@ pgaspi_group_create (gaspi_group_t * const group)
   gaspi_return_t eret = GASPI_ERROR;
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_group_create");
-  gaspi_verify_null_ptr (group);
+  GASPI_VERIFY_INIT ("gaspi_group_create");
+  GASPI_VERIFY_NULL_PTR (group);
 
   lock_gaspi_tout (&(gctx->ctx_lock), GASPI_BLOCK);
 
@@ -224,8 +224,8 @@ errL:
 gaspi_return_t
 pgaspi_group_delete (const gaspi_group_t group)
 {
-  gaspi_verify_init ("gaspi_group_delete");
-  gaspi_verify_group (group);
+  GASPI_VERIFY_INIT ("gaspi_group_delete");
+  GASPI_VERIFY_GROUP (group);
 
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
   gaspi_group_ctx_t *const grp_ctx = &(gctx->groups[group]);
@@ -264,9 +264,9 @@ gaspi_comp_ranks (const void *a, const void *b)
 gaspi_return_t
 pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
 {
-  gaspi_verify_init ("gaspi_group_add");
-  gaspi_verify_rank (rank);
-  gaspi_verify_group (group);
+  GASPI_VERIFY_INIT ("gaspi_group_add");
+  GASPI_VERIFY_RANK (rank);
+  GASPI_VERIFY_GROUP (group);
 
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
   gaspi_group_ctx_t *const grp_ctx = &(gctx->groups[group]);
@@ -360,7 +360,7 @@ pgaspi_group_all_local_create (gaspi_context_t * const gctx,
 gaspi_return_t
 pgaspi_group_all_delete (gaspi_context_t * const gctx)
 {
-  gaspi_verify_init ("gaspi_group_all_delete");
+  GASPI_VERIFY_INIT ("gaspi_group_all_delete");
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -431,8 +431,8 @@ pgaspi_group_commit (const gaspi_group_t group,
   gaspi_timeout_t delta_tout = timeout_ms;
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_group_commit");
-  gaspi_verify_group (group);
+  GASPI_VERIFY_INIT ("gaspi_group_commit");
+  GASPI_VERIFY_GROUP (group);
 
   gaspi_group_ctx_t *group_to_commit = &(gctx->groups[group]);
 
@@ -443,7 +443,7 @@ pgaspi_group_commit (const gaspi_group_t group,
 
   if (group_to_commit->tnc < 2 && gctx->tnc != 1)
   {
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Group must have at least 2 ranks to be committed");
     eret = GASPI_ERR_INV_GROUP;
     goto endL;
@@ -501,7 +501,7 @@ pgaspi_group_commit (const gaspi_group_t group,
     if (_pgaspi_group_commit_to
         (group, group_to_commit->rank_grp[rg], timeout_ms) != 0)
     {
-      gaspi_debug_print_error ("Failed to commit group %u with rank %d", group,
+      GASPI_DEBUG_PRINT_ERROR ("Failed to commit group %u with rank %d", group,
                                group_to_commit->rank_grp[rg]);
       eret = GASPI_ERROR;
       goto endL;
@@ -519,8 +519,8 @@ endL:
 gaspi_return_t
 pgaspi_group_num (gaspi_number_t * const group_num)
 {
-  gaspi_verify_init ("gaspi_group_num");
-  gaspi_verify_null_ptr (group_num);
+  GASPI_VERIFY_INIT ("gaspi_group_num");
+  GASPI_VERIFY_NULL_PTR (group_num);
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
   *group_num = gctx->group_cnt;
@@ -533,12 +533,12 @@ gaspi_return_t
 pgaspi_group_size (const gaspi_group_t group,
                    gaspi_number_t * const group_size)
 {
-  gaspi_verify_init ("gaspi_group_size");
+  GASPI_VERIFY_INIT ("gaspi_group_size");
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
   if (group < gctx->group_cnt)
   {
-    gaspi_verify_null_ptr (group_size);
+    GASPI_VERIFY_NULL_PTR (group_size);
 
     *group_size = gctx->groups[group].tnc;
 
@@ -553,7 +553,7 @@ gaspi_return_t
 pgaspi_group_ranks (const gaspi_group_t group,
                     gaspi_rank_t * const group_ranks)
 {
-  gaspi_verify_init ("gaspi_group_ranks");
+  GASPI_VERIFY_INIT ("gaspi_group_ranks");
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
   if (group < gctx->group_cnt)
@@ -575,8 +575,8 @@ pgaspi_group_ranks (const gaspi_group_t group,
 gaspi_return_t
 pgaspi_group_max (gaspi_number_t * const group_max)
 {
-  gaspi_verify_null_ptr (group_max);
-  gaspi_verify_init ("gaspi_group_max");
+  GASPI_VERIFY_NULL_PTR (group_max);
+  GASPI_VERIFY_INIT ("gaspi_group_max");
 
   *group_max = GASPI_MAX_GROUPS;
 
@@ -587,8 +587,8 @@ pgaspi_group_max (gaspi_number_t * const group_max)
 gaspi_return_t
 pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
 {
-  gaspi_verify_null_ptr (buf_size);
-  gaspi_verify_init ("gaspi_allreduce_buf_size");
+  GASPI_VERIFY_NULL_PTR (buf_size);
+  GASPI_VERIFY_INIT ("gaspi_allreduce_buf_size");
 
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
@@ -601,8 +601,8 @@ pgaspi_allreduce_buf_size (gaspi_size_t * const buf_size)
 gaspi_return_t
 pgaspi_allreduce_elem_max (gaspi_number_t * const elem_max)
 {
-  gaspi_verify_null_ptr (elem_max);
-  gaspi_verify_init ("gaspi_allreduce_elem_max");
+  GASPI_VERIFY_NULL_PTR (elem_max);
+  GASPI_VERIFY_INIT ("gaspi_allreduce_elem_max");
 
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
@@ -652,8 +652,8 @@ _gaspi_sync_wait (gaspi_context_t * const gctx,
 gaspi_return_t
 pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
 {
-  gaspi_verify_init ("gaspi_barrier");
-  gaspi_verify_group (g);
+  GASPI_VERIFY_INIT ("gaspi_barrier");
+  GASPI_VERIFY_GROUP (g);
 
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
   gaspi_group_ctx_t *const grp_ctx = &(gctx->groups[g]);
@@ -714,7 +714,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       if ((eret =
            pgaspi_connect ((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS)
       {
-        gaspi_debug_print_error ("Failed to connect to rank %u", dst);
+        GASPI_DEBUG_PRINT_ERROR ("Failed to connect to rank %u", dst);
         unlock_gaspi (&grp_ctx->gl);
         return eret;
       }
@@ -725,7 +725,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
       if ((eret =
            _pgaspi_group_commit_to (g, dst, timeout_ms)) != GASPI_SUCCESS)
       {
-        gaspi_debug_print_error ("Failed to commit to rank %u", dst);
+        GASPI_DEBUG_PRINT_ERROR ("Failed to commit to rank %u", dst);
         unlock_gaspi (&grp_ctx->gl);
         return eret;
       }
@@ -800,7 +800,7 @@ _gaspi_allreduce_write_and_sync (gaspi_context_t * const gctx,
     if ((eret =
          pgaspi_connect ((gaspi_rank_t) dst, timeout_ms)) != GASPI_SUCCESS)
     {
-      gaspi_debug_print_error ("Failed to connect to rank %u", dst);
+      GASPI_DEBUG_PRINT_ERROR ("Failed to connect to rank %u", dst);
       return eret;
     }
   }
@@ -809,7 +809,7 @@ _gaspi_allreduce_write_and_sync (gaspi_context_t * const gctx,
   {
     if ((eret = _pgaspi_group_commit_to (g, dst, timeout_ms)) != GASPI_SUCCESS)
     {
-      gaspi_debug_print_error ("Failed to commit to rank %u", dst);
+      GASPI_DEBUG_PRINT_ERROR ("Failed to commit to rank %u", dst);
       unlock_gaspi (&grp_ctx->gl);
       return eret;
     }
@@ -1112,10 +1112,10 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_allreduce_user");
-  gaspi_verify_null_ptr (buf_send);
-  gaspi_verify_null_ptr (buf_recv);
-  gaspi_verify_group (g);
+  GASPI_VERIFY_INIT ("gaspi_allreduce_user");
+  GASPI_VERIFY_NULL_PTR (buf_send);
+  GASPI_VERIFY_NULL_PTR (buf_recv);
+  GASPI_VERIFY_GROUP (g);
 
   if (elem_cnt > gctx->config->allreduce_elem_max)
   {
@@ -1165,10 +1165,10 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_allreduce_user");
-  gaspi_verify_null_ptr (buf_send);
-  gaspi_verify_null_ptr (buf_recv);
-  gaspi_verify_group (g);
+  GASPI_VERIFY_INIT ("gaspi_allreduce_user");
+  GASPI_VERIFY_NULL_PTR (buf_send);
+  GASPI_VERIFY_NULL_PTR (buf_recv);
+  GASPI_VERIFY_GROUP (g);
 
 
   if (elem_cnt > gctx->config->allreduce_elem_max)

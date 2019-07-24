@@ -179,7 +179,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   ib_dev_ctx->dev_list = ibv_get_device_list (&avail_num_dev);
   if (NULL == ib_dev_ctx->dev_list)
   {
-    gaspi_debug_print_error ("Failed to get device list (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to get device list (libibverbs)");
     return -1;
   }
 
@@ -190,7 +190,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   {
     if (configured_dev_id >= avail_num_dev)
     {
-      gaspi_debug_print_error ("Configured netdev_id not available (%d)",
+      GASPI_DEBUG_PRINT_ERROR ("Configured netdev_id not available (%d)",
                                configured_dev_id);
       return -1;
     }
@@ -198,7 +198,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     ib_dev_ctx->ib_dev = ib_dev_ctx->dev_list[configured_dev_id];
     if (NULL == ib_dev_ctx->ib_dev)
     {
-      gaspi_debug_print_error ("Failed to get device %d (libibverbs)",
+      GASPI_DEBUG_PRINT_ERROR ("Failed to get device %d (libibverbs)",
                                configured_dev_id);
       return -1;
     }
@@ -223,27 +223,27 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
 
   if (NULL == ib_dev_ctx->ib_dev)
   {
-    gaspi_debug_print_error ("Failed to find IB device.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to find IB device.");
     return -1;
   }
 
   if (ib_dev_ctx->ib_dev->transport_type != IBV_TRANSPORT_IB)
   {
-    gaspi_debug_print_error ("Device does not support IB transport");
+    GASPI_DEBUG_PRINT_ERROR ("Device does not support IB transport");
     return -1;
   }
 
   ib_dev_ctx->context = ibv_open_device (ib_dev_ctx->ib_dev);
   if (NULL == ib_dev_ctx->context)
   {
-    gaspi_debug_print_error ("Failed to open IB device (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to open IB device (libibverbs)");
     return -1;
   }
 
   /* Query device */
   if (ibv_query_device (ib_dev_ctx->context, &ib_dev_ctx->device_attr))
   {
-    gaspi_debug_print_error ("Failed to query device (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to query device (libibverbs)");
     return -1;
   }
 
@@ -256,7 +256,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     if (ibv_query_port
         (ib_dev_ctx->context, (p + 1), &ib_dev_ctx->port_attr[p]))
     {
-      gaspi_debug_print_error ("Failed to query port (%u) (libibverbs)",
+      GASPI_DEBUG_PRINT_ERROR ("Failed to query port (%u) (libibverbs)",
                                (p + 1));
       return -1;
     }
@@ -268,14 +268,14 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     if ((ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE) &&
         (ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE))
     {
-      gaspi_debug_print_error ("No IB active port found.");
+      GASPI_DEBUG_PRINT_ERROR ("No IB active port found.");
       return -1;
     }
 
     if ((ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP) &&
         (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP))
     {
-      gaspi_debug_print_error ("No IB active link found.");
+      GASPI_DEBUG_PRINT_ERROR ("No IB active link found.");
       return -1;
     }
 
@@ -287,7 +287,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
       if ((ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE) ||
           (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP))
       {
-        gaspi_debug_print_error ("No IB active port with active link found.");
+        GASPI_DEBUG_PRINT_ERROR ("No IB active port with active link found.");
         return -1;
       }
 
@@ -322,7 +322,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
             (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP) ||
             (ib_dev_ctx->port_attr[1].link_layer != IBV_LINK_LAYER_ETHERNET))
         {
-          gaspi_debug_print_error
+          GASPI_DEBUG_PRINT_ERROR
             ("No active Ethernet (RoCE) port with active link found.");
           return -1;
         }
@@ -333,7 +333,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   }
   else
   {
-    gaspi_print_warning ("No port(s) check! Using port 1.");
+    GASPI_PRINT_WARNING ("No port(s) check! Using port 1.");
     ib_dev_ctx->ib_port = 1;
   }
 
@@ -369,7 +369,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
 
     if (ret)
     {
-      gaspi_debug_print_error ("Failed to query gid (RoCE - libiverbs)");
+      GASPI_DEBUG_PRINT_ERROR ("Failed to query gid (RoCE - libiverbs)");
       return -1;
     }
   }
@@ -383,7 +383,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   ib_dev_ctx->pd = ibv_alloc_pd (ib_dev_ctx->context);
   if (NULL == ib_dev_ctx->pd)
   {
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Failed to allocate protection domain (libibverbs)");
     return -1;
   }
@@ -392,7 +392,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   ib_dev_ctx->channelP = ibv_create_comp_channel (ib_dev_ctx->context);
   if (NULL == ib_dev_ctx->channelP)
   {
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Failed to create completion channel (libibverbs)");
     return -1;
   }
@@ -405,7 +405,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   ib_dev_ctx->srqP = ibv_create_srq (ib_dev_ctx->pd, &srq_attr);
   if (NULL == ib_dev_ctx->srqP)
   {
-    gaspi_debug_print_error ("Failed to create SRQ (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create SRQ (libibverbs)");
     return -1;
   }
 
@@ -421,7 +421,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
                        NULL, 0, &cqattr);
   if (NULL == ib_dev_ctx->scqGroups)
   {
-    gaspi_debug_print_error ("Failed to create CQ (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
     return -1;
   }
 
@@ -430,7 +430,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
                        NULL, 0, &cqattr);
   if (NULL == ib_dev_ctx->rcqGroups)
   {
-    gaspi_debug_print_error ("Failed to create CQ (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
     return -1;
   }
 #else
@@ -439,7 +439,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
                    NULL, 0);
   if (NULL == ib_dev_ctx->scqGroups)
   {
-    gaspi_debug_print_error ("Failed to create CQ (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
     return -1;
   }
 
@@ -448,7 +448,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
                    NULL, 0);
   if (NULL == ib_dev_ctx->rcqGroups)
   {
-    gaspi_debug_print_error ("Failed to create CQ (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
     return -1;
   }
 #endif
@@ -459,7 +459,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
                    NULL, 0);
   if (NULL == ib_dev_ctx->scqP)
   {
-    gaspi_debug_print_error ("Failed to create CQ (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
     return -1;
   }
 
@@ -468,13 +468,13 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
                    ib_dev_ctx->channelP, 0);
   if (NULL == ib_dev_ctx->rcqP)
   {
-    gaspi_debug_print_error ("Failed to create CQ (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
     return -1;
   }
 
   if (ibv_req_notify_cq (ib_dev_ctx->rcqP, 0))
   {
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Failed to request CQ notifications (libibverbs)");
     return 1;
   }
@@ -488,7 +488,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
                      NULL, 0);
     if (NULL == ib_dev_ctx->scqC[c])
     {
-      gaspi_debug_print_error ("Failed to create CQ (libibverbs)");
+      GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
       return -1;
     }
   }
@@ -499,7 +499,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
   if (NULL == ib_dev_ctx->qpGroups)
   {
-    gaspi_debug_print_error ("Failed to allocate memory.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to allocate memory.");
     return -1;
   }
 
@@ -509,7 +509,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
       (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
     if (NULL == ib_dev_ctx->qpC[c])
     {
-      gaspi_debug_print_error ("Failed to allocate memory.");
+      GASPI_DEBUG_PRINT_ERROR ("Failed to allocate memory.");
       return -1;
     }
   }
@@ -518,7 +518,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
   if (NULL == ib_dev_ctx->qpP)
   {
-    gaspi_debug_print_error ("Failed to allocate memory.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to allocate memory.");
     return -1;
   }
 
@@ -530,7 +530,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     (struct ib_ctx_info *) calloc (gctx->tnc, sizeof (struct ib_ctx_info));
   if (NULL == ib_dev_ctx->local_info)
   {
-    gaspi_debug_print_error ("Failed to allocate memory.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to allocate memory.");
     return -1;
   }
 
@@ -538,7 +538,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     (struct ib_ctx_info *) calloc (gctx->tnc, sizeof (struct ib_ctx_info));
   if (NULL == ib_dev_ctx->remote_info)
   {
-    gaspi_debug_print_error ("Failed to allocate memory.");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to allocate memory.");
     return -1;
   }
 
@@ -558,7 +558,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
       if (!ib_dev_ctx->local_info[i].lid
           && (gctx->config->network == GASPI_IB))
       {
-        gaspi_debug_print_error
+        GASPI_DEBUG_PRINT_ERROR
           ("Failed to find topology! Is subnet-manager running ?");
         return -1;
       }
@@ -600,7 +600,7 @@ _pgaspi_dev_create_qp (gaspi_context_t const *const gctx,
   qp = ibv_create_qp (ib_dev_ctx->pd, &qpi_attr);
   if (qp == NULL)
   {
-    gaspi_debug_print_error ("Failed to create QP (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create QP (libibverbs)");
     return NULL;
   }
 
@@ -621,12 +621,12 @@ _pgaspi_dev_create_qp (gaspi_context_t const *const gctx,
                      | IBV_QP_PKEY_INDEX | IBV_QP_PORT | IBV_QP_ACCESS_FLAGS))
   {
     {
-      gaspi_debug_print_error ("Failed to modify QP (libibverbs)");
+      GASPI_DEBUG_PRINT_ERROR ("Failed to modify QP (libibverbs)");
     }
 
     if (ibv_destroy_qp (qp))
     {
-      gaspi_debug_print_error ("Failed to destroy QP (libibverbs)");
+      GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
     }
     return NULL;
   }
@@ -670,7 +670,7 @@ _pgaspi_dev_create_qp_exp (gaspi_context_t const *const gctx,
   qp = ibv_exp_create_qp (ib_dev_ctx->context, &attr);
   if (qp == NULL)
   {
-    gaspi_debug_print_error ("Failed to create QP (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create QP (libibverbs)");
     return NULL;
   }
 
@@ -703,11 +703,11 @@ _pgaspi_dev_create_qp_exp (gaspi_context_t const *const gctx,
 
   if (ibv_exp_modify_qp (qp, &exp_attr, exp_flags))
   {
-    gaspi_debug_print_error ("Failed to modify QP (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to modify QP (libibverbs)");
 
     if (ibv_destroy_qp (qp))
     {
-      gaspi_debug_print_error ("Failed to destroy QP (libibverbs)");
+      GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
     }
     return NULL;
   }
@@ -737,7 +737,7 @@ pgaspi_dev_comm_queue_delete (gaspi_context_t const *const gctx,
       {
         if (ibv_destroy_qp (ib_dev_ctx->qpC[id][i]))
         {
-          gaspi_debug_print_error ("Failed to destroy QP (libibverbs)");
+          GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
           return -1;
         }
       }
@@ -756,7 +756,7 @@ pgaspi_dev_comm_queue_delete (gaspi_context_t const *const gctx,
     {
       if (ibv_destroy_cq (ib_dev_ctx->scqC[id]))
       {
-        gaspi_debug_print_error ("Failed to destroy CQ (libibverbs)");
+        GASPI_DEBUG_PRINT_ERROR ("Failed to destroy CQ (libibverbs)");
         return -1;
       }
 
@@ -784,7 +784,7 @@ pgaspi_dev_comm_queue_create (gaspi_context_t const *const gctx,
                      NULL, 0);
     if (!ib_dev_ctx->scqC[id])
     {
-      gaspi_debug_print_error ("Failed to create CQ (libibverbs)");
+      GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
       return -1;
     }
 
@@ -793,7 +793,7 @@ pgaspi_dev_comm_queue_create (gaspi_context_t const *const gctx,
       (struct ibv_qp **) malloc (gctx->tnc * sizeof (struct ibv_qp *));
     if (ib_dev_ctx->qpC[id] == NULL)
     {
-      gaspi_debug_print_error ("Failed to memory allocation");
+      GASPI_DEBUG_PRINT_ERROR ("Failed to memory allocation");
       return -1;
     }
 
@@ -802,7 +802,7 @@ pgaspi_dev_comm_queue_create (gaspi_context_t const *const gctx,
 
   if (ib_dev_ctx->qpC[id] == NULL)
   {
-    gaspi_debug_print_error ("Failed to memory allocation");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to memory allocation");
     return -1;
   }
 
@@ -812,7 +812,7 @@ pgaspi_dev_comm_queue_create (gaspi_context_t const *const gctx,
 
   if (ib_dev_ctx->qpC[id][remote_node] == NULL)
   {
-    gaspi_debug_print_error ("Failed to create QP (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to create QP (libibverbs)");
     return -1;
   }
 
@@ -895,7 +895,7 @@ pgaspi_dev_disconnect_context (gaspi_context_t * const gctx, const int i)
 
   if (ibv_destroy_qp (ib_dev_ctx->qpGroups[i]))
   {
-    gaspi_debug_print_error ("Failed to destroy QP (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
     return -1;
   }
 
@@ -903,14 +903,14 @@ pgaspi_dev_disconnect_context (gaspi_context_t * const gctx, const int i)
   {
     if (ibv_destroy_qp (ib_dev_ctx->qpC[c][i]))
     {
-      gaspi_debug_print_error ("Failed to destroy QP (libibverbs)");
+      GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
       return -1;
     }
   }
 
   if (ibv_destroy_qp (ib_dev_ctx->qpP[i]))
   {
-    gaspi_debug_print_error ("Failed to destroy QP (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
     return -1;
   }
 
@@ -948,7 +948,7 @@ _pgaspi_dev_qp_set_ready (gaspi_context_t const *const gctx, struct ibv_qp *qp,
       break;
     default:
       {
-        gaspi_debug_print_error ("Invalid MTU in configuration (%d)",
+        GASPI_DEBUG_PRINT_ERROR ("Invalid MTU in configuration (%d)",
                                  gctx->config->dev_config.params.ib.mtu);
         return -1;
       }
@@ -986,7 +986,7 @@ _pgaspi_dev_qp_set_ready (gaspi_context_t const *const gctx, struct ibv_qp *qp,
                      | IBV_QP_RQ_PSN
                      | IBV_QP_MIN_RNR_TIMER | IBV_QP_MAX_DEST_RD_ATOMIC))
   {
-    gaspi_debug_print_error ("Failed to modify QP (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to modify QP (libibverbs)");
     return -1;
   }
 
@@ -1005,7 +1005,7 @@ _pgaspi_dev_qp_set_ready (gaspi_context_t const *const gctx, struct ibv_qp *qp,
                      | IBV_QP_RETRY_CNT
                      | IBV_QP_RNR_RETRY | IBV_QP_MAX_QP_RD_ATOMIC))
   {
-    gaspi_debug_print_error ("Failed to modify QP (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to modify QP (libibverbs)");
     return -1;
   }
 
@@ -1079,13 +1079,13 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
     {
       if (ibv_destroy_qp (ib_dev_ctx->qpGroups[i]))
       {
-        gaspi_debug_print_error ("Failed to destroy QP (libibverbs)");
+        GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
         return -1;
       }
 
       if (ibv_destroy_qp (ib_dev_ctx->qpP[i]))
       {
-        gaspi_debug_print_error ("Failed to destroy QP (libibverbs)");
+        GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
         return -1;
       }
 
@@ -1093,7 +1093,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
       {
         if (ibv_destroy_qp (ib_dev_ctx->qpC[c][i]))
         {
-          gaspi_debug_print_error ("Failed to destroy QP (libibverbs)");
+          GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
           return -1;
         }
       }
@@ -1113,37 +1113,37 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
 
   if (ibv_destroy_cq (ib_dev_ctx->scqGroups))
   {
-    gaspi_debug_print_error ("Failed to destroy CQ (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to destroy CQ (libibverbs)");
     return -1;
   }
 
   if (ibv_destroy_cq (ib_dev_ctx->rcqGroups))
   {
-    gaspi_debug_print_error ("Failed to destroy CQ (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to destroy CQ (libibverbs)");
     return -1;
   }
 
   if (ibv_destroy_cq (ib_dev_ctx->scqP))
   {
-    gaspi_debug_print_error ("Failed to destroy CQ (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to destroy CQ (libibverbs)");
     return -1;
   }
 
   if (ibv_destroy_cq (ib_dev_ctx->rcqP))
   {
-    gaspi_debug_print_error ("Failed to destroy CQ (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to destroy CQ (libibverbs)");
     return -1;
   }
 
   if (ibv_destroy_srq (ib_dev_ctx->srqP))
   {
-    gaspi_debug_print_error ("Failed to destroy SRQ (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to destroy SRQ (libibverbs)");
     return -1;
   }
 
   if (ibv_dealloc_pd (ib_dev_ctx->pd))
   {
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Failed to de-allocate protection domain (libibverbs)");
     return -1;
   }
@@ -1152,7 +1152,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   {
     if (ibv_destroy_comp_channel (ib_dev_ctx->channelP))
     {
-      gaspi_debug_print_error
+      GASPI_DEBUG_PRINT_ERROR
         ("Failed to destroy completion channel (libibverbs)");
       return -1;
     }
@@ -1160,7 +1160,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
 
   if (ibv_close_device (ib_dev_ctx->context))
   {
-    gaspi_debug_print_error ("Failed to close device (libibverbs)");
+    GASPI_DEBUG_PRINT_ERROR ("Failed to close device (libibverbs)");
     return -1;
   }
 

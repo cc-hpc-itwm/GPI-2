@@ -76,7 +76,7 @@ gaspi_config_t glb_gaspi_cfg =
 gaspi_return_t
 pgaspi_config_get (gaspi_config_t * const config)
 {
-  gaspi_verify_null_ptr (config);
+  GASPI_VERIFY_NULL_PTR (config);
 
   memcpy (config, &glb_gaspi_cfg, sizeof (gaspi_config_t));
 
@@ -87,7 +87,7 @@ pgaspi_config_get (gaspi_config_t * const config)
 gaspi_return_t
 pgaspi_config_set (const gaspi_config_t nconf)
 {
-  gaspi_verify_setup ("gaspi_config_set");
+  GASPI_VERIFY_SETUP ("gaspi_config_set");
 
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.build_infrastructure = nconf.build_infrastructure;
@@ -103,7 +103,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   }
   else
   {
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Invalid value for parameter mtu (supported: 1024, 2048, 4096)");
     return GASPI_ERR_CONFIG;
   }
@@ -115,7 +115,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
     nconf.dev_config.params.ib.netdev_id;
   if (nconf.dev_config.params.ib.netdev_id > 1)
   {
-    gaspi_debug_print_error ("Invalid value for parameter netdev_id");
+    GASPI_DEBUG_PRINT_ERROR ("Invalid value for parameter netdev_id");
     return GASPI_ERR_CONFIG;
   }
 
@@ -136,7 +136,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
         [GASPI_ARIES] = "GASPI_ARIES"
       };
 #endif
-    gaspi_debug_print_error ("Invalid value for parameter network (%s)",
+    GASPI_DEBUG_PRINT_ERROR ("Invalid value for parameter network (%s)",
                              gaspi_network_str[nconf.network]);
     return GASPI_ERR_CONFIG;
   }
@@ -145,7 +145,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   if (nconf.queue_num > GASPI_MAX_QP || nconf.queue_num < 1)
   {
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Invalid value for parameter queue_num (min=1 and max=GASPI_MAX_QP");
     return GASPI_ERR_CONFIG;
   }
@@ -154,7 +154,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   if (nconf.queue_size_max > GASPI_MAX_QSIZE || nconf.queue_size_max < 1)
   {
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Invalid value for parameter queue_size_max (min=1 and max=GASPI_MAX_QSIZE");
     return GASPI_ERR_CONFIG;
   }
@@ -163,7 +163,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   if (nconf.sn_port < 1024 || nconf.sn_port > 65536)
   {
-    gaspi_debug_print_error
+    GASPI_DEBUG_PRINT_ERROR
       ("Invalid value for parameter sn_port ( from 1024 to 65536)");
     return GASPI_ERR_CONFIG;
   }

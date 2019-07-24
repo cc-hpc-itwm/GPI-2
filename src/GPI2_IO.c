@@ -29,9 +29,9 @@ gaspi_return_t
 pgaspi_queue_size (const gaspi_queue_id_t queue,
                    gaspi_number_t * const queue_size)
 {
-  gaspi_verify_queue (queue);
-  gaspi_verify_null_ptr (queue_size);
-  gaspi_verify_init ("gaspi_queue_size");
+  GASPI_VERIFY_QUEUE (queue);
+  GASPI_VERIFY_NULL_PTR (queue_size);
+  GASPI_VERIFY_INIT ("gaspi_queue_size");
 
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
@@ -44,8 +44,8 @@ pgaspi_queue_size (const gaspi_queue_id_t queue,
 gaspi_return_t
 pgaspi_queue_num (gaspi_number_t * const queue_num)
 {
-  gaspi_verify_null_ptr (queue_num);
-  gaspi_verify_init ("gaspi_queue_num");
+  GASPI_VERIFY_NULL_PTR (queue_num);
+  GASPI_VERIFY_INIT ("gaspi_queue_num");
 
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
@@ -58,8 +58,8 @@ pgaspi_queue_num (gaspi_number_t * const queue_num)
 gaspi_return_t
 pgaspi_queue_size_max (gaspi_number_t * const queue_size_max)
 {
-  gaspi_verify_null_ptr (queue_size_max);
-  gaspi_verify_init ("gaspi_queue_size_max");
+  GASPI_VERIFY_NULL_PTR (queue_size_max);
+  GASPI_VERIFY_INIT ("gaspi_queue_size_max");
 
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
@@ -71,8 +71,8 @@ pgaspi_queue_size_max (gaspi_number_t * const queue_size_max)
 gaspi_return_t
 pgaspi_transfer_size_min (gaspi_size_t * const transfer_size_min)
 {
-  gaspi_verify_null_ptr (transfer_size_min);
-  gaspi_verify_init ("gaspi_transfer_size_min");
+  GASPI_VERIFY_NULL_PTR (transfer_size_min);
+  GASPI_VERIFY_INIT ("gaspi_transfer_size_min");
 
   *transfer_size_min = GASPI_MIN_TSIZE_C;
   return GASPI_SUCCESS;
@@ -82,8 +82,8 @@ pgaspi_transfer_size_min (gaspi_size_t * const transfer_size_min)
 gaspi_return_t
 pgaspi_transfer_size_max (gaspi_size_t * const transfer_size_max)
 {
-  gaspi_verify_null_ptr (transfer_size_max);
-  gaspi_verify_init ("gaspi_transfer_size_max");
+  GASPI_VERIFY_NULL_PTR (transfer_size_max);
+  GASPI_VERIFY_INIT ("gaspi_transfer_size_max");
 
   *transfer_size_max = GASPI_MAX_TSIZE_C;
   return GASPI_SUCCESS;
@@ -93,8 +93,8 @@ pgaspi_transfer_size_max (gaspi_size_t * const transfer_size_max)
 gaspi_return_t
 pgaspi_notification_num (gaspi_number_t * const notification_num)
 {
-  gaspi_verify_null_ptr (notification_num);
-  gaspi_verify_init ("gaspi_notification_num");
+  GASPI_VERIFY_NULL_PTR (notification_num);
+  GASPI_VERIFY_INIT ("gaspi_notification_num");
 
   *notification_num = GASPI_MAX_NOTIFICATION;
 
@@ -105,8 +105,8 @@ pgaspi_notification_num (gaspi_number_t * const notification_num)
 gaspi_return_t
 pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
 {
-  gaspi_verify_null_ptr (elem_max);
-  gaspi_verify_init ("gaspi_rw_list_elem_max");
+  GASPI_VERIFY_NULL_PTR (elem_max);
+  GASPI_VERIFY_INIT ("gaspi_rw_list_elem_max");
 
   *elem_max = ((1 << 8) - 1);
   return GASPI_SUCCESS;
@@ -116,8 +116,8 @@ pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
 gaspi_return_t
 pgaspi_queue_max (gaspi_number_t * const queue_max)
 {
-  gaspi_verify_null_ptr (queue_max);
-  gaspi_verify_init ("gaspi_queue_max");
+  GASPI_VERIFY_NULL_PTR (queue_max);
+  GASPI_VERIFY_INIT ("gaspi_queue_max");
 
   *queue_max = GASPI_MAX_QP;
 
@@ -132,7 +132,7 @@ pgaspi_queue_create (gaspi_queue_id_t * const queue_id,
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_null_ptr (queue_id);
+  GASPI_VERIFY_NULL_PTR (queue_id);
 
   if (GASPI_MAX_QP == gctx->num_queues)
   {
@@ -227,8 +227,8 @@ gaspi_return_t
 pgaspi_queue_purge (const gaspi_queue_id_t queue,
                     const gaspi_timeout_t timeout_ms)
 {
-  gaspi_verify_init ("gaspi_queue_purge");
-  gaspi_verify_queue (queue);
+  GASPI_VERIFY_INIT ("gaspi_queue_purge");
+  GASPI_VERIFY_QUEUE (queue);
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
   if (lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
@@ -262,11 +262,11 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_write");
-  gaspi_verify_local_off (offset_local, segment_id_local, size);
-  gaspi_verify_remote_off (offset_remote, segment_id_remote, rank, size);
-  gaspi_verify_queue (queue);
-  gaspi_verify_comm_size (size, segment_id_local, segment_id_remote, rank,
+  GASPI_VERIFY_INIT ("gaspi_write");
+  GASPI_VERIFY_LOCAL_OFF (offset_local, segment_id_local, size);
+  GASPI_VERIFY_REMOTE_OFF (offset_remote, segment_id_remote, rank, size);
+  GASPI_VERIFY_QUEUE (queue);
+  GASPI_VERIFY_COMM_SIZE (size, segment_id_local, segment_id_remote, rank,
                           GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
 
   gaspi_return_t eret = GASPI_ERROR;
@@ -315,11 +315,11 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_read");
-  gaspi_verify_local_off (offset_local, segment_id_local, size);
-  gaspi_verify_remote_off (offset_remote, segment_id_remote, rank, size);
-  gaspi_verify_queue (queue);
-  gaspi_verify_comm_size (size, segment_id_local, segment_id_remote, rank,
+  GASPI_VERIFY_INIT ("gaspi_read");
+  GASPI_VERIFY_LOCAL_OFF (offset_local, segment_id_local, size);
+  GASPI_VERIFY_REMOTE_OFF (offset_remote, segment_id_remote, rank, size);
+  GASPI_VERIFY_QUEUE (queue);
+  GASPI_VERIFY_COMM_SIZE (size, segment_id_local, segment_id_remote, rank,
                           GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
 
   gaspi_return_t eret = GASPI_ERROR;
@@ -360,8 +360,8 @@ endL:
 gaspi_return_t
 pgaspi_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
 {
-  gaspi_verify_init ("gaspi_wait");
-  gaspi_verify_queue (queue);
+  GASPI_VERIFY_INIT ("gaspi_wait");
+  GASPI_VERIFY_QUEUE (queue);
 
   /* We need to start timing before the lock to include contention in
      lock when execution is multithreaded */
@@ -426,8 +426,8 @@ pgaspi_write_list (const gaspi_number_t num,
   }
 
 #ifdef DEBUG
-  gaspi_verify_init ("gaspi_write_list");
-  gaspi_verify_queue (queue);
+  GASPI_VERIFY_INIT ("gaspi_write_list");
+  GASPI_VERIFY_QUEUE (queue);
 
   if (pgaspi_rw_list_num_invalid (num))
   {
@@ -438,10 +438,10 @@ pgaspi_write_list (const gaspi_number_t num,
 
   for (n = 0; n < num; n++)
   {
-    gaspi_verify_local_off (offset_local[n], segment_id_local[n], size[n]);
-    gaspi_verify_remote_off (offset_remote[n], segment_id_remote[n], rank,
+    GASPI_VERIFY_LOCAL_OFF (offset_local[n], segment_id_local[n], size[n]);
+    GASPI_VERIFY_REMOTE_OFF (offset_remote[n], segment_id_remote[n], rank,
                              size[n]);
-    gaspi_verify_comm_size (size[n], segment_id_local[n], segment_id_remote[n],
+    GASPI_VERIFY_COMM_SIZE (size[n], segment_id_local[n], segment_id_remote[n],
                             rank, GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
   }
 
@@ -498,8 +498,8 @@ pgaspi_read_list (const gaspi_number_t num,
   }
 
 #ifdef DEBUG
-  gaspi_verify_init ("gaspi_read_list");
-  gaspi_verify_queue (queue);
+  GASPI_VERIFY_INIT ("gaspi_read_list");
+  GASPI_VERIFY_QUEUE (queue);
 
   if (pgaspi_rw_list_num_invalid (num))
   {
@@ -510,10 +510,10 @@ pgaspi_read_list (const gaspi_number_t num,
 
   for (n = 0; n < num; n++)
   {
-    gaspi_verify_local_off (offset_local[n], segment_id_local[n], size[n]);
-    gaspi_verify_remote_off (offset_remote[n], segment_id_remote[n], rank,
+    GASPI_VERIFY_LOCAL_OFF (offset_local[n], segment_id_local[n], size[n]);
+    GASPI_VERIFY_REMOTE_OFF (offset_remote[n], segment_id_remote[n], rank,
                              size[n]);
-    gaspi_verify_comm_size (size[n], segment_id_local[n], segment_id_remote[n],
+    GASPI_VERIFY_COMM_SIZE (size[n], segment_id_local[n], segment_id_remote[n],
                             rank, GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
   }
 #endif
@@ -559,11 +559,11 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_notify");
-  gaspi_verify_segment (segment_id_remote);
-  gaspi_verify_null_ptr (gctx->rrmd[segment_id_remote]);
-  gaspi_verify_rank (rank);
-  gaspi_verify_queue (queue);
+  GASPI_VERIFY_INIT ("gaspi_notify");
+  GASPI_VERIFY_SEGMENT (segment_id_remote);
+  GASPI_VERIFY_NULL_PTR (gctx->rrmd[segment_id_remote]);
+  GASPI_VERIFY_RANK (rank);
+  GASPI_VERIFY_QUEUE (queue);
 
   if (notification_value == 0)
   {
@@ -612,10 +612,10 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_notify_waitsome");
-  gaspi_verify_segment (segment_id_local);
-  gaspi_verify_null_ptr (gctx->rrmd[segment_id_local]);
-  gaspi_verify_null_ptr (first_id);
+  GASPI_VERIFY_INIT ("gaspi_notify_waitsome");
+  GASPI_VERIFY_SEGMENT (segment_id_local);
+  GASPI_VERIFY_NULL_PTR (gctx->rrmd[segment_id_local]);
+  GASPI_VERIFY_NULL_PTR (first_id);
 
   /* We need to start timing before the lock to include contention in
      lock when execution is multithreaded */
@@ -629,7 +629,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 
   if (num == 0)
   {
-    gaspi_print_warning
+    GASPI_PRINT_WARNING
       ("Waiting for 0 notifications (gaspi_notify_waitsome).");
   }
 
@@ -673,7 +673,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
         }
       }
 
-      gaspi_delay();
+      GASPI_DELAY();
     }
   }
   else if (timeout_ms == GASPI_TEST)
@@ -721,7 +721,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
       return GASPI_TIMEOUT;
     }
 
-    gaspi_delay();
+    GASPI_DELAY();
   }
 
   GPI2_STATS_STOP_TIMER (GASPI_WAITSOME_TIMER);
@@ -739,14 +739,14 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_notify_reset");
-  gaspi_verify_segment (segment_id_local);
-  gaspi_verify_null_ptr (gctx->rrmd[segment_id_local]);
+  GASPI_VERIFY_INIT ("gaspi_notify_reset");
+  GASPI_VERIFY_SEGMENT (segment_id_local);
+  GASPI_VERIFY_NULL_PTR (gctx->rrmd[segment_id_local]);
 
 #ifdef DEBUG
   if (old_notification_val == NULL)
   {
-    gaspi_print_warning
+    GASPI_PRINT_WARNING
       ("NULL pointer on parameter old_notification_val (gaspi_notify_reset).");
   }
 #endif
@@ -788,11 +788,11 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_write_notify");
-  gaspi_verify_local_off (offset_local, segment_id_local, size);
-  gaspi_verify_remote_off (offset_remote, segment_id_remote, rank, size);
-  gaspi_verify_queue (queue);
-  gaspi_verify_comm_size (size, segment_id_local, segment_id_remote, rank,
+  GASPI_VERIFY_INIT ("gaspi_write_notify");
+  GASPI_VERIFY_LOCAL_OFF (offset_local, segment_id_local, size);
+  GASPI_VERIFY_REMOTE_OFF (offset_remote, segment_id_remote, rank, size);
+  GASPI_VERIFY_QUEUE (queue);
+  GASPI_VERIFY_COMM_SIZE (size, segment_id_local, segment_id_remote, rank,
                           GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
 
   if (notification_value == 0)
@@ -866,8 +866,8 @@ pgaspi_write_list_notify (const gaspi_number_t num,
   }
 
 #ifdef DEBUG
-  gaspi_verify_init ("gaspi_write_list_notify");
-  gaspi_verify_queue (queue);
+  GASPI_VERIFY_INIT ("gaspi_write_list_notify");
+  GASPI_VERIFY_QUEUE (queue);
 
   if (pgaspi_rw_list_num_invalid (num))
   {
@@ -878,10 +878,10 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 
   for (n = 0; n < num; n++)
   {
-    gaspi_verify_local_off (offset_local[n], segment_id_local[n], size[n]);
-    gaspi_verify_remote_off (offset_remote[n], segment_id_remote[n], rank,
+    GASPI_VERIFY_LOCAL_OFF (offset_local[n], segment_id_local[n], size[n]);
+    GASPI_VERIFY_REMOTE_OFF (offset_remote[n], segment_id_remote[n], rank,
                              size[n]);
-    gaspi_verify_comm_size (size[n], segment_id_local[n], segment_id_remote[n],
+    GASPI_VERIFY_COMM_SIZE (size[n], segment_id_local[n], segment_id_remote[n],
                             rank, GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
   }
 
@@ -937,11 +937,11 @@ pgaspi_read_notify (const gaspi_segment_id_t segment_id_local,
 
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  gaspi_verify_init ("gaspi_read_notify");
-  gaspi_verify_local_off (offset_local, segment_id_local, size);
-  gaspi_verify_remote_off (offset_remote, segment_id_remote, rank, size);
-  gaspi_verify_queue (queue);
-  gaspi_verify_comm_size (size, segment_id_local, segment_id_remote, rank,
+  GASPI_VERIFY_INIT ("gaspi_read_notify");
+  GASPI_VERIFY_LOCAL_OFF (offset_local, segment_id_local, size);
+  GASPI_VERIFY_REMOTE_OFF (offset_remote, segment_id_remote, rank, size);
+  GASPI_VERIFY_QUEUE (queue);
+  GASPI_VERIFY_COMM_SIZE (size, segment_id_local, segment_id_remote, rank,
                           GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
 
   gaspi_return_t eret = GASPI_ERROR;
@@ -1001,8 +1001,8 @@ pgaspi_read_list_notify (const gaspi_number_t num,
   }
 
 #ifdef DEBUG
-  gaspi_verify_init ("gaspi_read_list_notify");
-  gaspi_verify_queue (queue);
+  GASPI_VERIFY_INIT ("gaspi_read_list_notify");
+  GASPI_VERIFY_QUEUE (queue);
 
   if (pgaspi_rw_list_num_invalid (num))
   {
@@ -1013,10 +1013,10 @@ pgaspi_read_list_notify (const gaspi_number_t num,
 
   for (n = 0; n < num; n++)
   {
-    gaspi_verify_local_off (offset_local[n], segment_id_local[n], size[n]);
-    gaspi_verify_remote_off (offset_remote[n], segment_id_remote[n], rank,
+    GASPI_VERIFY_LOCAL_OFF (offset_local[n], segment_id_local[n], size[n]);
+    GASPI_VERIFY_REMOTE_OFF (offset_remote[n], segment_id_remote[n], rank,
                              size[n]);
-    gaspi_verify_comm_size (size[n], segment_id_local[n], segment_id_remote[n],
+    GASPI_VERIFY_COMM_SIZE (size[n], segment_id_local[n], segment_id_remote[n],
                             rank, GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
   }
 

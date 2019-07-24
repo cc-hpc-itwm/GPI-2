@@ -42,8 +42,8 @@ swap_uint64 (uint64_t val)
 gaspi_return_t
 pgaspi_atomic_max (gaspi_atomic_value_t * max_value)
 {
-  gaspi_verify_init ("gaspi_atomic_max");
-  gaspi_verify_null_ptr (max_value);
+  GASPI_VERIFY_INIT ("gaspi_atomic_max");
+  GASPI_VERIFY_NULL_PTR (max_value);
 
   *max_value = 0xffffffffffffffff;
 
@@ -59,11 +59,11 @@ pgaspi_atomic_fetch_add (const gaspi_segment_id_t segment_id,
                          gaspi_atomic_value_t * const val_old,
                          const gaspi_timeout_t timeout_ms)
 {
-  gaspi_verify_init ("gaspi_atomic_fetch_add");
-  gaspi_verify_remote_off (offset, segment_id, rank,
+  GASPI_VERIFY_INIT ("gaspi_atomic_fetch_add");
+  GASPI_VERIFY_REMOTE_OFF (offset, segment_id, rank,
                            sizeof (gaspi_atomic_value_t));
-  gaspi_verify_null_ptr (val_old);
-  gaspi_verify_unaligned_off (offset);
+  GASPI_VERIFY_NULL_PTR (val_old);
+  GASPI_VERIFY_UNALIGNED_OFF (offset);
 
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
@@ -115,11 +115,11 @@ pgaspi_atomic_compare_swap (const gaspi_segment_id_t segment_id,
                             gaspi_atomic_value_t * const val_old,
                             const gaspi_timeout_t timeout_ms)
 {
-  gaspi_verify_init ("gaspi_atomic_compare_swap");
-  gaspi_verify_remote_off (offset, segment_id, rank,
+  GASPI_VERIFY_INIT ("gaspi_atomic_compare_swap");
+  GASPI_VERIFY_REMOTE_OFF (offset, segment_id, rank,
                            sizeof (gaspi_atomic_value_t));
-  gaspi_verify_null_ptr (val_old);
-  gaspi_verify_unaligned_off (offset);
+  GASPI_VERIFY_NULL_PTR (val_old);
+  GASPI_VERIFY_UNALIGNED_OFF (offset);
 
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
   gaspi_return_t eret = GASPI_ERROR;

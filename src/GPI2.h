@@ -75,7 +75,7 @@ lock_gaspi (gaspi_lock_t * l)
   {
     while (l->lock)
     {
-      gaspi_delay();
+      GASPI_DELAY();
     }
   }
 }
@@ -90,7 +90,7 @@ lock_gaspi_tout (gaspi_lock_t * l, const gaspi_timeout_t timeout_ms)
     {
       while (l->lock)
       {
-        gaspi_delay();
+        GASPI_DELAY();
       }
     }
     return 0;
@@ -119,7 +119,7 @@ lock_gaspi_tout (gaspi_lock_t * l, const gaspi_timeout_t timeout_ms)
         return 1;
       }
 
-      gaspi_delay();
+      GASPI_DELAY();
     }
   }
 
