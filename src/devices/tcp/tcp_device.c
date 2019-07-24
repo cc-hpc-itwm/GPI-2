@@ -1060,7 +1060,7 @@ _tcp_dev_process_delayed (int pollfd)
         const int bytes_sent =
           write (state->fd, (char *) &wr + done, sizeof (tcp_dev_wr_t) - done);
 
-        if (bytes_sent <= 0 && !(errno == EAGAIN || errno == EWOULDBLOCK))
+        if (bytes_sent <= 0 && !(errno == EAGAIN))
         {
           GASPI_DEBUG_PRINT_ERROR
             ("writing to %d (total %u sent %ld remain %lu).", wr.target,
@@ -1095,7 +1095,7 @@ _tcp_dev_process_delayed (int pollfd)
             write (state->fd, (void *) element->wr.local_addr + sdone,
                    element->wr.length - sdone);
 
-          if (bytes_sent <= 0 && !(errno == EAGAIN || errno == EWOULDBLOCK))
+          if (bytes_sent <= 0 && !(errno == EAGAIN))
           {
             GASPI_DEBUG_PRINT_ERROR
               ("writing to %d (total %u sent %ld remain %lu).", wr.target,
@@ -1662,7 +1662,7 @@ tcp_virt_dev (void *args)
             accept (listen_sock, (struct sockaddr *) &local, &addrlen);
           if (conn_sock < 0)
           {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
+            if (errno == EAGAIN)
             {
               break;
             }
@@ -1716,7 +1716,7 @@ tcp_virt_dev (void *args)
             }
 
             /* would block */
-            if (bytesReceived < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+            if (bytesReceived < 0 && (errno == EAGAIN))
             {
               break;
             }
@@ -1776,7 +1776,7 @@ tcp_virt_dev (void *args)
                      bytesRemaining);
 
             /* would block */
-            if (bytesSent < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+            if (bytesSent < 0 && (errno == EAGAIN))
             {
               break;
             }
