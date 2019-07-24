@@ -1606,7 +1606,7 @@ tcp_virt_dev (void *args)
         char flag = 0;
         ssize_t flag_size = read (tcp_dev_oob_channel, &flag, sizeof (flag));
 
-        if (0 == flag)
+        if (0 == flag || flag_size < 0)
         {
           GASPI_DEBUG_PRINT_ERROR ("Detected inconsistency.");
         }
