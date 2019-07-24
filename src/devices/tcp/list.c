@@ -22,65 +22,68 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "list.h"
 
 inline void
-list_insert(list *l, const tcp_dev_wr_t *wr)
+list_insert (list * l, const tcp_dev_wr_t * wr)
 {
-  listNode *node = calloc(1,sizeof(listNode));
+  listNode *node = calloc (1, sizeof (listNode));
 
   node->wr = *wr;
 
-  if(l->last == NULL)
-    {
-      l->first = l->last  = node;
-    }
+  if (l->last == NULL)
+  {
+    l->first = l->last = node;
+  }
   else
-    {
-      l->last->next = node;
-      node->prev = l->last;
-      l->last = node;
-    }
+  {
+    l->last->next = node;
+    node->prev = l->last;
+    l->last = node;
+  }
 
   l->count++;
 }
 
 inline void
-list_remove(list *l, listNode *node)
+list_remove (list * l, listNode * node)
 {
-  if(l->count == 0 || node == NULL)
+  if (l->count == 0 || node == NULL)
+  {
     return;
+  }
 
-  if(node == l->first && node == l->last)
-    {
-      l->first = l->last = NULL;
-    }
-  else if(node == l->first)
-    {
-      l->first = node->next;
-      l->first->prev = NULL;
-    }
-  else if(node == l->last)
-    {
-      l->last = node->prev;
-      l->last->next = NULL;
-    }
+  if (node == l->first && node == l->last)
+  {
+    l->first = l->last = NULL;
+  }
+  else if (node == l->first)
+  {
+    l->first = node->next;
+    l->first->prev = NULL;
+  }
+  else if (node == l->last)
+  {
+    l->last = node->prev;
+    l->last->next = NULL;
+  }
   else
-    {
-      listNode *after  = node->next;
-      listNode *before = node->prev;
-      after->prev = before;
-      before->next = after;
-    }
+  {
+    listNode *after = node->next;
+    listNode *before = node->prev;
+
+    after->prev = before;
+    before->next = after;
+  }
 
   l->count--;
 
-  free(node);
+  free (node);
   node = NULL;
 }
 
 inline void
-list_clear(list *l)
+list_clear (list * l)
 {
-  while(l->count > 0)
-    list_remove(l, l->first);
+  while (l->count > 0)
+  {
+    list_remove (l, l->first);
+  }
 }
-
-

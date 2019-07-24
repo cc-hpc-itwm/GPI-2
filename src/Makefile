@@ -1,4 +1,5 @@
 include make.inc
+include make.inc.dev
 
 ifndef GPI2_DEVICE
 GPI2_DEVICE = IB
@@ -66,7 +67,7 @@ $(GPI2): $(OBJS)
 	rm -f ../lib64/$(GPI2)
 	ar crs ../lib64/$(GPI2) $(OBJS)
 
-$(GPI2_DBG): $(OBJS_DBG) 
+$(GPI2_DBG): $(OBJS_DBG)
 	rm -f ../lib64/$(GPI2_DBG)
 	ar crs ../lib64/$(GPI2_DBG) $(OBJS_DBG)
 

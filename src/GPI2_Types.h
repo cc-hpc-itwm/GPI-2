@@ -69,7 +69,7 @@ typedef struct
     unsigned long addr;
   } notif_spc;
 
-  void* mr[2];
+  void *mr[2];
 
 #ifdef GPI2_DEVICE_IB
   unsigned int rkey[2];
@@ -77,14 +77,15 @@ typedef struct
 
   unsigned long size;
   size_t notif_spc_size;
-  int trans; /* info transmitted */
+  int trans;                  /* info transmitted */
 
   int user_provided;
   gaspi_memory_description_t desc;
 
 } gaspi_rc_mseg_t;
 
-typedef enum {
+typedef enum
+{
   GASPI_BARRIER = 1,
   GASPI_ALLREDUCE = 2,
   GASPI_ALLREDUCE_USER = 4,
@@ -111,7 +112,7 @@ typedef struct
 
 typedef struct
 {
-  void* ctx;
+  void *ctx;
 } gaspi_device_t;
 
 typedef struct
@@ -128,13 +129,13 @@ typedef struct
   int group_cnt;
   gaspi_group_ctx_t groups[GASPI_MAX_GROUPS];
 
-  volatile int init;         //Is GPI-2 initialized?
-  volatile int sn_init;      //Is the SN up?
-  volatile int dev_init;     //Is device initialized?
+  volatile int init; //Is GPI-2 initialized?
+  volatile int sn_init; //Is the SN up?
+  volatile int dev_init; //Is device initialized?
   volatile int master_topo_data; //Do we have topology info from master?
 
   int mseg_cnt;
-  gaspi_state_t* state_vec[GASPI_MAX_QP + 3];
+  gaspi_state_t *state_vec[GASPI_MAX_QP + 3];
   char mtyp[64];
 
   //locks
@@ -149,7 +150,7 @@ typedef struct
   pthread_t snt;
 
   gaspi_rc_mseg_t nsrc;
-  gaspi_rc_mseg_t* rrmd[GASPI_MAX_MSEGS];
+  gaspi_rc_mseg_t *rrmd[GASPI_MAX_MSEGS];
 
   gaspi_endpoint_conn_t *ep_conn;
 
@@ -159,13 +160,13 @@ typedef struct
   /* Comm counters  */
   gaspi_uint ne_count_grp;
   gaspi_uint ne_count_c[GASPI_MAX_QP];
-  unsigned char ne_count_p[8192]; //TODO: dynamic size
+  unsigned char ne_count_p[8192];     //TODO: dynamic size
 
   /* GASPI configuration */
-  gaspi_config_t* config;
+  gaspi_config_t *config;
 
   /* Device */
-  gaspi_device_t* device;
+  gaspi_device_t *device;
 
 } gaspi_context_t;
 

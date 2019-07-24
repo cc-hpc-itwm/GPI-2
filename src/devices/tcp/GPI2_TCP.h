@@ -34,7 +34,7 @@ typedef struct
   struct tcp_queue *qpGroups;
 
   /* Passive communication */
-  int srqP; /* passive comm (local conn) */
+  int srqP;                   /* passive comm (local conn) */
   struct tcp_passive_channel *channelP;
   struct tcp_queue *qpP;
   struct tcp_cq *scqP;
@@ -46,6 +46,6 @@ typedef struct
 
   int device_channel;
 
-}  gaspi_tcp_ctx;
+} gaspi_tcp_ctx;
 
 #endif //_GPI2_TCP_H_

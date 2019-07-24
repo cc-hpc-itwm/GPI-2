@@ -10,16 +10,15 @@ typedef struct
 struct ringbuffer
 {
   rb_cell *cells;
-  
+
   volatile unsigned long mask;
   volatile unsigned long ipos;
   volatile unsigned long rpos;
-} __attribute__ ((aligned(64)));
+} __attribute__ ((aligned (64)));
 
 typedef struct ringbuffer ringbuffer;
 
-int insert_ringbuffer(ringbuffer *rb, void *data);
-int remove_ringbuffer(ringbuffer *rb, void **data);
-
+int insert_ringbuffer (ringbuffer * rb, void *data);
+int remove_ringbuffer (ringbuffer * rb, void **data);
 
 #endif

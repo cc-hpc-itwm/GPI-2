@@ -26,25 +26,27 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define USECSTART 100
 
 ulong
-gaspi_load_ulong(volatile ulong *ptr)
+gaspi_load_ulong (volatile ulong * ptr)
 {
   ulong v = *ptr;
-  asm volatile("" ::: "memory");
+
+  asm volatile ("":::"memory");
+
   return v;
 }
 
 /* CPU frequency through sampling and linear regression */
 float
-_gaspi_sample_cpu_freq(void)
+_gaspi_sample_cpu_freq (void)
 {
-  struct timeval tval1,tval2;
+  struct timeval tval1, tval2;
   gaspi_cycles_t start;
   double sumx = 0.0f;
   double sumy = 0.0f;
   double sum_sqr_x = 0.0f;
   double sum_sqr_y = 0.0f;
   double sumxy = 0.0f;
-  double tx,ty;
+  double tx, ty;
   int i;
 
   long x[MEASUREMENTS];
@@ -52,113 +54,120 @@ _gaspi_sample_cpu_freq(void)
   double beta;
   double corr_2;
 
-  for(i = 0;i < MEASUREMENTS; ++i)
-    {
-      start = gaspi_get_cycles();
+  for (i = 0; i < MEASUREMENTS; ++i)
+  {
+    start = gaspi_get_cycles();
 
-      if( gettimeofday(&tval1, NULL) )
-	{
-	  return 0.0f;
-	}
-
-      do
-	{
-	  if(gettimeofday(&tval2, NULL))
-	    {
-	      return 0.0f;
-	    }
-	}
-      while((tval2.tv_sec - tval1.tv_sec) * 1000000 +
-	    (tval2.tv_usec - tval1.tv_usec) < USECSTART + i * USECSTEP);
-
-
-      x[i] = (tval2.tv_sec - tval1.tv_sec) * 1000000 + tval2.tv_usec - tval1.tv_usec;
-      y[i] = gaspi_get_cycles() - start;
-    }
-
-  for(i = 0;i < MEASUREMENTS; ++i)
-    {
-      tx = x[i];
-      ty = y[i];
-      sumx += tx;
-      sumy += ty;
-      sum_sqr_x += tx * tx;
-      sum_sqr_y += ty * ty;
-      sumxy += tx * ty;
-    }
-
-  corr_2 = (MEASUREMENTS * sumxy - sumx * sumy) * (MEASUREMENTS * sumxy - sumx * sumy)
-    / (MEASUREMENTS * sum_sqr_x - sumx * sumx) / (MEASUREMENTS * sum_sqr_y - sumy * sumy);
-
-  if( corr_2 < 0.9 )
+    if (gettimeofday (&tval1, NULL))
     {
       return 0.0f;
     }
 
-  beta = (MEASUREMENTS * sumxy - sumx * sumy) / (MEASUREMENTS * sum_sqr_x - sumx * sumx);
+    do
+    {
+      if (gettimeofday (&tval2, NULL))
+      {
+        return 0.0f;
+      }
+    }
+    while ((tval2.tv_sec - tval1.tv_sec) * 1000000 +
+           (tval2.tv_usec - tval1.tv_usec) < USECSTART + i * USECSTEP);
 
-  return (float)beta;
+
+    x[i] =
+      (tval2.tv_sec - tval1.tv_sec) * 1000000 + tval2.tv_usec - tval1.tv_usec;
+    y[i] = gaspi_get_cycles() - start;
+  }
+
+  for (i = 0; i < MEASUREMENTS; ++i)
+  {
+    tx = x[i];
+    ty = y[i];
+    sumx += tx;
+    sumy += ty;
+    sum_sqr_x += tx * tx;
+    sum_sqr_y += ty * ty;
+    sumxy += tx * ty;
+  }
+
+  corr_2 =
+    (MEASUREMENTS * sumxy - sumx * sumy) *
+    (MEASUREMENTS * sumxy - sumx * sumy)
+     / (MEASUREMENTS * sum_sqr_x - sumx * sumx)
+     / (MEASUREMENTS * sum_sqr_y - sumy * sumy);
+
+  if (corr_2 < 0.9)
+  {
+    return 0.0f;
+  }
+
+  beta =
+    (MEASUREMENTS * sumxy - sumx * sumy) / (MEASUREMENTS * sum_sqr_x -
+                                            sumx * sumx);
+
+  return (float) beta;
 }
 
 float
-gaspi_get_cpufreq(void)
+gaspi_get_cpufreq (void)
 {
   float mhz = 0.0f;
-  mhz =  _gaspi_sample_cpu_freq();
 
-  if( 0.0f == mhz )
+  mhz = _gaspi_sample_cpu_freq();
+
+  if (0.0f == mhz)
+  {
+    FILE *f;
+    char buf[256];
+
+    f = fopen ("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
+    if (f)
     {
-      FILE *f;
-      char buf[256];
+      if (fgets (buf, sizeof (buf), f))
+      {
+        uint m;
+        int rc;
 
-      f = fopen ("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq", "r");
-      if( f )
-	{
-	  if( fgets (buf, sizeof (buf), f) )
-	    {
-	      uint m;
-	      int rc;
+        rc = sscanf (buf, "%u", &m);
+        if (rc == 1)
+        {
+          mhz = (float) m;
+        }
+      }
 
-	      rc = sscanf (buf, "%u", &m);
-	      if( rc == 1 )
-		{
-		  mhz = (float) m;
-		}
-	    }
-
-	  fclose (f);
-	}
-
-      if( mhz > 0.0f )
-	{
-	  return mhz / 1000.0f;
-	}
-
-      f = fopen ("/proc/cpuinfo", "r");
-      if( f )
-	{
-	  while(fgets (buf, sizeof (buf), f))
-	    {
-	      float m;
-	      int rc;
-
-	      rc = sscanf (buf, "cpu MHz : %f", &m);
-
-	      if( rc != 1 )
-		{
-		  continue;
-		}
-
-	      if( mhz == 0.0f )
-		{
-		  mhz = m;
-		  continue;
-		}
-	    }
-
-	  fclose (f);
-	}
+      fclose (f);
     }
+
+    if (mhz > 0.0f)
+    {
+      return mhz / 1000.0f;
+    }
+
+    f = fopen ("/proc/cpuinfo", "r");
+    if (f)
+    {
+      while (fgets (buf, sizeof (buf), f))
+      {
+        float m;
+        int rc;
+
+        rc = sscanf (buf, "cpu MHz : %f", &m);
+
+        if (rc != 1)
+        {
+          continue;
+        }
+
+        if (mhz == 0.0f)
+        {
+          mhz = m;
+          continue;
+        }
+      }
+
+      fclose (f);
+    }
+  }
 
   return mhz;
 }
@@ -177,54 +186,57 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
   snprintf (path, 256, "/sys/devices/system/node/node%d/cpumap", sock);
 
   FILE *f = fopen (path, "r");
-  if( f == NULL )
-    {
-      return -1;
-    }
+
+  if (f == NULL)
+  {
+    return -1;
+  }
 
   //read cpumap
   int id = 0;
-  if( fgets(buf, sizeof(buf), f) )
+
+  if (fgets (buf, sizeof (buf), f))
+  {
+    char *bptr = buf;
+
+    while (1)
     {
-      char *bptr = buf;
+      int ret = sscanf (bptr, "%x", &m[id]);
 
-      while (1)
-	{
-	  int ret = sscanf (bptr, "%x", &m[id]);
-	  if( ret <= 0 )
-	    {
-	      break;
-	    }
+      if (ret <= 0)
+      {
+        break;
+      }
 
-	  int found = 0;
-	  unsigned int cpos = 0;
+      int found = 0;
+      unsigned int cpos = 0;
 
-	  size_t length = strlen(bptr);
-	  size_t j;
+      size_t length = strlen (bptr);
+      size_t j;
 
-	  for(j = 0;j < length - 1; j++)
-	    {
-	      if( bptr[j]==',' )
-		{
-		  found=1;
-		  break;
-		}
-	      cpos++;
-	    }
+      for (j = 0; j < length - 1; j++)
+      {
+        if (bptr[j] == ',')
+        {
+          found = 1;
+          break;
+        }
+        cpos++;
+      }
 
-	  if( !found )
-	    {
-	      if( (cpos+1) > strlen(bptr) )
-		{
-		  fclose(f);
-		  return -1;
-		}
-	    }
+      if (!found)
+      {
+        if ((cpos + 1) > strlen (bptr))
+        {
+          fclose (f);
+          return -1;
+        }
+      }
 
-	  bptr += (cpos+1);
-	  id++;
-	}
+      bptr += (cpos + 1);
+      id++;
     }
+  }
 
   rc = id;
 
@@ -233,11 +245,11 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
   char *ptr = (char *) cpuset;
   int pos = 0;
 
-  for(i = rc - 1; i >= 0; i--)
-    {
-      memcpy (ptr + pos, &m[i], sizeof (unsigned int));
-      pos += sizeof (unsigned int);
-    }
+  for (i = rc - 1; i >= 0; i--)
+  {
+    memcpy (ptr + pos, &m[i], sizeof (unsigned int));
+    pos += sizeof (unsigned int);
+  }
 
   fclose (f);
 
@@ -248,6 +260,7 @@ char *
 pgaspi_gethostname (const unsigned int id)
 {
   //TODO: ctx as arg
-  gaspi_context_t const * const gctx = &glb_gaspi_ctx;
+  gaspi_context_t const *const gctx = &glb_gaspi_ctx;
+
   return gctx->hn_poff + id * 64;
 }

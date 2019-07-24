@@ -28,34 +28,33 @@ typedef struct
 } gaspi_group_exch_info_t;
 
 
-#define GASPI_RESET_GROUP(group_ctx, i)					\
-  do {									\
-    group_ctx[i].rrcd = NULL;						\
-    group_ctx[i].rank_grp = NULL;					\
-    group_ctx[i].committed_rank = NULL;					\
-    group_ctx[i].id = -1;						\
-    group_ctx[i].toggle = 0;						\
-    group_ctx[i].barrier_cnt = 0;					\
-    group_ctx[i].rank = 0;						\
-    group_ctx[i].tnc = 0;						\
-    group_ctx[i].coll_op = GASPI_NONE;					\
-    group_ctx[i].lastmask = 0x1;					\
-    group_ctx[i].tmprank = 0;						\
-    group_ctx[i].bid = 0;						\
-    group_ctx[i].level = 0;						\
-    group_ctx[i].dsize = 0;						\
-    group_ctx[i].next_pof2 = 0;						\
-    group_ctx[i].pof2_exp = 0;						\
+#define GASPI_RESET_GROUP(group_ctx, i)                                 \
+  do {                                                                  \
+    group_ctx[i].rrcd = NULL;                                           \
+    group_ctx[i].rank_grp = NULL;                                       \
+    group_ctx[i].committed_rank = NULL;                                 \
+    group_ctx[i].id = -1;                                               \
+    group_ctx[i].toggle = 0;                                            \
+    group_ctx[i].barrier_cnt = 0;                                       \
+    group_ctx[i].rank = 0;                                              \
+    group_ctx[i].tnc = 0;                                               \
+    group_ctx[i].coll_op = GASPI_NONE;                                  \
+    group_ctx[i].lastmask = 0x1;                                        \
+    group_ctx[i].tmprank = 0;                                           \
+    group_ctx[i].bid = 0;                                               \
+    group_ctx[i].level = 0;                                             \
+    group_ctx[i].dsize = 0;                                             \
+    group_ctx[i].next_pof2 = 0;                                         \
+    group_ctx[i].pof2_exp = 0;                                          \
   }  while(0);
 
 gaspi_return_t
-pgaspi_group_all_local_create(gaspi_context_t * const gctx,
-			      const gaspi_timeout_t timeout_ms);
+pgaspi_group_all_local_create (gaspi_context_t * const gctx,
+                               const gaspi_timeout_t timeout_ms);
 
-gaspi_return_t
-pgaspi_group_all_delete(gaspi_context_t * const gctx);
+gaspi_return_t pgaspi_group_all_delete (gaspi_context_t * const gctx);
 
-gaspi_group_exch_info_t*
-pgaspi_group_create_exch_info(gaspi_group_t group, int tnc);
+gaspi_group_exch_info_t *pgaspi_group_create_exch_info (gaspi_group_t group,
+                                                        int tnc);
 
 #endif /* GPI2_GRP_H_ */

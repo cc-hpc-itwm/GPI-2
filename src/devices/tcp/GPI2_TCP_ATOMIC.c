@@ -20,31 +20,32 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 gaspi_return_t
 pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
-			     const gaspi_segment_id_t segment_id,
-			     const gaspi_offset_t offset,
-			     const gaspi_rank_t rank,
-			     const gaspi_atomic_value_t val_add)
+                             const gaspi_segment_id_t segment_id,
+                             const gaspi_offset_t offset,
+                             const gaspi_rank_t rank,
+                             const gaspi_atomic_value_t val_add)
 {
-  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+  gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
   tcp_dev_wr_t wr =
     {
-      .wr_id       = rank,
-      .cq_handle   = tcp_dev_ctx->scqGroups->num,
-      .source      = gctx->rank,
-      .target      = rank,
-      .local_addr  = (uintptr_t) (gctx->nsrc.data.buf),
+      .wr_id = rank,
+      .cq_handle = tcp_dev_ctx->scqGroups->num,
+      .source = gctx->rank,
+      .target = rank,
+      .local_addr = (uintptr_t) (gctx->nsrc.data.buf),
       .remote_addr = gctx->rrmd[segment_id][rank].data.addr + offset,
-      .length      = sizeof(gaspi_atomic_value_t),
-      .swap        = 0,
+      .length = sizeof (gaspi_atomic_value_t),
+      .swap = 0,
       .compare_add = val_add,
-      .opcode      = POST_ATOMIC_FETCH_AND_ADD
-    } ;
+      .opcode = POST_ATOMIC_FETCH_AND_ADD
+    };
 
-  if( write(tcp_dev_ctx->qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
-    {
-      return GASPI_ERROR;
-    }
+  if (write (tcp_dev_ctx->qpGroups->handle, &wr, sizeof (tcp_dev_wr_t)) <
+      (ssize_t) sizeof (tcp_dev_wr_t))
+  {
+    return GASPI_ERROR;
+  }
 
   //TODO: repeated code (what changes is the ctx)
   gctx->ne_count_grp++;
@@ -54,18 +55,18 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
   tcp_dev_wc_t wc;
 
   for (i = 0; i < gctx->ne_count_grp; i++)
+  {
+    do
     {
-      do
-	{
-	  ne = tcp_dev_return_wc (tcp_dev_ctx->scqGroups, &wc);
-	}
-      while (ne == 0);
-
-      if( (ne < 0) || (wc.status != TCP_WC_SUCCESS) )
-	{
-	  return GASPI_ERROR;
-	}
+      ne = tcp_dev_return_wc (tcp_dev_ctx->scqGroups, &wc);
     }
+    while (ne == 0);
+
+    if ((ne < 0) || (wc.status != TCP_WC_SUCCESS))
+    {
+      return GASPI_ERROR;
+    }
+  }
 
   //TODO: repeated code (what changes is the ctx)
   gctx->ne_count_grp = 0;
@@ -75,32 +76,33 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
 
 gaspi_return_t
 pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
-				const gaspi_segment_id_t segment_id,
-				const gaspi_offset_t offset,
-				const gaspi_rank_t rank,
-				const gaspi_atomic_value_t comparator,
-				const gaspi_atomic_value_t val_new)
+                                const gaspi_segment_id_t segment_id,
+                                const gaspi_offset_t offset,
+                                const gaspi_rank_t rank,
+                                const gaspi_atomic_value_t comparator,
+                                const gaspi_atomic_value_t val_new)
 {
-  gaspi_tcp_ctx * const tcp_dev_ctx = (gaspi_tcp_ctx*) gctx->device->ctx;
+  gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
   tcp_dev_wr_t wr =
     {
-      .wr_id       = rank,
-      .cq_handle   = tcp_dev_ctx->scqGroups->num,
-      .source      = gctx->rank,
-      .target       = rank,
-      .local_addr  = (uintptr_t) (gctx->nsrc.data.buf),
+      .wr_id = rank,
+      .cq_handle = tcp_dev_ctx->scqGroups->num,
+      .source = gctx->rank,
+      .target = rank,
+      .local_addr = (uintptr_t) (gctx->nsrc.data.buf),
       .remote_addr = gctx->rrmd[segment_id][rank].data.addr + offset,
-      .length      = sizeof(gaspi_atomic_value_t),
-      .swap        = val_new,
+      .length = sizeof (gaspi_atomic_value_t),
+      .swap = val_new,
       .compare_add = comparator,
-      .opcode      = POST_ATOMIC_CMP_AND_SWP
-    } ;
+      .opcode = POST_ATOMIC_CMP_AND_SWP
+    };
 
-  if( write(tcp_dev_ctx->qpGroups->handle, &wr, sizeof(tcp_dev_wr_t)) < (ssize_t) sizeof(tcp_dev_wr_t) )
-    {
-      return GASPI_ERROR;
-    }
+  if (write (tcp_dev_ctx->qpGroups->handle, &wr, sizeof (tcp_dev_wr_t)) <
+      (ssize_t) sizeof (tcp_dev_wr_t))
+  {
+    return GASPI_ERROR;
+  }
 
   //TODO: repeated code (what changes is the ctx)
   gctx->ne_count_grp++;
@@ -110,18 +112,18 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
   tcp_dev_wc_t wc;
 
   for (i = 0; i < gctx->ne_count_grp; i++)
+  {
+    do
     {
-      do
-	{
-	  ne = tcp_dev_return_wc (tcp_dev_ctx->scqGroups, &wc);
-	}
-      while (ne == 0);
-
-      if ((ne < 0) || (wc.status != TCP_WC_SUCCESS))
-	{
-	  return GASPI_ERROR;
-	}
+      ne = tcp_dev_return_wc (tcp_dev_ctx->scqGroups, &wc);
     }
+    while (ne == 0);
+
+    if ((ne < 0) || (wc.status != TCP_WC_SUCCESS))
+    {
+      return GASPI_ERROR;
+    }
+  }
 
   //TODO: repeated code (what changes is the ctx)
   gctx->ne_count_grp = 0;
