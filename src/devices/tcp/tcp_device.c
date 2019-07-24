@@ -1584,17 +1584,18 @@ tcp_virt_dev (void *args)
   }
 
   int tcp_dev_oob_channel = dev_args->oob_fd;
-  struct epoll_event ev;
-
-  ev.events = EPOLLIN;
-  ev.data.fd = tcp_dev_oob_channel;
-
-  if (epoll_ctl (epollfd, EPOLL_CTL_ADD, dev_args->oob_fd, &ev) == -1)
   {
-    GASPI_DEBUG_PRINT_ERROR ("Failed to add channel.");
-    return NULL;
-  }
+    struct epoll_event ev;
 
+    ev.events = EPOLLIN;
+    ev.data.fd = tcp_dev_oob_channel;
+
+    if (epoll_ctl (epollfd, EPOLL_CTL_ADD, dev_args->oob_fd, &ev) == -1)
+    {
+      GASPI_DEBUG_PRINT_ERROR ("Failed to add channel.");
+      return NULL;
+    }
+  }
   /* events loop */
   struct epoll_event *events =
     calloc (MAX_EVENTS, sizeof (struct epoll_event));
