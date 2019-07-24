@@ -19,15 +19,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2.h"
 #include "GPI2_Utility.h"
 
-static const char *gaspi_network_str[] =
-{
-  [GASPI_IB] = "GASPI_IB",
-  [GASPI_ROCE] = "GASPI_ROCE",
-  [GASPI_ETHERNET] = "GASPI_ETHERNET",
-  [GASPI_GEMINI] = "GASPI_GEMINI",
-  [GASPI_ARIES] = "GASPI_ARIES"
-};
-
 gaspi_config_t glb_gaspi_cfg =
 {
   1,                            //logout
@@ -135,6 +126,16 @@ pgaspi_config_set (const gaspi_config_t nconf)
   if (GASPI_ETHERNET != nconf.network)
 #endif
   {
+#ifdef DEBUG
+    const char *gaspi_network_str[] =
+      {
+        [GASPI_IB] = "GASPI_IB",
+        [GASPI_ROCE] = "GASPI_ROCE",
+        [GASPI_ETHERNET] = "GASPI_ETHERNET",
+        [GASPI_GEMINI] = "GASPI_GEMINI",
+        [GASPI_ARIES] = "GASPI_ARIES"
+      };
+#endif
     gaspi_debug_print_error ("Invalid value for parameter network (%s)",
                              gaspi_network_str[nconf.network]);
     return GASPI_ERR_CONFIG;
