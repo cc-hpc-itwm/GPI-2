@@ -1468,7 +1468,7 @@ gaspi_sn_backend (void *arg)
 
         if (nsock < 0)
         {
-          if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+          if ((errno == EAGAIN))
           {
             /* we have processed incoming connection */
             break;
@@ -1538,7 +1538,7 @@ gaspi_sn_backend (void *arg)
                 gaspi_debug_print_error (" Failed to read (op %d)", mgmt->op);
               }
 
-              if (errsv != EAGAIN || errsv != EWOULDBLOCK)
+              if (errsv != EAGAIN)
               {
                 gaspi_debug_print_error ("Failed to read (op %d).",
                                          mgmt->op);
