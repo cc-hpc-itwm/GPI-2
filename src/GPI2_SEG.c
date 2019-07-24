@@ -227,48 +227,45 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     goto endL;
   }
 
-  if (gctx->rrmd[segment_id][gctx->rank].size)
+  gaspi_rc_mseg_t *const myrank_mseg = &(gctx->rrmd[segment_id][gctx->rank]);
+
+  if (myrank_mseg->size)
   {
     eret = GASPI_ERR_INV_SEG;
     goto endL;
   }
 
   if (pgaspi_alloc_page_aligned
-      (&(gctx->rrmd[segment_id][gctx->rank].data.ptr),
-       size + NOTIFY_OFFSET) != 0)
+      (&(myrank_mseg->data.ptr), size + NOTIFY_OFFSET) != 0)
   {
     GASPI_DEBUG_PRINT_ERROR ("Memory allocation (posix_memalign) failed");
     eret = GASPI_ERR_MEMALLOC;
     goto endL;
   }
 
-  memset (gctx->rrmd[segment_id][gctx->rank].data.ptr, 0, NOTIFY_OFFSET);
+  memset (myrank_mseg->data.ptr, 0, NOTIFY_OFFSET);
 
   if (GASPI_MEM_INITIALIZED == alloc_policy)
   {
-    memset (gctx->rrmd[segment_id][gctx->rank].data.ptr, 0,
-            size + NOTIFY_OFFSET);
+    memset (myrank_mseg->data.ptr, 0, size + NOTIFY_OFFSET);
   }
 
-  gctx->rrmd[segment_id][gctx->rank].size = size;
-  gctx->rrmd[segment_id][gctx->rank].notif_spc_size = NOTIFY_OFFSET;
-  gctx->rrmd[segment_id][gctx->rank].notif_spc.addr =
-    gctx->rrmd[segment_id][gctx->rank].data.addr;
+  myrank_mseg->size = size;
+  myrank_mseg->notif_spc_size = NOTIFY_OFFSET;
+  myrank_mseg->notif_spc.addr = myrank_mseg->data.addr;
+  myrank_mseg->data.addr += NOTIFY_OFFSET;
+  myrank_mseg->user_provided = 0;
+  myrank_mseg->trans = 1;
 
-  gctx->rrmd[segment_id][gctx->rank].data.addr += NOTIFY_OFFSET;
-  gctx->rrmd[segment_id][gctx->rank].user_provided = 0;
-  gctx->rrmd[segment_id][gctx->rank].trans = 1;
-
-  if (pgaspi_dev_register_mem (gctx, &(gctx->rrmd[segment_id][gctx->rank])) <
-      0)
+  if (pgaspi_dev_register_mem (gctx, myrank_mseg) < 0)
   {
-    free (gctx->rrmd[segment_id][gctx->rank].data.ptr);
+    free (myrank_mseg->data.ptr);
     goto endL;
   }
 
   /* set fixed notification value ( =1) for read_notify */
   unsigned char *segPtr =
-    (unsigned char *) gctx->rrmd[segment_id][gctx->rank].notif_spc.addr +
+    (unsigned char *) myrank_mseg->notif_spc.addr +
     NOTIFY_OFFSET - sizeof (gaspi_notification_t);
 
   gaspi_notification_t *p = (gaspi_notification_t *) segPtr;
@@ -302,9 +299,10 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 
   lock_gaspi_tout (&(gctx->mseg_lock), GASPI_BLOCK);
 
+  gaspi_rc_mseg_t *const myrank_mseg = &(gctx->rrmd[segment_id][gctx->rank]);
+
   /*  TODO: for now like this but we need a better solution */
-  if (pgaspi_dev_unregister_mem (gctx, &(gctx->rrmd[segment_id][gctx->rank]))
-      < 0)
+  if (pgaspi_dev_unregister_mem (gctx, myrank_mseg) < 0)
   {
     unlock_gaspi (&(gctx->mseg_lock));
     return GASPI_ERR_DEVICE;
@@ -313,20 +311,20 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   /* For both "normal" and user-provided segments, the notif_spc
      points to begin of memory and only the size changes.
    */
-  free (gctx->rrmd[segment_id][gctx->rank].notif_spc.buf);
+  free (myrank_mseg->notif_spc.buf);
 
-  gctx->rrmd[segment_id][gctx->rank].data.buf = NULL;
-  gctx->rrmd[segment_id][gctx->rank].notif_spc.buf = NULL;
-  gctx->rrmd[segment_id][gctx->rank].size = 0;
-  gctx->rrmd[segment_id][gctx->rank].notif_spc_size = 0;
-  gctx->rrmd[segment_id][gctx->rank].trans = 0;
-  gctx->rrmd[segment_id][gctx->rank].mr[0] = NULL;
-  gctx->rrmd[segment_id][gctx->rank].mr[1] = NULL;
+  myrank_mseg->data.buf = NULL;
+  myrank_mseg->notif_spc.buf = NULL;
+  myrank_mseg->size = 0;
+  myrank_mseg->notif_spc_size = 0;
+  myrank_mseg->trans = 0;
+  myrank_mseg->mr[0] = NULL;
+  myrank_mseg->mr[1] = NULL;
 #ifdef GPI2_DEVICE_IB
-  gctx->rrmd[segment_id][gctx->rank].rkey[0] = 0;
-  gctx->rrmd[segment_id][gctx->rank].rkey[1] = 0;
+  myrank_mseg->rkey[0] = 0;
+  myrank_mseg->rkey[1] = 0;
 #endif
-  gctx->rrmd[segment_id][gctx->rank].user_provided = 0;
+  myrank_mseg->user_provided = 0;
 
   /* Reset trans info flag for all ranks */
   int r;
@@ -440,9 +438,11 @@ pgaspi_segment_register_group (gaspi_context_t * const gctx,
                                const gaspi_group_t group,
                                const gaspi_timeout_t timeout_ms)
 {
+  gaspi_rc_mseg_t *const myrank_mseg = &(gctx->rrmd[segment_id][gctx->rank]);
+
   if (gctx->tnc == 1)
   {
-    gctx->rrmd[segment_id][gctx->rank].trans = 1;
+    myrank_mseg->trans = 1;
     return GASPI_SUCCESS;
   }
 
@@ -456,17 +456,15 @@ pgaspi_segment_register_group (gaspi_context_t * const gctx,
 
   memset (&cdh, 0, sizeof (cdh));
 
-  gaspi_rc_mseg_t *const mseg_info = &(gctx->rrmd[segment_id][gctx->rank]);
-
   cdh.rank = gctx->rank;
   cdh.seg_id = segment_id;
-  cdh.addr = mseg_info->data.addr;
-  cdh.notif_addr = mseg_info->notif_spc.addr;
-  cdh.size = mseg_info->size;
+  cdh.addr = myrank_mseg->data.addr;
+  cdh.notif_addr = myrank_mseg->notif_spc.addr;
+  cdh.size = myrank_mseg->size;
 
 #ifdef GPI2_DEVICE_IB
-  cdh.rkey[0] = mseg_info->rkey[0];
-  cdh.rkey[1] = mseg_info->rkey[1];
+  cdh.rkey[0] = myrank_mseg->rkey[0];
+  cdh.rkey[1] = myrank_mseg->rkey[1];
 #endif
 
   gaspi_segment_descriptor_t *result =
@@ -595,7 +593,9 @@ pgaspi_segment_bind (gaspi_segment_id_t const segment_id,
     goto endL;
   }
 
-  if (gctx->rrmd[segment_id][myrank].size)
+  gaspi_rc_mseg_t *const myrank_mseg = &(gctx->rrmd[segment_id][gctx->rank]);
+
+  if (myrank_mseg->size)
   {
     eret = GASPI_ERR_INV_SEG;
     goto endL;
@@ -610,31 +610,28 @@ pgaspi_segment_bind (gaspi_segment_id_t const segment_id,
     goto endL;
   }
 
-  if (posix_memalign ((void **) &gctx->rrmd[segment_id][myrank].notif_spc.ptr,
-                      page_size, NOTIFY_OFFSET) != 0)
+  if (posix_memalign
+      ((void **) &myrank_mseg->notif_spc.ptr, page_size, NOTIFY_OFFSET) != 0)
   {
     GASPI_DEBUG_PRINT_ERROR ("Memory allocation failed.");
     eret = GASPI_ERR_MEMALLOC;
     goto endL;
   }
 
-  memset (gctx->rrmd[segment_id][myrank].notif_spc.ptr, 0, NOTIFY_OFFSET);
+  memset (myrank_mseg->notif_spc.ptr, 0, NOTIFY_OFFSET);
 
   /* Set the segment data pointer and size */
-  gctx->rrmd[segment_id][myrank].data.ptr = pointer;
-  gctx->rrmd[segment_id][myrank].size = size;
-
-  gctx->rrmd[segment_id][myrank].notif_spc_size = NOTIFY_OFFSET;
-
-  gctx->rrmd[segment_id][myrank].trans = 1;
-
-  gctx->rrmd[segment_id][gctx->rank].user_provided = 1;
+  myrank_mseg->data.ptr = pointer;
+  myrank_mseg->size = size;
+  myrank_mseg->notif_spc_size = NOTIFY_OFFSET;
+  myrank_mseg->trans = 1;
+  myrank_mseg->user_provided = 1;
 
   /* TODO: what to do with the memory description?? */
-  gctx->rrmd[segment_id][myrank].desc = memory_description;
+  myrank_mseg->desc = memory_description;
 
   /* Register segment with the device */
-  if (pgaspi_dev_register_mem (gctx, &(gctx->rrmd[segment_id][myrank])) < 0)
+  if (pgaspi_dev_register_mem (gctx, myrank_mseg) < 0)
   {
     eret = GASPI_ERR_DEVICE;
     goto endL;
@@ -642,7 +639,7 @@ pgaspi_segment_bind (gaspi_segment_id_t const segment_id,
 
   /* set fixed notification value ( =1) for read_notify */
   unsigned char *segPtr =
-    (unsigned char *) gctx->rrmd[segment_id][gctx->rank].notif_spc.addr +
+    (unsigned char *) myrank_mseg->notif_spc.addr +
     NOTIFY_OFFSET - sizeof (gaspi_notification_t);
   gaspi_notification_t *p = (gaspi_notification_t *) segPtr;
 
