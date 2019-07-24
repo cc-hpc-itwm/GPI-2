@@ -1220,27 +1220,6 @@ _tcp_dev_get_outstanding (int fd, int *in, int *out)
 }
 
 static void
-_tcp_dev_wait_outstanding (int fd)
-{
-  for (;;)
-  {
-    int tot_outstanding = 0;
-    int outstanding_in = 0;
-    int outstanding_out = 0;
-
-    tot_outstanding =
-      _tcp_dev_get_outstanding (fd, &outstanding_in, &outstanding_out);
-
-    if (!tot_outstanding)
-    {
-      break;
-    }
-
-    usleep (1000);
-  }
-}
-
-static void
 _tcp_dev_wait_outstanding_out (int fd)
 {
   for (;;)
