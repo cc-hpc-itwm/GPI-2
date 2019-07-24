@@ -1063,7 +1063,7 @@ _tcp_dev_process_delayed (int pollfd)
         if (bytes_sent <= 0 && !(errno == EAGAIN || errno == EWOULDBLOCK))
         {
           gaspi_debug_print_error
-            ("writing to %d (total %lu sent %ld remain %lu).", wr.target,
+            ("writing to %d (total %u sent %ld remain %lu).", wr.target,
              element->wr.length, done, sizeof (tcp_dev_wr_t) - done);
 
           if (_tcp_dev_post_wc
@@ -1098,7 +1098,7 @@ _tcp_dev_process_delayed (int pollfd)
           if (bytes_sent <= 0 && !(errno == EAGAIN || errno == EWOULDBLOCK))
           {
             gaspi_debug_print_error
-              ("writing to %d (total %lu sent %ld remain %lu).", wr.target,
+              ("writing to %d (total %u sent %ld remain %lu).", wr.target,
                element->wr.length, sdone, element->wr.length - sdone);
 
             if (_tcp_dev_post_wc
@@ -1692,7 +1692,8 @@ tcp_virt_dev (void *args)
           while (1)
           {
             /* TODO: catch NULL-ptr */
-            const int bytesRemaining = estate->read.length - estate->read.done;
+            const uint32_t bytesRemaining =
+              estate->read.length - estate->read.done;
             ssize_t bytesReceived;
 
             /* we need to deal with read's byte granularity and */
@@ -1726,7 +1727,7 @@ tcp_virt_dev (void *args)
             else if (bytesReceived <= 0)
             {
               gaspi_debug_print_error
-                ("reading from %d (total %lu recvd %ld remain %lu).",
+                ("reading from %d (total %u recvd %ld remain %u).",
                  event_rank, estate->read.length, bytesReceived,
                  bytesRemaining);
               io_err = 1;
@@ -1767,9 +1768,9 @@ tcp_virt_dev (void *args)
           while (1)
           {
             /* TODO: catch NULL-ptr */
-            const int bytesRemaining =
+            const uint32_t bytesRemaining =
               estate->write.length - estate->write.done;
-            const int bytesSent =
+            const ssize_t bytesSent =
               write (estate->fd,
                      (void *) estate->write.addr + estate->write.done,
                      bytesRemaining);
@@ -1782,7 +1783,7 @@ tcp_virt_dev (void *args)
             else if (bytesSent <= 0)
             {
               gaspi_debug_print_error
-                ("writing to %d (total %lu sent %ld remain %lu).", event_rank,
+                ("writing to %d (total %u sent %ld remain %u).", event_rank,
                  estate->write.length, bytesSent, bytesRemaining);
               io_err = 1;
               break;
