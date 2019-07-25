@@ -200,15 +200,13 @@ pgaspi_segment_create_desc (gaspi_context_t * const gctx,
   return 0;
 }
 
-#pragma weak gaspi_segment_alloc = pgaspi_segment_alloc
-gaspi_return_t
-pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
-                      const gaspi_size_t size,
-                      const gaspi_alloc_t alloc_policy)
+static inline int
+pgaspi_segment_alloc_maybe (gaspi_segment_id_t const segment_id,
+                            gaspi_pointer_t const pointer,
+                            gaspi_size_t const size)
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  GASPI_VERIFY_INIT ("gaspi_segment_alloc");
   GASPI_VERIFY_SEGMENT_SIZE (size);
   GASPI_VERIFY_SEGMENT (segment_id);
 
@@ -235,31 +233,36 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
     goto endL;
   }
 
-  if (pgaspi_alloc_page_aligned
-      (&(myrank_mseg->data.ptr), size + NOTIFY_OFFSET) != 0)
+  size_t const allocation_size =
+    pointer == NULL ? size + NOTIFY_OFFSET : NOTIFY_OFFSET;
+
+
+  int const allocation_failed =
+    pgaspi_alloc_page_aligned (&(myrank_mseg->notif_spc.ptr), allocation_size);
+
+  if (allocation_failed)
   {
     GASPI_DEBUG_PRINT_ERROR ("Memory allocation (posix_memalign) failed");
     eret = GASPI_ERR_MEMALLOC;
     goto endL;
   }
 
-  memset (myrank_mseg->data.ptr, 0, NOTIFY_OFFSET);
+  memset (myrank_mseg->notif_spc.ptr, 0, NOTIFY_OFFSET);
 
-  if (GASPI_MEM_INITIALIZED == alloc_policy)
-  {
-    memset (myrank_mseg->data.ptr, 0, size + NOTIFY_OFFSET);
-  }
+  myrank_mseg->user_provided = NULL != pointer;
+
+  myrank_mseg->data.ptr = myrank_mseg->user_provided
+    ? pointer
+    : myrank_mseg->notif_spc.ptr + NOTIFY_OFFSET;
 
   myrank_mseg->size = size;
   myrank_mseg->notif_spc_size = NOTIFY_OFFSET;
-  myrank_mseg->notif_spc.addr = myrank_mseg->data.addr;
-  myrank_mseg->data.addr += NOTIFY_OFFSET;
-  myrank_mseg->user_provided = 0;
   myrank_mseg->trans = 1;
 
   if (pgaspi_dev_register_mem (gctx, myrank_mseg) < 0)
   {
-    free (myrank_mseg->data.ptr);
+    free (myrank_mseg->notif_spc.ptr);
+    eret = GASPI_ERR_DEVICE;
     goto endL;
   }
 
@@ -267,7 +270,6 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
   unsigned char *segPtr =
     (unsigned char *) myrank_mseg->notif_spc.addr +
     NOTIFY_OFFSET - sizeof (gaspi_notification_t);
-
   gaspi_notification_t *p = (gaspi_notification_t *) segPtr;
 
   *p = 1;
@@ -276,10 +278,39 @@ pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
 
   eret = GASPI_SUCCESS;
 
-  GPI2_STATS_INC_COUNT (GASPI_STATS_COUNTER_NUM_SEG_ALLOC, 1);
-
 endL:
   unlock_gaspi (&(gctx->mseg_lock));
+  return eret;
+}
+
+#pragma weak gaspi_segment_alloc = pgaspi_segment_alloc
+gaspi_return_t
+pgaspi_segment_alloc (const gaspi_segment_id_t segment_id,
+                      const gaspi_size_t size,
+                      const gaspi_alloc_t alloc_policy)
+{
+  gaspi_context_t *const gctx = &glb_gaspi_ctx;
+
+  GASPI_VERIFY_INIT ("gaspi_segment_alloc");
+
+  gaspi_return_t const eret =
+    pgaspi_segment_alloc_maybe (segment_id, NULL, size);
+
+  if (eret != GASPI_SUCCESS)
+  {
+    return eret;
+  }
+
+  gaspi_rc_mseg_t *const myrank_mseg = &(gctx->rrmd[segment_id][gctx->rank]);
+
+  if (GASPI_MEM_INITIALIZED == alloc_policy)
+  {
+    memset (myrank_mseg->data.ptr, 0, size);
+  }
+
+  /* TODO: do we need to be within lock? */
+  GPI2_STATS_INC_COUNT (GASPI_STATS_COUNTER_NUM_SEG_ALLOC, 1);
+
   return eret;
 }
 
@@ -560,8 +591,6 @@ pgaspi_segment_create (const gaspi_segment_id_t segment_id,
 
 /* TODO: */
 
-/* - merge common/repetead code from other segment related function (create, alloc, ...) */
-
 /* - check/deal with alignment issues */
 #pragma weak gaspi_segment_bind = pgaspi_segment_bind
 gaspi_return_t
@@ -573,86 +602,22 @@ pgaspi_segment_bind (gaspi_segment_id_t const segment_id,
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
   GASPI_VERIFY_INIT ("gaspi_segment_bind");
-  GASPI_VERIFY_SEGMENT_SIZE (size);
-  GASPI_VERIFY_SEGMENT (segment_id);
 
-  const int myrank = (int) gctx->rank;
+  gaspi_return_t const eret =
+    pgaspi_segment_alloc_maybe (segment_id, pointer, size);
 
-  if (gctx->mseg_cnt >= GASPI_MAX_MSEGS)
+  if (eret != GASPI_SUCCESS)
   {
-    return GASPI_ERR_MANY_SEG;
-  }
-
-  lock_gaspi_tout (&(gctx->mseg_lock), GASPI_BLOCK);
-
-  gaspi_return_t eret = GASPI_ERROR;
-
-  if (pgaspi_segment_create_desc (gctx, segment_id) != 0)
-  {
-    eret = GASPI_ERR_MEMALLOC;
-    goto endL;
+    return eret;
   }
 
   gaspi_rc_mseg_t *const myrank_mseg = &(gctx->rrmd[segment_id][gctx->rank]);
 
-  if (myrank_mseg->size)
-  {
-    eret = GASPI_ERR_INV_SEG;
-    goto endL;
-  }
-
-  /* Get space for notifications and register it as well */
-  long page_size = sysconf (_SC_PAGESIZE);
-
-  if (page_size < 0)
-  {
-    GASPI_DEBUG_PRINT_ERROR ("Failed to get system's page size.");
-    goto endL;
-  }
-
-  if (posix_memalign
-      ((void **) &myrank_mseg->notif_spc.ptr, page_size, NOTIFY_OFFSET) != 0)
-  {
-    GASPI_DEBUG_PRINT_ERROR ("Memory allocation failed.");
-    eret = GASPI_ERR_MEMALLOC;
-    goto endL;
-  }
-
-  memset (myrank_mseg->notif_spc.ptr, 0, NOTIFY_OFFSET);
-
-  /* Set the segment data pointer and size */
-  myrank_mseg->data.ptr = pointer;
-  myrank_mseg->size = size;
-  myrank_mseg->notif_spc_size = NOTIFY_OFFSET;
-  myrank_mseg->trans = 1;
-  myrank_mseg->user_provided = 1;
-
   /* TODO: what to do with the memory description?? */
   myrank_mseg->desc = memory_description;
 
-  /* Register segment with the device */
-  if (pgaspi_dev_register_mem (gctx, myrank_mseg) < 0)
-  {
-    eret = GASPI_ERR_DEVICE;
-    goto endL;
-  }
-
-  /* set fixed notification value ( =1) for read_notify */
-  unsigned char *segPtr =
-    (unsigned char *) myrank_mseg->notif_spc.addr +
-    NOTIFY_OFFSET - sizeof (gaspi_notification_t);
-  gaspi_notification_t *p = (gaspi_notification_t *) segPtr;
-
-  *p = 1;
-
-  gctx->mseg_cnt++;
-
-  eret = GASPI_SUCCESS;
-
   GPI2_STATS_INC_COUNT (GASPI_STATS_COUNTER_NUM_SEG_BIND, 1);
 
-endL:
-  unlock_gaspi (&(gctx->mseg_lock));
   return eret;
 }
 
