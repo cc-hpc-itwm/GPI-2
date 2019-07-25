@@ -88,8 +88,8 @@ pgaspi_segment_list (const gaspi_number_t num,
   GASPI_VERIFY_INIT ("gaspi_segment_list");
   GASPI_VERIFY_NULL_PTR (segment_id_list);
 
-  int i, idx = 0;
-  for (i = 0; i < GASPI_MAX_MSEGS; i++)
+  int idx = 0;
+  for (int i = 0; i < GASPI_MAX_MSEGS; i++)
   {
     if (gctx->rrmd[(gaspi_segment_id_t) i] != NULL)
     {
@@ -165,8 +165,7 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
     return GASPI_ERROR;
   }
 
-  gaspi_number_t i;
-  for (i = 1; i < num_segs; i++)
+  for (gaspi_number_t i = 1; i < num_segs; i++)
   {
     if (segment_ids[i] != segment_ids[i - 1] + 1)
     {
@@ -358,8 +357,7 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   myrank_mseg->user_provided = 0;
 
   /* Reset trans info flag for all ranks */
-  int r;
-  for (r = 0; r < gctx->tnc; r++)
+  for (int r = 0; r < gctx->tnc; r++)
   {
     gctx->rrmd[segment_id][r].trans = 0;
   }
@@ -515,8 +513,7 @@ pgaspi_segment_register_group (gaspi_context_t * const gctx,
     return GASPI_ERROR;
   }
 
-  int r;
-  for (r = 0; r < gctx->groups[group].tnc; r++)
+  for (int r = 0; r < gctx->groups[group].tnc; r++)
   {
     if (gaspi_segment_set (result[r]) < 0)
     {
@@ -569,8 +566,7 @@ pgaspi_segment_create (const gaspi_segment_id_t segment_id,
 
   if (GASPI_TOPOLOGY_STATIC == gctx->config->build_infrastructure)
   {
-    int r;
-    for (r = gctx->groups[group].rank; r < gctx->groups[group].tnc; r++)
+    for (int r = gctx->groups[group].rank; r < gctx->groups[group].tnc; r++)
     {
       eret = pgaspi_connect (gctx->groups[group].rank_grp[r], timeout_ms);
       if (eret != GASPI_SUCCESS)

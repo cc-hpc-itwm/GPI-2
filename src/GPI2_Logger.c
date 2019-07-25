@@ -183,8 +183,7 @@ gaspi_print_affinity_mask (void)
   int len = 64;
 
   unsigned char *p = (unsigned char *) &node_mask;
-  int j;
-  for (j = 0; j < len; j++)
+  for (int j = 0; j < len; j++)
   {
     mask[j] = p[j];
   }
@@ -194,7 +193,7 @@ gaspi_print_affinity_mask (void)
   int off = 0;
   unsigned char *ptr = (unsigned char *) mask;
 
-  for (j = len - 1; j >= 0; j--)
+  for (int j = len - 1; j >= 0; j--)
   {
     if ((ptr[j] == 0) && (!found))
     {

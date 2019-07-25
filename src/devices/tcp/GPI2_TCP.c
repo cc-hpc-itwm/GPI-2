@@ -233,8 +233,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     return -1;
   }
 
-  unsigned int c;
-  for (c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
   {
     tcp_dev_ctx->scqC[c] =
       tcp_dev_create_cq (gctx->config->queue_size_max, NULL);
@@ -254,7 +253,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     return -1;
   }
 
-  for (c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
   {
     tcp_dev_ctx->qpC[c] = tcp_dev_create_queue (tcp_dev_ctx->scqC[c], NULL);
     if (tcp_dev_ctx->qpC[c] == NULL)
@@ -304,9 +303,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   tcp_dev_destroy_queue (tcp_dev_ctx->qpGroups);
   tcp_dev_destroy_queue (tcp_dev_ctx->qpP);
 
-  unsigned int c;
-
-  for (c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
   {
     tcp_dev_destroy_queue (tcp_dev_ctx->qpC[c]);
   }
@@ -330,7 +327,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   tcp_dev_destroy_cq (tcp_dev_ctx->scqP);
   tcp_dev_destroy_cq (tcp_dev_ctx->rcqP);
 
-  for (c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
   {
     tcp_dev_destroy_cq (tcp_dev_ctx->scqC[c]);
   }

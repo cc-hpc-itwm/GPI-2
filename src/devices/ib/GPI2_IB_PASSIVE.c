@@ -114,7 +114,6 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
   struct ibv_recv_wr rwr;
   struct ibv_cq *ev_cq;
   void *ev_ctx;
-  int i;
   fd_set rfds;
   struct timeval tout;
 
@@ -191,7 +190,7 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
   *rem_rank = 0xffff;
   do
   {
-    for (i = 0; i < gctx->tnc; i++)
+    for (gaspi_rank_t i = 0; i < gctx->tnc; i++)
     {
       /* we need to make sure the QP was already created and valid */
       if (ib_dev_ctx->qpP != NULL)

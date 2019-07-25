@@ -335,8 +335,7 @@ void
 pgaspi_statistic_print_counters (void)
 {
 #ifdef GPI2_STATS
-  gaspi_statistic_counter_t i;
-  gaspi_rank_t myrank, nranks, r;
+  gaspi_rank_t myrank, nranks;
 
   gaspi_proc_rank (&myrank);
   gaspi_proc_num (&nranks);
@@ -347,12 +346,14 @@ pgaspi_statistic_print_counters (void)
   fflush (stdout);
   /* VEERRY heavy and synchronous way to guarantee that output
      is readable */
-  for (r = 0; r < nranks; r++)
+  for (gaspi_rank_t r = 0; r < nranks; r++)
   {
     /* It's my turn to print? */
     if (r == myrank)
     {
-      for (i = 0; i < GASPI_STATS_COUNTER_NUM_MAX; i++)
+      for (gaspi_statistic_counter_t i = 0;
+           i < GASPI_STATS_COUNTER_NUM_MAX;
+           i++)
       {
         gaspi_return_t ret;
         gaspi_string_t name, desc;

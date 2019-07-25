@@ -128,7 +128,7 @@ pgaspi_dev_purge (gaspi_context_t * const gctx,
                   const gaspi_queue_id_t queue,
                   const gaspi_timeout_t timeout_ms)
 {
-  int ne = 0, i;
+  int ne = 0;
   struct ibv_wc wc;
 
   const int nr = gctx->ne_count_c[queue];
@@ -136,7 +136,7 @@ pgaspi_dev_purge (gaspi_context_t * const gctx,
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  for (i = 0; i < nr; i++)
+  for (int i = 0; i < nr; i++)
   {
     do
     {
@@ -174,8 +174,8 @@ pgaspi_dev_wait (gaspi_context_t * const gctx,
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  int ne = 0, i;
-  for (i = 0; i < nr; i++)
+  int ne = 0;
+  for (int i = 0; i < nr; i++)
   {
     do
     {
@@ -233,8 +233,7 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
     return GASPI_QUEUE_FULL;
   }
 
-  gaspi_number_t i;
-  for (i = 0; i < num; i++)
+  for (gaspi_number_t i = 0; i < num; i++)
   {
     slist[i].addr =
       (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +
@@ -292,8 +291,7 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
     return GASPI_QUEUE_FULL;
   }
 
-  gaspi_number_t i;
-  for (i = 0; i < num; i++)
+  for (gaspi_number_t i = 0; i < num; i++)
   {
     slist[i].addr =
       (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +
@@ -477,8 +475,7 @@ pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
     return GASPI_QUEUE_FULL;
   }
 
-  gaspi_number_t i;
-  for (i = 0; i < num; i++)
+  for (gaspi_number_t i = 0; i < num; i++)
   {
 
     slist[i].addr =
@@ -630,8 +627,7 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
     return GASPI_QUEUE_FULL;
   }
 
-  gaspi_number_t i;
-  for (i = 0; i < num; i++)
+  for (gaspi_number_t i = 0; i < num; i++)
   {
     slist[i].addr =
       (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +

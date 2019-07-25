@@ -150,9 +150,7 @@ pgaspi_init_core (gaspi_context_t * const gctx)
     return GASPI_ERROR;;
   }
 
-  int i;
-
-  for (i = 0; i < GASPI_MAX_GROUPS; i++)
+  for (int i = 0; i < GASPI_MAX_GROUPS; i++)
   {
     GASPI_RESET_GROUP (gctx->groups, i);
   }
@@ -249,9 +247,8 @@ pgaspi_parse_machinefile (gaspi_context_t * const gctx)
       continue;
 
     int inList = 0;
-    int i;
 
-    for (i = 0; i < id; i++)
+    for (int i = 0; i < id; i++)
     {
       //already in list ?
       const int hnlen =
@@ -380,8 +377,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
     /* configuration tells us to pre-connect */
     if (GASPI_TOPOLOGY_STATIC == gctx->config->build_infrastructure)
     {
-      int i;
-      for (i = gctx->rank; i >= 0; i--)
+      for (int i = gctx->rank; i >= 0; i--)
       {
         if ((eret =
              pgaspi_connect ((gaspi_rank_t) i, timeout_ms)) != GASPI_SUCCESS)
@@ -446,9 +442,7 @@ pgaspi_cleanup_core (gaspi_context_t * const gctx)
   /* Delete extra queues created */
   if (gctx->num_queues != gctx->config->queue_num)
   {
-    gaspi_uint q;
-
-    for (q = gctx->config->queue_num; q < gctx->num_queues; q++)
+    for (gaspi_uint q = gctx->config->queue_num; q < gctx->num_queues; q++)
     {
       if (pgaspi_dev_comm_queue_delete (gctx, q) != 0)
       {
@@ -470,8 +464,7 @@ pgaspi_cleanup_core (gaspi_context_t * const gctx)
   gctx->nsrc.data.buf = NULL;
 
   /* Delete segments */
-  int i;
-  for (i = 0; i < GASPI_MAX_MSEGS; i++)
+  for (int i = 0; i < GASPI_MAX_MSEGS; i++)
   {
     if (gctx->rrmd[i] != NULL)
     {
@@ -491,7 +484,7 @@ pgaspi_cleanup_core (gaspi_context_t * const gctx)
   unlock_gaspi (&(gctx->ctx_lock));
 
   /* Delete groups */
-  for (i = 1; i < GASPI_MAX_GROUPS; i++)
+  for (int i = 1; i < GASPI_MAX_GROUPS; i++)
   {
     if (gctx->groups[i].id >= 0)
     {
@@ -521,7 +514,7 @@ pgaspi_cleanup_core (gaspi_context_t * const gctx)
   free (gctx->ep_conn);
   gctx->ep_conn = NULL;
 
-  for (i = 0; i < GASPI_MAX_QP + 3; i++)
+  for (int i = 0; i < GASPI_MAX_QP + 3; i++)
   {
     free (gctx->state_vec[i]);
     gctx->state_vec[i] = NULL;
@@ -548,8 +541,7 @@ pgaspi_proc_term (const gaspi_timeout_t timeout)
 
   if (gctx->sockfd != NULL)
   {
-    int i;
-    for (i = 0; i < gctx->tnc; i++)
+    for (int i = 0; i < gctx->tnc; i++)
     {
       shutdown (gctx->sockfd[i], 2);
       if (gctx->sockfd[i] > 0)
@@ -865,10 +857,9 @@ pgaspi_state_vec_get (gaspi_state_vector_t state_vector)
 
   memset (state_vector, 0, gctx->tnc * sizeof (gaspi_state_t));
 
-  int i, j;
-  for (i = 0; i < gctx->tnc; i++)
+  for (int i = 0; i < gctx->tnc; i++)
   {
-    for (j = 0; j < (GASPI_MAX_QP + 3); j++)
+    for (int j = 0; j < (GASPI_MAX_QP + 3); j++)
     {
       state_vector[i] |= gctx->state_vec[j][i];
     }

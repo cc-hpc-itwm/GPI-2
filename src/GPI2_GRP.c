@@ -154,8 +154,8 @@ pgaspi_group_create (gaspi_group_t * const group)
     return GASPI_ERR_MANY_GRP;
   }
 
-  int i, id = GASPI_MAX_GROUPS;
-  for (i = 0; i < GASPI_MAX_GROUPS; i++)
+  int id = GASPI_MAX_GROUPS;
+  for (int i = 0; i < GASPI_MAX_GROUPS; i++)
   {
     if (gctx->groups[i].id == -1)
     {
@@ -199,7 +199,7 @@ pgaspi_group_create (gaspi_group_t * const group)
     goto errL;
   }
 
-  for (i = 0; i < gctx->tnc; i++)
+  for (int i = 0; i < gctx->tnc; i++)
   {
     new_grp_ctx->rank_grp[i] = -1;
   }
@@ -273,9 +273,7 @@ pgaspi_group_add (const gaspi_group_t group, const gaspi_rank_t rank)
 
   lock_gaspi_tout (&(gctx->ctx_lock), GASPI_BLOCK);
 
-  int i;
-
-  for (i = 0; i < grp_ctx->tnc; i++)
+  for (int i = 0; i < grp_ctx->tnc; i++)
   {
     if (grp_ctx->rank_grp[i] == rank)
     {
@@ -341,8 +339,7 @@ pgaspi_group_all_local_create (gaspi_context_t * const gctx,
   gaspi_group_ctx_t *const grp_all_ctx = &(gctx->groups[GASPI_GROUP_ALL]);
 
   /* Add all ranks to it */
-  int i;
-  for (i = 0; i < gctx->tnc; i++)
+  for (int i = 0; i < gctx->tnc; i++)
   {
     grp_all_ctx->rank_grp[i] = (gaspi_rank_t) i;
   }
@@ -407,8 +404,7 @@ pgaspi_group_create_exch_info (gaspi_group_t group, int tnc)
 
         if (NULL != group_to_exch->rank_grp)
         {
-          int rg;
-          for (rg = 0; rg < tnc; rg++)
+          for (int rg = 0; rg < tnc; rg++)
           {
             grp_info->cs ^= group_to_exch->rank_grp[rg];
           }
@@ -450,8 +446,7 @@ pgaspi_group_commit (const gaspi_group_t group,
   }
 
   group_to_commit->rank = -1;
-  int i;
-  for (i = 0; i < group_to_commit->tnc; i++)
+  for (int i = 0; i < group_to_commit->tnc; i++)
   {
     if (group_to_commit->rank_grp[i] == gctx->rank)
     {
@@ -475,13 +470,12 @@ pgaspi_group_commit (const gaspi_group_t group,
   gb.cs = 0;
   gb.tnc = group_to_commit->tnc;
 
-  for (i = 0; i < group_to_commit->tnc; i++)
+  for (int i = 0; i < group_to_commit->tnc; i++)
   {
     gb.cs ^= group_to_commit->rank_grp[i];
   }
 
-  int r;
-  for (r = 1; r <= gb.tnc; r++)
+  for (int r = 1; r <= gb.tnc; r++)
   {
     int rg = (group_to_commit->rank + r) % gb.tnc;
 
@@ -558,9 +552,7 @@ pgaspi_group_ranks (const gaspi_group_t group,
 
   if (group < gctx->group_cnt)
   {
-    int i;
-
-    for (i = 0; i < gctx->groups[group].tnc; i++)
+    for (int i = 0; i < gctx->groups[group].tnc; i++)
     {
       group_ranks[i] = gctx->groups[group].rank_grp[i];
     }

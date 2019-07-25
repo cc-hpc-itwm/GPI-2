@@ -1280,8 +1280,7 @@ _tcp_dev_bring_down (int pollfd, int num_peers)
   int tcp_dev_passive_closed_connections = 0;
 #endif
 
-  int p;
-  for (p = 0; p < num_peers; p++)
+  for (int p = 0; p < num_peers; p++)
   {
     if (p == tcp_dev_id)
     {
@@ -1615,9 +1614,7 @@ tcp_virt_dev (void *args)
       GASPI_DEBUG_PRINT_ERROR ("Event handler error.");
     }
 
-    int n;
-
-    for (n = 0; n < nfds; ++n)
+    for (int n = 0; n < nfds; ++n)
     {
       if (events[n].data.fd == tcp_dev_oob_channel)
       {

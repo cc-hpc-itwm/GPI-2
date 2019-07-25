@@ -53,8 +53,7 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
   int ne = 0;
   tcp_dev_wc_t wc;
 
-  gaspi_uint i;
-  for (i = 0; i < gctx->ne_count_grp; i++)
+  for (gaspi_uint i = 0; i < gctx->ne_count_grp; i++)
   {
     do
     {
@@ -110,8 +109,7 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
   int ne = 0;
   tcp_dev_wc_t wc;
 
-  gaspi_uint i;
-  for (i = 0; i < gctx->ne_count_grp; i++)
+  for (gaspi_uint i = 0; i < gctx->ne_count_grp; i++)
   {
     do
     {

@@ -106,9 +106,7 @@ pgaspi_ib_dev_print_info (gaspi_context_t * const gctx,
   int id0[2] = { 0, 0 };
   int id1[2] = { 0, 0 };
 
-  uint8_t p;
-
-  for (p = 0; p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, GASPI_MAX_PORTS);
+  for (uint8_t p = 0; p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, GASPI_MAX_PORTS);
        p++)
   {
     gaspi_printf ("\tport Nr    : %d\n", p + 1);
@@ -166,9 +164,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
   /* TODO: magic number */
-  int i;
-
-  for (i = 0; i < 64; i++)
+  for (int i = 0; i < 64; i++)
   {
     ib_dev_ctx->wc_grp_send[i].status = IBV_WC_SUCCESS;
   }
@@ -206,7 +202,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   else
   {
     /* Look for one with IB Transport */
-    for (i = 0; i < avail_num_dev; i++)
+    for (int i = 0; i < avail_num_dev; i++)
     {
       ib_dev_ctx->ib_dev = ib_dev_ctx->dev_list[i];
 
@@ -248,9 +244,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   }
 
   /* Query port(s) */
-  uint8_t p;
-
-  for (p = 0; p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, GASPI_MAX_PORTS);
+  for (uint8_t p = 0; p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, GASPI_MAX_PORTS);
        p++)
   {
     if (ibv_query_port
@@ -480,8 +474,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   }
 
   /* One-sided Communication */
-  unsigned int c;
-  for (c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
   {
     ib_dev_ctx->scqC[c] =
       ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,
@@ -503,7 +496,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     return -1;
   }
 
-  for (c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
   {
     ib_dev_ctx->qpC[c] =
       (struct ibv_qp **) calloc (gctx->tnc, sizeof (struct ibv_qp *));
@@ -542,7 +535,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     return -1;
   }
 
-  for (i = 0; i < gctx->tnc; i++)
+  for (gaspi_rank_t i = 0; i < gctx->tnc; i++)
   {
     ib_dev_ctx->local_info[i].lid =
       ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].lid;
@@ -722,9 +715,7 @@ pgaspi_dev_comm_queue_delete (gaspi_context_t const *const gctx,
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  int i;
-
-  for (i = 0; i < gctx->tnc; i++)
+  for (int i = 0; i < gctx->tnc; i++)
   {
     if (gctx->ep_conn[i].istat == 0)
     {
@@ -829,8 +820,6 @@ pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx, const int i,
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  unsigned int c;
-
   if (ib_dev_ctx->qpGroups[i] == NULL)
   {
     /* Groups QP */
@@ -855,7 +844,7 @@ pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx, const int i,
     ib_dev_ctx->local_info[i].qpnGroup = ib_dev_ctx->qpGroups[i]->qp_num;
 
     /* IO QPs */
-    for (c = 0; c < gctx->config->queue_num; c++)
+    for (unsigned int c = 0; c < gctx->config->queue_num; c++)
     {
       ib_dev_ctx->qpC[c][i] =
         _pgaspi_dev_create_qp (gctx, ib_dev_ctx->scqC[c], ib_dev_ctx->scqC[c],
@@ -891,15 +880,13 @@ pgaspi_dev_disconnect_context (gaspi_context_t * const gctx, const int i)
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  unsigned int c;
-
   if (ibv_destroy_qp (ib_dev_ctx->qpGroups[i]))
   {
     GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
     return -1;
   }
 
-  for (c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
   {
     if (ibv_destroy_qp (ib_dev_ctx->qpC[c][i]))
     {
@@ -917,7 +904,7 @@ pgaspi_dev_disconnect_context (gaspi_context_t * const gctx, const int i)
   ib_dev_ctx->local_info[i].qpnGroup = 0;
   ib_dev_ctx->local_info[i].qpnP = 0;
 
-  for (c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned c = 0; c < gctx->config->queue_num; c++)
   {
     ib_dev_ctx->local_info[i].qpnC[c] = 0;
   }
@@ -1042,8 +1029,6 @@ pgaspi_dev_connect_context (gaspi_context_t const *const gctx, const int i)
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  unsigned int c;
-
   if (0 != _pgaspi_dev_qp_set_ready (gctx,
                                      ib_dev_ctx->qpGroups[i],
                                      i, ib_dev_ctx->remote_info[i].qpnGroup))
@@ -1058,7 +1043,7 @@ pgaspi_dev_connect_context (gaspi_context_t const *const gctx, const int i)
     return -1;
   }
 
-  for (c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
   {
     if (0 != _pgaspi_dev_qp_set_ready (gctx,
                                        ib_dev_ctx->qpC[c][i],
@@ -1074,12 +1059,9 @@ pgaspi_dev_connect_context (gaspi_context_t const *const gctx, const int i)
 int
 pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
 {
-  int i;
-  unsigned int c;
-
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  for (i = 0; i < gctx->tnc; i++)
+  for (int i = 0; i < gctx->tnc; i++)
   {
     if (GASPI_ENDPOINT_CREATED == gctx->ep_conn[i].istat)
     {
@@ -1095,7 +1077,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
         return -1;
       }
 
-      for (c = 0; c < gctx->config->queue_num; c++)
+      for (unsigned int c = 0; c < gctx->config->queue_num; c++)
       {
         if (ibv_destroy_qp (ib_dev_ctx->qpC[c][i]))
         {
@@ -1112,7 +1094,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   free (ib_dev_ctx->qpP);
   ib_dev_ctx->qpP = NULL;
 
-  for (c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
   {
     free (ib_dev_ctx->qpC[c]);
   }

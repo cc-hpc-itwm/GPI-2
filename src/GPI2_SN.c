@@ -591,9 +591,7 @@ gaspi_sn_broadcast_topology (gaspi_context_t * const gctx,
     return GASPI_ERR_MEMALLOC;
   }
 
-  int i;
-
-  for (i = 0; i < gctx->tnc; i++)
+  for (int i = 0; i < gctx->tnc; i++)
   {
     gctx->sockfd[i] = -1;
   }
@@ -941,8 +939,7 @@ gaspi_sn_allgather (gaspi_context_t const *const gctx,
   recv_buf += size;
 
   /* exch with peers */
-  int r;
-  for (r = 1; r < grp_ctx->tnc; r++)
+  for (int r = 1; r < grp_ctx->tnc; r++)
   {
     ssize_t rret = gaspi_sn_readn (left_sock, recv_buf, size);
 
@@ -1350,7 +1347,7 @@ gaspi_sn_add_fd_for_events (int fd, int eventsfd)
 void *
 gaspi_sn_backend (void *arg)
 {
-  int esock, lsock, n, i;
+  int esock, lsock, n;
   struct epoll_event *ret_ev;
   gaspi_mgmt_header *mgmt;
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
@@ -1445,7 +1442,7 @@ gaspi_sn_backend (void *arg)
     n = epoll_wait (esock, ret_ev, GASPI_EPOLL_MAX_EVENTS, -1);
 
     /* loop over all triggered events */
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
       mgmt = ret_ev[i].data.ptr;
 

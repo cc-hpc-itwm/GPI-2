@@ -47,14 +47,13 @@ _gaspi_sample_cpu_freq (void)
   double sum_sqr_y = 0.0f;
   double sumxy = 0.0f;
   double tx, ty;
-  int i;
 
   long x[MEASUREMENTS];
   gaspi_cycles_t y[MEASUREMENTS];
   double beta;
   double corr_2;
 
-  for (i = 0; i < MEASUREMENTS; ++i)
+  for (int i = 0; i < MEASUREMENTS; ++i)
   {
     start = gaspi_get_cycles();
 
@@ -79,7 +78,7 @@ _gaspi_sample_cpu_freq (void)
     y[i] = gaspi_get_cycles() - start;
   }
 
-  for (i = 0; i < MEASUREMENTS; ++i)
+  for (int i = 0; i < MEASUREMENTS; ++i)
   {
     tx = x[i];
     ty = y[i];
@@ -175,7 +174,7 @@ gaspi_get_cpufreq (void)
 int
 gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 {
-  int i, rc;
+  int rc;
   char buf[1024];
   unsigned int m[256];
   char path[256];
@@ -212,9 +211,8 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
       unsigned int cpos = 0;
 
       size_t length = strlen (bptr);
-      size_t j;
 
-      for (j = 0; j < length - 1; j++)
+      for (size_t j = 0; j < length - 1; j++)
       {
         if (bptr[j] == ',')
         {
@@ -245,7 +243,7 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
   char *ptr = (char *) cpuset;
   int pos = 0;
 
-  for (i = rc - 1; i >= 0; i--)
+  for (int i = rc - 1; i >= 0; i--)
   {
     memcpy (ptr + pos, &m[i], sizeof (unsigned int));
     pos += sizeof (unsigned int);

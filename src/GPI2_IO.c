@@ -147,8 +147,7 @@ pgaspi_queue_create (gaspi_queue_id_t * const queue_id,
   gaspi_number_t next_avail_q = __sync_fetch_and_add (&(gctx->num_queues), 0);
 
   /* Create it and advertise it to the already connected nodes */
-  gaspi_rank_t n;
-  for (n = 0; n < gctx->tnc; n++)
+  for (gaspi_rank_t n = 0; n < gctx->tnc; n++)
   {
     gaspi_rank_t i = (gctx->rank + n) % gctx->tnc;
 
@@ -178,7 +177,7 @@ pgaspi_queue_create (gaspi_queue_id_t * const queue_id,
     }
   }
 
-  for (n = 0; n < gctx->tnc; n++)
+  for (gaspi_rank_t n = 0; n < gctx->tnc; n++)
   {
     gaspi_rank_t i = (gctx->rank + n) % gctx->tnc;
 
@@ -431,9 +430,7 @@ pgaspi_rw_list_verify_parameters (char* fun_name,
     return GASPI_ERR_INV_NUM;
   }
 
-  gaspi_number_t n;
-
-  for (n = 0; n < num; n++)
+  for (gaspi_number_t n = 0; n < num; n++)
   {
     GASPI_VERIFY_LOCAL_OFF (offset_local[n], segment_id_local[n], size[n]);
     GASPI_VERIFY_REMOTE_OFF (offset_remote[n], segment_id_remote[n], rank,
@@ -646,7 +643,6 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 
   volatile unsigned char *segPtr;
   int loop = 1;
-  gaspi_notification_id_t n;
 
   if (num == 0)
   {
@@ -663,7 +659,9 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
   {
     while (loop)
     {
-      for (n = notification_begin; n < (notification_begin + num); n++)
+      for (gaspi_notification_id_t n = notification_begin;
+           n < (notification_begin + num);
+           n++)
       {
         if (p[n])
         {
@@ -682,7 +680,9 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
   }
   else if (timeout_ms == GASPI_TEST)
   {
-    for (n = notification_begin; n < (notification_begin + num); n++)
+    for (gaspi_notification_id_t n = notification_begin;
+         n < (notification_begin + num);
+         n++)
     {
       if (p[n])
       {
@@ -701,7 +701,9 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
 
   while (loop)
   {
-    for (n = notification_begin; n < (notification_begin + num); n++)
+    for (gaspi_notification_id_t n = notification_begin;
+         n < (notification_begin + num);
+         n++)
     {
       if (p[n])
       {

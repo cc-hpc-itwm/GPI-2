@@ -95,8 +95,7 @@ _gaspi_handle_env_mpi (gaspi_context_t * ctx)
   ctx->localSocket = 0;
 
   //set socket
-  int i;
-  for (i = 0; i < mpi_nnodes; i++)
+  for (int i = 0; i < mpi_nnodes; i++)
   {
     if (strcmp (ninfo.host, hosts[i].host) == 0)
     {
@@ -131,7 +130,7 @@ _gaspi_handle_env_mpi (gaspi_context_t * ctx)
       return -1;
     }
 
-    for (i = 0; i < mpi_nnodes; i++)
+    for (int i = 0; i < mpi_nnodes; i++)
     {
       fprintf (mfile, "%s\n", hosts[i].host);
     }

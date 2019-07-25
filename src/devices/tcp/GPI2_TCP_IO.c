@@ -119,8 +119,8 @@ pgaspi_dev_purge (gaspi_context_t * const gctx,
 
   const gaspi_cycles_t s0 = gaspi_get_cycles();
 
-  int ne = 0, i;
-  for (i = 0; i < nr; i++)
+  int ne = 0;
+  for (int i = 0; i < nr; i++)
   {
     do
     {
@@ -158,8 +158,8 @@ pgaspi_dev_wait (gaspi_context_t * const gctx,
   const int nr = gctx->ne_count_c[queue];
   const gaspi_cycles_t s0 = gaspi_get_cycles();
 
-  int ne = 0, i;
-  for (i = 0; i < nr; i++)
+  int ne = 0;
+  for (int i = 0; i < nr; i++)
   {
     do
     {
@@ -253,8 +253,7 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
 
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
-  gaspi_number_t i;
-  for (i = 0; i < num; i++)
+  for (gaspi_number_t i = 0; i < num; i++)
   {
     tcp_dev_wr_t wr = {
       .wr_id = rank,
@@ -300,8 +299,7 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
   }
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
-  gaspi_number_t i;
-  for (i = 0; i < num; i++)
+  for (gaspi_number_t i = 0; i < num; i++)
   {
     tcp_dev_wr_t wr =
       {

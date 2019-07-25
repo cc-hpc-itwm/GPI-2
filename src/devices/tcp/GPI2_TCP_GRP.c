@@ -60,8 +60,8 @@ pgaspi_dev_poll_groups (gaspi_context_t * const gctx)
 
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
-  int i, ne = 0;
-  for (i = 0; i < nr; i++)
+  int ne = 0;
+  for (int i = 0; i < nr; i++)
   {
     do
     {

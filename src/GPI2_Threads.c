@@ -74,7 +74,7 @@ gaspi_threads_get_total (gaspi_int * const num)
 gaspi_return_t
 gaspi_threads_get_num_cores (gaspi_int * const cores)
 {
-  int i, n;
+  int n;
   cpu_set_t tmask;
 
   GASPI_VERIFY_NULL_PTR (cores);
@@ -85,7 +85,7 @@ gaspi_threads_get_num_cores (gaspi_int * const cores)
     return GASPI_ERROR;
   }
 
-  for (i = n = 0; i < CPU_SETSIZE; i++)
+  for (int i = n = 0; i < CPU_SETSIZE; i++)
   {
     if (CPU_ISSET (i, &tmask))
     {
@@ -200,8 +200,6 @@ gaspi_threads_run (void *(*function) (void *), void *arg)
 void
 gaspi_threads_sync (void)
 {
-  int i;
-
   const int ID = __gaspi_thread_tid;
   const int MAX = __gaspi_thread_tnc;
 
@@ -211,10 +209,10 @@ gaspi_threads_sync (void)
     if (ID == 0)
     {
       //memset((void*)__gaspiThreadsCount1,0,MAX);
-      for (i = 0; i < MAX; i++)
+      for (int i = 0; i < MAX; i++)
         __gaspiThreadsCount1[i] = 0;
 
-      for (i = 1; i < MAX; i++)
+      for (int i = 1; i < MAX; i++)
       {
         while (__gaspiThreadsCount0[i] == 0)
           GASPI_DELAY();
@@ -236,12 +234,12 @@ gaspi_threads_sync (void)
     if (ID == 0)
     {
       //memset((void*)__gaspiThreadsCount0,0,MAX);
-      for (i = 0; i < MAX; i++)
+      for (int i = 0; i < MAX; i++)
       {
         __gaspiThreadsCount0[i] = 0;
       }
 
-      for (i = 1; i < MAX; i++)
+      for (int i = 1; i < MAX; i++)
       {
         while (__gaspiThreadsCount1[i] == 0)
           GASPI_DELAY();
@@ -265,7 +263,6 @@ gaspi_return_t
 gaspi_threads_sync_all (const gaspi_group_t g,
                         const gaspi_timeout_t timeout_ms)
 {
-  int i;
   gaspi_return_t ret;
   const int ID = __gaspi_thread_tid;
   const int MAX = __gaspi_thread_tnc;
@@ -276,10 +273,10 @@ gaspi_threads_sync_all (const gaspi_group_t g,
     if (ID == 0)
     {
       //memset((void*)__gaspiThreadsCount1,0,MAX);
-      for (i = 0; i < MAX; i++)
+      for (int i = 0; i < MAX; i++)
         __gaspiThreadsCount1[i] = 0;
 
-      for (i = 1; i < MAX; i++)
+      for (int i = 1; i < MAX; i++)
       {
         while (__gaspiThreadsCount0[i] == 0)
           GASPI_DELAY();
@@ -308,10 +305,10 @@ gaspi_threads_sync_all (const gaspi_group_t g,
     if (ID == 0)
     {
       //memset((void*)__gaspiThreadsCount0,0,MAX);
-      for (i = 0; i < MAX; i++)
+      for (int i = 0; i < MAX; i++)
         __gaspiThreadsCount0[i] = 0;
 
-      for (i = 1; i < MAX; i++)
+      for (int i = 1; i < MAX; i++)
       {
         while (__gaspiThreadsCount1[i] == 0)
           GASPI_DELAY();
