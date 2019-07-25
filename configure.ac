@@ -14,7 +14,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([config])
 AC_CONFIG_HEADERS([config.h])
 
-# HACK LIBTOOL FLAGS
+# OVERWRITE LIBTOOL FLAGS
 if test -z "${CFLAGS}"; then
 CFLAGS=
 fi
@@ -32,10 +32,27 @@ AC_CONFIG_FILES([Makefile
 	src/Makefile
 	tests/Makefile
 	tests/tests/Makefile
+	tests/tests/atomic/Makefile
+	tests/tests/cm/Makefile
+	tests/tests/collectives/Makefile
+	tests/tests/comm/Makefile
+	tests/tests/config/Makefile
+	tests/tests/error_vec/Makefile
+	tests/tests/extensions/Makefile
+	tests/tests/fortran/Makefile
+	tests/tests/groups/Makefile
+	tests/tests/init/Makefile
+	tests/tests/lists/Makefile
+	tests/tests/mpi/Makefile
+	tests/tests/notifications/Makefile
+	tests/tests/passive/Makefile
+	tests/tests/segments/Makefile
+	tests/tests/threads/Makefile
+	tests/tests/utils/Makefile
 	tests/microbenchmarks/Makefile
 	tutorial/code/Makefile
 	])
-AM_INIT_AUTOMAKE([subdir-objects foreign])
+AM_INIT_AUTOMAKE([foreign])
 
 # LIBTOOL
 AC_DISABLE_SHARED
