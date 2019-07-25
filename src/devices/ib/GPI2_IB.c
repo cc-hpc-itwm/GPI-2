@@ -938,14 +938,20 @@ _pgaspi_dev_qp_set_ready (gaspi_context_t const *const gctx, struct ibv_qp *qp,
   switch (gctx->config->dev_config.params.ib.mtu)
   {
     case 1024:
-      qp_attr.path_mtu = IBV_MTU_1024;
-      break;
+      {
+        qp_attr.path_mtu = IBV_MTU_1024;
+        break;
+      }
     case 2048:
-      qp_attr.path_mtu = IBV_MTU_2048;
-      break;
+      {
+        qp_attr.path_mtu = IBV_MTU_2048;
+        break;
+      }
     case 4096:
-      qp_attr.path_mtu = IBV_MTU_4096;
-      break;
+      {
+        qp_attr.path_mtu = IBV_MTU_4096;
+        break;
+      }
     default:
       {
         GASPI_DEBUG_PRINT_ERROR ("Invalid MTU in configuration (%d)",

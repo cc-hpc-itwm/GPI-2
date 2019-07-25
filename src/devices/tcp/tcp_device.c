@@ -539,63 +539,64 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
     {
       /* TOPOLOGY OPERATIONS */
     case REGISTER_PEER:
+    {
       estate->rank = estate->wr_buff.source;
       rank_state[estate->rank] = estate;
 
       _tcp_dev_set_default_read_conn_state (estate);
 
       break;
-
-      /* RDMA OPERATIONS */
+    }
+    /* RDMA OPERATIONS */
     case POST_RDMA_WRITE:
     case POST_RDMA_WRITE_INLINED:
     case POST_RDMA_READ:
-
-      if (estate->wr_buff.opcode == POST_RDMA_READ)
       {
-        op = TCP_DEV_WC_RDMA_READ;
-      }
-      else
-      {
-        op = TCP_DEV_WC_RDMA_WRITE;
-      }
-
-      /* local operation: do it right away */
-      if (estate->wr_buff.target == tcp_dev_id)
-      {
-        void *src;
-        void *dest;
-
         if (estate->wr_buff.opcode == POST_RDMA_READ)
         {
-          src = (void *) estate->wr_buff.remote_addr;
-          dest = (void *) estate->wr_buff.local_addr;
+          op = TCP_DEV_WC_RDMA_READ;
         }
         else
         {
-          src = (void *) estate->wr_buff.local_addr;
-          dest = (void *) estate->wr_buff.remote_addr;
+          op = TCP_DEV_WC_RDMA_WRITE;
         }
 
-        memcpy (dest, src, estate->wr_buff.length);
-
-        if (_tcp_dev_post_wc (estate->wr_buff.wr_id,
-                              TCP_WC_SUCCESS,
-                              op, estate->wr_buff.cq_handle) != 0)
+        /* local operation: do it right away */
+        if (estate->wr_buff.target == tcp_dev_id)
         {
-          return 1;
-        }
+          void *src;
+          void *dest;
 
-        /* release memory of inlined writes */
-        if (estate->wr_buff.opcode == POST_RDMA_WRITE_INLINED)
-        {
-          free (src);
-        }
-      }
-      else
-      {
-        tcp_dev_wr_t wr =
+          if (estate->wr_buff.opcode == POST_RDMA_READ)
           {
+            src = (void *) estate->wr_buff.remote_addr;
+            dest = (void *) estate->wr_buff.local_addr;
+          }
+          else
+          {
+            src = (void *) estate->wr_buff.local_addr;
+            dest = (void *) estate->wr_buff.remote_addr;
+          }
+
+          memcpy (dest, src, estate->wr_buff.length);
+
+          if (_tcp_dev_post_wc (estate->wr_buff.wr_id,
+                                TCP_WC_SUCCESS,
+                                op, estate->wr_buff.cq_handle) != 0)
+          {
+            return 1;
+          }
+
+          /* release memory of inlined writes */
+          if (estate->wr_buff.opcode == POST_RDMA_WRITE_INLINED)
+          {
+            free (src);
+          }
+        }
+        else
+        {
+          tcp_dev_wr_t wr =
+            {
             .wr_id = estate->wr_buff.wr_id,
             .cq_handle = estate->wr_buff.cq_handle,
             .source = estate->wr_buff.source,
@@ -604,57 +605,235 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
             .remote_addr = estate->wr_buff.remote_addr,
             .length = estate->wr_buff.length,
             .swap = 0
-          };
+            };
 
-        if (estate->wr_buff.opcode == POST_RDMA_READ)
+          if (estate->wr_buff.opcode == POST_RDMA_READ)
+          {
+            wr.opcode = REQUEST_RDMA_READ;
+            wr.compare_add = 0;
+          }
+          else
+          {
+            wr.opcode = NOTIFICATION_RDMA_WRITE;
+            wr.compare_add = (estate->wr_buff.opcode == POST_RDMA_WRITE) ? 0 : 1;       /* indicates inlined */
+          }
+
+          /* TODO: check retval */
+          list_insert (&delayedList, &wr);
+        }
+
+        _tcp_dev_set_default_read_conn_state (estate);
+
+        break;
+      }
+    case POST_ATOMIC_CMP_AND_SWP:
+    case POST_ATOMIC_FETCH_AND_ADD:
+      {
+        if (estate->wr_buff.opcode == POST_ATOMIC_FETCH_AND_ADD)
         {
-          wr.opcode = REQUEST_RDMA_READ;
-          wr.compare_add = 0;
+          op = TCP_DEV_WC_FETCH_ADD;
         }
         else
         {
-          wr.opcode = NOTIFICATION_RDMA_WRITE;
-          wr.compare_add = (estate->wr_buff.opcode == POST_RDMA_WRITE) ? 0 : 1;       /* indicates inlined */
+          op = TCP_DEV_WC_CMP_SWAP;
         }
 
-        /* TODO: check retval */
-        list_insert (&delayedList, &wr);
-      }
-
-      _tcp_dev_set_default_read_conn_state (estate);
-
-      break;
-
-    case POST_ATOMIC_CMP_AND_SWP:
-    case POST_ATOMIC_FETCH_AND_ADD:
-
-      if (estate->wr_buff.opcode == POST_ATOMIC_FETCH_AND_ADD)
-      {
-        op = TCP_DEV_WC_FETCH_ADD;
-      }
-      else
-      {
-        op = TCP_DEV_WC_CMP_SWAP;
-      }
-
-      if (estate->wr_buff.target == tcp_dev_id)
-      {
-        uint64_t *ptr = (uint64_t *) estate->wr_buff.remote_addr;
-        uint64_t *dest = (uint64_t *) estate->wr_buff.local_addr;
-
-        /* return old value */
-        *dest = *ptr;
-
-        if (estate->wr_buff.opcode == POST_ATOMIC_CMP_AND_SWP)
+        if (estate->wr_buff.target == tcp_dev_id)
         {
-          if (*ptr == estate->wr_buff.compare_add)
+          uint64_t *ptr = (uint64_t *) estate->wr_buff.remote_addr;
+          uint64_t *dest = (uint64_t *) estate->wr_buff.local_addr;
+
+          /* return old value */
+          *dest = *ptr;
+
+          if (estate->wr_buff.opcode == POST_ATOMIC_CMP_AND_SWP)
           {
-            *ptr = estate->wr_buff.swap;
+            if (*ptr == estate->wr_buff.compare_add)
+            {
+              *ptr = estate->wr_buff.swap;
+            }
+          }
+          else if (estate->wr_buff.opcode == POST_ATOMIC_FETCH_AND_ADD)
+          {
+            *ptr += estate->wr_buff.compare_add;
+          }
+
+          if (_tcp_dev_post_wc (estate->wr_buff.wr_id,
+                                TCP_WC_SUCCESS,
+                                op, estate->wr_buff.cq_handle) != 0)
+          {
+            return 1;
           }
         }
-        else if (estate->wr_buff.opcode == POST_ATOMIC_FETCH_AND_ADD)
+        else
         {
-          *ptr += estate->wr_buff.compare_add;
+          tcp_dev_wr_t wr =
+            {
+              .wr_id = estate->wr_buff.wr_id,
+              .cq_handle = estate->wr_buff.cq_handle,
+              .source = estate->wr_buff.source,
+              .target = estate->wr_buff.target,
+              .local_addr = estate->wr_buff.local_addr,
+              .remote_addr = estate->wr_buff.remote_addr,
+              .length = estate->wr_buff.length,
+              .compare_add = estate->wr_buff.compare_add
+            };
+
+          if (op == TCP_DEV_WC_FETCH_ADD)
+          {
+            wr.swap = 0;
+            wr.opcode = REQUEST_ATOMIC_FETCH_AND_ADD;
+          }
+          else if (op == TCP_DEV_WC_CMP_SWAP)
+          {
+            wr.swap = estate->wr_buff.swap;
+            wr.opcode = REQUEST_ATOMIC_CMP_AND_SWP;
+          }
+
+        /* TODO: retval */
+          list_insert (&delayedList, &wr);
+        }
+        _tcp_dev_set_default_read_conn_state (estate);
+
+        break;
+      }
+    case POST_SEND:
+    case POST_SEND_INLINED:
+      {
+        {
+          tcp_dev_wr_t wr =
+            {
+              .wr_id = estate->wr_buff.wr_id,
+              .cq_handle = estate->wr_buff.cq_handle,
+              .opcode = NOTIFICATION_SEND,
+              .source = estate->wr_buff.source,
+              .target = estate->wr_buff.target,
+              .local_addr = estate->wr_buff.local_addr,
+              .remote_addr = estate->wr_buff.remote_addr,
+              .length = estate->wr_buff.length,
+              .compare_add = estate->wr_buff.compare_add
+            };
+
+          list_insert (&delayedList, &wr);
+
+          _tcp_dev_set_default_read_conn_state (estate);
+        }
+
+        break;
+      }
+    case POST_RECV:
+      {
+        list_insert (&recvList, &(estate->wr_buff));
+
+        _tcp_dev_set_default_read_conn_state (estate);
+
+        break;
+      }
+    case NOTIFICATION_RDMA_WRITE:
+      {
+        estate->read.wr_id = estate->wr_buff.wr_id;
+        estate->read.cq_handle = estate->wr_buff.cq_handle;
+        estate->read.opcode = RECV_RDMA_WRITE;
+        estate->read.addr = estate->wr_buff.remote_addr;
+        estate->read.length = estate->wr_buff.length;
+        estate->read.done = 0;
+
+        break;
+      }
+    case REQUEST_RDMA_READ:
+      {
+        {
+          tcp_dev_wr_t wr =
+            {
+              .wr_id = estate->wr_buff.wr_id,
+              .cq_handle = estate->wr_buff.cq_handle,
+              .opcode = RESPONSE_RDMA_READ,
+              .source = estate->wr_buff.target,
+              .target = estate->wr_buff.source,
+              .local_addr = estate->wr_buff.remote_addr,
+              .remote_addr = estate->wr_buff.local_addr,
+              .length = estate->wr_buff.length,
+              .compare_add = estate->wr_buff.compare_add,
+              .swap = estate->wr_buff.swap
+            };
+
+          list_insert (&delayedList, &wr);
+        }
+        _tcp_dev_set_default_read_conn_state (estate);
+
+        break;
+      }
+    case RESPONSE_RDMA_READ:
+      {
+        estate->read.wr_id = estate->wr_buff.wr_id;
+        estate->read.cq_handle = estate->wr_buff.cq_handle;
+        estate->read.opcode = RECV_RDMA_READ;
+        estate->read.addr = estate->wr_buff.remote_addr;
+        estate->read.length = estate->wr_buff.length;
+        estate->read.done = 0;
+        break;
+      }
+    case REQUEST_ATOMIC_CMP_AND_SWP:
+    case REQUEST_ATOMIC_FETCH_AND_ADD:
+      {
+        {
+          tcp_dev_wr_t wr =
+            {
+              .wr_id = estate->wr_buff.wr_id,
+              .cq_handle = estate->wr_buff.cq_handle,
+              .opcode =
+              (estate->wr_buff.opcode ==
+               REQUEST_ATOMIC_CMP_AND_SWP) ? RESPONSE_ATOMIC_CMP_AND_SWP :
+              RESPONSE_ATOMIC_FETCH_AND_ADD,
+              .source = estate->wr_buff.target,
+              .target = estate->wr_buff.source,
+              .local_addr = estate->wr_buff.remote_addr,
+              .remote_addr = estate->wr_buff.local_addr,
+              .length = estate->wr_buff.length,
+              .compare_add = estate->wr_buff.compare_add,
+              .swap = estate->wr_buff.swap
+            };
+
+          uint64_t *ptr = (uint64_t *) estate->wr_buff.remote_addr;
+
+          if (estate->wr_buff.opcode == REQUEST_ATOMIC_CMP_AND_SWP)
+          {
+        const uint64_t old = *ptr;
+
+        if (*ptr == estate->wr_buff.compare_add)
+        {
+          *ptr = estate->wr_buff.swap;
+        }
+        wr.compare_add = old;
+          }
+          else if (estate->wr_buff.opcode == REQUEST_ATOMIC_FETCH_AND_ADD)
+          {
+            wr.compare_add = *ptr;
+            *ptr += estate->wr_buff.compare_add;
+          }
+
+          list_insert (&delayedList, &wr);;
+        }
+        _tcp_dev_set_default_read_conn_state (estate);
+
+        break;
+      }
+    case RESPONSE_ATOMIC_CMP_AND_SWP:
+    case RESPONSE_ATOMIC_FETCH_AND_ADD:
+      {
+        {
+          uint64_t *ptr = (uint64_t *) estate->wr_buff.remote_addr;
+
+          *ptr = estate->wr_buff.compare_add;
+        }
+
+        if (estate->wr_buff.opcode == RESPONSE_ATOMIC_CMP_AND_SWP)
+        {
+          op = TCP_DEV_WC_CMP_SWAP;
+        }
+        else
+        {
+          op = TCP_DEV_WC_FETCH_ADD;
         }
 
         if (_tcp_dev_post_wc (estate->wr_buff.wr_id,
@@ -663,239 +842,78 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
         {
           return 1;
         }
+
+        _tcp_dev_set_default_read_conn_state (estate);
+
+        break;
       }
-      else
-      {
-        tcp_dev_wr_t wr =
-          {
-            .wr_id = estate->wr_buff.wr_id,
-            .cq_handle = estate->wr_buff.cq_handle,
-            .source = estate->wr_buff.source,
-            .target = estate->wr_buff.target,
-            .local_addr = estate->wr_buff.local_addr,
-            .remote_addr = estate->wr_buff.remote_addr,
-            .length = estate->wr_buff.length,
-            .compare_add = estate->wr_buff.compare_add
-          };
-
-        if (op == TCP_DEV_WC_FETCH_ADD)
-        {
-          wr.swap = 0;
-          wr.opcode = REQUEST_ATOMIC_FETCH_AND_ADD;
-        }
-        else if (op == TCP_DEV_WC_CMP_SWAP)
-        {
-          wr.swap = estate->wr_buff.swap;
-          wr.opcode = REQUEST_ATOMIC_CMP_AND_SWP;
-        }
-
-        /* TODO: retval */
-        list_insert (&delayedList, &wr);
-      }
-      _tcp_dev_set_default_read_conn_state (estate);
-
-      break;
-    case POST_SEND:
-    case POST_SEND_INLINED:
-    {
-      tcp_dev_wr_t wr =
-        {
-          .wr_id = estate->wr_buff.wr_id,
-          .cq_handle = estate->wr_buff.cq_handle,
-          .opcode = NOTIFICATION_SEND,
-          .source = estate->wr_buff.source,
-          .target = estate->wr_buff.target,
-          .local_addr = estate->wr_buff.local_addr,
-          .remote_addr = estate->wr_buff.remote_addr,
-          .length = estate->wr_buff.length,
-          .compare_add = estate->wr_buff.compare_add
-        };
-
-      list_insert (&delayedList, &wr);
-
-      _tcp_dev_set_default_read_conn_state (estate);
-    }
-
-    break;
-    case POST_RECV:
-      list_insert (&recvList, &(estate->wr_buff));
-
-      _tcp_dev_set_default_read_conn_state (estate);
-
-      break;
-    case NOTIFICATION_RDMA_WRITE:
-      estate->read.wr_id = estate->wr_buff.wr_id;
-      estate->read.cq_handle = estate->wr_buff.cq_handle;
-      estate->read.opcode = RECV_RDMA_WRITE;
-      estate->read.addr = estate->wr_buff.remote_addr;
-      estate->read.length = estate->wr_buff.length;
-      estate->read.done = 0;
-
-      break;
-    case REQUEST_RDMA_READ:
-    {
-      tcp_dev_wr_t wr =
-        {
-          .wr_id = estate->wr_buff.wr_id,
-          .cq_handle = estate->wr_buff.cq_handle,
-          .opcode = RESPONSE_RDMA_READ,
-          .source = estate->wr_buff.target,
-          .target = estate->wr_buff.source,
-          .local_addr = estate->wr_buff.remote_addr,
-          .remote_addr = estate->wr_buff.local_addr,
-          .length = estate->wr_buff.length,
-          .compare_add = estate->wr_buff.compare_add,
-          .swap = estate->wr_buff.swap
-        };
-
-      list_insert (&delayedList, &wr);
-    }
-    _tcp_dev_set_default_read_conn_state (estate);
-
-    break;
-    case RESPONSE_RDMA_READ:
-
-      estate->read.wr_id = estate->wr_buff.wr_id;
-      estate->read.cq_handle = estate->wr_buff.cq_handle;
-      estate->read.opcode = RECV_RDMA_READ;
-      estate->read.addr = estate->wr_buff.remote_addr;
-      estate->read.length = estate->wr_buff.length;
-      estate->read.done = 0;
-      break;
-
-    case REQUEST_ATOMIC_CMP_AND_SWP:
-    case REQUEST_ATOMIC_FETCH_AND_ADD:
-    {
-      tcp_dev_wr_t wr =
-        {
-          .wr_id = estate->wr_buff.wr_id,
-          .cq_handle = estate->wr_buff.cq_handle,
-          .opcode =
-          (estate->wr_buff.opcode ==
-           REQUEST_ATOMIC_CMP_AND_SWP) ? RESPONSE_ATOMIC_CMP_AND_SWP :
-          RESPONSE_ATOMIC_FETCH_AND_ADD,
-          .source = estate->wr_buff.target,
-          .target = estate->wr_buff.source,
-          .local_addr = estate->wr_buff.remote_addr,
-          .remote_addr = estate->wr_buff.local_addr,
-          .length = estate->wr_buff.length,
-          .compare_add = estate->wr_buff.compare_add,
-          .swap = estate->wr_buff.swap
-        };
-
-      uint64_t *ptr = (uint64_t *) estate->wr_buff.remote_addr;
-
-      if (estate->wr_buff.opcode == REQUEST_ATOMIC_CMP_AND_SWP)
-      {
-        const uint64_t old = *ptr;
-
-        if (*ptr == estate->wr_buff.compare_add)
-        {
-          *ptr = estate->wr_buff.swap;
-        }
-        wr.compare_add = old;
-      }
-      else if (estate->wr_buff.opcode == REQUEST_ATOMIC_FETCH_AND_ADD)
-      {
-        wr.compare_add = *ptr;
-        *ptr += estate->wr_buff.compare_add;
-      }
-
-      list_insert (&delayedList, &wr);;
-    }
-    _tcp_dev_set_default_read_conn_state (estate);
-
-    break;
-    case RESPONSE_ATOMIC_CMP_AND_SWP:
-    case RESPONSE_ATOMIC_FETCH_AND_ADD:
-    {
-      uint64_t *ptr = (uint64_t *) estate->wr_buff.remote_addr;
-
-      *ptr = estate->wr_buff.compare_add;
-    }
-
-    if (estate->wr_buff.opcode == RESPONSE_ATOMIC_CMP_AND_SWP)
-    {
-      op = TCP_DEV_WC_CMP_SWAP;
-    }
-    else
-    {
-      op = TCP_DEV_WC_FETCH_ADD;
-    }
-
-    if (_tcp_dev_post_wc (estate->wr_buff.wr_id,
-                          TCP_WC_SUCCESS,
-                          op, estate->wr_buff.cq_handle) != 0)
-    {
-      return 1;
-    }
-
-    _tcp_dev_set_default_read_conn_state (estate);
-
-    break;
     case NOTIFICATION_SEND:
-      if (recvList.count)
       {
-        tcp_dev_wr_t swr = estate->wr_buff;
-        tcp_dev_wr_t rwr = recvList.first->wr;
-
-        int found = 0;
-
-        listNode *to_remove = recvList.first;
-
-        while (to_remove != NULL)
+        if (recvList.count)
         {
-          if (swr.length <= to_remove->wr.length)
+          tcp_dev_wr_t swr = estate->wr_buff;
+          tcp_dev_wr_t rwr = recvList.first->wr;
+
+          int found = 0;
+
+          listNode *to_remove = recvList.first;
+
+          while (to_remove != NULL)
           {
-            rwr = to_remove->wr;
-            found = 1;
+            if (swr.length <= to_remove->wr.length)
+            {
+              rwr = to_remove->wr;
+              found = 1;
+              break;
+            }
+            to_remove = to_remove->next;
+          }
+          if (!found)
+          {
             break;
           }
-          to_remove = to_remove->next;
+
+          list_remove (&recvList, to_remove);
+
+          tcp_dev_wr_t wr =
+            {
+              .wr_id = swr.wr_id,
+              .cq_handle = swr.cq_handle,
+              .opcode = RESPONSE_SEND,
+              .source = swr.target,
+              .target = swr.source,
+              .local_addr = swr.local_addr,
+              .remote_addr = swr.remote_addr,
+              .length = swr.length,
+              .compare_add = swr.compare_add,
+              .swap = swr.swap
+            };
+
+          list_insert (&delayedList, &wr);
+
+          estate->read.wr_id = estate->rank;
+          estate->read.cq_handle = rwr.cq_handle;
+          estate->read.opcode = RECV_SEND;
+          estate->read.addr = (uintptr_t) rwr.local_addr;
+          estate->read.length = swr.length;
+          estate->read.done = 0;
         }
-        if (!found)
-        {
-          break;
-        }
 
-        list_remove (&recvList, to_remove);
-
-        tcp_dev_wr_t wr =
-          {
-            .wr_id = swr.wr_id,
-            .cq_handle = swr.cq_handle,
-            .opcode = RESPONSE_SEND,
-            .source = swr.target,
-            .target = swr.source,
-            .local_addr = swr.local_addr,
-            .remote_addr = swr.remote_addr,
-            .length = swr.length,
-            .compare_add = swr.compare_add,
-            .swap = swr.swap
-          };
-
-        list_insert (&delayedList, &wr);
-
-        estate->read.wr_id = estate->rank;
-        estate->read.cq_handle = rwr.cq_handle;
-        estate->read.opcode = RECV_SEND;
-        estate->read.addr = (uintptr_t) rwr.local_addr;
-        estate->read.length = swr.length;
-        estate->read.done = 0;
+        break;
       }
-
-      break;
     case RESPONSE_SEND:
-      if (_tcp_dev_post_wc (estate->wr_buff.wr_id,
-                            TCP_WC_SUCCESS,
-                            TCP_DEV_WC_SEND, estate->wr_buff.cq_handle) != 0)
       {
-        return 1;
+        if (_tcp_dev_post_wc (estate->wr_buff.wr_id,
+                            TCP_WC_SUCCESS,
+                              TCP_DEV_WC_SEND, estate->wr_buff.cq_handle) != 0)
+        {
+          return 1;
+        }
+
+        _tcp_dev_set_default_read_conn_state (estate);
+
+        break;
       }
-
-      _tcp_dev_set_default_read_conn_state (estate);
-
-      break;
     }                           /* switch opcode */
   }                             /* if RECV_HEADER */
 
