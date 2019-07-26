@@ -60,3 +60,7 @@ clean-tutorial :
 clean-local :
 	make -C docs clean
 	make -C tutorial/code clean
+
+uninstall-hook:
+	-rm -fr $(prefix)/tests/
+	-rm $(DESTDIR)$(bindir)/gaspi_run
