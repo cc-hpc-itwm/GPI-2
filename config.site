@@ -1,0 +1,3 @@
+# /usr/local/share/config.site for platforms that prefer
+# the directory /usr/local/lib64 over /usr/local/lib.
+test "$libdir" = '${exec_prefix}/lib' && libdir='${exec_prefix}/lib64'

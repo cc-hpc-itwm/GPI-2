@@ -1,0 +1,9 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: GPI-2
+Description: GPI-2 library
+Version: @VERSION@
+Cflags: -I${includedir}

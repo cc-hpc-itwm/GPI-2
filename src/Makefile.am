@@ -77,5 +77,21 @@ gaspi_ext.mod : GASPI_Ext.f90 gaspi_types.mod gaspi.mod
 nodist_include_HEADERS = gaspi_types.mod gaspi.mod gaspi_ext.mod
 endif
 
+# PKG-CONFIG
+EXTRA_DIST += libgpi.pc.in
+
+DISTCLEANFILES = libgpc.pc
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libgpi.pc
+
+if WITH_INFINIBAND
+install-data-hook:
+	echo "Libs.private: @ac_lib_infiniband@ -libverbs -lpthread" >> $(libdir)/pkgconfig/libgpi.pc
+else
+install-data-hook:
+	echo "Libs.private: -lrt -lpthread" >> $(libdir)/pkgconfig/libgpi.pc
+endif
+
 # CLEAN
 CLEANFILES = *~ *.bak *.mod

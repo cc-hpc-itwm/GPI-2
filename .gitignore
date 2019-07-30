@@ -35,3 +35,5 @@ machines
 docs/Doxyfile
 docs/doxygen
 !docs/Doxyfile.in
+
+!src/libgpi.pc.in

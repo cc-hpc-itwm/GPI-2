@@ -13,6 +13,7 @@ AC_CONFIG_SRCDIR([src/GPI2.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([config])
 AC_CONFIG_HEADERS([config.h])
+export CONFIG_SITE=config.site
 
 # OVERWRITE LIBTOOL FLAGS
 if test -z "${CFLAGS}"; then
@@ -30,6 +31,7 @@ TITLE([Checking for C, standard headers and libs])
 AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_FILES([Makefile
 	src/Makefile
+	src/libgpi.pc
 	tests/Makefile
 	tests/tests/Makefile
 	tests/tests/atomic/Makefile
@@ -152,11 +154,13 @@ AM_CONDITIONAL([WITH_ETHERNET], test x${HAVE_TCP} = x1)
 if [test x${HAVE_TCP} = x1]; then
    cp tests/defs/default_tcp.def tests/defs/default.def
    options="$options Ethernet"
+   #AC_CONFIG_COMMANDS_PRE([echo "Libs.private: -lrt -lpthread" >> src/libgpi.pc])
 fi
 AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
 if [test x${HAVE_INFINIBAND} = x1]; then
    cp tests/defs/default_ib.def tests/defs/default.def
    options="$options Infiniband"
+   #echo "Libs.private: @ac_lib_infiniband@ -libverbs -lpthread" >> src/libgpi.pc
 fi
 
 # LOADLEVER
