@@ -9,6 +9,6 @@ clean:
 	-rm -rf doxygen doxyfile-stamp Doxyfile
 endif
 
-EXTRA_DIST = mainpage.dox
+EXTRA_DIST = Doxyfile.in mainpage.dox
 
 CLEANFILES = *~ *.bak doxyfile-stamp Doxyfile
