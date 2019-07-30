@@ -54,7 +54,7 @@ AC_CONFIG_FILES([Makefile
 	tests/microbenchmarks/Makefile
 	tutorial/code/Makefile
 	])
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
 
 # LIBTOOL
 AC_DISABLE_SHARED
@@ -154,13 +154,11 @@ AM_CONDITIONAL([WITH_ETHERNET], test x${HAVE_TCP} = x1)
 if [test x${HAVE_TCP} = x1]; then
    cp tests/defs/default_tcp.def tests/defs/default.def
    options="$options Ethernet"
-   #AC_CONFIG_COMMANDS_PRE([echo "Libs.private: -lrt -lpthread" >> src/libgpi.pc])
 fi
 AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
 if [test x${HAVE_INFINIBAND} = x1]; then
    cp tests/defs/default_ib.def tests/defs/default.def
    options="$options Infiniband"
-   #echo "Libs.private: @ac_lib_infiniband@ -libverbs -lpthread" >> src/libgpi.pc
 fi
 
 # LOADLEVER
