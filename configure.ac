@@ -7,13 +7,13 @@ echo '   $1   ' | sed -e's/./-/g' >&AS_MESSAGE_FD
 ])
 
 # INITS
+export CONFIG_SITE=`pwd`/config.site
 AC_PREREQ([2.63])
 AC_INIT([GPI], [1.3.0], [http://gpi-site.com.www488.your-server.de/contact/])
 AC_CONFIG_SRCDIR([src/GPI2.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([config])
 AC_CONFIG_HEADERS([config.h])
-export CONFIG_SITE=config.site
 
 # OVERWRITE LIBTOOL FLAGS
 if test -z "${CFLAGS}"; then
