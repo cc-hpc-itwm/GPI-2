@@ -21,6 +21,16 @@ config.status
 stamp-h1
 doxyfile-stamp
 Makefile
+aclocal.m4
+build-aux/
+config/libtool.m4
+config/ltoptions.m4
+config/ltsugar.m4
+config/ltversion.m4
+config/lt~obsolete.m4
+configure
+src/libgpi.pc
+!src/libgpi.pc.in
 
 *.bin
 *.exe
@@ -35,5 +45,3 @@ machines
 docs/Doxyfile
 docs/doxygen
 !docs/Doxyfile.in
-
-!src/libgpi.pc.in
