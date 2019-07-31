@@ -23,14 +23,14 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GASPI.h"
 
-/* Number of collectives possibilities ( Types x Ops) */
+/* Number of collectives possibilities (Types x Ops) */
 #define GASPI_COLL_OP_TYPES 18
 
 typedef enum
-  {
-    GASPI_OP,
-    GASPI_USER
-  }redux_type_t;
+{
+  GASPI_OP,
+  GASPI_USER
+} redux_type_t;
 
 struct redux_args
 {
@@ -50,13 +50,13 @@ struct redux_args
     {
       gaspi_reduce_operation_t user_fct;
       gaspi_reduce_state_t rstate;
-    } ;
+    };
   } f_args;
 };
 
-void (*fctArrayGASPI[GASPI_COLL_OP_TYPES]) (void *, void *, void *, const int cnt);
+void (*fctArrayGASPI[GASPI_COLL_OP_TYPES]) (void *, void *, void *,
+                                            const int cnt);
 
-void
-gaspi_init_collectives (void);
+void gaspi_init_collectives (void);
 
 #endif //_GPI2_COLL_H_

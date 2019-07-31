@@ -71,7 +71,7 @@ extern "C"
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
-  gaspi_return_t gaspi_machine_type (char const machine_type[16]);
+  gaspi_return_t gaspi_machine_type (char const machine_type[64]);
 
     /** Get the CPU frequency.
    *

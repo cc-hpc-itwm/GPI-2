@@ -27,65 +27,68 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_IB.h"
 
 int
-pgaspi_dev_register_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t* seg)
+pgaspi_dev_register_mem (gaspi_context_t const *const gctx,
+                         gaspi_rc_mseg_t * seg)
 {
-  gaspi_ib_ctx * const ib_dev_ctx = (gaspi_ib_ctx*) gctx->device->ctx;
+  gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
   seg->mr[0] = ibv_reg_mr (ib_dev_ctx->pd,
-			   seg->data.buf,
-			   seg->size,
-			   IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
-			   IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
+                           seg->data.buf,
+                           seg->size,
+                           IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
+                           IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
 
   if (seg->mr[0] == NULL)
-    {
-      gaspi_debug_print_error ("Memory registration failed (libibverbs)");
-      return -1;
-    }
+  {
+    GASPI_DEBUG_PRINT_ERROR ("Memory registration failed (libibverbs)");
+    return -1;
+  }
 
   seg->rkey[0] = ((struct ibv_mr *) seg->mr[0])->rkey;
 
-  if(seg->notif_spc.buf != NULL)
+  if (seg->notif_spc.buf != NULL)
+  {
+    seg->mr[1] = ibv_reg_mr (ib_dev_ctx->pd,
+                             seg->notif_spc.buf,
+                             seg->notif_spc_size,
+                             IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
+                             IBV_ACCESS_REMOTE_READ |
+                             IBV_ACCESS_REMOTE_ATOMIC);
+
+    if (seg->mr[1] == NULL)
     {
-      seg->mr[1] = ibv_reg_mr (ib_dev_ctx->pd,
-			       seg->notif_spc.buf,
-			       seg->notif_spc_size,
-			       IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
-			       IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
-
-      if (seg->mr[1] == NULL)
-	{
-	  gaspi_debug_print_error ("Memory registration failed (libibverbs)");
-	  return -1;
-	}
-
-      seg->rkey[1] = ((struct ibv_mr *) seg->mr[1])->rkey;
+      GASPI_DEBUG_PRINT_ERROR ("Memory registration failed (libibverbs)");
+      return -1;
     }
+
+    seg->rkey[1] = ((struct ibv_mr *) seg->mr[1])->rkey;
+  }
 
   return 0;
 }
 
 int
-pgaspi_dev_unregister_mem(gaspi_context_t const * const gctx, gaspi_rc_mseg_t* seg)
+pgaspi_dev_unregister_mem (gaspi_context_t const *const gctx,
+                           gaspi_rc_mseg_t * seg)
 {
-  if( seg->mr[0] != NULL)
-    {
+  if (seg->mr[0] != NULL)
+  {
 
-      if (ibv_dereg_mr ((struct ibv_mr *)seg->mr[0]))
-	{
-	  gaspi_debug_print_error ("Memory de-registration failed (libibverbs)");
-	  return -1;
-	}
-    }
-
-  if( seg->mr[1] != NULL)
+    if (ibv_dereg_mr ((struct ibv_mr *) seg->mr[0]))
     {
-      if (ibv_dereg_mr ((struct ibv_mr *)seg->mr[1]))
-	{
-	  gaspi_debug_print_error ("Memory de-registration failed (libibverbs)");
-	  return -1;
-	}
+      GASPI_DEBUG_PRINT_ERROR ("Memory de-registration failed (libibverbs)");
+      return -1;
     }
+  }
+
+  if (seg->mr[1] != NULL)
+  {
+    if (ibv_dereg_mr ((struct ibv_mr *) seg->mr[1]))
+    {
+      GASPI_DEBUG_PRINT_ERROR ("Memory de-registration failed (libibverbs)");
+      return -1;
+    }
+  }
 
   return 0;
 }

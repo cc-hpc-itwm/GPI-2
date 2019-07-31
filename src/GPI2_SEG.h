@@ -34,7 +34,6 @@ typedef struct
 } gaspi_segment_descriptor_t;
 
 
-int
-gaspi_segment_set(const gaspi_segment_descriptor_t snp);
+int gaspi_segment_set (const gaspi_segment_descriptor_t snp);
 
 #endif //_GPI2_SEG_H_

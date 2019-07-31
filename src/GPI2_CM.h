@@ -21,25 +21,24 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "PGASPI.h"
 
+typedef enum
+{
+  GASPI_ENDPOINT_DISCONNECTED = 0,
+  GASPI_ENDPOINT_CONNECTED = 1
+} gaspi_endpoint_conn_status_t;
 
 typedef enum
-  {
-    GASPI_ENDPOINT_DISCONNECTED = 0,
-    GASPI_ENDPOINT_CONNECTED = 1
-  }gaspi_endpoint_conn_status_t;
-
-typedef enum
-  {
-    GASPI_ENDPOINT_NOT_CREATED = 0,
-    GASPI_ENDPOINT_CREATED = 1
-  }gaspi_endpoint_creation_status_t;
+{
+  GASPI_ENDPOINT_NOT_CREATED = 0,
+  GASPI_ENDPOINT_CREATED = 1
+} gaspi_endpoint_creation_status_t;
 
 /* Devices may have to exchange information when setting up a
    connection. */
 typedef struct
 {
-  void* local_info;
-  void* remote_info;
+  void *local_info;
+  void *remote_info;
   size_t info_size;
 } gaspi_dev_exch_info_t;
 
@@ -54,14 +53,16 @@ typedef struct
 } gaspi_endpoint_conn_t;
 
 gaspi_return_t
-pgaspi_create_endpoint_to(const gaspi_rank_t rank,
-			  gaspi_dev_exch_info_t* info,
-			  const gaspi_timeout_t timeout_ms);
+pgaspi_create_endpoint_to (const gaspi_rank_t rank,
+                           gaspi_dev_exch_info_t * info,
+                           const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
-pgaspi_connect_endpoint_to(const gaspi_rank_t target, const gaspi_timeout_t timeout_ms);
+pgaspi_connect_endpoint_to (const gaspi_rank_t target,
+                            const gaspi_timeout_t timeout_ms);
 
 gaspi_return_t
-pgaspi_local_disconnect(const gaspi_rank_t from, const gaspi_timeout_t timeout_ms);
+pgaspi_local_disconnect (const gaspi_rank_t from,
+                         const gaspi_timeout_t timeout_ms);
 
 #endif /* _GPI2_CM_H_ */

@@ -15,7 +15,8 @@
 /* - check that received data equals left neighbour */
 /* - clean-up */
 
-int main(int argc, char *argv[])
+int
+main (int argc, char *argv[])
 {
   int i;
   gaspi_rank_t rank, nprocs;
@@ -29,68 +30,69 @@ int main(int argc, char *argv[])
   gaspi_pointer_t pointer;
   const int num_elems = 1024;
 
-  TSUITE_INIT( argc, argv );
-  ASSERT( gaspi_proc_init( GASPI_BLOCK ) );
-  ASSERT( gaspi_proc_num( &nprocs ) );
-  ASSERT( gaspi_proc_rank( &rank ) );
+  TSUITE_INIT (argc, argv);
+  ASSERT (gaspi_proc_init (GASPI_BLOCK));
+  ASSERT (gaspi_proc_num (&nprocs));
+  ASSERT (gaspi_proc_rank (&rank));
 
   /* Create segment */
-  ASSERT( gaspi_segment_create ( segment_id, size,
-				 GASPI_GROUP_ALL, GASPI_BLOCK,
-				 GASPI_MEM_UNINITIALIZED ) );
+  ASSERT (gaspi_segment_create (segment_id, size,
+                                GASPI_GROUP_ALL, GASPI_BLOCK,
+                                GASPI_MEM_UNINITIALIZED));
 
-  ASSERT( gaspi_segment_ptr( segment_id, &pointer ) );
+  ASSERT (gaspi_segment_ptr (segment_id, &pointer));
 
-  ASSERT( gaspi_segment_bind ( segment_id_lower,
-			       pointer,
-			       num_elems * sizeof(int),
-			       memory_description ) );
+  ASSERT (gaspi_segment_bind (segment_id_lower,
+                              pointer,
+                              num_elems * sizeof (int), memory_description));
 
-  ASSERT( gaspi_segment_bind ( segment_id_upper,
-			       ((char *) pointer ) + num_elems * sizeof(int),
-			       num_elems * sizeof(int),
-			       memory_description ) );
+  ASSERT (gaspi_segment_bind (segment_id_upper,
+                              ((char *) pointer) + num_elems * sizeof (int),
+                              num_elems * sizeof (int), memory_description));
 
-  const gaspi_rank_t left = (rank + nprocs - 1 ) % nprocs;
+  const gaspi_rank_t left = (rank + nprocs - 1) % nprocs;
   const gaspi_rank_t right = (rank + nprocs + 1) % nprocs;
 
   /* Register upper segment with left neighbour (so that neighbour can
      write into it) */
-  ASSERT( gaspi_segment_register ( segment_id_upper, left, GASPI_BLOCK ) );
+  ASSERT (gaspi_segment_register (segment_id_upper, left, GASPI_BLOCK));
 
   /* Get pointer and fill in lower part of segment with data to write */
   gaspi_pointer_t seg_low_ptr;
-  ASSERT(gaspi_segment_ptr(segment_id_lower, &seg_low_ptr));
-  int * const buf = (int *) seg_low_ptr;
-  assert( buf != NULL);
+
+  ASSERT (gaspi_segment_ptr (segment_id_lower, &seg_low_ptr));
+  int *const buf = (int *) seg_low_ptr;
+
+  assert (buf != NULL);
 
   for (i = 0; i < num_elems; i++)
-    {
-      buf[i] = rank;
-    }
+  {
+    buf[i] = rank;
+  }
 
-  ASSERT( gaspi_barrier( GASPI_GROUP_ALL, GASPI_BLOCK) );
+  ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  ASSERT( gaspi_write_notify( segment_id_lower, 0, right,
-			      segment_id_upper, 0, num_elems * sizeof(int),
-			      0, 1,
-			      0, GASPI_BLOCK ) );
+  ASSERT (gaspi_write_notify (segment_id_lower, 0, right,
+                              segment_id_upper, 0, num_elems * sizeof (int),
+                              0, 1, 0, GASPI_BLOCK));
 
-  ASSERT( gaspi_notify_waitsome( segment_id_upper, 0, 1, &id, GASPI_BLOCK ) );
-  ASSERT( gaspi_wait( 0, GASPI_BLOCK ) );
+  ASSERT (gaspi_notify_waitsome (segment_id_upper, 0, 1, &id, GASPI_BLOCK));
+  ASSERT (gaspi_wait (0, GASPI_BLOCK));
 
   gaspi_pointer_t seg_up_ptr;
-  ASSERT( gaspi_segment_ptr( segment_id_upper, &seg_up_ptr ) );
 
-  int * const recv_buf = (int *) seg_up_ptr;
+  ASSERT (gaspi_segment_ptr (segment_id_upper, &seg_up_ptr));
+
+  int *const recv_buf = (int *) seg_up_ptr;
+
   for (i = 0; i < num_elems; i++)
-    {
-      assert(recv_buf[i] == left);
-    }
+  {
+    assert (recv_buf[i] == left);
+  }
 
-  ASSERT( gaspi_barrier( GASPI_GROUP_ALL, GASPI_BLOCK ) );
+  ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  ASSERT( gaspi_proc_term(GASPI_BLOCK ) );
+  ASSERT (gaspi_proc_term (GASPI_BLOCK));
 
   return EXIT_SUCCESS;
 }

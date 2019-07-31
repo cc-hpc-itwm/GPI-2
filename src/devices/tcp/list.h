@@ -21,21 +21,21 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "tcp_device.h"
 
-typedef struct listNode 
+typedef struct listNode
 {
   struct listNode *prev, *next;
   tcp_dev_wr_t wr;
 } listNode;
 
 
-typedef struct list 
+typedef struct list
 {
   struct listNode *first, *last;
   int count;
 } list;
 
-void list_remove(list *l, listNode *node);
-void list_insert(list *l, const tcp_dev_wr_t *wr);
-void list_clear(list *l);
+void list_remove (list * l, listNode * node);
+void list_insert (list * l, const tcp_dev_wr_t * wr);
+void list_clear (list * l);
 
 #endif /* _GPI2_LIST_H_ */
