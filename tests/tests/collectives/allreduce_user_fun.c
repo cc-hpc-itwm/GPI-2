@@ -12,9 +12,7 @@ gaspi_return_t
 my_fun (double *const a,
         double *const b,
         double *const r,
-        gaspi_state_t const state,
-        const gaspi_number_t num,
-        const gaspi_size_t elem_size, const gaspi_timeout_t tout)
+        const gaspi_number_t num)
 {
   gaspi_number_t i;
 

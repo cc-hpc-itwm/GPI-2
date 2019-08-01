@@ -1,8 +1,7 @@
 #include "utils.h"
 #include "common.h"
 
-int
-main (int argc, char *argv[])
+int main()
 {
   int l, i;
   gaspi_rank_t myrank;

@@ -2,8 +2,7 @@
 #include "common.h"
 #include <xmmintrin.h>
 
-int
-main (int argc, char *argv[])
+int main()
 {
   int i, j, t;
   gaspi_rank_t myrank;

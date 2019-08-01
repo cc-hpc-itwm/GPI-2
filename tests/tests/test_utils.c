@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include <test_utils.h>
 
@@ -65,7 +66,7 @@ tsuite_do_backtrace (int id, gaspi_rank_t node, FILE * bt_file)
 }
 
 void
-tsuite_sighandler (int signum, siginfo_t * info, void *ptr)
+tsuite_sighandler (int signum, siginfo_t * info, void * ptr)
 {
   FILE *bt_file;
   pid_t ptid = syscall (__NR_gettid);
@@ -81,7 +82,7 @@ tsuite_sighandler (int signum, siginfo_t * info, void *ptr)
   /* Use stdout for now */
   bt_file = stdout;
 
-  fprintf (bt_file, "Pid signal: pid %u\n", ptid);
+  fprintf (bt_file, "Pid signal: pid %u signum %d\n", ptid, signum);
   fprintf (bt_file, "Signal %d originates from process %lu (rank %d)\n",
            info->si_signo, (unsigned long) info->si_pid, nodeRank);
 

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <unistd.h>
 #include <GASPI.h>
 #include <GASPI_Ext.h>
 

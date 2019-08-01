@@ -57,7 +57,7 @@ main (int argc, char *argv[])
           (0, max_msg_size, rank2send, 0, 0, max_msg_size, 0, GASPI_BLOCK));
   ASSERT (gaspi_wait (0, GASPI_BLOCK));
 
-  int elem;
+  gaspi_size_t elem;
 
   for (elem = 0; elem < max_msg_size * 2; elem++)
   {

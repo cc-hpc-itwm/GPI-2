@@ -38,7 +38,7 @@ main(int argc, char *argv[])
 
   pGlbMem = ( int *) _vptr;
 
-  int i;
+  gaspi_size_t i;
   for(i = 0; i < segSize / sizeof(int); i++)
     {
       pGlbMem[i] = myrank;

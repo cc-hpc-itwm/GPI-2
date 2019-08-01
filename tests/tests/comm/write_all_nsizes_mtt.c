@@ -5,7 +5,7 @@
 gaspi_rank_t numranks, myrank;
 
 void
-work (int tid)
+work()
 {
   gaspi_rank_t rankSend;
   gaspi_offset_t localOff = 0;
@@ -23,6 +23,7 @@ work (int tid)
     for (rankSend = 0; rankSend < numranks; rankSend++)
     {
       gaspi_queue_size (1, &queueSize);
+
       if (queueSize > qmax - 100)
       {
         ASSERT (gaspi_wait (1, GASPI_BLOCK));
@@ -46,7 +47,7 @@ thread_fun (void *args)
 
   ASSERT (gaspi_threads_register (&tid));
 
-  work (tid);
+  work();
 
   return NULL;
 }

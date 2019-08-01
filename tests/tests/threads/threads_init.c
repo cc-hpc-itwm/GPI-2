@@ -19,8 +19,7 @@ hello_fun (void *dummy)
   return NULL;
 }
 
-int
-main (int argc, char *argv[])
+int main()
 {
   int i;
   int n;

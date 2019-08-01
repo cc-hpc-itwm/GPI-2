@@ -38,7 +38,7 @@ main (int argc, char *argv[])
 
   ASSERT (gaspi_segment_size (0, myrank, &segSize));
 
-  int i;
+  gaspi_size_t i;
   for (i = 0; i < segSize / sizeof (int); i++)
   {
     segInt[i] = myrank;

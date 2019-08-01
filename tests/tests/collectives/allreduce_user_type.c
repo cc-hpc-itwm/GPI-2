@@ -18,9 +18,7 @@ gaspi_return_t
 my_fun (struct elem *const a,
         struct elem *const b,
         struct elem *const r,
-        gaspi_state_t const state,
-        const gaspi_number_t num,
-        const gaspi_size_t elem_size, const gaspi_timeout_t tout)
+        const gaspi_number_t num)
 {
   gaspi_number_t i;
 

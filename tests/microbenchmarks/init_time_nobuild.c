@@ -4,8 +4,7 @@
 
 #include <GASPI.h>
 
-int
-main (int argc, char *argv[])
+int main()
 {
   struct timeval start_time, end_time;
   gaspi_rank_t proc_num;
@@ -36,7 +35,6 @@ main (int argc, char *argv[])
     printf ("Failed proc_term\n");
     return EXIT_FAILURE;
   }
-
 
   return EXIT_SUCCESS;
 }

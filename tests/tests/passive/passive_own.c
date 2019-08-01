@@ -1,5 +1,6 @@
 #include <GASPI_Threads.h>
 #include <test_utils.h>
+#include <unistd.h>
 
 #define RECV_OFF 1024
 
