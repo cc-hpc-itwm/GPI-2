@@ -40,8 +40,8 @@ lib_default_cflags += @ac_inc_mpi@
 endif
 
 # LOADLEVER SUPPORT
-if WITH_LOADLEVER
-lib_default_cflags += -DLOADLEVER
+if WITH_LOADLEVELER
+lib_default_cflags += -DLOADLEVELER
 endif
 
 # MAIN LIB

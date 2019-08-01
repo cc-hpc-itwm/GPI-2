@@ -164,13 +164,13 @@ if [test x${HAVE_INFINIBAND} = x1]; then
    options="$options Infiniband"
 fi
 
-# LOADLEVER
-AC_ARG_WITH(loadlever,[AS_HELP_STRING([--with-loadlever],[compile with loadlevel support])],
-		      [with_loadlever=$withval],
-		      [with_loadlever=no])
-AM_CONDITIONAL([WITH_LOADLEVER],[test $with_loadlever = yes])
-if test $with_loadlever = yes; then
-   batchsys=" Loadlever"
+# LOADLEVELER
+AC_ARG_WITH(loadleveler,[AS_HELP_STRING([--with-loadleveler],[compile with LoadLeveler support])],
+		      [with_loadleveler=$withval],
+		      [with_loadleveler=no])
+AM_CONDITIONAL([WITH_LOADLEVELER],[test $with_loadleveler = yes])
+if test $with_loadleveler = yes; then
+   batchsys=" LoadLeveler"
 fi
 
 # SLURM
@@ -178,7 +178,7 @@ AC_ARG_WITH(slurm,[AS_HELP_STRING([--with-slurm],[compile with slurm support])],
 		  [with_slurm=$withval],
 		  [with_slurm=no])
 AM_CONDITIONAL([WITH_SLURM],[test $with_slurm = yes])
-if test $with_loadlever = yes; then
+if test $with_slurm = yes; then
    batchsys=" Slurm"
 fi
 
@@ -196,7 +196,7 @@ AC_ARG_ENABLE([stat],[AS_HELP_STRING([--disable-stat], [do not build/install sta
 		     [build_stat=$enableval],
 		     [build_stat=yes])
 AM_CONDITIONAL([ENABLE_STAT],[test $build_stat = yes])
-if test $build_debug = yes; then
+if test $build_stat = yes; then
    gpilibs="$gpilibs statistics"
 fi
 

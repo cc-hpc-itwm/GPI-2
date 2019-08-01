@@ -22,7 +22,7 @@ check :
 
 # INSTALL RUN SCRIPTS
 bin_SCRIPTS = bin/gaspi_logger
-if WITH_LOADLEVER
+if WITH_LOADLEVELER
 install-exec-hook :
 	cp bin/gaspi_run.poe $(DESTDIR)$(bindir)/gaspi_run
 	head -n 18 bin/gaspi_cleanup > $(DESTDIR)$(bindir)/gaspi_cleanup
