@@ -57,7 +57,7 @@ AC_CONFIG_FILES([Makefile
 	tests/microbenchmarks/Makefile
 	tutorial/code/Makefile
 	])
-AM_INIT_AUTOMAKE([foreign subdir-objects])
+AM_INIT_AUTOMAKE([foreign subdir-objects no-dependencies])
 
 # LIBTOOL
 AC_DISABLE_SHARED
@@ -150,6 +150,7 @@ AC_ARG_WITH([ethernet],[AS_HELP_STRING([--with-ethernet], [compile for ethernet]
 		       [with_ethernet=$withval],
 		       [with_ethernet=no])
 
+#  WHAT DEVICE IS REALLY USABLE
 if test x${with_infiniband} != xno -a x${with_ethernet} = xno; then
    ACX_INFINIBAND
 fi
