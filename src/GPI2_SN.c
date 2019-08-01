@@ -411,40 +411,6 @@ _gaspi_sn_wait_connection (int port, gaspi_timeout_t timeout_ms)
   return nsock;
 }
 
-int
-gaspi_sn_barrier (const gaspi_timeout_t timeout_ms)
-{
-  gaspi_context_t const *const gctx = &glb_gaspi_ctx;
-  int rank, src, dst, mask;
-  int send_val = 1, recv_val = 2;
-  int size = gctx->tnc;
-
-  rank = gctx->rank;
-
-  mask = 0x1;
-  while (mask < size)
-  {
-    dst = (rank + mask) % size;
-    src = (rank - mask + size) % size;
-
-    if (gaspi_sn_writen (gctx->sockfd[dst], &send_val, sizeof (send_val))
-        != sizeof (send_val))
-    {
-      return GPI2_SN_ERROR;
-    }
-
-    if (gaspi_sn_readn (gctx->sockfd[src], &recv_val, sizeof (recv_val))
-        != sizeof (recv_val))
-    {
-      return GPI2_SN_ERROR;
-    }
-
-    mask <<= 1;
-  }
-
-  return 0;
-}
-
 static int
 gaspi_sn_recv_topology (gaspi_context_t * const gctx,
                         const gaspi_timeout_t timeout_ms)
