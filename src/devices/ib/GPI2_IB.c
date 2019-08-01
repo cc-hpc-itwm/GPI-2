@@ -391,7 +391,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
     return -1;
   }
 
-  struct ibv_srq_init_attr srq_attr = { 0 };
+  struct ibv_srq_init_attr srq_attr;
 
   srq_attr.attr.max_wr = gctx->config->queue_size_max;
   srq_attr.attr.max_sge = 1;
