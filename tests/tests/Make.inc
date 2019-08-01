@@ -19,7 +19,7 @@ AM_FCFLAGS += -DGPI2_WITH_MPI
 endif
 endif
 
-AM_CXXFLAGS = -std=c++11 $(AM_CFLAGS) -fpermissive
+AM_CXXFLAGS = $(AM_CFLAGS) $(AM_CPPFLAGS)
 
 # aux TESTS
 auxSRCS = ../test_utils.c ../test_utils.h

@@ -69,7 +69,6 @@ TITLE([Checking for other used headers and libs, typedefs, structures and compil
 
 ACX_C
 AM_PROG_CC_C_O
-#AC_PROG_CXX
 AC_PROG_AWK
 AC_PROG_SED
 AC_PROG_INSTALL

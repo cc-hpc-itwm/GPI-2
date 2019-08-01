@@ -23,6 +23,8 @@ ______bin_read_notify_bin_SOURCES = read_notify.c $(auxSRCS)
 ______bin_write_m_to_1_bin_SOURCES = write_m_to_1.c $(auxSRCS)
 ______bin_write_notify_bin_SOURCES = write_notify.c $(auxSRCS)
 ______bin_write_notify_outstanding_bin_SOURCES = write_notify_outstanding.c $(auxSRCS)
+
 #______bin_notification_value_bin_SOURCES = notification_value.cpp $(auxSRCS)
+#______bin_notification_value_bin_LDFLAGS = -std=c++11
 
 noinst_PROGRAMS = $(notifications_tests)
