@@ -1273,7 +1273,7 @@ static void
 gaspi_sn_fatal_error (int close_sockfd, enum gaspi_sn_status status,
                       const char *msg)
 {
-  GASPI_DEBUG_PRINT_ERROR ("SN fatal error.");
+  fprintf (stderr, "SN fatal error: %s", msg);
 
   gaspi_sn_status = status;
 
