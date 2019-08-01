@@ -44,7 +44,7 @@ endif
 # INSTALL TESTS
 install-data-hook:
 	mkdir -p $(prefix)/tests/
-	rsync -ar --exclude='.deps' --exclude='*.o' tests/ $(prefix)/tests/
+	rsync -ar --exclude='.deps' --exclude='*.o' --exclude='*.log' --exclude='machines*' tests/ $(prefix)/tests/
 
 # CLEAN
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
