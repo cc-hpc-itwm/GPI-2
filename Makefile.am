@@ -13,7 +13,7 @@ tutorial:
 .PHONY : docs tutorial
 
 # FOR DISTRIBUTION
-EXTRA_DIST = autogen.sh bin tutorial/* \
+EXTRA_DIST = config.site autogen.sh bin tutorial/* \
 	docs/Doxyfile.in docs/Makefile.am docs/Makefile.in docs/mainpage.dox docs/new_arch.png
 
 # TESTING
