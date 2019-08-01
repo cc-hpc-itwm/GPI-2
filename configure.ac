@@ -145,13 +145,18 @@ TITLE([Checking for Infiniband and/or Ethernet])
 AC_ARG_WITH([infiniband],[AS_HELP_STRING([--with-infiniband], [compile for infiniband (default)])],
 			 [with_infiniband=$withval],
 			 [with_infiniband=yes])
-ACX_INFINIBAND
-
 # CHECKS ETHERNET
 AC_ARG_WITH([ethernet],[AS_HELP_STRING([--with-ethernet], [compile for ethernet])],
 		       [with_ethernet=$withval],
 		       [with_ethernet=no])
-ACX_ETHERNET
+
+if test x${with_infiniband} != xno -a x${with_ethernet} = xno; then
+   ACX_INFINIBAND
+fi
+if test x${HAVE_INFINIBAND} = x0 -o x${with_ethernet} != xno; then
+   ACX_ETHERNET
+fi
+
 AM_CONDITIONAL([WITH_ETHERNET], test x${HAVE_TCP} = x1)
 if [test x${HAVE_TCP} = x1]; then
    cp tests/defs/default_tcp.def tests/defs/default.def
