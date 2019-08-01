@@ -413,8 +413,7 @@ pgaspi_rw_list_verify_parameters (char* fun_name,
                                   gaspi_segment_id_t * const segment_id_remote,
                                   gaspi_offset_t * const offset_remote,
                                   gaspi_size_t * const size,
-                                  const gaspi_queue_id_t queue,
-                                  const gaspi_timeout_t timeout_ms)
+                                  const gaspi_queue_id_t queue)
 {
   GASPI_VERIFY_INIT (fun_name);
 
@@ -462,10 +461,10 @@ pgaspi_write_list (const gaspi_number_t num,
 
 #ifdef DEBUG
   eret =
-    pgaspi_rw_list_verify_parameters (__FUNCTION__, num,
+    pgaspi_rw_list_verify_parameters ("pgaspi_write_list", num,
                                       segment_id_local, offset_local, rank,
                                       segment_id_remote, offset_remote, size,
-                                      queue, timeout_ms);
+                                      queue);
 #endif
 
   if (GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat)
@@ -515,10 +514,10 @@ pgaspi_read_list (const gaspi_number_t num,
 
 #ifdef DEBUG
   eret =
-    pgaspi_rw_list_verify_parameters (__FUNCTION__, num,
+    pgaspi_rw_list_verify_parameters ("pgaspi_read_list", num,
                                       segment_id_local, offset_local, rank,
                                       segment_id_remote, offset_remote, size,
-                                      queue, timeout_ms);
+                                      queue);
 #endif
 
   if (GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat)
@@ -870,10 +869,10 @@ pgaspi_write_list_notify (const gaspi_number_t num,
   }
 
   eret =
-    pgaspi_rw_list_verify_parameters (__FUNCTION__, num,
+    pgaspi_rw_list_verify_parameters ("pgaspi_write_list_notify", num,
                                       segment_id_local, offset_local, rank,
                                       segment_id_remote, offset_remote, size,
-                                      queue, timeout_ms);
+                                      queue);
 #endif
 
   if (GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat)
@@ -986,10 +985,10 @@ pgaspi_read_list_notify (const gaspi_number_t num,
 
 #ifdef DEBUG
   eret =
-    pgaspi_rw_list_verify_parameters (__FUNCTION__, num,
+    pgaspi_rw_list_verify_parameters ("pgaspi_read_list_notify", num,
                                       segment_id_local, offset_local, rank,
                                       segment_id_remote, offset_remote, size,
-                                      queue, timeout_ms);
+                                      queue);
 #endif
 
   if (GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat)
