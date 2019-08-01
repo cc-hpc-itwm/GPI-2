@@ -88,7 +88,15 @@ pgaspi_segment_list (const gaspi_number_t num,
   GASPI_VERIFY_INIT ("gaspi_segment_list");
   GASPI_VERIFY_NULL_PTR (segment_id_list);
 
-  int idx = 0;
+  if (num != gctx->mseg_cnt)
+  {
+    GASPI_DEBUG_PRINT_ERROR
+      ("Provided number of segments does not match allocated segments.");
+
+    return GASPI_ERROR;
+  }
+
+  gaspi_number_t idx = 0;
   for (int i = 0; i < GASPI_MAX_MSEGS; i++)
   {
     if (gctx->rrmd[(gaspi_segment_id_t) i] != NULL)
