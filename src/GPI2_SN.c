@@ -1431,7 +1431,7 @@ gaspi_sn_backend (void *arg)
 
         if (nsock < 0)
         {
-          if ((errno == EAGAIN))
+          if (errno == EAGAIN)
           {
             /* we have processed incoming connection */
             break;
