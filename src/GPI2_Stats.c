@@ -284,7 +284,7 @@ pgaspi_statistic_counter_info (gaspi_statistic_counter_t counter,
 #pragma weak gaspi_statistic_counter_get = pgaspi_statistic_counter_get
 gaspi_return_t
 pgaspi_statistic_counter_get (gaspi_statistic_counter_t counter,
-                              gaspi_statistic_argument_t argument,
+                              gaspi_statistic_argument_t GASPI_UNUSED (argument),
                               unsigned long *value)
 {
   const gaspi_number_t counter_max = GASPI_STATS_COUNTER_NUM_MAX;
@@ -301,7 +301,7 @@ pgaspi_statistic_counter_get (gaspi_statistic_counter_t counter,
 #pragma weak gaspi_statistic_counter_get_f = pgaspi_statistic_counter_get_f
 gaspi_return_t
 pgaspi_statistic_counter_get_f (gaspi_statistic_counter_t counter,
-                                gaspi_statistic_argument_t argument,
+                                gaspi_statistic_argument_t GASPI_UNUSED (argument),
                                 gaspi_float * value)
 {
   const gaspi_number_t counter_max = GASPI_STATS_COUNTER_NUM_MAX;

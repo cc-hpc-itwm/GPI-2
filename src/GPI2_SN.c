@@ -1311,7 +1311,7 @@ gaspi_sn_add_fd_for_events (int fd, int eventsfd)
 }
 
 void *
-gaspi_sn_backend (void *arg)
+gaspi_sn_backend (void* GASPI_UNUSED (args))
 {
   int esock, lsock, n;
   struct epoll_event *ret_ev;

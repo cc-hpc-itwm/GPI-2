@@ -71,7 +71,7 @@ pgaspi_dev_register_mem (gaspi_context_t const *const gctx,
 }
 
 int
-pgaspi_dev_unregister_mem (gaspi_context_t const *const gctx,
+pgaspi_dev_unregister_mem (gaspi_context_t const * const GASPI_UNUSED (gctx),
                            gaspi_rc_mseg_t * seg)
 {
   if (seg->mr[0] != NULL)

@@ -29,8 +29,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "tcp_device.h"
 
 int
-pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx, const int i,
-                            void **info, void **remote_info,
+pgaspi_dev_create_endpoint (gaspi_context_t const *const GASPI_UNUSED (gctx),
+                            const int GASPI_UNUSED (i),
+                            void **info,
+                            void **remote_info,
                             size_t * info_size)
 {
   *info = NULL;
@@ -42,13 +44,15 @@ pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx, const int i,
 
 //TODO:
 int
-pgaspi_dev_disconnect_context (gaspi_context_t * const gctx, const int i)
+pgaspi_dev_disconnect_context (gaspi_context_t * const GASPI_UNUSED (gctx),
+                               const int GASPI_UNUSED (i))
 {
   return 0;
 }
 
 int
-pgaspi_dev_connect_context (gaspi_context_t const *const gctx, const int i)
+pgaspi_dev_connect_context (gaspi_context_t const *const gctx,
+                            const int i)
 {
   return tcp_dev_connect_to (i, pgaspi_gethostname (i),
                              gctx->config->dev_config.params.tcp.port +
@@ -56,8 +60,9 @@ pgaspi_dev_connect_context (gaspi_context_t const *const gctx, const int i)
 }
 
 int
-pgaspi_dev_comm_queue_connect (gaspi_context_t const *const gctx,
-                               const unsigned short q, const int i)
+pgaspi_dev_comm_queue_connect (gaspi_context_t const *const GASPI_UNUSED (gctx),
+                               const unsigned short GASPI_UNUSED (q),
+                               const int GASPI_UNUSED (i))
 {
   return 0;
 }
@@ -80,7 +85,7 @@ pgaspi_dev_comm_queue_delete (gaspi_context_t const *const gctx,
 int
 pgaspi_dev_comm_queue_create (gaspi_context_t const *const gctx,
                               const unsigned int id,
-                              const unsigned short remote_node)
+                              const unsigned short GASPI_UNUSED (remote_node))
 {
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
