@@ -134,7 +134,7 @@ typedef struct
   volatile int dev_init; //Is device initialized?
   volatile int master_topo_data; //Do we have topology info from master?
 
-  int mseg_cnt;
+  gaspi_number_t mseg_cnt;
   gaspi_state_t *state_vec[GASPI_MAX_QP + 3];
   char mtyp[64];
 
