@@ -399,7 +399,7 @@ pgaspi_rw_list_num_invalid (gaspi_number_t num)
 {
   gaspi_number_t max_allowed;
 
-  gaspi_rw_list_elem_max (&max_allowed);
+  pgaspi_rw_list_elem_max (&max_allowed);
 
   return num > max_allowed;
 }

@@ -129,7 +129,7 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
 
   gaspi_number_t num_segs;
 
-  if (gaspi_segment_num (&num_segs) != GASPI_SUCCESS)
+  if (pgaspi_segment_num (&num_segs) != GASPI_SUCCESS)
   {
     return GASPI_ERROR;
   }
@@ -142,7 +142,7 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
 
   gaspi_number_t segs_max;
 
-  if (gaspi_segment_max (&segs_max) != GASPI_SUCCESS)
+  if (pgaspi_segment_max (&segs_max) != GASPI_SUCCESS)
   {
     return GASPI_ERROR;
   }
@@ -159,7 +159,7 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
     return GASPI_ERR_MEMALLOC;
   }
 
-  if (gaspi_segment_list (num_segs, segment_ids) != GASPI_SUCCESS)
+  if (pgaspi_segment_list (num_segs, segment_ids) != GASPI_SUCCESS)
   {
     free (segment_ids);
     return GASPI_ERROR;
