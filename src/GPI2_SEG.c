@@ -441,17 +441,10 @@ gaspi_segment_set (const gaspi_segment_descriptor_t snp)
 
   lock_gaspi_tout (&(gctx->mseg_lock), GASPI_BLOCK);
 
-  //TODO: use segment_create_desc
-  if (gctx->rrmd[snp.seg_id] == NULL)
+  if (pgaspi_segment_create_desc (gctx, snp.seg_id) != 0)
   {
-    gctx->rrmd[snp.seg_id] =
-      (gaspi_rc_mseg_t *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg_t));
-
-    if (gctx->rrmd[snp.seg_id] == NULL)
-    {
-      unlock_gaspi (&(gctx->mseg_lock));
-      return -1;
-    }
+    unlock_gaspi (&(gctx->mseg_lock));
+    return -1;
   }
 
   /* TODO: don't allow re-registration? */
