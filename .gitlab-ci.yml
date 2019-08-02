@@ -35,7 +35,8 @@ minimal_install:
 minimal_test:
   stage: test
   script:
-    - for i in `seq 2`; do  hostname -f >> tests/machines; done
+    - hostname -f > tests/machines
+    - hostname -f >> tests/machines
     - make check
   tags:
     - centos-6.5
