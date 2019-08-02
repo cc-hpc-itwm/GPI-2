@@ -97,13 +97,13 @@ pgaspi_segment_list (const gaspi_number_t num,
   }
 
   gaspi_number_t idx = 0;
-  for (int i = 0; i < GASPI_MAX_MSEGS; i++)
+  for (gaspi_segment_id_t i = 0; i < GASPI_MAX_MSEGS; i++)
   {
-    if (gctx->rrmd[(gaspi_segment_id_t) i] != NULL)
+    if (gctx->rrmd[i] != NULL)
     {
-      if (gctx->rrmd[(gaspi_segment_id_t) i][gctx->rank].trans)
+      if (gctx->rrmd[i][gctx->rank].trans)
       {
-        segment_id_list[idx++] = (gaspi_segment_id_t) i;
+        segment_id_list[idx++] = i;
       }
     }
   }
@@ -173,11 +173,11 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
     return GASPI_ERROR;
   }
 
-  for (gaspi_number_t i = 1; i < num_segs; i++)
+  for (gaspi_segment_id_t i = 1; i < num_segs; i++)
   {
     if (segment_ids[i] != segment_ids[i - 1] + 1)
     {
-      *avail_seg_id = (gaspi_segment_id_t) i;
+      *avail_seg_id = i;
       free (segment_ids);
       return GASPI_SUCCESS;
     }
