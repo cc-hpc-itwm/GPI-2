@@ -32,7 +32,7 @@ exit_timeout(){
     printf '\033[31m'"KILLED\n"
 
     #reset terminal to normal
-    tput sgr0
+    tput -T xterm sgr0
 }
 
 run_test(){
@@ -47,7 +47,7 @@ run_test(){
 	    printf '\033[34m'"SKIPPED\n"
 	    TESTS_SKIPPED=$((TESTS_SKIPPED+1))
    #reset terminal to normal
-	    tput sgr0
+	    tput -T xterm sgr0
 	    return
 	fi
 
@@ -101,7 +101,7 @@ run_test(){
     fi
 
    #reset terminal to normal
-    tput sgr0
+    tput -T xterm sgr0
 
     if [ $Time = 1 ] ; then
 	if [ $TIMEDOUT = 0 ];then
