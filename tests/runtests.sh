@@ -180,4 +180,8 @@ killall sleep 2>/dev/null
 
 printf "Run $NUM_TESTS tests:\n$TESTS_PASS passed\n$TESTS_FAIL failed\n$TESTS_TIMEOUT timed-out\n$TESTS_SKIPPED skipped\nTimeout $MAX_TIME (secs)\n"
 
+if [ $TESTS_FAIL -gt 0 -o $TESTS_TIMEOUT -gt 0 ]; then
+    exit 1
+fi
+
 exit 0
