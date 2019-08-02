@@ -141,33 +141,17 @@ if test x${HAVE_FORTRAN} = x1; then
 fi
 
 # CHECKS INFINIBAND
-TITLE([Checking for Infiniband and/or Ethernet])
 AC_ARG_WITH([infiniband],[AS_HELP_STRING([--with-infiniband], [compile for infiniband (default)])],
 			 [with_infiniband=$withval],
-			 [with_infiniband=yes])
+			 [with_infiniband=no])
+
 # CHECKS ETHERNET
 AC_ARG_WITH([ethernet],[AS_HELP_STRING([--with-ethernet], [compile for ethernet])],
 		       [with_ethernet=$withval],
 		       [with_ethernet=no])
 
 #  WHAT DEVICE IS REALLY USABLE
-if test x${with_infiniband} != xno -a x${with_ethernet} = xno; then
-   ACX_INFINIBAND
-fi
-if test x${HAVE_INFINIBAND} = x0 -o x${with_ethernet} != xno; then
-   ACX_ETHERNET
-fi
-
-AM_CONDITIONAL([WITH_ETHERNET], test x${HAVE_TCP} = x1)
-if [test x${HAVE_TCP} = x1]; then
-   cp tests/defs/default_tcp.def tests/defs/default.def
-   options="$options Ethernet"
-fi
-AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
-if [test x${HAVE_INFINIBAND} = x1]; then
-   cp tests/defs/default_ib.def tests/defs/default.def
-   options="$options Infiniband"
-fi
+ACX_USABLE_DEVICE
 
 # LOADLEVELER
 AC_ARG_WITH(loadleveler,[AS_HELP_STRING([--with-loadleveler],[compile with LoadLeveler support])],

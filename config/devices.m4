@@ -1,4 +1,50 @@
 ################################################
+# Check and select device
+# ----------------------------------
+AC_DEFUN([ACX_USABLE_DEVICE],[
+        if test x${with_infiniband} != xno -a x${with_ethernet} != xno; then
+           TITLE([Checking for device(s):])
+           AC_MSG_ERROR([Concurrently Infiniband and Ethernet is not supported])
+        elif test x${with_infiniband} != xno -a x${with_ethernet} = xno; then
+           TITLE([Checking for Infiniband])
+           ACX_INFINIBAND
+           if test x${HAVE_INFINIBAND} = x0; then
+              AC_MSG_ERROR([Infiniband requested, but can not use it])
+           fi
+        elif test x${with_infiniband} = xno -a x${with_ethernet} != xno; then
+           TITLE([Checking for Ethernet])
+           ACX_ETHERNET
+           if test x${HAVE_TCP} = x0; then
+              AC_MSG_ERROR([Ethernet requested, but can not use it])
+           fi
+        else
+	   TITLE([Infiniband or Ethernet is required, checking for Infiniband...])
+           with_infiniband=yes
+           ACX_INFINIBAND
+           if test x${HAVE_INFINIBAND} = x0; then
+	      AC_MSG_NOTICE([Infiniband can not be used])
+              TITLE([Checking for Ethernet])
+              ACX_ETHERNET
+              if test x${HAVE_TCP} = x0; then
+              	 AC_MSG_ERROR([Neither Infiniband nor Ethernet are usable])
+              fi
+           fi
+        fi
+
+        # COPY DEFAULT FILES FOR TESTING
+        AM_CONDITIONAL([WITH_ETHERNET], test x${HAVE_TCP} = x1)
+        if [test x${HAVE_TCP} = x1]; then
+           cp tests/defs/default_tcp.def tests/defs/default.def
+           options="$options Ethernet"
+        fi
+        AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
+        if [test x${HAVE_INFINIBAND} = x1]; then
+           cp tests/defs/default_ib.def tests/defs/default.def
+           options="$options Infiniband"
+        fi
+	])
+
+################################################
 # Check and set INFINIBAND path
 # ----------------------------------
 AC_DEFUN([ACX_INFINIBAND],[
@@ -37,7 +83,6 @@ AC_DEFUN([ACX_INFINIBAND],[
 	   fi
 	else
 	   HAVE_INFINIBAND=0
-	   AC_MSG_NOTICE([Infiniband requested, but could not use it])
 	fi
 	])
 
@@ -62,10 +107,5 @@ AC_DEFUN([ACX_IBVERBS_VERSION],[
 # Check and set ETHERNET path
 # ----------------------------------
 AC_DEFUN([ACX_ETHERNET],[
-	HAVE_TCP=0
-	if test x${HAVE_INFINIBAND} = x1; then
-	      AC_MSG_NOTICE([Infiniband was already found])
-	      HAVE_INFINIBAND=0
-	fi
-	AC_CHECK_HEADER(netinet/tcp.h,[HAVE_TCP=1],[AC_MSG_ERROR([There is no TCP connection neither])])
-])
+	AC_CHECK_HEADER(netinet/tcp.h,[HAVE_TCP=1],[HAVE_TCP=0])
+	])
