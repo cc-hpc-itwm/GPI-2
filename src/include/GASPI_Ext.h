@@ -163,8 +163,8 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t gaspi_segment_size (const gaspi_segment_id_t segment_id,
-				     const gaspi_rank_t rank,
-				     gaspi_size_t * const size);
+                                     const gaspi_rank_t rank,
+                                     gaspi_size_t * const size);
 
   /** Get the maximum number of elements allowed in list (read, write)
    * operations.
