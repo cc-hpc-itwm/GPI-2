@@ -2,7 +2,10 @@
 ACLOCAL_AMFLAGS = -I config
 
 # TARGETS
-SUBDIRS = src tests
+SUBDIRS = src
+if ENABLE_DEBUG
+SUBDIRS += tests
+endif
 
 docs :
 	make -C docs docs/doxygen
@@ -42,9 +45,11 @@ endif
 endif
 
 # INSTALL TESTS
+if ENABLE_DEBUG
 install-data-hook:
 	mkdir -p $(prefix)/tests/
 	rsync -ar --exclude='.deps' --exclude='*.o' --exclude='*.log' --exclude='machines*' tests/ $(prefix)/tests/
+endif
 
 # CLEAN
 MOSTLYCLEANFILES = $(DX_CLEANFILES)

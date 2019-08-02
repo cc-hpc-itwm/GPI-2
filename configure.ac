@@ -190,20 +190,20 @@ AM_CONDITIONAL([WITH_LOADLEVELER],[test $with_loadleveler = yes])
 AM_CONDITIONAL([WITH_SLURM],[test $with_slurm = yes])
 
 # BUILD DEBUG LIBRARY
-AC_ARG_ENABLE([debug],[AS_HELP_STRING([--disable-debug],[do not build/install debug library (it is used by tests!)])],
-	    	      [build_debug=$enableval],
-		      [build_debug=yes])
-AM_CONDITIONAL([ENABLE_DEBUG],[test $build_debug = yes])
-if test $build_debug = yes; then
+AC_ARG_ENABLE([debug-lib],[AS_HELP_STRING([--disable-debug-lib],[do not build/install debug library (it is required by tests])],
+	    	      [build_debug_lib=$enableval],
+		      [build_debug_lib=yes])
+AM_CONDITIONAL([ENABLE_DEBUG],[test $build_debug_lib = yes])
+if test $build_debug_lib = yes; then
    gpilibs="$gpilibs debugging"
 fi
 
 # BUILD STAT LIBRARY
-AC_ARG_ENABLE([stat],[AS_HELP_STRING([--disable-stat], [do not build/install statistic library])],
-		     [build_stat=$enableval],
-		     [build_stat=yes])
-AM_CONDITIONAL([ENABLE_STAT],[test $build_stat = yes])
-if test $build_stat = yes; then
+AC_ARG_ENABLE([stat-lib],[AS_HELP_STRING([--disable-stat-lib], [do not build/install statistic library])],
+		     [build_stat_lib=$enableval],
+		     [build_stat_lib=yes])
+AM_CONDITIONAL([ENABLE_STAT],[test $build_stat_lib = yes])
+if test $build_stat_lib = yes; then
    gpilibs="$gpilibs statistics"
 fi
 
@@ -225,8 +225,13 @@ AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([docs/Makefile])])
 TITLE([Configuration setup])
 echo "Options:" >& AS_MESSAGE_FD
 echo "$options" >& AS_MESSAGE_FD
+
 echo "Target GPI libs:" >& AS_MESSAGE_FD
 echo "$gpilibs" >& AS_MESSAGE_FD
+if test $build_debug_lib = no; then
+   AC_MSG_WARN([Debug library is required for testing])
+fi
+
 echo "Batch system:" >& AS_MESSAGE_FD
 echo "$batchsys" >& AS_MESSAGE_FD
 echo >& AS_MESSAGE_FD
