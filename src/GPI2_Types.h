@@ -117,7 +117,7 @@ typedef struct
 
 typedef struct
 {
-  int localSocket; //TODO: rename?
+  int local_rank;
   int rank;
   int tnc;
   float mhz;

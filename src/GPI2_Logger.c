@@ -71,13 +71,13 @@ pgaspi_printf_to (gaspi_rank_t log_rank, const char *fmt, ...)
 
   if (gctx->init)
   {
-    gaspi_log_socket = gctx->localSocket;
+    gaspi_log_socket = gctx->local_rank;
     gaspi_log_rank = gctx->rank;
   }
   else
   {
 #ifdef GPI2_WITH_MPI
-    gaspi_log_socket = gctx->localSocket;
+    gaspi_log_socket = gctx->local_rank;
 #else
     char *socket_num_str = getenv ("GASPI_SOCKET");
 

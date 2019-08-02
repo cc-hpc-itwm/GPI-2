@@ -164,7 +164,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   dev_args->peers_num = gctx->tnc;
   dev_args->id = gctx->rank;
   dev_args->port =
-    gctx->config->dev_config.params.tcp.port + gctx->localSocket;
+    gctx->config->dev_config.params.tcp.port + gctx->local_rank;
 
   tcp_dev_ctx->device_channel = tcp_dev_init_device (dev_args);
 
@@ -189,7 +189,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   tcp_dev_ctx->srqP =
     gaspi_sn_connect2port ("localhost",
                            gctx->config->dev_config.params.tcp.port +
-                           gctx->localSocket, CONN_TIMEOUT);
+                           gctx->local_rank, CONN_TIMEOUT);
   if (tcp_dev_ctx->srqP == -1)
   {
     GASPI_DEBUG_PRINT_ERROR ("Failed to create passive channel connection");

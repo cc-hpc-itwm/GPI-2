@@ -110,7 +110,7 @@ pgaspi_numa_socket (gaspi_uchar * const sock)
   {
     if (atoi (numaPtr) == 1)
     {
-      *sock = (gaspi_uchar) gctx->localSocket;
+      *sock = (gaspi_uchar) gctx->local_rank;
 
       return GASPI_SUCCESS;
     }
@@ -677,7 +677,7 @@ pgaspi_proc_local_rank (gaspi_rank_t * const local_rank)
 
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
-  *local_rank = (gaspi_rank_t) gctx->localSocket;
+  *local_rank = (gaspi_rank_t) gctx->local_rank;
 
   return GASPI_SUCCESS;
 }

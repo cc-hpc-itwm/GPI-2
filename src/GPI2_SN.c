@@ -416,7 +416,7 @@ gaspi_sn_recv_topology (gaspi_context_t * const gctx,
                         const gaspi_timeout_t timeout_ms)
 {
   const int port_to_wait =
-    gctx->config->sn_port + GASPI_MAX_PPN + gctx->localSocket;
+    gctx->config->sn_port + GASPI_MAX_PPN + gctx->local_rank;
   int nsock = _gaspi_sn_wait_connection (port_to_wait, timeout_ms);
 
   if (nsock < 0)
@@ -1350,7 +1350,7 @@ gaspi_sn_backend (void* GASPI_UNUSED (args))
 
   listeningAddress.sin_family = AF_INET;
   listeningAddress.sin_port =
-    htons ((gctx->config->sn_port + gctx->localSocket));
+    htons ((gctx->config->sn_port + gctx->local_rank));
   listeningAddress.sin_addr.s_addr = htonl (INADDR_ANY);
 
   if (bind

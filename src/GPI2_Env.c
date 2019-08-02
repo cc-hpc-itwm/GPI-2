@@ -92,7 +92,7 @@ _gaspi_handle_env_mpi (gaspi_context_t * ctx)
 
   int ranks_node = 0;
 
-  ctx->localSocket = 0;
+  ctx->local_rank = 0;
 
   //set socket
   for (int i = 0; i < mpi_nnodes; i++)
@@ -100,7 +100,7 @@ _gaspi_handle_env_mpi (gaspi_context_t * ctx)
     if (strcmp (ninfo.host, hosts[i].host) == 0)
     {
       if (i < mpi_rank)
-        ctx->localSocket++;
+        ctx->local_rank++;
 
       ranks_node++;
     }
@@ -187,7 +187,7 @@ gaspi_handle_env (gaspi_context_t * ctx)
   if (socketPtr)
   {
 #ifdef LOADLEVELER
-    ctx->localSocket = MAX (atoi (socketPtr), 0);
+    ctx->local_rank = MAX (atoi (socketPtr), 0);
 
     char *ntasks = getenv ("MP_COMMON_TASKS");
 
@@ -202,13 +202,13 @@ gaspi_handle_env (gaspi_context_t * ctx)
         if (s)
         {
           if (atoi (s) < ctx->rank)
-            ctx->localSocket++;
+            ctx->local_rank++;
         }
       }
       while (s != NULL);
     }
 #else
-    ctx->localSocket = atoi (socketPtr);
+    ctx->local_rank = atoi (socketPtr);
 #endif
   }
   else
@@ -226,7 +226,7 @@ gaspi_handle_env (gaspi_context_t * ctx)
     {
       cpu_set_t sock_mask;
 
-      if (gaspi_get_affinity_mask (ctx->localSocket, &sock_mask) < 0)
+      if (gaspi_get_affinity_mask (ctx->local_rank, &sock_mask) < 0)
       {
         GASPI_DEBUG_PRINT_ERROR ("Failed to get affinity mask");
       }
