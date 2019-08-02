@@ -341,7 +341,6 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 
   gaspi_rc_mseg_t *const myrank_mseg = &(gctx->rrmd[segment_id][gctx->rank]);
 
-  /*  TODO: for now like this but we need a better solution */
   if (pgaspi_dev_unregister_mem (gctx, myrank_mseg) < 0)
   {
     unlock_gaspi (&(gctx->mseg_lock));
