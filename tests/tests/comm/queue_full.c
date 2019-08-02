@@ -41,18 +41,18 @@ int main(int argc, char *argv[])
   do
     {
       ASSERT(gaspi_write_notify(0, localOff, rankSend,
-				0, remOff, 1,
-				(gaspi_notification_id_t) myrank, 1,
-				1, GASPI_BLOCK));
+                                0, remOff, 1,
+                                (gaspi_notification_id_t) myrank, 1,
+                                1, GASPI_BLOCK));
       gaspi_queue_size(1, &queueSize);
     }
   while(queueSize < qmax);
 
   EXPECT_FAIL_WITH(gaspi_write_notify(0, localOff, rankSend,
-				      0, remOff, 1,
-				      (gaspi_notification_id_t) myrank, 1,
-				      1, GASPI_BLOCK),
-		   GASPI_QUEUE_FULL);
+                                      0, remOff, 1,
+                                      (gaspi_notification_id_t) myrank, 1,
+                                      1, GASPI_BLOCK),
+                   GASPI_QUEUE_FULL);
 
   ASSERT (gaspi_wait(1, GASPI_BLOCK));
 
@@ -60,69 +60,69 @@ int main(int argc, char *argv[])
   do
     {
       ASSERT(gaspi_write(0, localOff, rankSend,
-			 0, remOff, 1,
-			 1, GASPI_BLOCK));
+                         0, remOff, 1,
+                         1, GASPI_BLOCK));
 
       gaspi_queue_size(1, &queueSize);
     }
   while(queueSize < qmax);
 
   EXPECT_FAIL_WITH(gaspi_write(0, localOff, rankSend,
-			       0, remOff, 1,
-			       1, GASPI_BLOCK),
-		   GASPI_QUEUE_FULL);
+                               0, remOff, 1,
+                               1, GASPI_BLOCK),
+                   GASPI_QUEUE_FULL);
 
   ASSERT (gaspi_wait(1, GASPI_BLOCK));
 
   ASSERT(gaspi_write(0, localOff, rankSend,
-		     0, remOff, 1,
-		     1, GASPI_BLOCK));
+                     0, remOff, 1,
+                     1, GASPI_BLOCK));
 
   /* write + write_notify */
   do
     {
       ASSERT(gaspi_write(0, localOff, rankSend,
-			 0, remOff, 1,
-			 1, GASPI_BLOCK));
+                         0, remOff, 1,
+                         1, GASPI_BLOCK));
 
       gaspi_queue_size(1, &queueSize);
     }
   while(queueSize < qmax - 1);
 
   EXPECT_FAIL_WITH(gaspi_write_notify(0, localOff, rankSend,
-				      0, remOff, 1,
-				      (gaspi_notification_id_t) myrank, 1,
-				      1, GASPI_BLOCK),
-		   GASPI_QUEUE_FULL);
+                                      0, remOff, 1,
+                                      (gaspi_notification_id_t) myrank, 1,
+                                      1, GASPI_BLOCK),
+                   GASPI_QUEUE_FULL);
 
   ASSERT (gaspi_wait(1, GASPI_BLOCK));
 
   ASSERT(gaspi_write_notify(0, localOff, rankSend,
-			    0, remOff, 1,
-			    (gaspi_notification_id_t) myrank, 1,
-			    1, GASPI_BLOCK));
+                            0, remOff, 1,
+                            (gaspi_notification_id_t) myrank, 1,
+                            1, GASPI_BLOCK));
 
   /* read */
   do
     {
       ASSERT(gaspi_read(0, localOff, rankSend,
-			 0, remOff, 1,
-			 1, GASPI_BLOCK));
+                        0, remOff, 1,
+                        1, GASPI_BLOCK));
 
       gaspi_queue_size(1, &queueSize);
     }
   while(queueSize < qmax);
 
   EXPECT_FAIL_WITH(gaspi_read(0, localOff, rankSend,
-			       0, remOff, 1,
-			       1, GASPI_BLOCK),
-		   GASPI_QUEUE_FULL);
+                              0, remOff, 1,
+                              1, GASPI_BLOCK),
+                   GASPI_QUEUE_FULL);
 
   ASSERT (gaspi_wait(1, GASPI_BLOCK));
 
   ASSERT(gaspi_read(0, localOff, rankSend,
-		    0, remOff, 1,
-		    1, GASPI_BLOCK));
+                    0, remOff, 1,
+                    1, GASPI_BLOCK));
 
   /* write_list_notify */
   {
@@ -155,28 +155,28 @@ int main(int argc, char *argv[])
 
     do
       {
-	ASSERT( gaspi_write_list_notify( nListElems,
-					 localSegs, localOffs, rank2send,
-					 remSegs, remOffs, sizes,
-					 0, myrank, 1,
-					 0, GASPI_BLOCK));
+        ASSERT( gaspi_write_list_notify( nListElems,
+                                         localSegs, localOffs, rank2send,
+                                         remSegs, remOffs, sizes,
+                                         0, myrank, 1,
+                                         0, GASPI_BLOCK));
 
-	gaspi_queue_size(0, &queueSize);
+        gaspi_queue_size(0, &queueSize);
       }
     while(queueSize < qmax);
 
     EXPECT_FAIL_WITH( gaspi_write_list_notify( nListElems,
-					       localSegs, localOffs, rank2send,
-					       remSegs, remOffs, sizes,
-					       0, myrank, 1,
-					       0, GASPI_BLOCK),
-			  GASPI_QUEUE_FULL);
+                                               localSegs, localOffs, rank2send,
+                                               remSegs, remOffs, sizes,
+                                               0, myrank, 1,
+                                               0, GASPI_BLOCK),
+                      GASPI_QUEUE_FULL);
     ASSERT (gaspi_wait(0, GASPI_BLOCK));
     ASSERT( gaspi_write_list_notify( nListElems,
-				     localSegs, localOffs, rank2send,
-				     remSegs, remOffs, sizes,
-				     0, myrank, 1,
-				     0, GASPI_BLOCK));
+                                     localSegs, localOffs, rank2send,
+                                     remSegs, remOffs, sizes,
+                                     0, myrank, 1,
+                                     0, GASPI_BLOCK));
 
   }
 
