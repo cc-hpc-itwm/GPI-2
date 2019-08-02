@@ -34,7 +34,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t
-  gaspi_threads_get_tid(gaspi_int * const tid);
+  gaspi_threads_get_tid(gaspi_int * const tid) __attribute__ ((deprecated));
 
   /** Get total number of threads
    *
@@ -44,7 +44,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t
-  gaspi_threads_get_total(gaspi_int *const num);
+  gaspi_threads_get_total(gaspi_int *const num) __attribute__ ((deprecated));
 
 
   /** Get total number of available cpu cores
@@ -55,7 +55,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t
-  gaspi_threads_get_num_cores(gaspi_int * const cores);
+  gaspi_threads_get_num_cores(gaspi_int * const cores) __attribute__ ((deprecated));
 
   /** Initialize threads (in all available cores)
    *
@@ -63,7 +63,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t
-  gaspi_threads_init(gaspi_int * const num);
+  gaspi_threads_init(gaspi_int * const num) __attribute__ ((deprecated));
 
   //returns activated cores (specified by caller)
 
@@ -75,7 +75,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t
-  gaspi_threads_init_user(const unsigned int use_nr_of_threads);
+  gaspi_threads_init_user(const unsigned int use_nr_of_threads) __attribute__ ((deprecated));
 
   /** Finalize threads
    *
@@ -83,7 +83,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t
-  gaspi_threads_term(void);
+  gaspi_threads_term(void) __attribute__ ((deprecated));
 
   /** Run a particular task (function)
    *
@@ -94,7 +94,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t
-  gaspi_threads_run(void* (*function)(void*), void *arg);
+  gaspi_threads_run(void* (*function)(void*), void *arg) __attribute__ ((deprecated));
 
   /** Register a thread with the pool.
    *
@@ -121,7 +121,7 @@ extern "C"
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t
-  gaspi_threads_sync_all(const gaspi_group_t g, const gaspi_timeout_t timeout_ms);
+  gaspi_threads_sync_all(const gaspi_group_t g, const gaspi_timeout_t timeout_ms) __attribute__ ((deprecated));
 
 #ifdef __cplusplus
 }
