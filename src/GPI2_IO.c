@@ -465,6 +465,10 @@ pgaspi_write_list (const gaspi_number_t num,
                                       segment_id_local, offset_local, rank,
                                       segment_id_remote, offset_remote, size,
                                       queue);
+  if (eret != GASPI_SUCCESS)
+  {
+    goto endL;
+  }
 #endif
 
   if (GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat)
@@ -518,6 +522,11 @@ pgaspi_read_list (const gaspi_number_t num,
                                       segment_id_local, offset_local, rank,
                                       segment_id_remote, offset_remote, size,
                                       queue);
+  if (eret != GASPI_SUCCESS)
+  {
+    goto endL;
+  }
+
 #endif
 
   if (GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat)
@@ -873,6 +882,10 @@ pgaspi_write_list_notify (const gaspi_number_t num,
                                       segment_id_local, offset_local, rank,
                                       segment_id_remote, offset_remote, size,
                                       queue);
+  if (eret != GASPI_SUCCESS)
+  {
+    goto endL;
+  }
 #endif
 
   if (GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat)
@@ -989,6 +1002,10 @@ pgaspi_read_list_notify (const gaspi_number_t num,
                                       segment_id_local, offset_local, rank,
                                       segment_id_remote, offset_remote, size,
                                       queue);
+  if (eret != GASPI_SUCCESS)
+  {
+    goto endL;
+  }
 #endif
 
   if (GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat)
