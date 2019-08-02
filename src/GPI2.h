@@ -31,7 +31,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
    space. For the latter we use 64 though, to have a larger alignment
    of the data space (hacky!).
 */
-#define NOTIFY_OFFSET ((65536 * sizeof(gaspi_notification_t)) + (64))
+#define NOTIFICATIONS_SPACE_SIZE ((65536 * sizeof(gaspi_notification_t)) + (64))
 
 gaspi_context_t glb_gaspi_ctx;
 

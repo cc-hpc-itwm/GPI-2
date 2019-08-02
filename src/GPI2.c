@@ -174,7 +174,8 @@ pgaspi_init_core (gaspi_context_t * const gctx)
   }
 
   /* Create internal memory space (notifications + atomic value placeholder) */
-  const unsigned int size = NOTIFY_OFFSET + sizeof (gaspi_atomic_value_t);
+  const unsigned int size =
+    NOTIFICATIONS_SPACE_SIZE + sizeof (gaspi_atomic_value_t);
 
   if (pgaspi_alloc_page_aligned (&gctx->nsrc.data.ptr, size) != 0)
   {
@@ -185,8 +186,8 @@ pgaspi_init_core (gaspi_context_t * const gctx)
   memset (gctx->nsrc.data.buf, 0, size);
   gctx->nsrc.size = sizeof (gaspi_atomic_value_t);
   gctx->nsrc.notif_spc.addr = gctx->nsrc.data.addr;
-  gctx->nsrc.notif_spc_size = NOTIFY_OFFSET;
-  gctx->nsrc.data.addr += NOTIFY_OFFSET;
+  gctx->nsrc.notif_spc_size = NOTIFICATIONS_SPACE_SIZE;
+  gctx->nsrc.data.addr += NOTIFICATIONS_SPACE_SIZE;
 
   /* Register internal memory */
   if (pgaspi_dev_register_mem (gctx, &(gctx->nsrc)) != 0)

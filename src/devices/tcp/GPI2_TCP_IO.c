@@ -437,8 +437,9 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
       (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].notif_spc.addr +
                    notification_id * sizeof (gaspi_notification_t)),
       .remote_addr =
-      (gctx->rrmd[segment_id_remote][rank].notif_spc.addr + NOTIFY_OFFSET -
-       sizeof (gaspi_notification_t)),
+        (gctx->rrmd[segment_id_remote][rank].notif_spc.addr
+         + NOTIFICATIONS_SPACE_SIZE
+         - sizeof (gaspi_notification_t)),
       .length = sizeof (gaspi_notification_t),
       .swap = 0,
       .opcode = POST_RDMA_READ
@@ -498,8 +499,9 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
       (uintptr_t) (gctx->rrmd[segment_id_notification][gctx->rank].notif_spc.
                    addr + notification_id * sizeof (gaspi_notification_t)),
       .remote_addr =
-      (gctx->rrmd[segment_id_notification][rank].notif_spc.addr +
-       NOTIFY_OFFSET - sizeof (gaspi_notification_t)),
+        (gctx->rrmd[segment_id_notification][rank].notif_spc.addr
+         + NOTIFICATIONS_SPACE_SIZE
+         - sizeof (gaspi_notification_t)),
       .length = sizeof (gaspi_notification_t),
       .swap = 0,
       .opcode = POST_RDMA_READ
