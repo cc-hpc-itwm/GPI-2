@@ -29,7 +29,9 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_SN.h"
 #include "GPI2_Utility.h"
 
-const unsigned int glb_gaspi_typ_size[6] = { 4, 4, 4, 8, 8, 8 };
+#define GASPI_COLL_NUM_DATATYPES 6
+const unsigned int glb_gaspi_typ_size[GASPI_COLL_NUM_DATATYPES] = { 4, 4, 4, 8, 8, 8 };
+
 
 #define TOGGLE_SIZE 2
 
@@ -869,9 +871,9 @@ _gaspi_apply_redux (gaspi_group_t g,
     gaspi_operation_t op = r_args->f_args.op;
     gaspi_datatype_t type = r_args->f_args.type;
 
-    //TODO: magic number
-    fctArrayGASPI[op * 6 + type] ((void *) *send_ptr, local_val, dst_val,
-                                  r_args->elem_cnt);
+    fctArrayGASPI[op * GASPI_COLL_NUM_DATATYPES + type]
+      ((void *) *send_ptr, local_val, dst_val, r_args->elem_cnt);
+
     eret = GASPI_SUCCESS;
   }
   else if (r_args->f_type == GASPI_USER)
