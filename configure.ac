@@ -153,23 +153,41 @@ AC_ARG_WITH([ethernet],[AS_HELP_STRING([--with-ethernet], [compile for ethernet]
 #  WHAT DEVICE IS REALLY USABLE
 ACX_USABLE_DEVICE
 
-# LOADLEVELER
+# BATCH SYSTEM
+#  PBS
+AC_ARG_WITH(pbs,[AS_HELP_STRING([--with-pbs],[compile with PBS support])],
+		[with_pbs=$withval],
+		[with_pbs=no])
+
+#  LOADLEVELER
 AC_ARG_WITH(loadleveler,[AS_HELP_STRING([--with-loadleveler],[compile with LoadLeveler support])],
 		      [with_loadleveler=$withval],
 		      [with_loadleveler=no])
-AM_CONDITIONAL([WITH_LOADLEVELER],[test $with_loadleveler = yes])
-if test $with_loadleveler = yes; then
-   batchsys=" LoadLeveler"
-fi
 
-# SLURM
+#  SLURM
 AC_ARG_WITH(slurm,[AS_HELP_STRING([--with-slurm],[compile with slurm support])],
 		  [with_slurm=$withval],
 		  [with_slurm=no])
-AM_CONDITIONAL([WITH_SLURM],[test $with_slurm = yes])
-if test $with_slurm = yes; then
+
+if test $with_pbs = yes -a $with_loadleveler = yes -a $with_slurm = yes; then
+   AC_MSG_ERROR([Only one batch system is supported])
+elif test $with_pbs = yes -a $with_loadleveler = yes -a $with_slurm = no; then
+   AC_MSG_ERROR([Only one batch system is supported])
+elif test $with_pbs = yes -a $with_loadleveler = no -a $with_slurm = yes; then
+   AC_MSG_ERROR([Only one batch system is supported])
+elif test $with_pbs = no -a $with_loadleveler = yes -a $with_slurm = yes; then
+   AC_MSG_ERROR([Only one batch system is supported])
+elif test $with_pbs = yes; then
+   batchsys=" PBS"
+elif test $with_loadleveler = yes; then
+   batchsys=" LoadLeveler"
+elif test $with_slurm = yes; then
    batchsys=" Slurm"
+else
+   batchsys=" PBS"
 fi
+AM_CONDITIONAL([WITH_LOADLEVELER],[test $with_loadleveler = yes])
+AM_CONDITIONAL([WITH_SLURM],[test $with_slurm = yes])
 
 # BUILD DEBUG LIBRARY
 AC_ARG_ENABLE([debug],[AS_HELP_STRING([--disable-debug],[do not build/install debug library (it is used by tests!)])],
