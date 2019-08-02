@@ -58,8 +58,10 @@ pgaspi_machine_type (char const machine_type[64])
 
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
-  memset ((void *) machine_type, 0, sizeof (gctx->mtyp));
-  snprintf ((char *) machine_type, sizeof (gctx->mtyp), "%s", gctx->mtyp);
+  memset ((void *) machine_type, 0, sizeof (gctx->machine_type));
+  snprintf ((char *) machine_type, sizeof (gctx->machine_type),
+            "%s",
+            gctx->machine_type);
 
   return GASPI_SUCCESS;
 }
@@ -291,7 +293,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
     if (uname (&mbuf) == 0)
     {
-      snprintf (gctx->mtyp, sizeof (mbuf.machine), "%s", mbuf.machine);
+      snprintf (gctx->machine_type, sizeof (mbuf.machine), "%s", mbuf.machine);
     }
 
     //timing
