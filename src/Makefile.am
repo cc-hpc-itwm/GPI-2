@@ -15,7 +15,7 @@ include_HEADERS = include/GASPI.h include/GASPI_Ext.h include/GASPI_Threads.h \
 	include/PGASPI.h
 
 # GENERAL C FLAGS
-default_includes = -Iinclude -Idevices/include
+default_includes = -I. -Iinclude -Idevices/include
 lib_default_cflags = -Wall -D_GNU_SOURCE
 
 # DEVICES SPECIFICS
