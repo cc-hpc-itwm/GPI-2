@@ -48,7 +48,7 @@ The basic configuration:
 
 `./configure --prefix=$HOME/local`
 
-use the compilers defined by the environment variables CC and FC for
+uses the compilers defined by the environment variables CC and FC for
 the general checking procedure and sets up `$HOME/local` as the
 installation directory. By default, the script:
 
@@ -56,7 +56,7 @@ installation directory. By default, the script:
 to the Ethernet device in case they are not available or usable,
 - targets to the production, debugging and statistic libraries, as well
 as, the Fortran modules (if the Fortran compilers are found),
-- configure GPI for use PBS as the batch system,
+- configures GPI-2 for use PBS as the batch system,
 - checks the existence of `doxygen` and `dot` for the documentation target.
 
 Compilation, testing and cleaning:
@@ -66,14 +66,14 @@ The compilation step:
 
 `make -j$NPROC`
 
-builds in parallel the GPI libraries, the Fortran modules, and the
+builds in parallel the GPI-2 libraries, the Fortran modules, and the
 binary tests and microbenchmarks.  After successful completion, the
 user can define the working hosts in `tests/machines` and run the
 predefined tests by:
 
 `make check`
 
-Clean of the configuration/compilation files can be done as usual
+Cleaning of the configuration/compilation files can be done as usual
 with the commands `make distclean` and `make clean`.
 
 Documentation and tutorial:
@@ -117,12 +117,12 @@ GPI-2 applications without the need to access a system with
 Infiniband, with less focus on performance.
 
 ### BATCH SYSTEM ###
-PBS is the default batch system of GPI-2, however, the user can request
-for Slurm
+PBS is the default batch system of GPI-2, however, the user can
+configure it with Slurm support:
 
  `./configure --with-slurm`
 
- or LoadLeveler:
+ or LoadLeveler support:
  
 `./configure --with-loadleveler`
  
@@ -132,9 +132,9 @@ If the plan is to use GPI-2 with MPI to, for instance, start an
 incremental port of a large application or to use some libraries that
 require MPI, the user can enable MPI interoperability in several ways:
 
-- check for MPI in the standard path: `./configure --with-mpi`
-- check for MPI in a specific path, e.g.: `./configure --with-mpi=<=path_to_mpi_installation>`
-- specify the MPI compilers, e.g.: `CC=mpiicc FC=mpiifort ./configure`
+- checking for MPI in the standard path: `./configure --with-mpi`
+- checking for MPI in a specific path, e.g.: `./configure --with-mpi=<=path_to_mpi_installation>`
+- specifying the MPI compilers, e.g.: `CC=mpicc FC=mpif90 ./configure`
 
 For this MPI+GPI2 mixed mode, the only constraint is that MPI_Init()
 must be invoked before gaspi_proc_init() and it is assumed that the
@@ -144,9 +144,11 @@ library (even if MPI is not used). Therefore, if the interest is to
 use GPI-2 only, GPI-2 must not be build with with this option.
 
 Furthermore fine control of MPI can be done through the
-`--with-mpi-extra-flags` option (used, for example, to link an
-specific version of the Intel MPI libraries).
+`--with-mpi-extra-flags` option. For example, to configure with Intel
+MPI compilers and link to the thread safe version of the Intel MPI
+Library:
 
+`CC=mpiicc FC=mpiifort ./configure --with-mpi-extra-flags=-mt_mpi`
 
 3. BUILDING GPI-2 APPLICATIONS
 ==============================
