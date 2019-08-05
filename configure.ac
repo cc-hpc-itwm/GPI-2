@@ -60,7 +60,11 @@ AC_CONFIG_FILES([Makefile
 AM_INIT_AUTOMAKE([foreign nostdinc subdir-objects no-dependencies])
 
 # LIBTOOL
-AC_DISABLE_SHARED
+if test $enable_shared = yes; then
+   AC_MSG_ERROR([GPI-shared libraries are not supported at the moment])
+else
+   AC_DISABLE_SHARED
+fi
 LT_PREREQ([2.2])
 LT_INIT
 
