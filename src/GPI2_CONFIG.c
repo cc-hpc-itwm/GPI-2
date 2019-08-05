@@ -89,9 +89,21 @@ pgaspi_config_set (const gaspi_config_t nconf)
 {
   GASPI_VERIFY_SETUP ("gaspi_config_set");
 
-  glb_gaspi_cfg.net_info = nconf.net_info;
-  glb_gaspi_cfg.build_infrastructure = nconf.build_infrastructure;
+  //GPI-2 only
   glb_gaspi_cfg.logger = nconf.logger;
+
+  if (nconf.sn_port < 1024 || nconf.sn_port > 65536)
+  {
+    GASPI_DEBUG_PRINT_ERROR
+      ("Invalid value for parameter sn_port ( from 1024 to 65536)");
+    return GASPI_ERR_CONFIG;
+  }
+  glb_gaspi_cfg.sn_port = nconf.sn_port;
+
+  glb_gaspi_cfg.net_info = nconf.net_info;
+  glb_gaspi_cfg.user_net = 1;
+  glb_gaspi_cfg.sn_persistent = nconf.sn_persistent;
+  glb_gaspi_cfg.sn_timeout = nconf.sn_timeout;
 
 #ifdef GPI2_DEVICE_IB
   if (nconf.dev_config.params.ib.mtu == 0 ||
@@ -140,17 +152,9 @@ pgaspi_config_set (const gaspi_config_t nconf)
                              gaspi_network_str[nconf.network]);
     return GASPI_ERR_CONFIG;
   }
+
+  //GASPI specified
   glb_gaspi_cfg.network = nconf.network;
-  glb_gaspi_cfg.user_net = 1;
-
-  if (nconf.queue_num > GASPI_MAX_QP || nconf.queue_num < 1)
-  {
-    GASPI_DEBUG_PRINT_ERROR
-      ("Invalid value for parameter queue_num (min=1 and max=GASPI_MAX_QP)");
-    return GASPI_ERR_CONFIG;
-  }
-
-  glb_gaspi_cfg.queue_num = nconf.queue_num;
 
   if (nconf.queue_size_max > GASPI_MAX_QSIZE || nconf.queue_size_max < 1)
   {
@@ -158,6 +162,19 @@ pgaspi_config_set (const gaspi_config_t nconf)
       ("Invalid value for parameter queue_size_max (min=1 and max=GASPI_MAX_QSIZE)");
     return GASPI_ERR_CONFIG;
   }
+
+  glb_gaspi_cfg.queue_size_max = nconf.queue_size_max;
+
+  if (nconf.queue_num > GASPI_MAX_QP || nconf.queue_num < 1)
+  {
+    GASPI_DEBUG_PRINT_ERROR
+      ("Invalid value for parameter queue_num (min=1 and max=GASPI_MAX_QP");
+    return GASPI_ERR_CONFIG;
+  }
+
+  glb_gaspi_cfg.queue_num = nconf.queue_num;
+
+  glb_gaspi_cfg.group_max = nconf.group_max;
 
   if (nconf.segment_max > GASPI_MAX_MSEGS || nconf.segment_max < 1)
   {
@@ -168,22 +185,9 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   glb_gaspi_cfg.segment_max = nconf.segment_max;
 
-  if (nconf.sn_port < 1024 || nconf.sn_port > 65536)
-  {
-    GASPI_DEBUG_PRINT_ERROR
-      ("Invalid value for parameter sn_port ( from 1024 to 65536)");
-    return GASPI_ERR_CONFIG;
-  }
-
-  glb_gaspi_cfg.sn_port = nconf.sn_port;
-  glb_gaspi_cfg.sn_persistent = nconf.sn_persistent;
-
-  glb_gaspi_cfg.sn_timeout = nconf.sn_timeout;
-
-  glb_gaspi_cfg.net_info = nconf.net_info;
-  glb_gaspi_cfg.logger = nconf.logger;
-
   glb_gaspi_cfg.allreduce_elem_max = nconf.allreduce_elem_max;
+
+  glb_gaspi_cfg.build_infrastructure = nconf.build_infrastructure;
 
   return GASPI_SUCCESS;
 }
