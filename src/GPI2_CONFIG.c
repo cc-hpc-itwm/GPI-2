@@ -19,6 +19,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2.h"
 #include "GPI2_Utility.h"
 
+#define GASPI_MAX_TSIZE_C (1ul<<30ul)
+
 gaspi_config_t glb_gaspi_cfg =
 {
   1,                            //logout
@@ -184,6 +186,16 @@ pgaspi_config_set (const gaspi_config_t nconf)
   }
 
   glb_gaspi_cfg.segment_max = nconf.segment_max;
+
+  if (nconf.transfer_size_max > GASPI_MAX_TSIZE_C)
+  {
+    GASPI_DEBUG_PRINT_ERROR
+      ("Invalid value for parameter transfer_size_max (and max=%lu)",
+       GASPI_MAX_TSIZE_C);
+
+    return GASPI_ERR_CONFIG;
+  }
+  glb_gaspi_cfg.transfer_size_max = nconf.transfer_size_max;
 
   glb_gaspi_cfg.allreduce_elem_max = nconf.allreduce_elem_max;
 

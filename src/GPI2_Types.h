@@ -39,7 +39,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_PASSIVE_QP  (GASPI_MAX_QP+1)
 #define GASPI_SN          (GASPI_MAX_QP+2)
 #define GASPI_MIN_TSIZE_C (1)
-#define GASPI_MAX_TSIZE_C (1ul<<30ul)
 #define GASPI_MIN_TSIZE_P (1)
 #define GASPI_MAX_TSIZE_P ((1ul<<16ul)-1ul)
 #define GASPI_MAX_QSIZE   (4096)

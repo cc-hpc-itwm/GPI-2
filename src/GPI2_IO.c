@@ -85,7 +85,9 @@ pgaspi_transfer_size_max (gaspi_size_t * const transfer_size_max)
   GASPI_VERIFY_NULL_PTR (transfer_size_max);
   GASPI_VERIFY_INIT ("gaspi_transfer_size_max");
 
-  *transfer_size_max = GASPI_MAX_TSIZE_C;
+  gaspi_context_t const *const gctx = &glb_gaspi_ctx;
+
+  *transfer_size_max = gctx->config->transfer_size_max;
   return GASPI_SUCCESS;
 }
 
@@ -266,7 +268,7 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
   GASPI_VERIFY_REMOTE_OFF (offset_remote, segment_id_remote, rank, size);
   GASPI_VERIFY_QUEUE (queue);
   GASPI_VERIFY_COMM_SIZE (size, segment_id_local, segment_id_remote, rank,
-                          GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
+                          GASPI_MIN_TSIZE_C, gctx->config->transfer_size_max);
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -319,7 +321,7 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
   GASPI_VERIFY_REMOTE_OFF (offset_remote, segment_id_remote, rank, size);
   GASPI_VERIFY_QUEUE (queue);
   GASPI_VERIFY_COMM_SIZE (size, segment_id_local, segment_id_remote, rank,
-                          GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
+                          GASPI_MIN_TSIZE_C, gctx->config->transfer_size_max);
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -406,6 +408,7 @@ pgaspi_rw_list_num_invalid (gaspi_number_t num)
 
 static gaspi_return_t
 pgaspi_rw_list_verify_parameters (char* fun_name,
+                                  gaspi_context_t* const gctx,
                                   const gaspi_number_t num,
                                   gaspi_segment_id_t * const segment_id_local,
                                   gaspi_offset_t * const offset_local,
@@ -435,7 +438,7 @@ pgaspi_rw_list_verify_parameters (char* fun_name,
     GASPI_VERIFY_REMOTE_OFF (offset_remote[n], segment_id_remote[n], rank,
                              size[n]);
     GASPI_VERIFY_COMM_SIZE (size[n], segment_id_local[n], segment_id_remote[n],
-                            rank, GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
+                            rank, GASPI_MIN_TSIZE_C, gctx->config->transfer_size_max);
   }
 
   return GASPI_SUCCESS;
@@ -461,7 +464,7 @@ pgaspi_write_list (const gaspi_number_t num,
 
 #ifdef DEBUG
   eret =
-    pgaspi_rw_list_verify_parameters ("pgaspi_write_list", num,
+    pgaspi_rw_list_verify_parameters ("pgaspi_write_list", gctx, num,
                                       segment_id_local, offset_local, rank,
                                       segment_id_remote, offset_remote, size,
                                       queue);
@@ -518,7 +521,7 @@ pgaspi_read_list (const gaspi_number_t num,
 
 #ifdef DEBUG
   eret =
-    pgaspi_rw_list_verify_parameters ("pgaspi_read_list", num,
+    pgaspi_rw_list_verify_parameters ("pgaspi_read_list", gctx, num,
                                       segment_id_local, offset_local, rank,
                                       segment_id_remote, offset_remote, size,
                                       queue);
@@ -807,7 +810,7 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
   GASPI_VERIFY_REMOTE_OFF (offset_remote, segment_id_remote, rank, size);
   GASPI_VERIFY_QUEUE (queue);
   GASPI_VERIFY_COMM_SIZE (size, segment_id_local, segment_id_remote, rank,
-                          GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
+                          GASPI_MIN_TSIZE_C, gctx->config->transfer_size_max);
 
   if (notification_value == 0)
   {
@@ -878,7 +881,7 @@ pgaspi_write_list_notify (const gaspi_number_t num,
   }
 
   eret =
-    pgaspi_rw_list_verify_parameters ("pgaspi_write_list_notify", num,
+    pgaspi_rw_list_verify_parameters ("pgaspi_write_list_notify", gctx, num,
                                       segment_id_local, offset_local, rank,
                                       segment_id_remote, offset_remote, size,
                                       queue);
@@ -941,7 +944,7 @@ pgaspi_read_notify (const gaspi_segment_id_t segment_id_local,
   GASPI_VERIFY_REMOTE_OFF (offset_remote, segment_id_remote, rank, size);
   GASPI_VERIFY_QUEUE (queue);
   GASPI_VERIFY_COMM_SIZE (size, segment_id_local, segment_id_remote, rank,
-                          GASPI_MIN_TSIZE_C, GASPI_MAX_TSIZE_C);
+                          GASPI_MIN_TSIZE_C, gctx->config->transfer_size_max);
 
   gaspi_return_t eret = GASPI_ERROR;
 
@@ -998,7 +1001,7 @@ pgaspi_read_list_notify (const gaspi_number_t num,
 
 #ifdef DEBUG
   eret =
-    pgaspi_rw_list_verify_parameters ("pgaspi_read_list_notify", num,
+    pgaspi_rw_list_verify_parameters ("pgaspi_read_list_notify", gctx, num,
                                       segment_id_local, offset_local, rank,
                                       segment_id_remote, offset_remote, size,
                                       queue);
