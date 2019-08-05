@@ -62,7 +62,8 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 
 #pragma weak gaspi_segment_ptr = pgaspi_segment_ptr
 gaspi_return_t
-pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
+pgaspi_segment_ptr (const gaspi_segment_id_t segment_id,
+                    gaspi_pointer_t * ptr)
 {
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
@@ -279,6 +280,7 @@ pgaspi_segment_alloc_maybe (gaspi_segment_id_t const segment_id,
   unsigned char *segPtr =
     (unsigned char *) myrank_mseg->notif_spc.addr +
     NOTIFICATIONS_SPACE_SIZE - sizeof (gaspi_notification_t);
+
   gaspi_notification_t *p = (gaspi_notification_t *) segPtr;
 
   *p = 1;
@@ -588,7 +590,6 @@ pgaspi_segment_create (const gaspi_segment_id_t segment_id,
 /* Extensions */
 
 /* TODO: */
-
 /* - check/deal with alignment issues */
 #pragma weak gaspi_segment_bind = pgaspi_segment_bind
 gaspi_return_t

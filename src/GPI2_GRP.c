@@ -30,7 +30,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Utility.h"
 
 #define GASPI_COLL_NUM_DATATYPES 6
-const unsigned int glb_gaspi_typ_size[GASPI_COLL_NUM_DATATYPES] = { 4, 4, 4, 8, 8, 8 };
+const size_t glb_gaspi_typ_size[GASPI_COLL_NUM_DATATYPES] =
+ { 4, 4, 4, 8, 8, 8 };
 
 
 #define TOGGLE_SIZE 2
