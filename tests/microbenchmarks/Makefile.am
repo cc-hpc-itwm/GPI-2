@@ -1,15 +1,17 @@
 AM_CFLAGS = -g
 AM_CPPFLAGS = -I$(top_builddir)/src/include
 
-LDADD = -L$(top_builddir)/src/.libs -lGPI2 -lpthread
+LDADD = $(top_builddir)/src/.libs/libGPI2.la
+
+LDFLAGS = -lpthread
 if WITH_INFINIBAND
-LDADD += @ac_lib_infiniband@ -libverbs
+LDFLAGS += @ac_lib_infiniband@ -libverbs
 endif
 
 if WITH_MPI
 AM_CFLAGS += -DGPI2_WITH_MPI
 AM_CFLAGS += @ac_inc_mpi@
-LDADD += @ac_lib_mpi@  @mpi_extra_flags@
+LDFLAGS += @ac_lib_mpi@  @mpi_extra_flags@
 endif
 
 # MICROBENCHMARKS
