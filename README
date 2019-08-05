@@ -24,118 +24,131 @@ applications.
 ===============
 
 Requirements:
--------------
+------------
 
 The current version of GPI-2 has the following requirements.
 
 Software:
 - libibverbs v1.1.6 (Verbs library from OFED) if running on Infiniband.
 - ssh server running on compute nodes (requiring no password).
+- autotools utilities (autoconf>=2.63,libtool>=2.2,automake>=1.11)
 - gawk (GNU Awk) and sed utilities.
 
 Hardware:
 - Infiniband/RoCE device or Ethernet device.
 
+
+Basic configuration:
+-------------------
+
 To install GPI-2, it needs to be configured using the script `./configure`.
 The available options and the relevant environment variables are printed
 by `./configure --help`.
+The basic configuration:
 
-By default the production, debugging and statistic libraries are compiled
-for infiniband. Fortran modules are also build by default, as well as the
-html documentation, if Fortran compilers and doxygen, respectively, are
-available. Support for MPI (mixed mode) is also available if it is requested
-and the libraries (compilers) are found. Thus for example, the command line:
+`./configure --prefix=$HOME/local`
 
-`CC=mpiicc FC=mpiifort ./configure --prefix=$HOME/local --with-infiniband=/usr --with-mpi --with-slurm`
+use the compilers defined by the environment variables CC and FC for
+the general checking procedure and sets up `$HOME/local` as the
+installation directory. By default, the script:
 
-will do the configuration using MPI-Intel compilers, the path to infiniband `/usr`
-and `slurm` as batch system, using as target directory `$HOME/local`.
-The command line:
-`./configure --with-ethernet`
-will configure the (environment defined) CC and FC compilers for a TCP connection,
-using as target directory `/usr/local`.
+- checks for the Infiniband header and library files, and fall backs
+to the Ethernet device in case they are not available or usable,
+- targets to the production, debugging and statistic libraries, as well
+as, the Fortran modules (if the Fortran compilers are found),
+- configure GPI for use PBS as the batch system,
+- checks the existence of `doxygen` and `dot` for the documentation target.
 
-As it is usual, after configuration, the command line:
+Compilation, testing and cleaning:
+-----------------------
+
+The compilation step:
 
 `make -j$NPROC`
 
-will compile in parallel the libraries, the Fortran modules and the tests
-After succesful completion, the user can define the working hosts in `tests/machines`
-and run the predefined tests by:
+builds in parallel the GPI libraries, the Fortran modules, and the
+binary tests and microbenchmarks.  After successful completion, the
+user can define the working hosts in `tests/machines` and run the
+predefined tests by:
 
 `make check`
 
-The (doxygen) documentation and the tutorial code are built through `make docs` and
-`make tutorial`, respectively.
+Clean of the configuration/compilation files can be done as usual
+with the commands `make distclean` and `make clean`.
 
-Finally
+Documentation and tutorial:
+--------------------------
 
-`make install`
+If required, the (doxygen) documentation and the tutorial code are
+built through `make docs` and `make tutorial`, respectively.
 
-will install the `gaspi_*` scripts (according to the batch system) in
-the EPREFIX/bin directory, the libraries in EPREFIX/lib, and the headers and Fortran modules in
-EPREFIX/include.
+Installation and uninstallation:
+-------------------------------
 
-Infiniband support (default)
-----------------------------
+Finally, `make install` installs:
 
-GPI-2 requires the libibverbs from the OFED stack. You can pass the
-path of your OFED installation to the install script using the option
-(--with-infiniband) for that, in case the install script is not able to find it:
+- the running scripts in the `$HOME/local/bin` directory,
+- the libraries in `$HOME/local/lib64`,
+- the headers and Fortran modules in `$HOME/local/include`,
+- the full tests directory in `$HOME/local/tests`
 
-     ./install.sh --with-infiniband<=full_path_to_ofed>
+If required the package can be removed from the target directory by
+using `make uninstall`.
 
-You can see the install script usage:
-    ./install.sh -h
+Custom configurations:
+----------------------
+Specific configurations can be setup by predefined flags.
 
-Ethernet support
-----------------
+### DEVICES ###
+GPI-2 is intended to be linked to the libibverbs from the OFED stack.
+In case the configure script is not able to find it in the default paths
+of the host system, the user can pass the path of the OFED
+installation:
 
-To install GPI-2 on a system without Infiniband, you can use the
-option --with-ethernet. With this option standard TCP sockets are
-used.
+`./configure --with-infiniband<=full_path_to_ofed>`
 
-Such support is primarily targetted at the development of GPI-2
-applications without the need to access a system with Infiniband, with
-less focus on performance.
+On the other hand, GPI-2 can be installed on a system without
+Infiniband, using the standard TCP sockets:
 
-MPI Interoperability
---------------------
+`./configure --with-ethernet`
+ 
+Such support is, however, primarily targetted at the development of
+GPI-2 applications without the need to access a system with
+Infiniband, with less focus on performance.
 
-If you plan to use GPI-2 with MPI to, for instance, start an
+### BATCH SYSTEM ###
+PBS is the default batch system of GPI-2, however, the user can request
+for Slurm
+
+ `./configure --with-slurm`
+
+ or LoadLeveler:
+ 
+`./configure --with-loadleveler`
+ 
+### MPI Interoperability ###
+
+If the plan is to use GPI-2 with MPI to, for instance, start an
 incremental port of a large application or to use some libraries that
-require MPI, you can enable MPI interoperability with the option:
+require MPI, the user can enable MPI interoperability in several ways:
 
-     ./install.sh --with-mpi<=path_to_mpi_installation>
+- check for MPI in the standard path: `./configure --with-mpi`
+- check for MPI in a specific path, e.g.: `./configure --with-mpi=<=path_to_mpi_installation>`
+- specify the MPI compilers, e.g.: `CC=mpiicc FC=mpiifort ./configure`
 
-If you don't provide a path to your MPI installation and mpirun is in
-your PATH, the installation script will take that MPI installation.
+For this MPI+GPI2 mixed mode, the only constraint is that MPI_Init()
+must be invoked before gaspi_proc_init() and it is assumed that the
+application starts with mpirun (or mpiexec, etc.). Also, note that
+this option will require that the GPI-2 application is linked to the MPI
+library (even if MPI is not used). Therefore, if the interest is to
+use GPI-2 only, GPI-2 must not be build with with this option.
 
-This will enable you to use GPI-2 with MPI where the only constraint
-is that MPI_Init() must be invoked before gaspi_proc_init(). For this
-MPI+GPI2 mixed mode, it is assumed that you start the application with
-mpirun (or mpiexec, etc.).
-
-Note that this option will build GPI-2 with MPI, requiring you to link
-the MPI library to your GPI-2 application (even if you are not using
-MPI). If you are interested in using GPI-2 only, do not build GPI-2
-with this option.
+Furthermore fine control of MPI can be done through the
+`--with-mpi-extra-flags` option (used, for example, to link an
+specific version of the Intel MPI libraries).
 
 
-3. BUILDING GPI-2
-=================
-
-You can build GPI-2 on your own. There are the following make targets:
-
-all	  - Build everything
-gpi	  - Build the GPI-2 library (including debug version)
-fortran	  - Build Fortran 90 bindings
-mic	  - Build the GPI-2 library for the MIC
-tests	  - Build provided tests
-docs	  - Generate documentation (requires doxygen)
-clean	  - Clean-up
-
-4. BUILDING GPI-2 APPLICATIONS
+3. BUILDING GPI-2 APPLICATIONS
 ==============================
 
 GPI-2 provides two libraries: libGPI2.a and libGPI2-dbg.a.
@@ -146,7 +159,7 @@ parameter checking and debug messages and is to be used to debug and
 during development.
 
 
-5. RUNNING GPI-2 APPLICATIONS
+4. RUNNING GPI-2 APPLICATIONS
 =============================
 
 The gaspi_run utility is used to start and run GPI-2
@@ -225,58 +238,19 @@ will display the string "Hello 1" in the gaspi_logger started on rank
 1.
 
 
-6. GPI-2 WITH CO-PROCESSOR (INTEL XEON PHI)
-==========================================
-
-GPI-2 can be used with the Intel Xeon Phi (MIC) where the MIC is used
-as one node (running possibly more than one GPI-2 process).
-
-To use GPI-2 on the MIC, you need to compile it using the Intel
-compiler with the -mmic option. The Makefile includes a build target
-mic for that end but this build target is not used by the installation
-script. After successful compilation, GPI-2 for the MIC can be found
-under lib64/mic. If you are having problems with the compilation, make
-sure the OFED_PATH and OFED_MIC_PATH in src/make.inc is setup correctly.
-
-Assuming that the MIC(s) is set up properly, GPI-2 requires:
-
-- ssh connectivity (requiring no password)
-
-- grouping of local host and MIC(s) by using the tool micctrl
-
-  micctrl --initdefaults
-  micctrl --addbridge=br0 --type=internal --ip=172.31.1.254
-  micctrl --network=static --bridge=br0 --ip=172.31.1.1
-
- where for instance, mic0: 172.31.1.1, mic1: 172.31.1.2 etc.
-
-The MIC must be visible to the whole cluster network. For instance,
-if your cluster network is 192.168.1.0 on eth0 and you want to map
-mic0 to 192.168.1.100 do:
-
-iptables -t nat -A PREROUTING -d 192.168.1.100 -i eth0 -j DNAT --to-destination 172.31.1.1
-iptables -t nat -A POSTROUTING -s 172.31.1.1 -o eth0 -j SNAT --to-source 192.168.1.100
-
-After setup, the MIC hostname can simply be added to the machinefile
-and be used as another host.
-
-8. TROUBLESHOOTING AND KNOWN ISSUES
+6. TROUBLESHOOTING AND KNOWN ISSUES
 ===================================
 
-If you're having troubles when building GPI-2 with support for
-Infiniband, make sure you have the OFED stack correctly installed and
-running. You can change the OFED path in the definitions file make.inc
-in the source directory (src) to the fix path in your system.
+If there are troubles when building GPI-2 with support for Infiniband,
+make sure the OFED stack is correctly installed and running. As above
+mentioned, it is possible to specify the OFED path in the actual host
+system.
 
-When installing GPI-2 with MPI mixed-mode support (using the option
---with-mpi<=path_to_mpi_installation>) and the installation is failing
-when trying to build the tests due to missing libraries, you can
-provide extra paths through available variables and be able to find
-the missing paths. These are: GPI2_EXTRA_CFLAGS, GPI2_EXTRA_LIBS_PATH,
-GPI2_EXTRA_LIBS.
-
-For example:
-   GPI2_EXTRA_LIBS=-lmpl ./install.sh --with-mpi -p /opt/GPI2
+When installing GPI-2 with MPI mixed-mode support (using the options
+`--with-mpi` or `--with-mpi<=path_to_mpi_installation>`) and the
+installation is failing when trying to build the tests due to missing
+libraries, try to setup directly the MPI compilers (wrappers) through
+the environment variables CC and FC.
 
 
 Environment variables
@@ -313,7 +287,7 @@ If you're running in MPI mixed-mode, starting your application with
 mpirun/mpiexec, this should not be an issue.
 
 
-9. UP COMING FEATURES
+7. UP COMING FEATURES
 =====================
 
 GPI-2 is on-going work and more features are still to come. Here are
@@ -323,7 +297,7 @@ some that are in our roadmap:
 - better debugging possibilities
 
 
-10. MORE INFORMATION
+8. MORE INFORMATION
 ====================
 
 For more information, check the GPI-2 website ( www.gpi-site.com ) and
