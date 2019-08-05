@@ -39,7 +39,9 @@ pgaspi_passive_transfer_size_max (gaspi_size_t *
 {
   GASPI_VERIFY_NULL_PTR (passive_transfer_size_max);
 
-  *passive_transfer_size_max = GASPI_MAX_TSIZE_P;
+  gaspi_context_t const *const gctx = &glb_gaspi_ctx;
+
+  *passive_transfer_size_max = gctx->config->passive_transfer_size_max;
 
   return GASPI_SUCCESS;
 }
@@ -59,7 +61,8 @@ pgaspi_passive_send (const gaspi_segment_id_t segment_id_local,
   GASPI_VERIFY_COMM_SIZE (size,
                           segment_id_local,
                           segment_id_local,
-                          gctx->rank, GASPI_MIN_TSIZE_P, GASPI_MAX_TSIZE_P);
+                          gctx->rank, GASPI_MIN_TSIZE_P,
+                          gctx->config->passive_transfer_size_max);
   GASPI_VERIFY_RANK (rank);
 
   gaspi_return_t eret = GASPI_ERROR;
@@ -107,7 +110,8 @@ pgaspi_passive_receive (const gaspi_segment_id_t segment_id_local,
   GASPI_VERIFY_COMM_SIZE (size,
                           segment_id_local,
                           segment_id_local,
-                          gctx->rank, GASPI_MIN_TSIZE_P, GASPI_MAX_TSIZE_P);
+                          gctx->rank, GASPI_MIN_TSIZE_P,
+                          gctx->config->passive_transfer_size_max);
 
   if (lock_gaspi_tout (&gctx->lockPR, timeout_ms))
   {
