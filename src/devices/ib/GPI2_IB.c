@@ -449,8 +449,8 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
 
   /* Passive */
   ib_dev_ctx->scqP =
-    ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,
-                   NULL, 0);
+    ibv_create_cq (ib_dev_ctx->context, gctx->config->passive_queue_size_max,
+                   NULL, NULL, 0);
   if (NULL == ib_dev_ctx->scqP)
   {
     GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
@@ -859,7 +859,8 @@ pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx, const int i,
     /* Passive QP */
     ib_dev_ctx->qpP[i] =
       _pgaspi_dev_create_qp (gctx, ib_dev_ctx->scqP, ib_dev_ctx->rcqP,
-                             ib_dev_ctx->srqP, gctx->config->queue_size_max);
+                             ib_dev_ctx->srqP,
+                             gctx->config->passive_queue_size_max);
 
     if (ib_dev_ctx->qpP[i] == NULL)
       return -1;

@@ -19,6 +19,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2.h"
 #include "GPI2_Utility.h"
 
+#define GASPI_MAX_QSIZE   (4096)
 #define GASPI_MAX_TSIZE_C (1ul<<30ul)
 #define GASPI_MAX_TSIZE_P ((1ul<<16ul)-1ul)
 
@@ -162,7 +163,8 @@ pgaspi_config_set (const gaspi_config_t nconf)
   if (nconf.queue_size_max > GASPI_MAX_QSIZE || nconf.queue_size_max < 1)
   {
     GASPI_DEBUG_PRINT_ERROR
-      ("Invalid value for parameter queue_size_max (min=1 and max=GASPI_MAX_QSIZE)");
+      ("Invalid value for parameter queue_size_max (min=1 and max=%lu)",
+       GASPI_MAX_QSIZE);
     return GASPI_ERR_CONFIG;
   }
 
@@ -198,6 +200,15 @@ pgaspi_config_set (const gaspi_config_t nconf)
     return GASPI_ERR_CONFIG;
   }
   glb_gaspi_cfg.transfer_size_max = nconf.transfer_size_max;
+
+  if (nconf.passive_queue_size_max != 1024)
+  {
+    GASPI_PRINT_WARNING
+      ("The current implementation does not consider the use of the parameter\
+ passive_queue_size_max");
+
+    return GASPI_ERR_CONFIG;
+  }
 
   // TODO: the default value probably should come from the device
   if (nconf.passive_transfer_size_max > GASPI_MAX_TSIZE_P)
