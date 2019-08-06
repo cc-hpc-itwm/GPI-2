@@ -14,6 +14,9 @@ docs :
 endif
 
 tutorial:
+	@if [[ $(abs_top_builddir) != $(abs_top_srcdir) ]]; then\
+		rsync -ar $(abs_top_srcdir)/tutorial/code/ tutorial/code/;\
+	fi
 	make -C tutorial/code
 
 .PHONY : docs tutorial
@@ -31,28 +34,31 @@ check :
 bin_SCRIPTS = bin/gaspi_logger
 if WITH_LOADLEVELER
 install-exec-hook :
-	cp bin/gaspi_run.poe $(DESTDIR)$(bindir)/gaspi_run
-	head -n 18 bin/gaspi_cleanup > $(DESTDIR)$(bindir)/gaspi_cleanup
+	cp $(abs_top_srcdir)/bin/gaspi_run.poe $(DESTDIR)$(bindir)/gaspi_run
+	head -n 18 $(abs_top_srcdir)/bin/gaspi_cleanup > $(DESTDIR)$(bindir)/gaspi_cleanup
 	chmod +x $(DESTDIR)$(bindir)/gaspi_cleanup
 else
 if WITH_SLURM
 install-exec-hook :
-	cp bin/gaspi_run.slurm $(DESTDIR)$(bindir)/gaspi_run
-	cp bin/slurm.env $(DESTDIR)$(bindir)/
-	head -n 18 bin/gaspi_cleanup > $(DESTDIR)$(bindir)/gaspi_cleanup
+	cp $(abs_top_srcdir)/bin/gaspi_run.slurm $(DESTDIR)$(bindir)/gaspi_run
+	cp $(abs_top_srcdir)/bin/slurm.env $(DESTDIR)$(bindir)/
+	head -n 18 $(abs_top_srcdir)/bin/gaspi_cleanup > $(DESTDIR)$(bindir)/gaspi_cleanup
 	chmod +x $(DESTDIR)$(bindir)/gaspi_cleanup
 else
 bin_SCRIPTS += bin/ssh.spawner bin/gaspi_cleanup
 install-exec-hook :
-	cp bin/gaspi_run.ssh $(DESTDIR)$(bindir)/gaspi_run
+	cp $(abs_top_srcdir)/bin/gaspi_run.ssh $(DESTDIR)$(bindir)/gaspi_run
 endif
 endif
 
 # INSTALL TESTS
 if ENABLE_DEBUG
-install-data-hook:
+install-data-hook :
 	mkdir -p $(prefix)/tests/
-	rsync -ar --exclude='.deps' --exclude='*.o' --exclude='*.log' --exclude='machines*' tests/ $(prefix)/tests/
+	rsync -ar --exclude='.deps' --exclude='*.o' --exclude='*.log' --exclude='machines*' $(abs_top_srcdir)/tests/ $(prefix)/tests/
+	@if [[ $(abs_top_builddir) != $(abs_top_srcdir) ]]; then\
+		rsync -ar --exclude='.deps' --exclude='*.o' --exclude='*.log' --exclude='machines*' $(abs_top_builddir)/tests/ $(prefix)/tests/;\
+	fi
 endif
 
 # CLEAN
@@ -71,13 +77,16 @@ clean-docs :
 .PHONY +: clean-docs
 
 clean-local :
+	make -C docs clean
 	make -C tutorial/code clean
 else
 clean-local :
-	make -C docs clean
 	make -C tutorial/code clean
 endif
 
-uninstall-hook:
-	-rm -fr $(prefix)/tests/
+uninstall-hook :
 	-rm $(DESTDIR)$(bindir)/gaspi_run
+	-rm $(DESTDIR)$(bindir)/ssh.spawner
+	-rm $(DESTDIR)$(bindir)/slurm.env
+	-rm $(DESTDIR)$(bindir)/gaspi_cleanup
+	-rm -fr $(prefix)/tests/

@@ -15,7 +15,7 @@ include_HEADERS = include/GASPI.h include/GASPI_Ext.h include/GASPI_Threads.h \
 	include/PGASPI.h
 
 # GENERAL C FLAGS
-default_includes = -I. -Iinclude -Idevices/include
+default_includes = -I$(abs_top_srcdir)/src -I$(abs_top_srcdir)/src/include -I$(abs_top_srcdir)/src/devices/include
 lib_default_cflags = -Wall -D_GNU_SOURCE
 
 # DEVICES SPECIFICS
@@ -23,7 +23,7 @@ if WITH_INFINIBAND
 SRCS += devices/ib/GPI2_IB_IO.c devices/ib/GPI2_IB_PASSIVE.c devices/ib/GPI2_IB_ATOMIC.c \
 devices/ib/GPI2_IB_GRP.c devices/ib/GPI2_IB_SEG.c devices/ib/GPI2_IB.c
 SRCS += devices/ib/GPI2_IB.h
-default_includes += -Idevices/ib @ac_inc_infiniband@ -DGPI2_DEVICE_IB
+default_includes += -I$(abs_top_srcdir)/src/devices/ib @ac_inc_infiniband@ -DGPI2_DEVICE_IB
 if WITH_INFINIBAND_EXT
 default_includes += -DGPI2_EXP_VERBS
 endif
@@ -33,7 +33,7 @@ devices/tcp/GPI2_TCP.c devices/tcp/GPI2_TCP_IO.c devices/tcp/GPI2_TCP_SEG.c \
 devices/tcp/GPI2_TCP_PASSIVE.c devices/tcp/GPI2_TCP_ATOMIC.c \
 devices/tcp/GPI2_TCP_GRP.c
 SRCS += devices/tcp/GPI2_TCP.h devices/tcp/list.h devices/tcp/rb.h devices/tcp/tcp_device.h
-default_includes += -Idevices/tcp -DGPI2_DEVICE_TCP
+default_includes += -I$(abs_top_srcdir)/src/devices/tcp -DGPI2_DEVICE_TCP
 endif
 
 # MPI MODE

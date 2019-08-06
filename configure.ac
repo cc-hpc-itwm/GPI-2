@@ -15,7 +15,7 @@ AC_CONFIG_MACRO_DIR([config])
 AC_CONFIG_HEADERS([config.h])
 
 # CONFIG DEFAULTS
-export CONFIG_SITE=`pwd`/config.site
+export CONFIG_SITE=$srcdir/config.site
 source ${CONFIG_SITE}
 
 # OVERWRITE LIBTOOL FLAGS

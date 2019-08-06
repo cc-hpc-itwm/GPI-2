@@ -1,7 +1,7 @@
 AM_CFLAGS = -g
-AM_CPPFLAGS = -I$(top_builddir)/src/include
+AM_CPPFLAGS = -I$(abs_top_srcdir)/src/include
 
-LDADD = $(top_builddir)/src/.libs/libGPI2.la
+LDADD = $(abs_top_builddir)/src/.libs/libGPI2.la
 
 LDFLAGS = -lpthread
 if WITH_INFINIBAND

@@ -1,7 +1,7 @@
 AM_CFLAGS = -g
-AM_CPPFLAGS = -I$(top_builddir)/src/include -I../
+AM_CPPFLAGS = -I$(abs_top_srcdir)/src/include -I$(abs_top_srcdir)/tests/tests
 
-LDADD = $(top_builddir)/src/.libs/libGPI2-dbg.la
+LDADD = $(abs_top_builddir)/src/.libs/libGPI2-dbg.la
 
 LDFLAGS = -lpthread
 if WITH_INFINIBAND
@@ -9,7 +9,7 @@ LDFLAGS += @ac_lib_infiniband@ -libverbs
 endif
 
 if WITH_FORTRAN
-AM_FCFLAGS = -I$(top_builddir)/src @FCFLAGS_TESTS@
+AM_FCFLAGS = -I$(abs_top_builddir)/src @FCFLAGS_TESTS@
 endif
 
 if WITH_MPI
