@@ -62,19 +62,20 @@ CLEANFILES = *~ *.bak m4/*~
 clean-tutorial :
 	make -C tutorial/code clean
 
-.PHONY +: clean-tutorial
-
-clean-local :
-	make -C tutorial/code clean
+.PHONY : clean-tutorial
 
 if HAVE_DOXYGEN
 clean-docs :
 	make -C docs clean
 
-.PHONY +: clean-tutorial
+.PHONY +: clean-docs
 
-clean-local +:
+clean-local :
+	make -C tutorial/code clean
+else
+clean-local :
 	make -C docs clean
+	make -C tutorial/code clean
 endif
 
 uninstall-hook:
