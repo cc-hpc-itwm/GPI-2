@@ -1107,7 +1107,7 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  GASPI_VERIFY_INIT ("gaspi_allreduce_user");
+  GASPI_VERIFY_INIT ("gaspi_allreduce");
   GASPI_VERIFY_NULL_PTR (buf_send);
   GASPI_VERIFY_NULL_PTR (buf_recv);
   GASPI_VERIFY_GROUP (g);
