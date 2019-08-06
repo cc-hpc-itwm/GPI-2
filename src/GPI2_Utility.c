@@ -30,7 +30,7 @@ gaspi_load_ulong (volatile ulong * ptr)
 {
   ulong v = *ptr;
 
-  asm volatile ("":::"memory");
+  __asm__ volatile("" ::: "memory");
 
   return v;
 }

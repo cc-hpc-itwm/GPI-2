@@ -8,14 +8,12 @@ NAME += left_right_double_buffer_req_free
 NAME += left_right_double_buffer_funneled
 NAME += left_right_double_buffer_multiple
 
-CC = mpiicc
-
 CFLAGS += -Wall
 CFLAGS += -Wextra
 CFLAGS += -Wshadow
 CFLAGS += -O3
-CFLAGS += -fopenmp
-CFLAGS += -std=c99
+CFLAGS += -qopenmp
+CFLAGS += -std=gnu99
 
 CFLAGS_MULTIPLE += -mt_mpi
 
@@ -24,9 +22,7 @@ CFLAGS_MULTIPLE += -mt_mpi
 INCLUDE_DIR += ..
 LDFLAGS += $(addprefix -L,$(LIBRARY_DIR))
 
-ifeq "$(CC)" "icc"
-  LDFLAGS += -openmp-link static
-endif
+LDFLAGS += -qopenmp-link static
 
 CFLAGS += $(addprefix -I,$(INCLUDE_DIR))
 

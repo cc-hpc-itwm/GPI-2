@@ -4,6 +4,7 @@
 
 program main
   use gaspi
+  use gaspi_ext
   use , intrinsic :: ISO_C_BINDING
 
   integer(gaspi_return_t) :: ret

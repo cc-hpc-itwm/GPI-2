@@ -210,7 +210,7 @@ program main
 	   call exit(-1)
 	end if
 	if (arr(1) .ne. 42) then
-	   write(*, *), "Wrong magic number"
+	   write(*, *) "Wrong magic number"
 	end if
      end do
   else
@@ -267,7 +267,7 @@ program main
 
   do i = 1, num
      if( arr(i+255) .ne. remoteRank) then
-	write(istr,'(i4)'),  arr(i)
+	write(istr,'(i4)')  arr(i)
 	out_str = 'wrong data '//trim(istr)//C_NEW_LINE//C_NULL_CHAR
 	call gaspi_printf(out_str)
      end if
@@ -301,7 +301,7 @@ program main
 	call exit(-1)
      end if
      if(atom_value .ne. nprocs) then
-	write(*,*), "Incorrect atomic value: ", atom_value
+	write(*,*) "Incorrect atomic value: ", atom_value
      end if
   end if
 

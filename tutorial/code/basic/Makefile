@@ -14,9 +14,9 @@ CFLAGS += -std=c99
 
 ###############################################################################
 
-INCLUDE_DIR += $(GPI2_HOME)/include
+INCLUDE_DIR += $(GPI2_HOME)/src/include
 INCLUDE_DIR += ..
-LIBRARY_DIR += $(GPI2_HOME)/lib64
+LIBRARY_DIR += $(GPI2_HOME)/src/.libs
 
 LDFLAGS += $(addprefix -L,$(LIBRARY_DIR))
 

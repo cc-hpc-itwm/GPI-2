@@ -16,7 +16,7 @@ get_mcycles (void)
   unsigned low, high;
   unsigned long long val;
 
-  asm volatile ("rdtsc":"=a" (low), "=d" (high));
+  __asm__ volatile ("rdtsc":"=a" (low), "=d" (high));
   val = high;
   val = (val << 32) | low;
   return val;

@@ -41,7 +41,7 @@ gaspi_get_cycles (void)
   unsigned low, high;
   unsigned long long val;
 
-  asm volatile ("rdtsc":"=a" (low), "=d" (high));
+  __asm__ volatile ("rdtsc":"=a" (low), "=d" (high));
 
   val = high;
   val = (val << 32) | low;
@@ -53,7 +53,7 @@ static inline unsigned char
 gaspi_atomic_xchg (volatile unsigned char *addr, const char new_val)
 {
   unsigned char res;
-  asm volatile ("lock; xchgb %0, %1":"+m" (*addr),
+  __asm__ volatile ("lock; xchgb %0, %1":"+m" (*addr),
                 "=a" (res):"1" (new_val):"memory");
   return res;
 }
