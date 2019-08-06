@@ -238,6 +238,13 @@ fi
 
 echo "Batch system:" >& AS_MESSAGE_FD
 echo "$batchsys" >& AS_MESSAGE_FD
+
+echo "Doxygen documentation target:" >& AS_MESSAGE_FD
+if test -n "$DOXYGEN" -a -n "$DOT"; then
+   echo " Available" >& AS_MESSAGE_FD
+else
+   echo " Not available" >& AS_MESSAGE_FD
+fi
 echo >& AS_MESSAGE_FD
 
 AC_OUTPUT

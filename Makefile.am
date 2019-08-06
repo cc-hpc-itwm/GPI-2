@@ -7,8 +7,11 @@ if ENABLE_DEBUG
 SUBDIRS += tests
 endif
 
+# DOCS and TUTORIAL
+if HAVE_DOXYGEN
 docs :
 	make -C docs docs/doxygen
+endif
 
 tutorial:
 	make -C tutorial/code
@@ -56,17 +59,23 @@ endif
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
 CLEANFILES = *~ *.bak m4/*~
 
-clean-docs :
-	make -C docs clean
-
 clean-tutorial :
 	make -C tutorial/code clean
 
-.PHONY +: clean-docs clean-tutorial
+.PHONY +: clean-tutorial
 
 clean-local :
-	make -C docs clean
 	make -C tutorial/code clean
+
+if HAVE_DOXYGEN
+clean-docs :
+	make -C docs clean
+
+.PHONY +: clean-tutorial
+
+clean-local +:
+	make -C docs clean
+endif
 
 uninstall-hook:
 	-rm -fr $(prefix)/tests/
