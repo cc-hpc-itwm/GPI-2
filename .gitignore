@@ -44,4 +44,5 @@ machines
 
 docs/Doxyfile
 docs/doxygen
+docs/README.md
 !docs/Doxyfile.in
