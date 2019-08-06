@@ -103,7 +103,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   if (nconf.sn_port < 1024 || nconf.sn_port > 65536)
   {
     GASPI_DEBUG_PRINT_ERROR
-      ("Invalid value for parameter sn_port ( from 1024 to 65536)");
+      ("Invalid value for parameter sn_port (from 1024 to 65536)");
     return GASPI_ERR_CONFIG;
   }
   glb_gaspi_cfg.sn_port = nconf.sn_port;
@@ -198,7 +198,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   if (nconf.transfer_size_max > GASPI_MAX_TSIZE_C)
   {
     GASPI_DEBUG_PRINT_ERROR
-      ("Invalid value for parameter transfer_size_max (and max=%lu)",
+      ("Invalid value for parameter transfer_size_max (max=%lu)",
        GASPI_MAX_TSIZE_C);
 
     return GASPI_ERR_CONFIG;
@@ -227,7 +227,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   if (nconf.passive_transfer_size_max > GASPI_MAX_TSIZE_P)
   {
     GASPI_DEBUG_PRINT_ERROR
-      ("Invalid value for parameter passive_transfer_size_max (and max=%lu)",
+      ("Invalid value for parameter passive_transfer_size_max (max=%lu)",
        GASPI_MAX_TSIZE_P);
 
     return GASPI_ERR_CONFIG;
