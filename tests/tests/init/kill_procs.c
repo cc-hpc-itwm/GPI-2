@@ -3,7 +3,7 @@
 int
 main (int argc, char *argv[])
 {
-  gaspi_rank_t rank, nc, i;
+  gaspi_rank_t rank, nc;
 
   TSUITE_INIT (argc, argv);
 
@@ -17,11 +17,12 @@ main (int argc, char *argv[])
 
   if (rank == 0)
   {
-    for (i = 1; i < nc; i++)
+    for (gaspi_rank_t i = 1; i < nc; i++)
     {
       ASSERT (gaspi_proc_kill (i, GASPI_BLOCK));
     }
-    EXPECT_FAIL (gaspi_proc_kill (rank, GASPI_BLOCK));
+    EXPECT_FAIL_WITH (gaspi_proc_kill (rank, GASPI_BLOCK),
+                      GASPI_ERR_INV_RANK);
   }
   else
   {
