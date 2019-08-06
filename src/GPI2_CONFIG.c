@@ -22,6 +22,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_MAX_QSIZE   (4096)
 #define GASPI_MAX_TSIZE_C (1ul<<30ul)
 #define GASPI_MAX_TSIZE_P ((1ul<<16ul)-1ul)
+#define GASPI_DEFAULT_QSIZE (1024)
 
 gaspi_config_t glb_gaspi_cfg =
 {
@@ -62,13 +63,13 @@ gaspi_config_t glb_gaspi_cfg =
   },
   GASPI_ETHERNET,               //network type
 #endif
-  1024,                         //queue size max
+  GASPI_DEFAULT_QSIZE,          //queue size max
   8,                            //queue count
   GASPI_MAX_GROUPS,             //group_max;
   GASPI_MAX_MSEGS,              //segment_max;
   GASPI_MAX_TSIZE_C,            //transfer_size_max;
   GASPI_MAX_NOTIFICATION,       //notification_num;
-  1024,                         //passive_queue_size_max;
+  GASPI_DEFAULT_QSIZE,          //passive_queue_size_max;
   GASPI_MAX_TSIZE_P,            //passive_transfer_size_max;
   (255 * sizeof (unsigned long)),       //allreduce_buf_size;
   255,                          //allreduce_elem_max;
@@ -201,7 +202,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   }
   glb_gaspi_cfg.transfer_size_max = nconf.transfer_size_max;
 
-  if (nconf.passive_queue_size_max != 1024)
+  if (nconf.passive_queue_size_max != GASPI_DEFAULT_QSIZE)
   {
     GASPI_PRINT_WARNING
       ("The current implementation does not consider the use of the parameter\
