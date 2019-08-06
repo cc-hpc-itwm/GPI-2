@@ -660,13 +660,13 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
     return GASPI_TIMEOUT;
   }
 
-  if (!(grp_ctx->coll_op & GASPI_BARRIER))
+  if (!(grp_ctx->active_coll_op & GASPI_BARRIER))
   {
     unlock_gaspi (&grp_ctx->gl);
     return GASPI_ERR_ACTIVE_COLL;
   }
 
-  grp_ctx->coll_op = GASPI_BARRIER;
+  grp_ctx->active_coll_op = GASPI_BARRIER;
 
   if (grp_ctx->lastmask == 0x1)
   {
@@ -765,7 +765,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   }
 
   grp_ctx->toggle = (grp_ctx->toggle ^ 0x1);
-  grp_ctx->coll_op = GASPI_NONE;
+  grp_ctx->active_coll_op = GASPI_NONE;
   grp_ctx->lastmask = 0x1;
 
   GPI2_STATS_INC_COUNT (GASPI_STATS_COUNTER_NUM_BARRIER, 1);
@@ -1085,7 +1085,7 @@ L3:
 
   grp_ctx->toggle = (grp_ctx->toggle ^ 0x1);
 
-  grp_ctx->coll_op = GASPI_NONE;
+  grp_ctx->active_coll_op = GASPI_NONE;
   grp_ctx->lastmask = 0x1;
   grp_ctx->level = 0;
   grp_ctx->dsize = 0;
@@ -1122,13 +1122,13 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
     return GASPI_TIMEOUT;
   }
 
-  if (!(gctx->groups[g].coll_op & GASPI_ALLREDUCE))
+  if (!(gctx->groups[g].active_coll_op & GASPI_ALLREDUCE))
   {
     unlock_gaspi (&gctx->groups[g].gl);
     return GASPI_ERR_ACTIVE_COLL;
   }
 
-  gctx->groups[g].coll_op = GASPI_ALLREDUCE;
+  gctx->groups[g].active_coll_op = GASPI_ALLREDUCE;
 
   struct redux_args r_args;
 
@@ -1182,13 +1182,13 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
     return GASPI_TIMEOUT;
   }
 
-  if (!(gctx->groups[g].coll_op & GASPI_ALLREDUCE_USER))
+  if (!(gctx->groups[g].active_coll_op & GASPI_ALLREDUCE_USER))
   {
     unlock_gaspi (&gctx->groups[g].gl);
     return GASPI_ERR_ACTIVE_COLL;
   }
 
-  gctx->groups[g].coll_op = GASPI_ALLREDUCE_USER;
+  gctx->groups[g].active_coll_op = GASPI_ALLREDUCE_USER;
 
   gaspi_return_t eret = GASPI_ERROR;
 
