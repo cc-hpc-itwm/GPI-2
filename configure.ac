@@ -147,9 +147,9 @@ AC_ARG_WITH([infiniband],[AS_HELP_STRING([--with-infiniband], [compile for infin
 			 [with_infiniband=$withval],
 			 [with_infiniband=no])
 
-AC_ARG_ENABLE([exp-infiniband],[AS_HELP_STRING([--disable-exp-infiniband],[do not build/install with experimental Infiniband])],
-			       [exp_infiniband=$enableval],
-			       [exp_infiniband=yes])
+AC_ARG_ENABLE([infiniband-ext],[AS_HELP_STRING([--disable-infiniband-ext],[do not build/install with Infiniband Extensions])],
+			       [infiniband_ext=$enableval],
+			       [infiniband_ext=yes])
 
 # CHECKS ETHERNET
 AC_ARG_WITH([ethernet],[AS_HELP_STRING([--with-ethernet], [compile for ethernet])],
@@ -196,7 +196,7 @@ AM_CONDITIONAL([WITH_LOADLEVELER],[test $with_loadleveler = yes])
 AM_CONDITIONAL([WITH_SLURM],[test $with_slurm = yes])
 
 # BUILD DEBUG LIBRARY
-AC_ARG_ENABLE([debug-lib],[AS_HELP_STRING([--disable-debug-lib],[do not build/install debug library (required by the tests])],
+AC_ARG_ENABLE([debug-lib],[AS_HELP_STRING([--disable-debug-lib],[do not build/install debug library (required by the tests)])],
 	    	      [build_debug_lib=$enableval],
 		      [build_debug_lib=yes])
 AM_CONDITIONAL([ENABLE_DEBUG],[test $build_debug_lib = yes])

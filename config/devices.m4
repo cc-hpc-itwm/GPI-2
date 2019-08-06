@@ -38,11 +38,11 @@ AC_DEFUN([ACX_USABLE_DEVICE],[
            options="$options Ethernet"
         fi
         AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
- 	AM_CONDITIONAL([WITH_INFINIBAND_EXP],[test x${HAVE_INFINIBAND_EXP} = x1 -a x$exp_infiniband != xno])
+ 	AM_CONDITIONAL([WITH_INFINIBAND_EXT],[test x${HAVE_INFINIBAND_EXT} = x1 -a x$infiniband_ext != xno])
         if [test x${HAVE_INFINIBAND} = x1]; then
            cp tests/defs/default_ib.def tests/defs/default.def
-           if [test x${HAVE_INFINIBAND_EXP} = x1 -a x$exp_infiniband != xno]; then
-              options="$options Infiniband Experimental"
+           if [test x${HAVE_INFINIBAND_EXT} = x1 -a x$infiniband_ext != xno]; then
+              options="$options Infiniband Extensions"
 	   else
 	      options="$options Infiniband"
 	   fi
@@ -59,7 +59,7 @@ AC_DEFUN([ACX_INFINIBAND],[
       	      ac_inc_infiniband=$with_infiniband/include/infiniband
 	      ACX_IBVERBS_VERSION([$ac_inc_infiniband],[HAVE_INF_HEADER=1],[HAVE_INF_HEADER=0])
 	      AC_CHECK_FILE($ac_inc_infiniband/verbs_exp.h,
-			    [HAVE_INFINIBAND_EXP=1],[HAVE_INFINIBAND_EXP=0])
+			    [HAVE_INFINIBAND_EXT=1],[HAVE_INFINIBAND_EXT=0])
 	      for iblib in libibverbs.so libibverbs.a; do
       	      	  ac_lib_infiniband=$with_infiniband/lib64
 		  AC_CHECK_FILE($ac_lib_infiniband/$iblib,[HAVE_INF_LIB=1],[HAVE_INF_LIB=0])
@@ -77,7 +77,7 @@ AC_DEFUN([ACX_INFINIBAND],[
 		  ACX_IBVERBS_VERSION([$ac_inc_infiniband],[HAVE_INF_HEADER=1],[HAVE_INF_HEADER=0])
 	      	  if test ${HAVE_INF_HEADER} = 1; then
 		     AC_CHECK_FILE($ac_inc_infiniband/verbs_exp.h,
-				   [HAVE_INFINIBAND_EXP=1],[HAVE_INFINIBAND_EXP=0])
+				   [HAVE_INFINIBAND_EXT=1],[HAVE_INFINIBAND_EXT=0])
 	      	     break
 	      	  fi
 	      done

@@ -24,7 +24,7 @@ SRCS += devices/ib/GPI2_IB_IO.c devices/ib/GPI2_IB_PASSIVE.c devices/ib/GPI2_IB_
 devices/ib/GPI2_IB_GRP.c devices/ib/GPI2_IB_SEG.c devices/ib/GPI2_IB.c
 SRCS += devices/ib/GPI2_IB.h
 default_includes += -Idevices/ib @ac_inc_infiniband@ -DGPI2_DEVICE_IB
-if WITH_INFINIBAND_EXP
+if WITH_INFINIBAND_EXT
 default_includes += -DGPI2_EXP_VERBS
 endif
 else
