@@ -238,5 +238,14 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   glb_gaspi_cfg.build_infrastructure = nconf.build_infrastructure;
 
+  if (nconf.user_defined != NULL)
+  {
+    GASPI_PRINT_WARNING
+      ("The current implementation does not consider the use of the parameter\
+ user_defined");
+
+    return GASPI_ERR_CONFIG;
+  }
+
   return GASPI_SUCCESS;
 }
