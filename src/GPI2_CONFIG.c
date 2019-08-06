@@ -23,58 +23,61 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_MAX_TSIZE_C (1ul<<30ul)
 #define GASPI_MAX_TSIZE_P ((1ul<<16ul)-1ul)
 #define GASPI_DEFAULT_QSIZE (1024)
+#define GASPI_DEFAULT_ALLREDUCE_ELEM_MAX 255
+#define GASPI_DEFAULT_ALLREDUCE_BUF_SIZE        \
+  (GASPI_DEFAULT_ALLREDUCE_ELEM_MAX * sizeof (unsigned long))
 
 gaspi_config_t glb_gaspi_cfg =
 {
-  1,                            //logout
-  12121,                        //sn port
-  0,                            //netinfo
-  0,                            //user selected network
-  1,                            //sn persistent
-  30000,                        //sn timeout
+  1,                                //logout
+  12121,                            //sn port
+  0,                                //netinfo
+  0,                                //user selected network
+  1,                                //sn persistent
+  30000,                            //sn timeout
 #ifdef GPI2_DEVICE_IB
   {
     GASPI_IB,
     {
       {
-        -1,                        //netdev
-        0,                         //mtu
-        1,                         //port check
+        -1,                         //netdev
+        0,                          //mtu
+        1,                          //port check
       },
       {
-        0                          //port to use
+        0                           //port to use
       }
     }
   },
-  GASPI_IB,                     //network type
+  GASPI_IB,                         //network type
 #else
   {
     GASPI_ETHERNET,
     {
       {
-        -1,                        //netdev
-        0,                         //mtu
-        1,                         //port check
+        -1,                         //netdev
+        0,                          //mtu
+        1,                          //port check
       },
       {
-        19000                      //port to use
+        19000                       //port to use
       }
     }
   },
-  GASPI_ETHERNET,               //network type
+  GASPI_ETHERNET,                   //network type
 #endif
-  GASPI_DEFAULT_QSIZE,          //queue size max
-  8,                            //queue count
-  GASPI_MAX_GROUPS,             //group_max;
-  GASPI_MAX_MSEGS,              //segment_max;
-  GASPI_MAX_TSIZE_C,            //transfer_size_max;
-  GASPI_MAX_NOTIFICATION,       //notification_num;
-  GASPI_DEFAULT_QSIZE,          //passive_queue_size_max;
-  GASPI_MAX_TSIZE_P,            //passive_transfer_size_max;
-  (255 * sizeof (unsigned long)),       //allreduce_buf_size;
-  255,                          //allreduce_elem_max;
-  GASPI_TOPOLOGY_STATIC,        //build_infrastructure;
-  NULL                          //user_defined
+  GASPI_DEFAULT_QSIZE,              //queue size max
+  8,                                //queue count
+  GASPI_MAX_GROUPS,                 //group_max;
+  GASPI_MAX_MSEGS,                  //segment_max;
+  GASPI_MAX_TSIZE_C,                //transfer_size_max;
+  GASPI_MAX_NOTIFICATION,           //notification_num;
+  GASPI_DEFAULT_QSIZE,              //passive_queue_size_max;
+  GASPI_MAX_TSIZE_P,                //passive_transfer_size_max;
+  GASPI_DEFAULT_ALLREDUCE_BUF_SIZE, //allreduce_buf_size;
+  GASPI_DEFAULT_ALLREDUCE_ELEM_MAX, //allreduce_elem_max;
+  GASPI_TOPOLOGY_STATIC,            //build_infrastructure;
+  NULL                              //user_defined
 };
 
 #pragma weak gaspi_config_get = pgaspi_config_get
@@ -221,6 +224,15 @@ pgaspi_config_set (const gaspi_config_t nconf)
     return GASPI_ERR_CONFIG;
   }
   glb_gaspi_cfg.passive_transfer_size_max = nconf.passive_transfer_size_max;
+
+  if (nconf.allreduce_buf_size != 255 * sizeof (unsigned long))
+  {
+    GASPI_PRINT_WARNING
+      ("The current implementation does not consider the use of the parameter\
+ allreduce_buf_size");
+
+    return GASPI_ERR_CONFIG;
+  }
 
   glb_gaspi_cfg.allreduce_elem_max = nconf.allreduce_elem_max;
 
