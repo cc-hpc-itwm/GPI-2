@@ -620,7 +620,7 @@ pgaspi_proc_kill (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 
   if (rank == gctx->rank)
   {
-    GASPI_DEBUG_PRINT_ERROR ("Invalid rank to kill");
+    GASPI_DEBUG_PRINT_ERROR ("Invalid rank (%u) to kill", rank);
     return GASPI_ERR_INV_RANK;
   }
 
