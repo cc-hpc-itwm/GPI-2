@@ -3,8 +3,25 @@ ACLOCAL_AMFLAGS = -I config
 
 # TARGETS
 SUBDIRS = src
+
 if ENABLE_DEBUG
 SUBDIRS += tests
+if WITH_INFINIBAND
+defaults :
+	rsync -a $(abs_top_builddir)/tests/defs/default_ib.def $(abs_top_builddir)/tests/defs/default.def
+else
+defaults :
+	rsync -a $(abs_top_builddir)/tests/defs/default_tcp.def $(abs_top_builddir)/tests/defs/default.def
+endif
+
+all-local :
+	@if [[ $(abs_top_builddir) != $(abs_top_srcdir) ]]; then\
+		rsync -ar $(abs_top_srcdir)/bin/ $(abs_top_builddir)/bin/;\
+		rsync -ar $(abs_top_srcdir)/tests/defs/ $(abs_top_builddir)/tests/defs/;\
+		rsync -a $(abs_top_srcdir)/tests/README $(abs_top_builddir)/tests/README;\
+		rsync -a $(abs_top_srcdir)/tests/runtests.sh $(abs_top_builddir)/tests/runtests.sh;\
+	fi
+	$(MAKE) defaults
 endif
 
 # DOCS and TUTORIAL
@@ -15,11 +32,11 @@ endif
 
 tutorial:
 	@if [[ $(abs_top_builddir) != $(abs_top_srcdir) ]]; then\
-		rsync -ar $(abs_top_srcdir)/tutorial/code/ tutorial/code/;\
+		rsync -ar --exclude='$(abs_top_srcdir)/tutorial/code/Makefile' $(abs_top_srcdir)/tutorial/code/ $(abs_top_builddir)/tutorial/code/;\
 	fi
 	make -C tutorial/code
 
-.PHONY : docs tutorial
+.PHONY : docs tutorial defaults
 
 # FOR DISTRIBUTION
 EXTRA_DIST = config.site autogen.sh bin tutorial/* \
@@ -27,8 +44,10 @@ EXTRA_DIST = config.site autogen.sh bin tutorial/* \
 	docs/Doxyfile.in docs/Makefile.am docs/Makefile.in docs/mainpage.dox docs/new_arch.png
 
 # TESTING
+if ENABLE_DEBUG
 check :
 	cd tests/; ./runtests.sh
+endif
 
 # INSTALL RUN SCRIPTS
 bin_SCRIPTS = bin/gaspi_logger

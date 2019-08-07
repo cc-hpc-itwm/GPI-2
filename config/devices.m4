@@ -34,13 +34,11 @@ AC_DEFUN([ACX_USABLE_DEVICE],[
         # COPY DEFAULT FILES FOR TESTING
         AM_CONDITIONAL([WITH_ETHERNET], test x${HAVE_TCP} = x1)
         if [test x${HAVE_TCP} = x1]; then
-           cp tests/defs/default_tcp.def tests/defs/default.def
            options="$options Ethernet"
         fi
         AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
  	AM_CONDITIONAL([WITH_INFINIBAND_EXT],[test x${HAVE_INFINIBAND_EXT} = x1 -a x$infiniband_ext != xno])
         if [test x${HAVE_INFINIBAND} = x1]; then
-           cp tests/defs/default_ib.def tests/defs/default.def
            if [test x${HAVE_INFINIBAND_EXT} = x1 -a x$infiniband_ext != xno]; then
               options="$options Infiniband Extensions"
 	   else
