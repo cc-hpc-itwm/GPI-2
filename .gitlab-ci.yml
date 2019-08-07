@@ -8,7 +8,8 @@ minimal_configure:
   stage: configure
   before_script:
     -  ./autogen.sh
-  script: ./configure --prefix=$PWD/gpi2-install-dir --with-ethernet
+    - mkdir gpibuild/; cd gpibuild
+  script: ../configure --prefix=$PWD/gpi2-install-dir --with-ethernet
   tags:
     - centos-6.5
     - gcc-5.3.0
