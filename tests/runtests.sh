@@ -16,7 +16,7 @@ Time=1
 opts_used=0
 LOG_FILE=runtests_$(date -Idate).log
 
-MAX_TIME=600
+MAX_TIME=1200
 
 #Functions
 exit_timeout(){
