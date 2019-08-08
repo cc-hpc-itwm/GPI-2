@@ -210,8 +210,6 @@ pgaspi_config_set (const gaspi_config_t nconf)
     GASPI_PRINT_WARNING
       ("The current implementation does not consider the use of the parameter\
  notification_num");
-
-    return GASPI_ERR_CONFIG;
   }
 
   if (nconf.passive_queue_size_max != GASPI_DEFAULT_QSIZE)
@@ -219,15 +217,14 @@ pgaspi_config_set (const gaspi_config_t nconf)
     GASPI_PRINT_WARNING
       ("The current implementation does not consider the use of the parameter\
  passive_queue_size_max");
-
-    return GASPI_ERR_CONFIG;
   }
 
   // TODO: the default value probably should come from the device
   if (nconf.passive_transfer_size_max > GASPI_MAX_TSIZE_P)
   {
     GASPI_DEBUG_PRINT_ERROR
-      ("Invalid value for parameter passive_transfer_size_max (max=%lu)",
+      ("Invalid value (%lu) for parameter passive_transfer_size_max (max=%lu)",
+       nconf.passive_transfer_size_max,
        GASPI_MAX_TSIZE_P);
 
     return GASPI_ERR_CONFIG;
@@ -239,8 +236,6 @@ pgaspi_config_set (const gaspi_config_t nconf)
     GASPI_PRINT_WARNING
       ("The current implementation does not consider the use of the parameter\
  allreduce_buf_size");
-
-    return GASPI_ERR_CONFIG;
   }
 
   glb_gaspi_cfg.allreduce_elem_max = nconf.allreduce_elem_max;
@@ -252,8 +247,6 @@ pgaspi_config_set (const gaspi_config_t nconf)
     GASPI_PRINT_WARNING
       ("The current implementation does not consider the use of the parameter\
  user_defined");
-
-    return GASPI_ERR_CONFIG;
   }
 
   return GASPI_SUCCESS;
