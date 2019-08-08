@@ -11,38 +11,6 @@
 
 #define BACKTRACE_SIZE 256
 
-
-static gaspi_config_t tsuite_default_config = {
-  1,                            //logout
-  12121,                        //sn port
-  0,                            //netinfo
-  0,                            //user selected network
-  1,                            //sn persistent
-  30000,                        //sn timeout
-  {
-   GASPI_IB,
-   {
-    {
-     -1,                        //netdev
-     0,                         //mtu
-     1,                         //port check
-     }
-    }
-   },
-  GASPI_IB,                     //network type
-  1024,                         //queue size max
-  8,                            //queue count
-  32,                           //group_max
-  255,                          //segment_max
-  (1ul << 30ul),                //transfer_size_max
-  65536,                        //notification_num
-  1024,                         //passive_queue_size_max
-  ((1ul << 16ul) - 1ul),        //passive_transfer_size_max
-  278592,                       //allreduce_buf_size
-  255,                          //allreduce_elem_max;
-  GASPI_TOPOLOGY_STATIC         //build_infrastructure;
-};
-
 void
 tsuite_do_backtrace (int id, gaspi_rank_t node, FILE * bt_file)
 {
@@ -94,8 +62,6 @@ tsuite_sighandler (int signum, siginfo_t * info, void * ptr)
 void
 tsuite_init (int argc, char *argv[])
 {
-  int i;
-
   /* Backtracing for debugging */
   struct sigaction act;
 
@@ -113,26 +79,45 @@ tsuite_init (int argc, char *argv[])
 
   if (argc > 1)
   {
-    for (i = 1; i < argc; i++)
+    gaspi_config_t config;
+    ASSERT (gaspi_config_get (&config));
+
+    for (int i = 1; i < argc; i++)
     {
       if (strcmp (argv[i], "GASPI_ETHERNET") == 0)
-        tsuite_default_config.network = GASPI_ETHERNET;
+      {
+        config.network = GASPI_ETHERNET;
+      }
       if (strcmp (argv[i], "GASPI_IB") == 0)
-        tsuite_default_config.network = GASPI_IB;
+      {
+        config.network = GASPI_IB;
+      }
       if (strcmp (argv[i], "GASPI_ROCE") == 0)
-        tsuite_default_config.network = GASPI_ROCE;
+      {
+        config.network = GASPI_ROCE;
+      }
       if (strcmp (argv[i], "STATIC_TOPO") == 0)
-        tsuite_default_config.build_infrastructure = GASPI_TOPOLOGY_STATIC;
+      {
+        config.build_infrastructure = GASPI_TOPOLOGY_STATIC;
+      }
       if (strcmp (argv[i], "DYNAMIC_TOPO") == 0)
-        tsuite_default_config.build_infrastructure = GASPI_TOPOLOGY_DYNAMIC;
+      {
+        config.build_infrastructure = GASPI_TOPOLOGY_DYNAMIC;
+      }
       if (strcmp (argv[i], "NO_TOPO") == 0)
-        tsuite_default_config.build_infrastructure = GASPI_TOPOLOGY_NONE;
+      {
+        config.build_infrastructure = GASPI_TOPOLOGY_NONE;
+      }
       if (strcmp (argv[i], "SN_PERSIST_TRUE") == 0)
-        tsuite_default_config.sn_persistent = 1;
+      {
+        config.sn_persistent = 1;
+      }
       if (strcmp (argv[i], "SN_PERSIST_FALSE") == 0)
-        tsuite_default_config.sn_persistent = 0;
+      {
+        config.sn_persistent = 0;
+      }
     }
-    ASSERT (gaspi_config_set (tsuite_default_config));
+    ASSERT (gaspi_config_set (config));
   }
 }
 
