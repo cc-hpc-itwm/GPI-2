@@ -23,7 +23,7 @@ CFLAGS += -qopenmp
 endif
 ###############################################################################
 
-INCLUDE_DIR += $(GPI2_HOME)/src/include
+INCLUDE_DIR += $(srcdir)/src/include
 INCLUDE_DIR += ..
 LIBRARY_DIR += $(GPI2_HOME)/src/.libs
 

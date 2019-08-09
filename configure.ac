@@ -8,14 +8,14 @@ echo '   $1   ' | sed -e's/./-/g' >&AS_MESSAGE_FD
 
 # INITS
 AC_PREREQ([2.63])
-AC_INIT([GPI], [1.3.0], [https://github.com/cc-hpc-itwm/GPI-2/issues])
+AC_INIT([GPI-2], [1.3.0], [https://github.com/cc-hpc-itwm/GPI-2/issues])
 AC_CONFIG_SRCDIR([src/GPI2.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([config])
 AC_CONFIG_HEADERS([config.h])
 
 # CONFIG DEFAULTS
-export CONFIG_SITE=`pwd`/config.site
+export CONFIG_SITE=$srcdir/config.site
 source ${CONFIG_SITE}
 
 # OVERWRITE LIBTOOL FLAGS

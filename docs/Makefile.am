@@ -2,7 +2,7 @@ if HAVE_DOXYGEN
 docs/doxygen: doxyfile-stamp
 
 doxyfile-stamp: Doxyfile ../README
-	cp ../README README.md
+	cp $(abs_top_srcdir)/README $(abs_top_builddir)/docs/README.md
 	$(DOXYGEN) $^
 	date > $@
 
