@@ -71,11 +71,11 @@ endif
 # FORTRAN MODULES
 EXTRA_DIST = GASPI_types.f90 GASPI.f90 GASPI_Ext.f90
 if WITH_FORTRAN
-gaspi_types.mod : GASPI_types.f90
+gaspi_types.mod: GASPI_types.f90
 	$(FC) $(FCFLAGS) -O2 -c $< -o GASPI_types.o
-gaspi.mod : GASPI.f90 gaspi_types.mod
+gaspi.mod: GASPI.f90 gaspi_types.mod
 	$(FC) $(FCFLAGS) -O2 -c $< -o GASPI.o
-gaspi_ext.mod : GASPI_Ext.f90 gaspi_types.mod gaspi.mod
+gaspi_ext.mod: GASPI_Ext.f90 gaspi_types.mod gaspi.mod
 	$(FC) $(FCFLAGS) -O2 -c $< -o GASPI_Ext.o
 nodist_include_HEADERS = gaspi_types.mod gaspi.mod gaspi_ext.mod
 endif

@@ -1,7 +1,7 @@
 if WITH_INFINIBAND
 if WITH_MPI
 if HAVE_CINTEL
-all :
+all:
 	$(MAKE) -C ring-1d/mpi
 endif
 else
@@ -12,10 +12,10 @@ all +:
 endif
 endif
 
-clean :
-	-$(MAKE) -C basic clean
-	-$(MAKE) -C ring-1d/gaspi clean
-	-$(MAKE) -C ring-1d/mpi clean
-	-$(MAKE) -C advanced clean
+clean:
+	$(MAKE) -C basic clean
+	$(MAKE) -C ring-1d/gaspi clean
+	$(MAKE) -C ring-1d/mpi clean
+	$(MAKE) -C advanced clean
 
-CLEANFILES : *~
+CLEANFILES: *~
