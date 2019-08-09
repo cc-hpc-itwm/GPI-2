@@ -12,6 +12,8 @@ minimal_configure:
   tags:
     - centos-6.5
     - gcc-5.3.0
+  cache:
+    untracked: true
 
 minimal_build:
   stage: build
