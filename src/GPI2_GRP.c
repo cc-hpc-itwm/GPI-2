@@ -29,7 +29,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_SN.h"
 #include "GPI2_Utility.h"
 
-const unsigned int glb_gaspi_typ_size[6] = { 4, 4, 4, 8, 8, 8 };
+#define GASPI_COLL_NUM_DATATYPES 6
+const size_t glb_gaspi_typ_size[GASPI_COLL_NUM_DATATYPES] =
+ { 4, 4, 4, 8, 8, 8 };
+
 
 #define TOGGLE_SIZE 2
 
@@ -657,13 +660,13 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
     return GASPI_TIMEOUT;
   }
 
-  if (!(grp_ctx->coll_op & GASPI_BARRIER))
+  if (!(grp_ctx->active_coll_op & GASPI_BARRIER))
   {
     unlock_gaspi (&grp_ctx->gl);
     return GASPI_ERR_ACTIVE_COLL;
   }
 
-  grp_ctx->coll_op = GASPI_BARRIER;
+  grp_ctx->active_coll_op = GASPI_BARRIER;
 
   if (grp_ctx->lastmask == 0x1)
   {
@@ -762,7 +765,7 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
   }
 
   grp_ctx->toggle = (grp_ctx->toggle ^ 0x1);
-  grp_ctx->coll_op = GASPI_NONE;
+  grp_ctx->active_coll_op = GASPI_NONE;
   grp_ctx->lastmask = 0x1;
 
   GPI2_STATS_INC_COUNT (GASPI_STATS_COUNTER_NUM_BARRIER, 1);
@@ -869,9 +872,9 @@ _gaspi_apply_redux (gaspi_group_t g,
     gaspi_operation_t op = r_args->f_args.op;
     gaspi_datatype_t type = r_args->f_args.type;
 
-    //TODO: magic number
-    fctArrayGASPI[op * 6 + type] ((void *) *send_ptr, local_val, dst_val,
-                                  r_args->elem_cnt);
+    fctArrayGASPI[op * GASPI_COLL_NUM_DATATYPES + type]
+      ((void *) *send_ptr, local_val, dst_val, r_args->elem_cnt);
+
     eret = GASPI_SUCCESS;
   }
   else if (r_args->f_type == GASPI_USER)
@@ -1082,7 +1085,7 @@ L3:
 
   grp_ctx->toggle = (grp_ctx->toggle ^ 0x1);
 
-  grp_ctx->coll_op = GASPI_NONE;
+  grp_ctx->active_coll_op = GASPI_NONE;
   grp_ctx->lastmask = 0x1;
   grp_ctx->level = 0;
   grp_ctx->dsize = 0;
@@ -1104,7 +1107,7 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  GASPI_VERIFY_INIT ("gaspi_allreduce_user");
+  GASPI_VERIFY_INIT ("gaspi_allreduce");
   GASPI_VERIFY_NULL_PTR (buf_send);
   GASPI_VERIFY_NULL_PTR (buf_recv);
   GASPI_VERIFY_GROUP (g);
@@ -1119,13 +1122,13 @@ pgaspi_allreduce (const gaspi_pointer_t buf_send,
     return GASPI_TIMEOUT;
   }
 
-  if (!(gctx->groups[g].coll_op & GASPI_ALLREDUCE))
+  if (!(gctx->groups[g].active_coll_op & GASPI_ALLREDUCE))
   {
     unlock_gaspi (&gctx->groups[g].gl);
     return GASPI_ERR_ACTIVE_COLL;
   }
 
-  gctx->groups[g].coll_op = GASPI_ALLREDUCE;
+  gctx->groups[g].active_coll_op = GASPI_ALLREDUCE;
 
   struct redux_args r_args;
 
@@ -1179,13 +1182,13 @@ pgaspi_allreduce_user (const gaspi_pointer_t buf_send,
     return GASPI_TIMEOUT;
   }
 
-  if (!(gctx->groups[g].coll_op & GASPI_ALLREDUCE_USER))
+  if (!(gctx->groups[g].active_coll_op & GASPI_ALLREDUCE_USER))
   {
     unlock_gaspi (&gctx->groups[g].gl);
     return GASPI_ERR_ACTIVE_COLL;
   }
 
-  gctx->groups[g].coll_op = GASPI_ALLREDUCE_USER;
+  gctx->groups[g].active_coll_op = GASPI_ALLREDUCE_USER;
 
   gaspi_return_t eret = GASPI_ERROR;
 

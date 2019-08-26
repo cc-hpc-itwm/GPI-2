@@ -16,7 +16,7 @@ Time=1
 opts_used=0
 LOG_FILE=runtests_$(date -Idate).log
 
-MAX_TIME=600
+MAX_TIME=1200
 
 #Functions
 exit_timeout(){
@@ -32,7 +32,7 @@ exit_timeout(){
     printf '\033[31m'"KILLED\n"
 
     #reset terminal to normal
-    tput sgr0
+    tput -T xterm sgr0
 }
 
 run_test(){
@@ -47,7 +47,7 @@ run_test(){
 	    printf '\033[34m'"SKIPPED\n"
 	    TESTS_SKIPPED=$((TESTS_SKIPPED+1))
    #reset terminal to normal
-	    tput sgr0
+	    tput -T xterm sgr0
 	    return
 	fi
 
@@ -101,7 +101,7 @@ run_test(){
     fi
 
    #reset terminal to normal
-    tput sgr0
+    tput -T xterm sgr0
 
     if [ $Time = 1 ] ; then
 	if [ $TIMEDOUT = 0 ];then
@@ -178,6 +178,14 @@ done
 
 killall sleep 2>/dev/null
 
-printf "Run $NUM_TESTS tests:\n$TESTS_PASS passed\n$TESTS_FAIL failed\n$TESTS_TIMEOUT timed-out\n$TESTS_SKIPPED skipped\nTimeout $MAX_TIME (secs)\n"
+printf "Run $NUM_TESTS tests:\n \
+$TESTS_PASS passed\n \
+$TESTS_FAIL failed\n \
+$TESTS_TIMEOUT timed-out\n \
+$TESTS_SKIPPED skipped\nTimeout $MAX_TIME (secs)\n"
+
+if [ $TESTS_FAIL -gt 0 -o $TESTS_TIMEOUT -gt 0 ]; then
+    exit 1
+fi
 
 exit 0

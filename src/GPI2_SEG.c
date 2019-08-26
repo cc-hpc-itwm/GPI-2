@@ -62,7 +62,8 @@ pgaspi_segment_size (const gaspi_segment_id_t segment_id,
 
 #pragma weak gaspi_segment_ptr = pgaspi_segment_ptr
 gaspi_return_t
-pgaspi_segment_ptr (const gaspi_segment_id_t segment_id, gaspi_pointer_t * ptr)
+pgaspi_segment_ptr (const gaspi_segment_id_t segment_id,
+                    gaspi_pointer_t * ptr)
 {
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
@@ -88,14 +89,22 @@ pgaspi_segment_list (const gaspi_number_t num,
   GASPI_VERIFY_INIT ("gaspi_segment_list");
   GASPI_VERIFY_NULL_PTR (segment_id_list);
 
-  int idx = 0;
-  for (int i = 0; i < GASPI_MAX_MSEGS; i++)
+  if (num != gctx->mseg_cnt)
   {
-    if (gctx->rrmd[(gaspi_segment_id_t) i] != NULL)
+    GASPI_DEBUG_PRINT_ERROR
+      ("Provided number of segments does not match allocated segments.");
+
+    return GASPI_ERROR;
+  }
+
+  gaspi_number_t idx = 0;
+  for (gaspi_segment_id_t i = 0; i < GASPI_MAX_MSEGS; i++)
+  {
+    if (gctx->rrmd[i] != NULL)
     {
-      if (gctx->rrmd[(gaspi_segment_id_t) i][gctx->rank].trans)
+      if (gctx->rrmd[i][gctx->rank].trans)
       {
-        segment_id_list[idx++] = (gaspi_segment_id_t) i;
+        segment_id_list[idx++] = i;
       }
     }
   }
@@ -129,7 +138,7 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
 
   gaspi_number_t num_segs;
 
-  if (gaspi_segment_num (&num_segs) != GASPI_SUCCESS)
+  if (pgaspi_segment_num (&num_segs) != GASPI_SUCCESS)
   {
     return GASPI_ERROR;
   }
@@ -142,7 +151,7 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
 
   gaspi_number_t segs_max;
 
-  if (gaspi_segment_max (&segs_max) != GASPI_SUCCESS)
+  if (pgaspi_segment_max (&segs_max) != GASPI_SUCCESS)
   {
     return GASPI_ERROR;
   }
@@ -159,17 +168,17 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
     return GASPI_ERR_MEMALLOC;
   }
 
-  if (gaspi_segment_list (num_segs, segment_ids) != GASPI_SUCCESS)
+  if (pgaspi_segment_list (num_segs, segment_ids) != GASPI_SUCCESS)
   {
     free (segment_ids);
     return GASPI_ERROR;
   }
 
-  for (gaspi_number_t i = 1; i < num_segs; i++)
+  for (gaspi_segment_id_t i = 1; i < num_segs; i++)
   {
     if (segment_ids[i] != segment_ids[i - 1] + 1)
     {
-      *avail_seg_id = (gaspi_segment_id_t) i;
+      *avail_seg_id = i;
       free (segment_ids);
       return GASPI_SUCCESS;
     }
@@ -233,7 +242,9 @@ pgaspi_segment_alloc_maybe (gaspi_segment_id_t const segment_id,
   }
 
   size_t const allocation_size =
-    pointer == NULL ? size + NOTIFY_OFFSET : NOTIFY_OFFSET;
+    pointer == NULL
+      ? size + NOTIFICATIONS_SPACE_SIZE
+      : NOTIFICATIONS_SPACE_SIZE;
 
 
   int const allocation_failed =
@@ -246,16 +257,16 @@ pgaspi_segment_alloc_maybe (gaspi_segment_id_t const segment_id,
     goto endL;
   }
 
-  memset (myrank_mseg->notif_spc.ptr, 0, NOTIFY_OFFSET);
+  memset (myrank_mseg->notif_spc.ptr, 0, NOTIFICATIONS_SPACE_SIZE);
 
   myrank_mseg->user_provided = NULL != pointer;
 
   myrank_mseg->data.ptr = myrank_mseg->user_provided
     ? pointer
-    : myrank_mseg->notif_spc.ptr + NOTIFY_OFFSET;
+    : myrank_mseg->notif_spc.ptr + NOTIFICATIONS_SPACE_SIZE;
 
   myrank_mseg->size = size;
-  myrank_mseg->notif_spc_size = NOTIFY_OFFSET;
+  myrank_mseg->notif_spc_size = NOTIFICATIONS_SPACE_SIZE;
   myrank_mseg->trans = 1;
 
   if (pgaspi_dev_register_mem (gctx, myrank_mseg) < 0)
@@ -268,7 +279,8 @@ pgaspi_segment_alloc_maybe (gaspi_segment_id_t const segment_id,
   /* set fixed notification value ( =1) for read_notify */
   unsigned char *segPtr =
     (unsigned char *) myrank_mseg->notif_spc.addr +
-    NOTIFY_OFFSET - sizeof (gaspi_notification_t);
+    NOTIFICATIONS_SPACE_SIZE - sizeof (gaspi_notification_t);
+
   gaspi_notification_t *p = (gaspi_notification_t *) segPtr;
 
   *p = 1;
@@ -331,7 +343,6 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
 
   gaspi_rc_mseg_t *const myrank_mseg = &(gctx->rrmd[segment_id][gctx->rank]);
 
-  /*  TODO: for now like this but we need a better solution */
   if (pgaspi_dev_unregister_mem (gctx, myrank_mseg) < 0)
   {
     unlock_gaspi (&(gctx->mseg_lock));
@@ -432,17 +443,10 @@ gaspi_segment_set (const gaspi_segment_descriptor_t snp)
 
   lock_gaspi_tout (&(gctx->mseg_lock), GASPI_BLOCK);
 
-  //TODO: use segment_create_desc
-  if (gctx->rrmd[snp.seg_id] == NULL)
+  if (pgaspi_segment_create_desc (gctx, snp.seg_id) != 0)
   {
-    gctx->rrmd[snp.seg_id] =
-      (gaspi_rc_mseg_t *) calloc (gctx->tnc, sizeof (gaspi_rc_mseg_t));
-
-    if (gctx->rrmd[snp.seg_id] == NULL)
-    {
-      unlock_gaspi (&(gctx->mseg_lock));
-      return -1;
-    }
+    unlock_gaspi (&(gctx->mseg_lock));
+    return -1;
   }
 
   /* TODO: don't allow re-registration? */
@@ -586,7 +590,6 @@ pgaspi_segment_create (const gaspi_segment_id_t segment_id,
 /* Extensions */
 
 /* TODO: */
-
 /* - check/deal with alignment issues */
 #pragma weak gaspi_segment_bind = pgaspi_segment_bind
 gaspi_return_t

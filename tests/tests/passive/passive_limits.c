@@ -46,7 +46,8 @@ main (int argc, char *argv[])
 
     ASSERT (gaspi_passive_receive
             (0, 0, &sender, passive_min_msg_size, GASPI_BLOCK));
-    int elem;
+
+    gaspi_size_t elem;
 
     for (elem = 0; elem < passive_min_msg_size; elem++)
     {
@@ -84,7 +85,7 @@ main (int argc, char *argv[])
     ASSERT (gaspi_passive_receive
             (0, 0, &sender, passive_max_msg_size, GASPI_BLOCK));
 
-    int elem;
+    gaspi_size_t elem;
 
     for (elem = 0; elem < passive_max_msg_size; elem++)
     {

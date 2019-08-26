@@ -99,7 +99,7 @@ typedef struct
   gaspi_lock_t del;
   volatile unsigned char barrier_cnt;
   volatile unsigned char toggle;
-  gaspi_async_coll_t coll_op;
+  gaspi_async_coll_t active_coll_op;
   int lastmask;
   int level, tmprank, dsize, bid;
   int rank, tnc;
@@ -117,7 +117,7 @@ typedef struct
 
 typedef struct
 {
-  int localSocket; //TODO: rename?
+  int local_rank;
   int rank;
   int tnc;
   float mhz;
@@ -134,9 +134,9 @@ typedef struct
   volatile int dev_init; //Is device initialized?
   volatile int master_topo_data; //Do we have topology info from master?
 
-  int mseg_cnt;
+  gaspi_number_t mseg_cnt;
   gaspi_state_t *state_vec[GASPI_MAX_QP + 3];
-  char mtyp[64];
+  char machine_type[64];
 
   //locks
   gaspi_lock_t ctx_lock;

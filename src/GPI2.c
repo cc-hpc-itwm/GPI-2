@@ -58,8 +58,10 @@ pgaspi_machine_type (char const machine_type[64])
 
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
-  memset ((void *) machine_type, 0, sizeof (gctx->mtyp));
-  snprintf ((char *) machine_type, sizeof (gctx->mtyp), "%s", gctx->mtyp);
+  memset ((void *) machine_type, 0, sizeof (gctx->machine_type));
+  snprintf ((char *) machine_type, sizeof (gctx->machine_type),
+            "%s",
+            gctx->machine_type);
 
   return GASPI_SUCCESS;
 }
@@ -108,7 +110,7 @@ pgaspi_numa_socket (gaspi_uchar * const sock)
   {
     if (atoi (numaPtr) == 1)
     {
-      *sock = (gaspi_uchar) gctx->localSocket;
+      *sock = (gaspi_uchar) gctx->local_rank;
 
       return GASPI_SUCCESS;
     }
@@ -172,7 +174,8 @@ pgaspi_init_core (gaspi_context_t * const gctx)
   }
 
   /* Create internal memory space (notifications + atomic value placeholder) */
-  const unsigned int size = NOTIFY_OFFSET + sizeof (gaspi_atomic_value_t);
+  const unsigned int size =
+    NOTIFICATIONS_SPACE_SIZE + sizeof (gaspi_atomic_value_t);
 
   if (pgaspi_alloc_page_aligned (&gctx->nsrc.data.ptr, size) != 0)
   {
@@ -183,8 +186,8 @@ pgaspi_init_core (gaspi_context_t * const gctx)
   memset (gctx->nsrc.data.buf, 0, size);
   gctx->nsrc.size = sizeof (gaspi_atomic_value_t);
   gctx->nsrc.notif_spc.addr = gctx->nsrc.data.addr;
-  gctx->nsrc.notif_spc_size = NOTIFY_OFFSET;
-  gctx->nsrc.data.addr += NOTIFY_OFFSET;
+  gctx->nsrc.notif_spc_size = NOTIFICATIONS_SPACE_SIZE;
+  gctx->nsrc.data.addr += NOTIFICATIONS_SPACE_SIZE;
 
   /* Register internal memory */
   if (pgaspi_dev_register_mem (gctx, &(gctx->nsrc)) != 0)
@@ -291,7 +294,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
     if (uname (&mbuf) == 0)
     {
-      snprintf (gctx->mtyp, sizeof (mbuf.machine), "%s", mbuf.machine);
+      snprintf (gctx->machine_type, sizeof (mbuf.machine), "%s", mbuf.machine);
     }
 
     //timing
@@ -617,7 +620,7 @@ pgaspi_proc_kill (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
 
   if (rank == gctx->rank)
   {
-    GASPI_DEBUG_PRINT_ERROR ("Invalid rank to kill");
+    GASPI_DEBUG_PRINT_ERROR ("Invalid rank (%u) to kill", rank);
     return GASPI_ERR_INV_RANK;
   }
 
@@ -674,7 +677,7 @@ pgaspi_proc_local_rank (gaspi_rank_t * const local_rank)
 
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
-  *local_rank = (gaspi_rank_t) gctx->localSocket;
+  *local_rank = (gaspi_rank_t) gctx->local_rank;
 
   return GASPI_SUCCESS;
 }

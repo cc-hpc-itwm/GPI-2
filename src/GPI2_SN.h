@@ -86,7 +86,7 @@ enum gaspi_sn_status gaspi_sn_status_get (void);
 
 void gaspi_sn_cleanup (const int sig);
 
-void *gaspi_sn_backend (void *arg);
+void *gaspi_sn_backend (void*);
 
 int gaspi_sn_set_non_blocking (const int sock);
 

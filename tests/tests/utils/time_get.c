@@ -14,7 +14,7 @@ main (int argc, char *argv[])
   gaspi_time_t start = 0.0f, end = 0.0f;
 
   ASSERT (gaspi_time_get (&start));
-  usleep (2000000);
+  sleep (2);
   ASSERT (gaspi_time_get (&end));
 
   ASSERT (gaspi_proc_init (GASPI_BLOCK));

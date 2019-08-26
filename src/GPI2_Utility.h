@@ -36,6 +36,12 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define MAX(a,b)  (((a)<(b)) ? (b) : (a))
 #define MIN(a,b)  (((a)>(b)) ? (b) : (a))
 
+#ifdef __GNUC__
+#  define GASPI_UNUSED(x) UNUSED_ ## x __attribute__((__unused__))
+#else
+#  define GASPI_UNUSED(x) UNUSED_ ## (void)(x)
+#endif
+
 #ifdef DEBUG
 #include "GPI2.h"
 #define GASPI_DEBUG_PRINT_ERROR(msg, ...)                               \

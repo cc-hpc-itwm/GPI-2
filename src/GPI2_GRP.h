@@ -38,7 +38,7 @@ typedef struct
     group_ctx[i].barrier_cnt = 0;                                       \
     group_ctx[i].rank = 0;                                              \
     group_ctx[i].tnc = 0;                                               \
-    group_ctx[i].coll_op = GASPI_NONE;                                  \
+    group_ctx[i].active_coll_op = GASPI_NONE;                           \
     group_ctx[i].lastmask = 0x1;                                        \
     group_ctx[i].tmprank = 0;                                           \
     group_ctx[i].bid = 0;                                               \

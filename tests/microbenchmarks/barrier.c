@@ -28,8 +28,7 @@
 
 #define GPI2_ASSERT(s) if(s != GASPI_SUCCESS) {printf("GASPI error:" #s " %d\n",__LINE__); fflush(stdout);_exit(EXIT_FAILURE);}
 
-int
-main (int argc, char *argv[])
+int main()
 {
   gaspi_rank_t rank, tnc;
   gaspi_float vers;

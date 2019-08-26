@@ -35,8 +35,10 @@ pgaspi_dev_register_mem (gaspi_context_t const *const gctx,
   seg->mr[0] = ibv_reg_mr (ib_dev_ctx->pd,
                            seg->data.buf,
                            seg->size,
-                           IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
-                           IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_ATOMIC);
+                           IBV_ACCESS_REMOTE_WRITE
+                           | IBV_ACCESS_LOCAL_WRITE
+                           | IBV_ACCESS_REMOTE_READ
+                           | IBV_ACCESS_REMOTE_ATOMIC);
 
   if (seg->mr[0] == NULL)
   {
@@ -51,9 +53,10 @@ pgaspi_dev_register_mem (gaspi_context_t const *const gctx,
     seg->mr[1] = ibv_reg_mr (ib_dev_ctx->pd,
                              seg->notif_spc.buf,
                              seg->notif_spc_size,
-                             IBV_ACCESS_REMOTE_WRITE | IBV_ACCESS_LOCAL_WRITE |
-                             IBV_ACCESS_REMOTE_READ |
-                             IBV_ACCESS_REMOTE_ATOMIC);
+                             IBV_ACCESS_REMOTE_WRITE
+                             | IBV_ACCESS_LOCAL_WRITE
+                             | IBV_ACCESS_REMOTE_READ
+                             | IBV_ACCESS_REMOTE_ATOMIC);
 
     if (seg->mr[1] == NULL)
     {
@@ -68,7 +71,7 @@ pgaspi_dev_register_mem (gaspi_context_t const *const gctx,
 }
 
 int
-pgaspi_dev_unregister_mem (gaspi_context_t const *const gctx,
+pgaspi_dev_unregister_mem (gaspi_context_t const * const GASPI_UNUSED (gctx),
                            gaspi_rc_mseg_t * seg)
 {
   if (seg->mr[0] != NULL)

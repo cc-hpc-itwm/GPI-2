@@ -1,5 +1,8 @@
-#include <stdio.h>
+#define _XOPEN_SOURCE
+
 #include <test_utils.h>
+#include <stdio.h>
+#include <time.h>
 
 /*
   Test shows the difference between using notifications and wait+barrier flaw
@@ -10,6 +13,7 @@
 
 #define MAX_ITERATIONS 10
 #define SLOT_SIZE _2MB
+
 
 int
 main (int argc, char *argv[])

@@ -8,11 +8,12 @@ minimal_configure:
   stage: configure
   before_script:
     -  ./autogen.sh
-    - mkdir gpibuild/; cd gpibuild
-  script: ../configure --prefix=$PWD/gpi2-install-dir --with-ethernet
+  script: CC=~/external_software/gcc/5.3.0/bin/gcc ./configure --prefix=$PWD/gpi2-install-dir --with-ethernet
   tags:
     - centos-6.5
     - gcc-5.3.0
+  cache:
+    untracked: true
 
 minimal_build:
   stage: build
@@ -35,7 +36,8 @@ minimal_install:
 minimal_test:
   stage: test
   script:
-    - for i in `seq 2`; do  hostname -f >> tests/machines; done
+    - hostname -f > tests/machines
+    - hostname -f >> tests/machines
     - make check
   tags:
     - centos-6.5

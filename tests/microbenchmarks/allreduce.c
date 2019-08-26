@@ -18,8 +18,7 @@ mcycles_compare (const void *aptr, const void *bptr)
   return 0;
 }
 
-int
-main (int argc, char *argv[])
+int main()
 {
   int i, t, elems;
   gaspi_config_t gconf;
@@ -40,7 +39,9 @@ main (int argc, char *argv[])
   gaspi_proc_num (&gnum);
 
   if (0 == grank)
+  {
     printf ("CPU freq: %.2f\n", cpu_freq);
+  }
 
   double *one = (double *) malloc (255 * sizeof (double));
   double *sum = (double *) malloc (255 * sizeof (double));
