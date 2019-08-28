@@ -60,10 +60,7 @@ AM_INIT_AUTOMAKE([foreign nostdinc AUTOMAKE_SUBDIRS])
 
 # LIBTOOL
 LT_PREREQ([2.2])
-LT_INIT([disable-shared static])
-if test $enable_shared = yes; then
-   AC_MSG_ERROR([GPI-shared libraries are not supported at the moment])
-fi
+LT_INIT()
 
 # CHECKS FOR PROGRAMS.
 TITLE([Checking for other used headers and libs, typedefs, structures and compiler characteristics])
