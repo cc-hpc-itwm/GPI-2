@@ -17,7 +17,7 @@ main (int argc, char *argv[])
 
   ASSERT (gaspi_segment_max (&seg_max));
 
-  assert (seg_max == 32);
+  assert (seg_max == 255);
 
   gaspi_segment_id_t s;
 
