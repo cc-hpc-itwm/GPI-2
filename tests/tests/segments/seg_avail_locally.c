@@ -1,5 +1,8 @@
 #include <test_utils.h>
 
+/* Test segment binding, get the segment list and after deletion
+   reallocate the segment*/
+
 int
 main (int argc, char *argv[])
 {
