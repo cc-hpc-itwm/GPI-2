@@ -98,7 +98,7 @@ pgaspi_segment_list (const gaspi_number_t num,
   }
 
   gaspi_number_t idx = 0;
-  for (gaspi_segment_id_t i = 0; i < GASPI_MAX_MSEGS; i++)
+  for (gaspi_segment_id_t i = 0; i < gctx->config->segment_max; i++)
   {
     if (gctx->rrmd[i] != NULL)
     {
@@ -218,7 +218,7 @@ pgaspi_segment_alloc_maybe (gaspi_segment_id_t const segment_id,
   GASPI_VERIFY_SEGMENT_SIZE (size);
   GASPI_VERIFY_SEGMENT (segment_id);
 
-  if (gctx->mseg_cnt >= GASPI_MAX_MSEGS)
+  if (gctx->mseg_cnt >= gctx->config->segment_max)
   {
     return GASPI_ERR_MANY_SEG;
   }
@@ -436,7 +436,7 @@ gaspi_segment_set (const gaspi_segment_descriptor_t snp)
     return -1;
   }
 
-  if (snp.seg_id < 0 || snp.seg_id >= GASPI_MAX_MSEGS)
+  if (snp.seg_id < 0 || snp.seg_id >= gctx->config->segment_max)
   {
     return -1;
   }

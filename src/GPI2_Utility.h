@@ -44,6 +44,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #ifdef DEBUG
 #include "GPI2.h"
+extern gaspi_config_t glb_gaspi_cfg;
 #define GASPI_DEBUG_PRINT_ERROR(msg, ...)                               \
   {                                                                     \
     int gaspi_debug_errsv = errno;                                      \
@@ -93,7 +94,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #define GASPI_VERIFY_SEGMENT(seg_id)            \
   {                                             \
-    if (seg_id >= GASPI_MAX_MSEGS)              \
+    if (seg_id >= glb_gaspi_cfg.segment_max)	\
     {                                           \
       return GASPI_ERR_INV_SEG;                 \
     }                                           \

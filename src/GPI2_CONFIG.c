@@ -159,7 +159,14 @@ pgaspi_config_set (const gaspi_config_t nconf)
     return GASPI_ERR_CONFIG;
   }
 
-  glb_gaspi_cfg.queue_size_max = nconf.queue_size_max;
+  if (nconf.segment_max > GASPI_MAX_MSEGS || nconf.segment_max < 1)
+  {
+    GASPI_DEBUG_PRINT_ERROR
+      ("Invalid value for parameter segment_max (min=1 and max=GASPI_MAX_MSEGS");
+    return GASPI_ERR_CONFIG;
+  }
+
+  glb_gaspi_cfg.segment_max = nconf.segment_max;
 
   if (nconf.sn_port < 1024 || nconf.sn_port > 65536)
   {

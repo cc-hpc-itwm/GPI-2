@@ -467,7 +467,7 @@ pgaspi_cleanup_core (gaspi_context_t * const gctx)
   gctx->nsrc.data.buf = NULL;
 
   /* Delete segments */
-  for (int i = 0; i < GASPI_MAX_MSEGS; i++)
+  for (int i = 0; i < gctx->config->segment_max; i++)
   {
     if (gctx->rrmd[i] != NULL)
     {
