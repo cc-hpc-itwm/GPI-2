@@ -2,7 +2,6 @@
 
 /* Test allocates max number of segments defined by th user, registers
    them with all other nodes and then deletes them */
-
 int
 main (int argc, char *argv[])
 {

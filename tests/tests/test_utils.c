@@ -33,7 +33,7 @@ static gaspi_config_t tsuite_default_config = {
   1024,                         //queue size max
   8,                            //queue count
   32,                           //group_max
-  32,                           //segment_max
+  255,                          //segment_max
   ((1ul << 31ul) - 1ul),        //transfer_size_max
   65536,                        //notification_num
   1024,                         //passive_queue_size_max
