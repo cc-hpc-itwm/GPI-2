@@ -1,7 +1,6 @@
-#include <stdio.h>
 #include <test_utils.h>
 
-/* Test creates maximum number of segments specified by the user and then deletes them. */
+/* Test creates maximum number of segments defined by the user and then deletes them. */
 int
 main (int argc, char *argv[])
 {
@@ -35,6 +34,8 @@ main (int argc, char *argv[])
     ASSERT(gaspi_segment_create
 	   (s, 1024, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_UNINITIALIZED));
   }
+
+  EXPECT_FAIL (gaspi_segment_alloc (s, 1024, GASPI_MEM_INITIALIZED));
 
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 

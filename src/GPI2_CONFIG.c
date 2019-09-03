@@ -146,7 +146,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   if (nconf.queue_num > GASPI_MAX_QP || nconf.queue_num < 1)
   {
     GASPI_DEBUG_PRINT_ERROR
-      ("Invalid value for parameter queue_num (min=1 and max=GASPI_MAX_QP");
+      ("Invalid value for parameter queue_num (min=1 and max=GASPI_MAX_QP)");
     return GASPI_ERR_CONFIG;
   }
 
@@ -155,14 +155,14 @@ pgaspi_config_set (const gaspi_config_t nconf)
   if (nconf.queue_size_max > GASPI_MAX_QSIZE || nconf.queue_size_max < 1)
   {
     GASPI_DEBUG_PRINT_ERROR
-      ("Invalid value for parameter queue_size_max (min=1 and max=GASPI_MAX_QSIZE");
+      ("Invalid value for parameter queue_size_max (min=1 and max=GASPI_MAX_QSIZE)");
     return GASPI_ERR_CONFIG;
   }
 
   if (nconf.segment_max > GASPI_MAX_MSEGS || nconf.segment_max < 1)
   {
     GASPI_DEBUG_PRINT_ERROR
-      ("Invalid value for parameter segment_max (min=1 and max=GASPI_MAX_MSEGS");
+      ("Invalid value for parameter segment_max (min=1 and max=GASPI_MAX_MSEGS)");
     return GASPI_ERR_CONFIG;
   }
 
