@@ -7,12 +7,12 @@ AC_DEFUN([ACX_C],[
 	   case "${CCLOC}" in
 	     gcc|mpicc)
 		AC_SUBST([NON_MPI_CC],gcc)
-		AS_IF([test "x${CC}" = xmpicc],with_mpi=yes)
+		AS_IF([test "x${CCLOC}" = xmpicc],with_mpi=yes)
 		CFLAGS+=" -std=gnu99"
 	  	;;
 	     icc|mpiicc)
 	     	AC_SUBST([NON_MPI_CC],icc)
-		AS_IF([test "x${CC}" = xmpiicc],with_mpi=yes)
+		AS_IF([test "x${CCLOC}" = xmpiicc],with_mpi=yes)
 	        CFLAGS+=" -std=gnu99"
       		;;
     	     *)
