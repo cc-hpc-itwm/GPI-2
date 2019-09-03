@@ -1,15 +1,24 @@
 #include <test_utils.h>
 
-/* Test allocates max number of segments, registers them with all
-   other nodes and then deletes them */
+/* Test creates maximum number of segments defined by the user and
+   then deletes them. */
 int
 main (int argc, char *argv[])
 {
   TSUITE_INIT (argc, argv);
 
+  gaspi_config_t default_conf;
+
+  ASSERT (gaspi_config_get (&default_conf));
+
+  gaspi_number_t user_seg_max = 48;
+  default_conf.segment_max = user_seg_max;
+
+  ASSERT (gaspi_config_set (default_conf));
+
   ASSERT (gaspi_proc_init (GASPI_BLOCK));
 
-  gaspi_rank_t rank, nprocs, i;
+  gaspi_rank_t rank, nprocs;
 
   ASSERT (gaspi_proc_num (&nprocs));
   ASSERT (gaspi_proc_rank (&rank));
@@ -18,35 +27,21 @@ main (int argc, char *argv[])
 
   ASSERT (gaspi_segment_max (&seg_max));
 
-  assert (seg_max == 255);
+  assert (user_seg_max <= seg_max);
 
   gaspi_segment_id_t s;
 
-  for (s = 0; s < seg_max; s++)
+  for (s = 0; s < user_seg_max; s++)
   {
-    ASSERT (gaspi_segment_alloc (s, 1024, GASPI_MEM_INITIALIZED));
+    ASSERT (gaspi_segment_create
+            (s, 1024, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_UNINITIALIZED));
   }
-
-  ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 
   EXPECT_FAIL (gaspi_segment_alloc (s, 1024, GASPI_MEM_INITIALIZED));
 
-  for (i = 0; i < nprocs; i++)
-  {
-    if (i == rank)
-    {
-      continue;
-    }
-
-    for (s = 0; s < seg_max; s++)
-    {
-      ASSERT (gaspi_segment_register (s, i, GASPI_BLOCK));
-    }
-  }
-
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  for (s = 0; s < seg_max; s++)
+  for (s = 0; s < user_seg_max; s++)
   {
     ASSERT (gaspi_segment_delete (s));
   }
