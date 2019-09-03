@@ -57,7 +57,7 @@ AC_CONFIG_FILES([Makefile
 	tests/microbenchmarks/Makefile
 	tutorial/code/Makefile
 	])
-AM_INIT_AUTOMAKE([foreign nostdinc subdir-objects no-dependencies])
+AM_INIT_AUTOMAKE([foreign nostdinc])
 
 # LIBTOOL
 LT_PREREQ([2.2])
