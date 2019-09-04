@@ -33,7 +33,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_REVISION (0)
 
 #define GASPI_MAX_GROUPS  (32)
-#define GASPI_MAX_MSEGS   (32)
+#define GASPI_MAX_MSEGS   (255)
 #define GASPI_MAX_QP      (16)
 #define GASPI_COLL_QP     (GASPI_MAX_QP)
 #define GASPI_PASSIVE_QP  (GASPI_MAX_QP+1)
