@@ -42,6 +42,17 @@ main (int argc, char *argv[])
             (s, 1024, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_UNINITIALIZED));
   }
 
+  gaspi_number_t segment_num= 0;
+  ASSERT (gaspi_segment_num (&segment_num));
+  assert (segment_num == user_seg_max);
+
+  gaspi_segment_id_t *segment_id_list;
+  segment_id_list =
+    (gaspi_segment_id_t *) malloc (segment_num * sizeof (gaspi_segment_id_t));
+  assert (segment_id_list != NULL);
+  ASSERT (gaspi_segment_list (segment_num, segment_id_list));
+  free (segment_id_list);
+
   EXPECT_FAIL (gaspi_segment_alloc (s, 1024, GASPI_MEM_INITIALIZED));
 
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));

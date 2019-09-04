@@ -44,7 +44,6 @@ main (int argc, char *argv[])
 
   for (s = 0; s < user_seg_max; s++)
   {
-
     ASSERT (gaspi_segment_delete (s));
   }
 
