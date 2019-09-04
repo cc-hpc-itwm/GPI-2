@@ -11,7 +11,12 @@ main (int argc, char *argv[])
 
   ASSERT (gaspi_config_get (&default_conf));
 
-  gaspi_number_t user_seg_max = 48;
+  gaspi_number_t user_seg_max = 348;
+  default_conf.segment_max = user_seg_max;
+
+  EXPECT_FAIL_WITH ( gaspi_config_set (default_conf), GASPI_ERR_CONFIG)
+
+  user_seg_max = 48;
   default_conf.segment_max = user_seg_max;
 
   ASSERT (gaspi_config_set (default_conf));
