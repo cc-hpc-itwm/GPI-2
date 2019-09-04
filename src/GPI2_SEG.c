@@ -134,6 +134,8 @@ pgaspi_segment_num (gaspi_number_t * const segment_num)
 gaspi_return_t
 pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
 {
+  gaspi_context_t const *const gctx = &glb_gaspi_ctx;
+
   GASPI_VERIFY_NULL_PTR (avail_seg_id);
 
   gaspi_number_t num_segs;
@@ -149,14 +151,7 @@ pgaspi_segment_avail_local (gaspi_segment_id_t * const avail_seg_id)
     return GASPI_SUCCESS;
   }
 
-  gaspi_number_t segs_max;
-
-  if (pgaspi_segment_max (&segs_max) != GASPI_SUCCESS)
-  {
-    return GASPI_ERROR;
-  }
-
-  if (num_segs == segs_max)
+  if (num_segs == gctx->config->segment_max)
   {
     return GASPI_ERR_MANY_SEG;
   }
