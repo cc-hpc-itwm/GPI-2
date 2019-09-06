@@ -521,7 +521,7 @@ pgaspi_segment_register_group (gaspi_context_t * const gctx,
       return GASPI_ERROR;
     }
 
-    gctx->rrmd[segment_id][r].trans = 1;
+    gctx->rrmd[segment_id][gctx->groups[group].rank_grp[r]].trans = 1;
   }
 
   free (result);
