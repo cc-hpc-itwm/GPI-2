@@ -41,6 +41,7 @@ g_create_group (gaspi_rank_t nprocs, gaspi_group_t * g, gaspi_rank_t avoid)
 int
 main (int argc, char *argv[])
 {
+  gaspi_number_t i, nsegm;
   gaspi_group_t g;
   gaspi_rank_t nprocs, myrank, culprit;
 
@@ -58,30 +59,46 @@ main (int argc, char *argv[])
 
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 
-  culprit = 1;
-
-  if (myrank != culprit)
+  nsegm = 10;
+  for (culprit = 0; culprit < nprocs; ++culprit)
   {
-    ASSERT (g_create_group (nprocs, &g, culprit));
 
-    ASSERT (gaspi_barrier (g, GASPI_BLOCK));
+    if (myrank != culprit)
+    {
+      ASSERT (g_create_group (nprocs, &g, culprit));
 
-    ASSERT (gaspi_segment_create
-            (10, 1024 * 1024, g, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
-  }
+      ASSERT (gaspi_barrier (g, GASPI_BLOCK));
 
-  gaspi_number_t segment_num;
-  ASSERT (gaspi_segment_num (&segment_num));
+      for (i = 0; i < nsegm; ++i)
+      {
+	ASSERT (gaspi_segment_create
+                (i, 1024 * 1024, g, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
+      }
+    }
 
-  gaspi_segment_id_t *segment_id_list;
-  segment_id_list =
-    (gaspi_segment_id_t *) malloc (segment_num * sizeof (gaspi_segment_id_t));
-  ASSERT (gaspi_segment_list(segment_num, segment_id_list));
-  assert (segment_id_list != NULL);
+    gaspi_number_t segment_num;
+    ASSERT (gaspi_segment_num (&segment_num));
 
-  for (gaspi_number_t i = 0; i < segment_num; ++i)
-  {
-    assert (segment_id_list[i] == 10);
+    gaspi_segment_id_t *segment_id_list;
+    segment_id_list =
+      (gaspi_segment_id_t *) malloc (segment_num * sizeof (gaspi_segment_id_t));
+    ASSERT (gaspi_segment_list(segment_num, segment_id_list));
+    assert (segment_id_list != NULL);
+
+    for (i = 0; i < segment_num; ++i)
+    {
+      assert (segment_id_list[i] == i);
+    }
+
+    if (myrank != culprit)
+    {
+      for (i = 0; i < nsegm; ++i)
+      {
+	ASSERT (gaspi_segment_delete(i));
+      }
+      ASSERT (gaspi_group_delete (g));
+    }
+
   }
 
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
