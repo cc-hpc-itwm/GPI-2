@@ -4,8 +4,7 @@
 #include <unistd.h>
 #include <test_utils.h>
 
-/* Test segment assigment in a group with holes */
-
+/* Test assigment of several segments in a groups skipping the addition of one rank */
 gaspi_return_t
 g_create_group (gaspi_rank_t nprocs, gaspi_group_t * g, gaspi_rank_t avoid)
 {
@@ -71,7 +70,7 @@ main (int argc, char *argv[])
 
       for (i = 0; i < nsegm; ++i)
       {
-	ASSERT (gaspi_segment_create
+        ASSERT (gaspi_segment_create
                 (i, 1024 * 1024, g, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
       }
     }
@@ -94,7 +93,7 @@ main (int argc, char *argv[])
     {
       for (i = 0; i < nsegm; ++i)
       {
-	ASSERT (gaspi_segment_delete(i));
+        ASSERT (gaspi_segment_delete(i));
       }
       ASSERT (gaspi_group_delete (g));
     }
