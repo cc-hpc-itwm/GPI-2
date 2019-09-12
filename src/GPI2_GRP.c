@@ -422,14 +422,6 @@ pgaspi_group_commit (const gaspi_group_t group,
     return GASPI_TIMEOUT;
   }
 
-  if (group_to_commit->tnc < 2 && gctx->tnc != 1)
-  {
-    GASPI_DEBUG_PRINT_ERROR
-      ("Group must have at least 2 ranks to be committed");
-    eret = GASPI_ERR_INV_GROUP;
-    goto endL;
-  }
-
   group_to_commit->rank = -1;
   for (int i = 0; i < group_to_commit->tnc; i++)
   {
