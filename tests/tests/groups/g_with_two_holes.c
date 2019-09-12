@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <test_utils.h>
 
-/* Test assigment of several segments in a groups skipping the
+/* Test assigment of several segments in groups skipping the
    addition of two no adjacent ranks */
 int
 main (int argc, char *argv[])
@@ -29,7 +29,6 @@ main (int argc, char *argv[])
 
   if (myrank != culprit1 && myrank != culprit2)
   {
-
     ASSERT (gaspi_group_create (&g));
     for (i = 0; i < nprocs; i++)
     {
@@ -55,6 +54,14 @@ main (int argc, char *argv[])
 
   gaspi_number_t segment_num;
   ASSERT (gaspi_segment_num (&segment_num));
+  if (myrank != culprit1 && myrank != culprit2)
+  {
+    assert (segment_num == nsegm);
+  }
+  else
+  {
+    assert (segment_num == 0);
+  }
 
   gaspi_segment_id_t *segment_id_list;
   segment_id_list =
