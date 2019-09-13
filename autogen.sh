@@ -24,7 +24,7 @@ else
 fi
 
 # AUTOTOOLS CONFIGURATION
-if [[ ! -e build-aux ]]; then
+if [ ! -e build-aux ]; then
     mkdir build-aux
 fi
 autoreconf --install -I build-aux $add
