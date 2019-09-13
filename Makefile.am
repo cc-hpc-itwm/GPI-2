@@ -39,7 +39,7 @@ tutorial:
 .PHONY: docs tutorial defaults
 
 # FOR DISTRIBUTION
-EXTRA_DIST = config.site autogen.sh bin tutorial/* \
+EXTRA_DIST = configure.ac.in config.site autogen.sh bin tutorial/* \
 	tests/defs tests/runtests.sh \
 	docs/Doxyfile.in docs/Makefile.am docs/Makefile.in docs/mainpage.dox docs/new_arch.png
 
