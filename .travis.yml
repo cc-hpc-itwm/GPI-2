@@ -4,9 +4,13 @@ compiler:
     - gcc
 os:
     - linux
+before_script:
+     -  ./autogen.sh
 script:
-    - sh -x ./install.sh -p $HOME/install_test/ --with-ethernet --with-fortran=false
+    - ./configure --prefix=$PWD/gpi2-install-dir --with-ethernet --with-fortran=false
+    - make
+    - make install
 after_failure:
-    - cat ./install.log
+    - cat ./config.log
 after_script:
-    - cat ./install.log
+    - cat ./config.log
