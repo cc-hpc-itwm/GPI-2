@@ -3,7 +3,7 @@ AM_CPPFLAGS = -I$(abs_top_srcdir)/src/include -I$(abs_top_srcdir)/tests/tests
 
 LDADD = $(abs_top_builddir)/src/.libs/libGPI2-dbg.la
 
-LDFLAGS = -lpthread
+LDFLAGS = -pthread
 if WITH_INFINIBAND
 LDFLAGS += @ac_lib_infiniband@ -libverbs
 endif
