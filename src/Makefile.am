@@ -90,10 +90,10 @@ pkgconfig_DATA = libgpi.pc
 
 if WITH_INFINIBAND
 install-data-hook:
-	echo "Libs.private: @ac_lib_infiniband@ -libverbs -lpthread" >> $(libdir)/pkgconfig/libgpi.pc
+	echo "Libs.private: @ac_lib_infiniband@ -libverbs -pthread" >> $(libdir)/pkgconfig/libgpi.pc
 else
 install-data-hook:
-	echo "Libs.private: -lrt -lpthread" >> $(libdir)/pkgconfig/libgpi.pc
+	echo "Libs.private: -lrt -pthread" >> $(libdir)/pkgconfig/libgpi.pc
 endif
 
 # CLEAN
