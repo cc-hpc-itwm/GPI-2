@@ -78,6 +78,7 @@ gaspi_config_t glb_gaspi_cfg =
   GASPI_MAX_TSIZE_P,                //passive_transfer_size_max;
   GASPI_DEFAULT_ALLREDUCE_BUF_SIZE, //allreduce_buf_size;
   GASPI_DEFAULT_ALLREDUCE_ELEM_MAX, //allreduce_elem_max;
+  GASPI_RW_LIST_ELEM_MAX, // maximum elements in lists
   GASPI_TOPOLOGY_STATIC,            //build_infrastructure;
   NULL                              //user_defined
 };
@@ -242,6 +243,15 @@ pgaspi_config_set (const gaspi_config_t nconf)
   }
 
   glb_gaspi_cfg.allreduce_elem_max = nconf.allreduce_elem_max;
+
+  if (nconf.rw_list_elem_max > GASPI_RW_LIST_ELEM_MAX || nconf.rw_list_elem_max < 1)
+  {
+    GASPI_DEBUG_PRINT_ERROR
+      ("Invalid value for parameter rw_list_elem_max (min=1 and max=GASPI_RW_LIST_ELEM_MAX)");
+    return GASPI_ERR_CONFIG;
+  }
+
+  glb_gaspi_cfg.rw_list_elem_max = nconf.rw_list_elem_max;
 
   glb_gaspi_cfg.build_infrastructure = nconf.build_infrastructure;
 

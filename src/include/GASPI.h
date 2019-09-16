@@ -242,6 +242,7 @@ extern "C"
     gaspi_number_t passive_transfer_size_max; /* maximum size (bytes) of a single passive transfer */
     gaspi_size_t allreduce_buf_size;          /* size of internal buffer for gaspi_allreduce_user */
     gaspi_number_t allreduce_elem_max;        /* maximum number of elements in gaspi_allreduce */
+    gaspi_number_t rw_list_elem_max;          /* maximum number of elements in gaspi_rw_list */
     gaspi_topology_t build_infrastructure;    /* whether and how the topology should be built at initialization */
     void* user_defined;                       /* user-defined information */
   } gaspi_config_t;
