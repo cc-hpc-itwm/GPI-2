@@ -15,7 +15,7 @@ main (int argc, char *argv[])
   gaspi_number_t user_elem_max = 348;
   default_conf.rw_list_elem_max = user_elem_max;
 
-  EXPECT_FAIL_WITH ( gaspi_config_set (default_conf), GASPI_ERR_CONFIG);
+  EXPECT_FAIL_WITH (gaspi_config_set (default_conf), GASPI_ERR_CONFIG);
 
   user_elem_max = 155;
   default_conf.rw_list_elem_max = user_elem_max;
@@ -27,7 +27,7 @@ main (int argc, char *argv[])
 
   // user_elem_max is bounded by elem_max
   gaspi_number_t elem_max;
-  ASSERT (gaspi_rw_list_elem_max(&elem_max));
+  ASSERT (gaspi_rw_list_elem_max (&elem_max));
   assert (user_elem_max <= elem_max);
 
   gaspi_rank_t numranks, myrank;
@@ -59,7 +59,6 @@ main (int argc, char *argv[])
   gaspi_number_t queue_size = 0;
 
   const gaspi_number_t nListElems = user_elem_max;
-  gaspi_number_t n;
 
   gaspi_segment_id_t localSegs[nListElems];
   gaspi_offset_t localOffs[nListElems];
@@ -73,7 +72,7 @@ main (int argc, char *argv[])
   gaspi_offset_t initLocOff = 0;
   gaspi_offset_t initRemOff = (bytes * nListElems + 64);
 
-  for (n = 0; n < nListElems; n++)
+  for (gaspi_number_t n = 0; n < nListElems; n++)
   {
     sizes[n] = bytes;
 
@@ -110,13 +109,12 @@ main (int argc, char *argv[])
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 
   //check
-  gaspi_number_t l;
   gaspi_offset_t off2check = (bytes * nListElems + 64);
   char *chPtr = (char *) _vptr;
 
   mem = (int *) (chPtr + off2check);
 
-  for (l = 0; l < nListElems; l++)
+  for (gaspi_number_t l = 0; l < nListElems; l++)
   {
     assert (mem[l] == (int) rank2recv);
   }

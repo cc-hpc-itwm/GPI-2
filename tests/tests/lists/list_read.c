@@ -36,7 +36,6 @@ main (int argc, char *argv[])
   gaspi_number_t queue_size = 0;
 
   const gaspi_number_t nListElems = 255;
-  gaspi_number_t n;
 
   gaspi_segment_id_t localSegs[nListElems];
   gaspi_offset_t localOffs[nListElems];
@@ -49,7 +48,7 @@ main (int argc, char *argv[])
   gaspi_offset_t initLocOff = 0;
   gaspi_offset_t initRemOff = (bytes * nListElems + 64);
 
-  for (n = 0; n < nListElems; n++)
+  for (gaspi_number_t n = 0; n < nListElems; n++)
   {
     sizes[n] = bytes;
 
@@ -60,7 +59,6 @@ main (int argc, char *argv[])
     remSegs[n] = 0;
     remOffs[n] = initRemOff;
     initRemOff += bytes;
-
   }
 
   ASSERT (gaspi_read_list
@@ -73,14 +71,12 @@ main (int argc, char *argv[])
   ASSERT (gaspi_wait (0, GASPI_BLOCK));
 
   //check
-  gaspi_number_t l;
-
   gaspi_offset_t off2check = 0;
   char *chPtr = (char *) _vptr;
 
   mem = (int *) (chPtr + off2check);
 
-  for (l = 0; l < nListElems; l++)
+  for (gaspi_number_t l = 0; l < nListElems; l++)
   {
     assert (mem[l] == (int) rank2read);
   }

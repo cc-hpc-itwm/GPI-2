@@ -40,7 +40,6 @@ main (int argc, char *argv[])
   gaspi_number_t queue_size = 0;
 
   const gaspi_number_t nListElems = 255;
-  gaspi_number_t n;
 
   gaspi_segment_id_t localSegs[nListElems];
   gaspi_offset_t localOffs[nListElems];
@@ -53,7 +52,7 @@ main (int argc, char *argv[])
   gaspi_offset_t initLocOff = 0;
   gaspi_offset_t initRemOff = 0;
 
-  for (n = 0; n < nListElems; n++)
+  for (gaspi_number_t n = 0; n < nListElems; n++)
   {
     sizes[n] = bytes;
 
@@ -81,9 +80,7 @@ main (int argc, char *argv[])
   assert (notification_val == 1);
 
   //check
-  gaspi_number_t l;
-
-  for (l = 0; l < nListElems; l++)
+  for (gaspi_number_t l = 0; l < nListElems; l++)
   {
     assert (mem_read[l] == (int) rank2read);
   }
