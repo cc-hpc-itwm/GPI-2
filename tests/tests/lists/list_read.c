@@ -44,7 +44,7 @@ main (int argc, char *argv[])
   gaspi_offset_t remOffs[nListElems];
   gaspi_size_t sizes[nListElems];
 
-  const unsigned int bytes = sizeof (int);
+  size_t bytes = sizeof (int);
   gaspi_offset_t initLocOff = 0;
   gaspi_offset_t initRemOff = (bytes * nListElems + 64);
 
