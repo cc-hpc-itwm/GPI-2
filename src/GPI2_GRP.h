@@ -52,7 +52,8 @@ gaspi_return_t
 pgaspi_group_all_local_create (gaspi_context_t * const gctx,
                                const gaspi_timeout_t timeout_ms);
 
-gaspi_return_t pgaspi_group_all_delete (gaspi_context_t * const gctx);
+gaspi_return_t
+pgaspi_group_delete_no_verify (const gaspi_group_t);
 
 gaspi_group_exch_info_t *pgaspi_group_create_exch_info (gaspi_group_t group,
                                                         int tnc);

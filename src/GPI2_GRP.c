@@ -151,14 +151,14 @@ pgaspi_group_create (gaspi_group_t * const group)
 
   lock_gaspi_tout (&(gctx->ctx_lock), GASPI_BLOCK);
 
-  if (gctx->group_cnt >= GASPI_MAX_GROUPS)
+  if (gctx->group_cnt >= gctx->config->group_max)
   {
     unlock_gaspi (&(gctx->ctx_lock));
     return GASPI_ERR_MANY_GRP;
   }
 
-  int id = GASPI_MAX_GROUPS;
-  for (int i = 0; i < GASPI_MAX_GROUPS; i++)
+  int id = gctx->config->group_max;
+  for (int i = 0; i < gctx->config->group_max; i++)
   {
     if (gctx->groups[i].id == -1)
     {
@@ -167,7 +167,7 @@ pgaspi_group_create (gaspi_group_t * const group)
     }
   }
 
-  if (id == GASPI_MAX_GROUPS)
+  if (id == gctx->config->group_max)
   {
     unlock_gaspi (&(gctx->ctx_lock));
     return GASPI_ERR_MANY_GRP;
@@ -223,22 +223,13 @@ errL:
 }
 
 
-#pragma weak gaspi_group_delete = pgaspi_group_delete
 gaspi_return_t
-pgaspi_group_delete (const gaspi_group_t group)
+pgaspi_group_delete_no_verify (const gaspi_group_t group)
 {
-  GASPI_VERIFY_INIT ("gaspi_group_delete");
-  GASPI_VERIFY_GROUP (group);
-
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
   gaspi_group_ctx_t *const grp_ctx = &(gctx->groups[group]);
 
   gaspi_return_t eret = GASPI_ERROR;
-
-  if (group == GASPI_GROUP_ALL)
-  {
-    return GASPI_ERR_INV_GROUP;
-  }
 
   lock_gaspi (&(grp_ctx->del));
 
@@ -255,6 +246,21 @@ pgaspi_group_delete (const gaspi_group_t group)
   unlock_gaspi (&(gctx->ctx_lock));
 
   return eret;
+}
+
+#pragma weak gaspi_group_delete = pgaspi_group_delete
+gaspi_return_t
+pgaspi_group_delete (const gaspi_group_t group)
+{
+  GASPI_VERIFY_INIT ("gaspi_group_delete");
+  GASPI_VERIFY_GROUP (group);
+
+  if (group == GASPI_GROUP_ALL)
+  {
+    return GASPI_ERR_INV_GROUP;
+  }
+
+  return pgaspi_group_delete_no_verify (group);
 }
 
 static int
@@ -355,30 +361,6 @@ pgaspi_group_all_local_create (gaspi_context_t * const gctx,
 
   unlock_gaspi (&(gctx->ctx_lock));
   return GASPI_SUCCESS;
-}
-
-gaspi_return_t
-pgaspi_group_all_delete (gaspi_context_t * const gctx)
-{
-  GASPI_VERIFY_INIT ("gaspi_group_all_delete");
-
-  gaspi_return_t eret = GASPI_ERROR;
-
-  lock_gaspi_tout (&gctx->groups[GASPI_GROUP_ALL].del, GASPI_BLOCK);
-
-  eret = _gaspi_release_group_mem (gctx, GASPI_GROUP_ALL);
-
-  GASPI_RESET_GROUP (gctx->groups, GASPI_GROUP_ALL);
-
-  unlock_gaspi (&gctx->groups[GASPI_GROUP_ALL].del);
-
-  lock_gaspi (&(gctx->ctx_lock));
-
-  gctx->group_cnt--;
-
-  unlock_gaspi (&(gctx->ctx_lock));
-
-  return eret;
 }
 
 gaspi_group_exch_info_t *
@@ -573,7 +555,9 @@ pgaspi_group_max (gaspi_number_t * const group_max)
   GASPI_VERIFY_NULL_PTR (group_max);
   GASPI_VERIFY_INIT ("gaspi_group_max");
 
-  *group_max = GASPI_MAX_GROUPS;
+  gaspi_context_t const *const gctx = &glb_gaspi_ctx;
+
+  *group_max = gctx->config->group_max;
 
   return GASPI_SUCCESS;
 }

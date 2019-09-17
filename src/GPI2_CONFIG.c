@@ -19,6 +19,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2.h"
 #include "GPI2_Utility.h"
 
+#define GASPI_MAX_GROUPS  (32)
+#define GASPI_MAX_MSEGS   (255)
 #define GASPI_MAX_QSIZE   (4096)
 #define GASPI_MAX_TSIZE_C (1ul<<30ul)
 #define GASPI_MAX_TSIZE_P ((1ul<<16ul)-1ul)
@@ -193,6 +195,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   }
 
   glb_gaspi_cfg.segment_max = nconf.segment_max;
+  glb_gaspi_cfg.group_max = nconf.group_max;
 
   // TODO: the default value probably should come from the device
   if (nconf.transfer_size_max > GASPI_MAX_TSIZE_C)
