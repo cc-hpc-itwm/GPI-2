@@ -32,8 +32,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_MINOR_VERSION (3)
 #define GASPI_REVISION (0)
 
-#define GASPI_MAX_GROUPS  (32)
-#define GASPI_MAX_MSEGS   (255)
 #define GASPI_MAX_QP      (16)
 #define GASPI_COLL_QP     (GASPI_MAX_QP)
 #define GASPI_PASSIVE_QP  (GASPI_MAX_QP+1)
@@ -124,7 +122,7 @@ typedef struct
   char *hn_poff;
   char *poff;
   int group_cnt;
-  gaspi_group_ctx_t groups[GASPI_MAX_GROUPS];
+  gaspi_group_ctx_t *groups;
 
   volatile int init; //Is GPI-2 initialized?
   volatile int sn_init; //Is the SN up?
@@ -147,7 +145,7 @@ typedef struct
   pthread_t snt;
 
   gaspi_rc_mseg_t nsrc;
-  gaspi_rc_mseg_t *rrmd[GASPI_MAX_MSEGS];
+  gaspi_rc_mseg_t **rrmd;
 
   gaspi_endpoint_conn_t *ep_conn;
 
