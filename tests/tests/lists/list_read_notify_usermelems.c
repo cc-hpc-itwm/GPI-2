@@ -46,15 +46,15 @@ main (int argc, char *argv[])
   ASSERT (gaspi_segment_ptr (0, &_vptr));
   ASSERT (gaspi_segment_ptr (1, &_vptr1));
 
-  int *mem = (int *) _vptr;
-  int *mem_read = (int *) _vptr1;
+  gaspi_rank_t *mem = (gaspi_rank_t *) _vptr;
+  gaspi_rank_t *mem_read = (gaspi_rank_t *) _vptr1;
 
   unsigned long i;
   const unsigned long maxInts = _8MB / sizeof (int);
 
   for (i = 0; i < maxInts; i++)
   {
-    mem[i] = (int) myrank;
+    mem[i] = myrank;
   }
 
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
@@ -105,7 +105,7 @@ main (int argc, char *argv[])
   //check
   for (gaspi_number_t l = 0; l < nListElems; l++)
   {
-    assert (mem_read[l] == (int) rank2read);
+    assert (mem_read[l] == rank2read);
   }
 
   ASSERT (gaspi_wait (0, GASPI_BLOCK));

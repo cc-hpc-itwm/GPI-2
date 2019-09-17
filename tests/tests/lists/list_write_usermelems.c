@@ -43,14 +43,14 @@ main (int argc, char *argv[])
 
   ASSERT (gaspi_segment_ptr (0, &_vptr));
 
-  int *mem = (int *) _vptr;
+  gaspi_rank_t *mem = (gaspi_rank_t *) _vptr;
 
   unsigned long i;
   const unsigned long maxInts = _128MB / sizeof (int);
 
   for (i = 0; i < maxInts; i++)
   {
-    mem[i] = (int) myrank;
+    mem[i] = myrank;
   }
 
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
@@ -112,11 +112,11 @@ main (int argc, char *argv[])
   gaspi_offset_t off2check = (bytes * nListElems + 64);
   char *chPtr = (char *) _vptr;
 
-  mem = (int *) (chPtr + off2check);
+  mem = (gaspi_rank_t *) (chPtr + off2check);
 
   for (gaspi_number_t l = 0; l < nListElems; l++)
   {
-    assert (mem[l] == (int) rank2recv);
+    assert (mem[l] == rank2recv);
   }
 
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
