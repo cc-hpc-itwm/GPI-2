@@ -5,9 +5,9 @@ AC_DEFUN([ACX_C],[
 	if test -z "${CFLAGS}"; then
 	   CCLOC=`basename ${CC}`
 	   case "${CCLOC}" in
-	     gcc|mpicc)
-		AC_SUBST([NON_MPI_CC],gcc)
-		AS_IF([test "x${CCLOC}" = xmpicc],with_mpi=yes)
+	     gcc|clang|mpicc)
+		AS_IF([test "x${CCLOC}" = xmpicc],[with_mpi=yes])
+		AS_IF([test "x${CCLOC}" = xmpicc],AC_SUBST([NON_MPI_CC],`mpicc --version | head -n 1 | { read first rest ; echo $first ; }`))
 		CFLAGS+=" -std=gnu99"
 	  	;;
 	     icc|mpiicc)
@@ -23,7 +23,7 @@ AC_DEFUN([ACX_C],[
 	AC_MSG_NOTICE([Using std CFLAGS="$CFLAGS"])
 
 	# USED FOR tutorial/code
-	AM_CONDITIONAL([HAVE_CGNU],[test ${NON_MPI_CC} = gcc])
-	AM_CONDITIONAL([HAVE_CINTEL],[test ${NON_MPI_CC} = icc])
+	AM_CONDITIONAL([HAVE_CGNU],[test x${NON_MPI_CC} = xgcc -o x${NON_MPI_CC} = xclang])
+	AM_CONDITIONAL([HAVE_CINTEL],[test x${NON_MPI_CC} = xicc])
 
 	])
