@@ -15,10 +15,10 @@ CFLAGS += -Wextra
 CFLAGS += -Wshadow
 CFLAGS += -O3
 CFLAGS += -std=gnu99
-ifeq "$(CC)" "gcc"
+ifeq "$(NON_MPI_CC)" "gcc"
 CFLAGS += -fopenmp
 endif
-ifeq "$(CC)" "icc"
+ifeq "$(NON_MPI_CC)" "icc"
 CFLAGS += -qopenmp
 endif
 ###############################################################################
@@ -29,7 +29,7 @@ LIBRARY_DIR += $(GPI2_HOME)/src/.libs
 
 LDFLAGS += $(addprefix -L,$(LIBRARY_DIR))
 
-ifeq "$(CC)" "icc"
+ifeq "$(NON_MPI_CC)" "icc"
   LDFLAGS += -qopenmp-link static
 endif
 

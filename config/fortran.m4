@@ -46,19 +46,17 @@ AC_DEFUN([ACX_FC_ISO_C],[
 # Set default FCFLAGS for tests
 # ----------------------------------
 AC_DEFUN([ACX_FCFLAGS],[
-	if test -z "${FCFLAGS}"; then
-	   FCLOC=`basename ${FC}`
-	   case "${FCLOC}" in
-	   	gfortran|mpif90)
-			AC_SUBST([FCFLAGS_TESTS],["-fno-range-check"])
+	FCLOC=`basename ${FC}`
+	case "${FCLOC}" in
+	     gfortran|mpif90)
+                AC_SUBST([FCFLAGS_TESTS],["-fno-range-check"])
 		;;
-		ifort|mpiifort)
-			AC_SUBST([FCFLAGS_TESTS],["-mcmodel=medium"])
+	     ifort|mpiifort)
+                AC_SUBST([FCFLAGS_TESTS],["-mcmodel=medium"])
 		;;
-		*)
-			AC_SUBST([FCFLAGS_TESTS],[" "])
+	     *)
+		AC_SUBST([FCFLAGS_TESTS],[" "])
 		;;
-	   esac
-	fi
-	AC_MSG_NOTICE([Using test FCFLAGS="$FCFLAGS_TESTS"])
+	esac
+	AC_MSG_NOTICE([Using test FCFLAGS_TESTS="$FCFLAGS_TESTS"])
 ])
