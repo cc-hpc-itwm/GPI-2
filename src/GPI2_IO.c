@@ -110,7 +110,8 @@ pgaspi_rw_list_elem_max (gaspi_number_t * const elem_max)
   GASPI_VERIFY_NULL_PTR (elem_max);
   GASPI_VERIFY_INIT ("gaspi_rw_list_elem_max");
 
-  *elem_max = ((1 << 8) - 1);
+  *elem_max = GASPI_RW_LIST_ELEM_MAX;
+
   return GASPI_SUCCESS;
 }
 
@@ -396,16 +397,6 @@ endL:
 }
 
 #ifdef DEBUG
-static int
-pgaspi_rw_list_num_invalid (gaspi_number_t num)
-{
-  gaspi_number_t max_allowed;
-
-  pgaspi_rw_list_elem_max (&max_allowed);
-
-  return num > max_allowed;
-}
-
 static gaspi_return_t
 pgaspi_rw_list_verify_parameters (char* fun_name,
                                   gaspi_context_t* const gctx,
@@ -427,7 +418,7 @@ pgaspi_rw_list_verify_parameters (char* fun_name,
 
   GASPI_VERIFY_QUEUE (queue);
 
-  if (pgaspi_rw_list_num_invalid (num))
+  if (num > gctx->config->rw_list_elem_max)
   {
     return GASPI_ERR_INV_NUM;
   }

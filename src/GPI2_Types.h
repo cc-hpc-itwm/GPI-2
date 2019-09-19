@@ -41,6 +41,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_MAX_NOTIFICATION  (65536)
 #define GASPI_MAX_NUMAS   (4)
 #define GASPI_MAX_PPN     (256)
+#define GASPI_RW_LIST_ELEM_MAX (255)
 
 typedef struct
 {

@@ -1,11 +1,34 @@
 #include <test_utils.h>
 
+/* Test read_notify for lists whose maximum length is specified by the
+   user */
 int
 main (int argc, char *argv[])
 {
   TSUITE_INIT (argc, argv);
 
+  //setup list length
+  gaspi_config_t default_conf;
+
+  ASSERT (gaspi_config_get (&default_conf));
+
+  gaspi_number_t user_elem_max = 348;
+  default_conf.rw_list_elem_max = user_elem_max;
+
+  EXPECT_FAIL_WITH (gaspi_config_set (default_conf), GASPI_ERR_CONFIG);
+
+  user_elem_max = 155;
+  default_conf.rw_list_elem_max = user_elem_max;
+
+  ASSERT (gaspi_config_set (default_conf));
+
+  //init
   ASSERT (gaspi_proc_init (GASPI_BLOCK));
+
+  // user_elem_max is bounded by elem_max
+  gaspi_number_t elem_max;
+  ASSERT (gaspi_rw_list_elem_max (&elem_max));
+  assert (user_elem_max <= elem_max);
 
   gaspi_rank_t numranks, myrank;
 
@@ -39,7 +62,7 @@ main (int argc, char *argv[])
   //construct list of n elems
   gaspi_number_t queue_size = 0;
 
-  const gaspi_number_t nListElems = 255;
+  const gaspi_number_t nListElems = user_elem_max;
 
   gaspi_segment_id_t localSegs[nListElems];
   gaspi_offset_t localOffs[nListElems];

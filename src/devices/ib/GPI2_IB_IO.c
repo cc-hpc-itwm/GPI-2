@@ -225,8 +225,8 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
                        gaspi_size_t * const size, const gaspi_queue_id_t queue)
 {
   struct ibv_send_wr *bad_wr;
-  struct ibv_sge slist[256];
-  struct ibv_send_wr swr[256];
+  struct ibv_sge slist[gctx->config->rw_list_elem_max];
+  struct ibv_send_wr swr[gctx->config->rw_list_elem_max];
 
   if (gctx->ne_count_c[queue] + num > gctx->config->queue_size_max)
   {
@@ -283,8 +283,8 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
                       gaspi_size_t * const size, const gaspi_queue_id_t queue)
 {
   struct ibv_send_wr *bad_wr;
-  struct ibv_sge slist[256];
-  struct ibv_send_wr swr[256];
+  struct ibv_sge slist[gctx->config->rw_list_elem_max];
+  struct ibv_send_wr swr[gctx->config->rw_list_elem_max];
 
   if (gctx->ne_count_c[queue] + num > gctx->config->queue_size_max)
   {
@@ -467,8 +467,8 @@ pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
                               const gaspi_queue_id_t queue)
 {
   struct ibv_send_wr *bad_wr;
-  struct ibv_sge slist[256], slistN;
-  struct ibv_send_wr swr[256], swrN;
+  struct ibv_sge slist[gctx->config->rw_list_elem_max], slistN;
+  struct ibv_send_wr swr[gctx->config->rw_list_elem_max], swrN;
 
   if (gctx->ne_count_c[queue] + num + 1 > gctx->config->queue_size_max)
   {
@@ -620,8 +620,8 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
                              const gaspi_queue_id_t queue)
 {
   struct ibv_send_wr *bad_wr;
-  struct ibv_sge slist[256], slistN;
-  struct ibv_send_wr swr[256], swrN;
+  struct ibv_sge slist[gctx->config->rw_list_elem_max], slistN;
+  struct ibv_send_wr swr[gctx->config->rw_list_elem_max], swrN;
 
   if (gctx->ne_count_c[queue] + num + 1 > gctx->config->queue_size_max)
   {
