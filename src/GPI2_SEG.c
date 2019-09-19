@@ -34,7 +34,9 @@ pgaspi_segment_max (gaspi_number_t * const segment_max)
   GASPI_VERIFY_NULL_PTR (segment_max);
   GASPI_VERIFY_INIT ("gaspi_segment_max");
 
-  *segment_max = GASPI_MAX_MSEGS;
+  gaspi_context_t const *const gctx = &glb_gaspi_ctx;
+
+  *segment_max = gctx->config->segment_max;
 
   return GASPI_SUCCESS;
 }

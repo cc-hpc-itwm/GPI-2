@@ -152,7 +152,21 @@ pgaspi_init_core (gaspi_context_t * const gctx)
     return GASPI_ERROR;;
   }
 
-  for (int i = 0; i < GASPI_MAX_GROUPS; i++)
+  gctx->rrmd = (gaspi_rc_mseg_t**) calloc (gctx->config->segment_max,
+                                           sizeof (gaspi_rc_mseg_t*));
+  if (gctx->rrmd == NULL)
+  {
+    return GASPI_ERR_MEMALLOC;
+  }
+
+  gctx->groups = (gaspi_group_ctx_t*) calloc (gctx->config->group_max,
+                                              sizeof (gaspi_group_ctx_t));
+  if (gctx->groups == NULL)
+  {
+    return GASPI_ERR_MEMALLOC;
+  }
+
+  for (gaspi_number_t i = 0; i < gctx->config->group_max; i++)
   {
     GASPI_RESET_GROUP (gctx->groups, i);
   }
@@ -467,7 +481,7 @@ pgaspi_cleanup_core (gaspi_context_t * const gctx)
   gctx->nsrc.data.buf = NULL;
 
   /* Delete segments */
-  for (int i = 0; i < gctx->config->segment_max; i++)
+  for (gaspi_number_t i = 0; i < gctx->config->segment_max; i++)
   {
     if (gctx->rrmd[i] != NULL)
     {
@@ -483,25 +497,23 @@ pgaspi_cleanup_core (gaspi_context_t * const gctx)
       gctx->rrmd[i] = NULL;
     }
   }
+  free (gctx->rrmd);
 
   unlock_gaspi (&(gctx->ctx_lock));
 
   /* Delete groups */
-  for (int i = 1; i < GASPI_MAX_GROUPS; i++)
+  for (gaspi_number_t i = 0; i < gctx->config->group_max; i++)
   {
     if (gctx->groups[i].id >= 0)
     {
-      if (pgaspi_group_delete (i) != GASPI_SUCCESS)
+      if (pgaspi_group_delete_no_verify (i) != GASPI_SUCCESS)
       {
         GASPI_DEBUG_PRINT_ERROR ("Failed to delete group %u", i);
       }
     }
   }
 
-  if (pgaspi_group_all_delete (gctx) != GASPI_SUCCESS)
-  {
-    GASPI_DEBUG_PRINT_ERROR ("Failed to delete group GASPI_GROUP_ALL.");
-  }
+  free (gctx->groups);
 
   lock_gaspi_tout (&(gctx->ctx_lock), GASPI_BLOCK);
 

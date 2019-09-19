@@ -7,6 +7,7 @@ groups_tests = ../../bin/g_before_start.bin \
       ../../bin/g_elems.bin \
       ../../bin/g_force_timeout.bin \
       ../../bin/g_max_groups.bin \
+      ../../bin/g_max_groups_config.bin \
       ../../bin/g_no_own.bin \
       ../../bin/g_num.bin \
       ../../bin/g_size.bin \
@@ -22,6 +23,7 @@ ______bin_g_commit_g_all_bin_SOURCES = g_commit_g_all.c $(auxSRCS)
 ______bin_g_elems_bin_SOURCES = g_elems.c $(auxSRCS)
 ______bin_g_force_timeout_bin_SOURCES = g_force_timeout.c $(auxSRCS)
 ______bin_g_max_groups_bin_SOURCES = g_max_groups.c $(auxSRCS)
+______bin_g_max_groups_config_bin_SOURCES = g_max_groups_config.c $(auxSRCS)
 ______bin_g_no_own_bin_SOURCES = g_no_own.c $(auxSRCS)
 ______bin_g_num_bin_SOURCES = g_num.c $(auxSRCS)
 ______bin_g_size_bin_SOURCES = g_size.c $(auxSRCS)

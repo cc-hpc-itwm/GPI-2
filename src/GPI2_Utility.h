@@ -92,12 +92,12 @@ extern gaspi_config_t glb_gaspi_cfg;
     }                                           \
   }
 
-#define GASPI_VERIFY_SEGMENT(seg_id)            \
-  {                                             \
-    if (seg_id >= glb_gaspi_cfg.segment_max)	\
-    {                                           \
-      return GASPI_ERR_INV_SEG;                 \
-    }                                           \
+#define GASPI_VERIFY_SEGMENT(seg_id)                      \
+  {                                                       \
+    if (seg_id >= glb_gaspi_ctx.config->segment_max)      \
+    {                                                     \
+      return GASPI_ERR_INV_SEG;                           \
+    }                                                     \
   }
 
 #define GASPI_VERIFY_UNALIGNED_OFF(offset)      \
@@ -156,7 +156,8 @@ extern gaspi_config_t glb_gaspi_cfg;
 
 #define GASPI_VERIFY_GROUP(group)                                       \
   {                                                                     \
-    if (group >= GASPI_MAX_GROUPS || glb_gaspi_ctx.groups[group].id < 0)\
+    if (group >= glb_gaspi_ctx.config->group_max                        \
+        || glb_gaspi_ctx.groups[group].id < 0)                          \
     {                                                                   \
       return GASPI_ERR_INV_GROUP;                                       \
     }                                                                   \
