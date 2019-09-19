@@ -6,7 +6,6 @@
 int
 main (int argc, char *argv[])
 {
-  const int num_elems = 1024;
 
   TSUITE_INIT (argc, argv);
 

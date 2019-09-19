@@ -19,13 +19,6 @@ int main(int argc, char *argv[])
   gaspi_size_t segSize;
   ASSERT (gaspi_segment_size (0, myrank, &segSize));
 
-  unsigned char * pGlbMem;
-
-  gaspi_pointer_t _vptr;
-  ASSERT (gaspi_segment_ptr (0, &_vptr));
-
-  pGlbMem = (unsigned char *) _vptr;
-
   gaspi_number_t queueSize, qmax ;
   ASSERT (gaspi_queue_size_max (&qmax));
 
