@@ -6,7 +6,7 @@ int
 main (int argc, char *argv[])
 {
   gaspi_group_t g;
-  gaspi_number_t ngroups, i, gsize;
+  gaspi_number_t i, gsize;
 
   TSUITE_INIT (argc, argv);
 

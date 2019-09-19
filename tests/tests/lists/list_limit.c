@@ -18,7 +18,6 @@ main (int argc, char *argv[])
           (0, _1MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
   const gaspi_number_t nListElems = 257;
-  gaspi_number_t n;
 
   gaspi_segment_id_t localSegs[nListElems];
   gaspi_offset_t localOffs[nListElems];
@@ -26,10 +25,6 @@ main (int argc, char *argv[])
   gaspi_segment_id_t remSegs[nListElems];
   gaspi_offset_t remOffs[nListElems];
   gaspi_size_t sizes[nListElems];
-
-  size_t bytes = sizeof (gaspi_rank_t);
-  gaspi_offset_t initLocOff = 0;
-  gaspi_offset_t initRemOff = initLocOff;
 
   EXPECT_FAIL (gaspi_write_list (nListElems,
                                  localSegs, localOffs, rank2send,
