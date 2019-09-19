@@ -517,7 +517,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
 
   /* Zero-fy QP creation state */
   //TODO: could be independent of tnc
-  memset (&(ib_dev_ctx->qpC_cstat), 0, GASPI_MAX_QP);
+  memset (&(ib_dev_ctx->qpC_cstat), 0, GASPI_MAX_QP * sizeof(gaspi_uint));
 
   ib_dev_ctx->local_info =
     (struct ib_ctx_info *) calloc (gctx->tnc, sizeof (struct ib_ctx_info));
