@@ -4,10 +4,14 @@
 AC_DEFUN([ACX_C],[
 	CCLOC=`basename ${CC}`
 	case "${CCLOC}" in
-	     gcc|clang|mpicc)
-		AS_IF([test "x${CCLOC}" = xmpicc],AC_SUBST([NON_MPI_CC],`mpicc --version | head -n 1 | { read first rest ; echo $first ; }`))
+	     gcc|clang)
+	        AC_SUBST([NON_MPI_CC],${CCLOC})
 		CFLAGS+=" -std=gnu99 -Wall"
 	  	;;
+	     mpicc)
+	        AS_IF([test "x${CCLOC}" = xmpicc],AC_SUBST([NON_MPI_CC],`mpicc --version | head -n 1 | { read first rest ; echo $first ; }`))
+	        CFLAGS+=" -std=gnu99 -Wall"
+   	        ;;
 	     icc|mpiicc)
 	     	AC_SUBST([NON_MPI_CC],icc)
 		AS_IF([test "x${CCLOC}" = xmpiicc],with_mpi=yes)
