@@ -346,11 +346,12 @@ tcp_dev_get_local_if (char *ip)
 
       if (strcmp (ip, host) == 0)
       {
-        char *myifa = malloc (8);
+        int len = snprintf(NULL, 0, "%-8s", ifa->ifa_name);
+        char *myifa = malloc(len + 1);
 
         if (myifa != NULL)
         {
-          sprintf (myifa, "%-8s", ifa->ifa_name);
+          snprintf(myifa, len + 1, "%-8s", ifa->ifa_name);
         }
 
         return myifa;

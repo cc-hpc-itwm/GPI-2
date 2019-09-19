@@ -170,7 +170,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   if (nconf.queue_size_max > GASPI_MAX_QSIZE || nconf.queue_size_max < 1)
   {
     GASPI_DEBUG_PRINT_ERROR
-      ("Invalid value for parameter queue_size_max (min=1 and max=%lu)",
+      ("Invalid value for parameter queue_size_max (min=1 and max=%u)",
        GASPI_MAX_QSIZE);
     return GASPI_ERR_CONFIG;
   }
@@ -227,7 +227,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   if (nconf.passive_transfer_size_max > GASPI_MAX_TSIZE_P)
   {
     GASPI_DEBUG_PRINT_ERROR
-      ("Invalid value (%lu) for parameter passive_transfer_size_max (max=%lu)",
+      ("Invalid value (%u) for parameter passive_transfer_size_max (max=%lu)",
        nconf.passive_transfer_size_max,
        GASPI_MAX_TSIZE_P);
 
