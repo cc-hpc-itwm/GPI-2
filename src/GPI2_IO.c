@@ -418,8 +418,6 @@ pgaspi_rw_list_verify_parameters (char* fun_name,
 
   GASPI_VERIFY_QUEUE (queue);
 
-  gaspi_context_t const *const gctx = &glb_gaspi_ctx;
-
   if (num > gctx->config->rw_list_elem_max)
   {
     return GASPI_ERR_INV_NUM;
