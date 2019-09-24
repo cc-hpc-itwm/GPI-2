@@ -6,8 +6,8 @@
 
 #include <test_utils.h>
 
-/* For nproc=1 checks that a user defined reduction works in a single
- * member group, otherwise in a group with excluded rank=0. */
+/* Checks that a user defined reduction works in a single
+ * member group. */
 
 int typeSize[] = {
   sizeof (int),
@@ -47,8 +47,8 @@ INIT_IMPLEM
   INIT_IMPLEM
 #undef INIT_TYPE
 #define CHECK_FUN(type) check_##type
-#define CHECK_CALL(type, v, n, expected) CHECK_FUN(type)((v), (n), (expected))
-#define CHECK_DECL(type) int CHECK_FUN(type)(type *v, gaspi_number_t n, gaspi_operation_t op)
+#define CHECK_CALL(type, v, n, expected, slc_r) CHECK_FUN(type)((v), (n), (expected), (slc_r))
+#define CHECK_DECL(type) int CHECK_FUN(type)(type *v, gaspi_number_t n, gaspi_operation_t op, type slc_r)
 #define CHECK_IMPLEM CHECK_DECL(CHECK_TYPE) {                     \
     gaspi_number_t i;                                             \
     CHECK_TYPE expected;                                          \
@@ -57,12 +57,12 @@ INIT_IMPLEM
     ASSERT(gaspi_proc_num(&nprocs));                              \
     switch(op)                                                    \
     {                                                             \
-      case GASPI_OP_MIN: expected = 1;                            \
+      case GASPI_OP_MIN: expected = slc_r;                        \
         break;                                                    \
-      case GASPI_OP_MAX: expected  = (CHECK_TYPE) nprocs - 1;     \
+      case GASPI_OP_MAX: expected  = slc_r;                       \
         break;                                                    \
       case GASPI_OP_SUM:                                          \
-        expected = (nprocs * (nprocs - 1)) / 2;                   \
+        expected = slc_r;                                         \
         break;                                                    \
     }                                                             \
     for(i = 0; i < n; i++)                                        \
@@ -92,7 +92,7 @@ INIT_IMPLEM
 #define CHECK_TYPE uint64_t
   CHECK_IMPLEM
   gaspi_return_t testOP (gaspi_operation_t op, gaspi_datatype_t type,
-                         gaspi_number_t elems, gaspi_group_t group)
+                         gaspi_number_t elems, gaspi_group_t group, gaspi_rank_t slc_r)
 {
   void *send_bf = malloc (elems * typeSize[type]);
 
@@ -151,26 +151,26 @@ INIT_IMPLEM
   switch (type)
   {
     case GASPI_TYPE_INT:
-      ret = CHECK_CALL (int, recv_bf, elems, op);
+      ret = CHECK_CALL (int, recv_bf, elems, op, slc_r);
 
       break;
     case GASPI_TYPE_UINT:
-      ret = CHECK_CALL (uint32_t, recv_bf, elems, op);
+      ret = CHECK_CALL (uint32_t, recv_bf, elems, op, slc_r);
       break;
     case GASPI_TYPE_FLOAT:
-      ret = CHECK_CALL (float, recv_bf, elems, op);
+      ret = CHECK_CALL (float, recv_bf, elems, op, slc_r);
 
       break;
     case GASPI_TYPE_DOUBLE:
-      ret = CHECK_CALL (double, recv_bf, elems, op);
+      ret = CHECK_CALL (double, recv_bf, elems, op, slc_r);
 
       break;
     case GASPI_TYPE_LONG:
-      ret = CHECK_CALL (long, recv_bf, elems, op);
+      ret = CHECK_CALL (long, recv_bf, elems, op, slc_r);
 
       break;
     case GASPI_TYPE_ULONG:
-      ret = CHECK_CALL (uint64_t, recv_bf, elems, op);
+      ret = CHECK_CALL (uint64_t, recv_bf, elems, op, slc_r);
       break;
   }
 
@@ -202,17 +202,14 @@ main (int argc, char *argv[])
   gaspi_group_t g1;
   gaspi_number_t gsize;
 
-  if (myrank != 0)
+  gaspi_rank_t selected_rank = nprocs / 2;
+  if (myrank == selected_rank)
   {
-    // Group 1
     ASSERT (gaspi_group_create (&g1));
-    for (n = 1; n < nprocs; n++)
-    {
-      ASSERT (gaspi_group_add (g1, n));
-    }
+    ASSERT (gaspi_group_add (g1, myrank));
 
     ASSERT (gaspi_group_size (g1, &gsize));
-    assert ((gsize == nprocs - 1));
+    assert ((gsize == 1));
 
     ASSERT (gaspi_group_commit(g1, GASPI_BLOCK));
 
@@ -226,7 +223,7 @@ main (int argc, char *argv[])
 
         for (op = GASPI_OP_MIN; op <= GASPI_OP_SUM; op++)
         {
-          ASSERT (testOP (op, type, n, g1));
+          ASSERT (testOP (op, type, n, g1, myrank));
         }
       }
     }

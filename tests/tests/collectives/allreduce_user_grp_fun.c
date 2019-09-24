@@ -61,7 +61,8 @@ main (int argc, char *argv[])
   gaspi_group_t g0, g1;
   gaspi_number_t gsize;
 
-  if (myrank == 0)
+  gaspi_rank_t selected_rank = nprocs / 2;
+  if (myrank == selected_rank)
   {
     // Group 0
     ASSERT (gaspi_group_create (&g0));
@@ -80,7 +81,7 @@ main (int argc, char *argv[])
 
       for (i = 0; i < n; i++)
       {
-        assert (b[i] == 0.0);
+        assert (b[i] == (float) selected_rank);
       }
     }
   }
@@ -88,9 +89,12 @@ main (int argc, char *argv[])
   {
     // Group 1
     ASSERT (gaspi_group_create (&g1));
-    for (i = 1; i < nprocs; i++)
+    for (i = 0; i < nprocs; i++)
     {
-      ASSERT (gaspi_group_add (g1, i));
+      if (i != selected_rank)
+      {
+        ASSERT (gaspi_group_add (g1, i));
+      }
     }
 
     ASSERT (gaspi_group_size (g1, &gsize));
