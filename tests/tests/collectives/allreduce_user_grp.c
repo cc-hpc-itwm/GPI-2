@@ -1,12 +1,7 @@
-#include <assert.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
 #include <test_utils.h>
 
-/* Checks that a user defined reduction works in a single
+/* Checks that pre-defined reductions work in a single
  * member group. */
 
 int typeSize[] = {
@@ -197,23 +192,22 @@ main (int argc, char *argv[])
   ASSERT (gaspi_proc_num (&nprocs));
   ASSERT (gaspi_proc_rank (&myrank));
 
-  int n;
-  int nelems = 255;
-  gaspi_group_t g1;
-  gaspi_number_t gsize;
-
   gaspi_rank_t selected_rank = nprocs / 2;
   if (myrank == selected_rank)
   {
-    ASSERT (gaspi_group_create (&g1));
-    ASSERT (gaspi_group_add (g1, myrank));
+    gaspi_group_t g;
+    gaspi_number_t gsize;
 
-    ASSERT (gaspi_group_size (g1, &gsize));
+    ASSERT (gaspi_group_create (&g));
+    ASSERT (gaspi_group_add (g, myrank));
+
+    ASSERT (gaspi_group_size (g, &gsize));
     assert ((gsize == 1));
 
-    ASSERT (gaspi_group_commit(g1, GASPI_BLOCK));
+    ASSERT (gaspi_group_commit(g, GASPI_BLOCK));
 
-    for (n = 1; n <= nelems; n++)
+    int nelems = 255;
+    for (int n = 1; n <= nelems; n++)
     {
       gaspi_datatype_t type;
 
@@ -223,7 +217,7 @@ main (int argc, char *argv[])
 
         for (op = GASPI_OP_MIN; op <= GASPI_OP_SUM; op++)
         {
-          ASSERT (testOP (op, type, n, g1, myrank));
+          ASSERT (testOP (op, type, n, g, myrank));
         }
       }
     }

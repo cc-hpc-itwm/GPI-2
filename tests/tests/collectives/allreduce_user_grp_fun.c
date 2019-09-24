@@ -1,15 +1,8 @@
-#include <assert.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
 #include <test_utils.h>
-
 #define MY_MAX(a,b)  (((a)<(b)) ? (b) : (a))
 
-/* Checks that a user defined reduction works in a single member group
- * and a group comprised by the rest of the ranks. */
+/* Test user defined collective for a single member group and a group
+ * comprised by the rest of ranks*/
 
 gaspi_return_t
 my_fun (double *const a,
@@ -33,11 +26,12 @@ my_fun (double *const a,
 int
 main (int argc, char *argv[])
 {
-  gaspi_rank_t nprocs, myrank;
 
   TSUITE_INIT (argc, argv);
 
   ASSERT (gaspi_proc_init (GASPI_BLOCK));
+
+  gaspi_rank_t nprocs, myrank;
 
   ASSERT (gaspi_proc_num (&nprocs));
   ASSERT (gaspi_proc_rank (&myrank));
@@ -51,65 +45,60 @@ main (int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  int n;
-  for (n = 0; n < nelems; n++)
+  for (int n = 0; n < nelems; n++)
   {
     a[n] = b[n] = myrank * 1.0;
   }
 
-  int i;
-  gaspi_group_t g0, g1;
+  gaspi_group_t g;
   gaspi_number_t gsize;
 
+  ASSERT (gaspi_group_create (&g));
+
   gaspi_rank_t selected_rank = nprocs / 2;
+
   if (myrank == selected_rank)
   {
-    // Group 0
-    ASSERT (gaspi_group_create (&g0));
-    ASSERT (gaspi_group_add (g0, myrank));
+    ASSERT (gaspi_group_add (g, myrank));
 
-    ASSERT (gaspi_group_size (g0, &gsize));
+    ASSERT (gaspi_group_size (g, &gsize));
     assert ((gsize == 1));
-
-    ASSERT (gaspi_group_commit(g0, GASPI_BLOCK));
-
-    for (n = 1; n <= nelems; n++)
-    {
-      ASSERT (gaspi_allreduce_user (a, b, n, sizeof (double),
-                                    (gaspi_reduce_operation_t) my_fun, NULL,
-                                    g0, GASPI_BLOCK));
-
-      for (i = 0; i < n; i++)
-      {
-        assert (b[i] == (float) selected_rank);
-      }
-    }
   }
   else
   {
-    // Group 1
-    ASSERT (gaspi_group_create (&g1));
-    for (i = 0; i < nprocs; i++)
+    ASSERT (gaspi_group_create (&g));
+    for (gaspi_rank_t i = 0; i < nprocs; i++)
     {
       if (i != selected_rank)
       {
-        ASSERT (gaspi_group_add (g1, i));
+        ASSERT (gaspi_group_add (g, i));
       }
     }
 
-    ASSERT (gaspi_group_size (g1, &gsize));
+    ASSERT (gaspi_group_size (g, &gsize));
     assert ((gsize == nprocs - 1));
+  }
 
-    ASSERT (gaspi_group_commit(g1, GASPI_BLOCK));
+  ASSERT (gaspi_group_commit(g, GASPI_BLOCK));
 
-    for (n = 1; n <= nelems; n++)
+  for (int n = 1; n <= nelems; n++)
+  {
+    ASSERT (gaspi_allreduce_user (a, b, n, sizeof (double),
+                                  (gaspi_reduce_operation_t) my_fun, NULL,
+                                  g, GASPI_BLOCK));
+
+    int j;
+    if (myrank == selected_rank)
     {
-      ASSERT (gaspi_allreduce_user (a, b, n, sizeof (double),
-                                    (gaspi_reduce_operation_t) my_fun, NULL,
-                                    g1, GASPI_BLOCK));
-      for (i = 0; i < n; i++)
+      for (j = 0; j < n; j++)
       {
-        assert (b[i] == (double) (nprocs - 1));
+        assert (b[j] == (float) selected_rank);
+      }
+    }
+    else {
+      for (j = 0; j < n; j++)
+      {
+        assert (b[j] == (double) (nprocs - 1));
       }
     }
   }
