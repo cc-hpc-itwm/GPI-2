@@ -13,9 +13,7 @@ my_fun (double *const a,
         const gaspi_size_t elem_size,
         const gaspi_timeout_t tout)
 {
-  gaspi_number_t i;
-
-  for (i = 0; i < num; i++)
+  for (gaspi_number_t i = 0; i < num; i++)
   {
     r[i] = MY_MAX (a[i], b[i]);
   }
@@ -26,7 +24,6 @@ my_fun (double *const a,
 int
 main (int argc, char *argv[])
 {
-
   TSUITE_INIT (argc, argv);
 
   ASSERT (gaspi_proc_init (GASPI_BLOCK));
@@ -55,39 +52,31 @@ main (int argc, char *argv[])
 
   ASSERT (gaspi_group_create (&g));
 
-  gaspi_rank_t selected_rank;
-  if (nprocs < 3)
-  {
-    selected_rank = 0;
-  }
-  else
-  {
-   selected_rank = nprocs / 2;
-  }
+  gaspi_rank_t const selected_rank = nprocs < 3 ? 0 : (nprocs / 2);
 
-  if (myrank == selected_rank)
-  {
-    ASSERT (gaspi_group_add (g, myrank));
+  gaspi_number_t const expected_gsize =
+    myrank == selected_rank ? 1 : (nprocs-1);
 
-    ASSERT (gaspi_group_size (g, &gsize));
-    assert ((gsize == 1));
-  }
-  else
+  ASSERT (gaspi_group_add (g, myrank));
+
+  if (myrank != selected_rank)
   {
-    ASSERT (gaspi_group_create (&g));
     for (gaspi_rank_t i = 0; i < nprocs; i++)
     {
-      if (i != selected_rank)
+      if (i != selected_rank && i != myrank)
       {
         ASSERT (gaspi_group_add (g, i));
       }
     }
-
-    ASSERT (gaspi_group_size (g, &gsize));
-    assert ((gsize == nprocs - 1));
   }
 
+  ASSERT (gaspi_group_size (g, &gsize));
+  assert (gsize == expected_gsize);
+
   ASSERT (gaspi_group_commit(g, GASPI_BLOCK));
+
+  double const expected_value =
+    myrank == selected_rank ? selected_rank : (nprocs - 1);
 
   for (int n = 1; n <= nelems; n++)
   {
@@ -95,19 +84,9 @@ main (int argc, char *argv[])
                                   (gaspi_reduce_operation_t) my_fun, NULL,
                                   g, GASPI_BLOCK));
 
-    int j;
-    if (myrank == selected_rank)
+    for (int j = 0; j < n; j++)
     {
-      for (j = 0; j < n; j++)
-      {
-        assert (b[j] == (double) selected_rank);
-      }
-    }
-    else {
-      for (j = 0; j < n; j++)
-      {
-        assert (b[j] == (double) (nprocs - 1));
-      }
+      assert (b[j] == expected_value);
     }
   }
 
