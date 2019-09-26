@@ -52,7 +52,6 @@ AC_CONFIG_FILES([Makefile
 	tests/tests/notifications/Makefile
 	tests/tests/passive/Makefile
 	tests/tests/segments/Makefile
-	tests/tests/threads/Makefile
 	tests/tests/utils/Makefile
 	tests/microbenchmarks/Makefile
 	tutorial/code/Makefile
