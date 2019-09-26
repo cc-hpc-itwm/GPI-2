@@ -55,7 +55,15 @@ main (int argc, char *argv[])
 
   ASSERT (gaspi_group_create (&g));
 
-  gaspi_rank_t selected_rank = nprocs / 2;
+  gaspi_rank_t selected_rank;
+  if (nprocs < 3)
+  {
+    selected_rank = 0;
+  }
+  else
+  {
+   selected_rank = nprocs / 2;
+  }
 
   if (myrank == selected_rank)
   {
@@ -92,7 +100,7 @@ main (int argc, char *argv[])
     {
       for (j = 0; j < n; j++)
       {
-        assert (b[j] == (float) selected_rank);
+        assert (b[j] == (double) selected_rank);
       }
     }
     else {
