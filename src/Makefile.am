@@ -16,7 +16,7 @@ include_HEADERS = include/GASPI.h include/GASPI_Ext.h include/GASPI_Threads.h \
 
 # GENERAL C FLAGS
 default_includes = -I$(abs_top_srcdir)/src -I$(abs_top_srcdir)/src/include -I$(abs_top_srcdir)/src/devices/include
-lib_default_cflags = -Wall -D_GNU_SOURCE
+lib_default_cflags = -D_GNU_SOURCE
 
 # DEVICES SPECIFICS
 if WITH_INFINIBAND

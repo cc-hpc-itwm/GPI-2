@@ -60,8 +60,6 @@ main (int argc, char *argv[])
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 
   //construct list of n elems
-  gaspi_number_t queue_size = 0;
-
   const gaspi_number_t nListElems = user_elem_max;
 
   gaspi_segment_id_t localSegs[nListElems];

@@ -12,7 +12,6 @@ recvThread (void *arg)
   gaspi_offset_t recvPos = (RECV_OFF / sizeof (int));
   int *memArray = (int *) arg;
 
-  gaspi_return_t ret = GASPI_ERROR;
   int tid;
 
   ASSERT (gaspi_threads_register (&tid));
