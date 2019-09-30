@@ -10,6 +10,6 @@ if WITH_MPI
 SUBDIRS += mpi
 endif
 
-SUBDIRS += notifications passive segments threads utils
+SUBDIRS += notifications passive segments utils
 
 CLEANFILES = *~ *.bak *.bin fortran/*.mod
