@@ -34,7 +34,7 @@ TITLE([Checking for C, standard headers and libs])
 AC_USE_SYSTEM_EXTENSIONS
 AC_CONFIG_FILES([Makefile
 	src/Makefile
-	src/libgpi.pc
+	src/GPI2.pc
 	tests/Makefile
 	tests/tests/Makefile
 	tests/tests/atomic/Makefile
