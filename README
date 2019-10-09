@@ -41,10 +41,16 @@ Hardware:
 Basic configuration:
 -------------------
 
-To install GPI-2, it needs to be configured using the script `./configure`.
-The available options and the relevant environment variables are printed
-by `./configure --help`.
-The basic configuration:
+If GPI-2 is cloned from the repository, it is necessary to generate
+the files and scripts required for its configuration. This is achieved
+by the command line:
+
+`./autogen.sh`
+
+After this step, which can be skipped if GPI-2 has been download as a
+tarball, the configuration is done using the script `./configure`.
+The available options and the relevant environment variables are
+printed by `./configure --help`.  The basic configuration:
 
 `./configure --prefix=$HOME/local`
 
@@ -116,7 +122,7 @@ On the other hand, GPI-2 can be installed
 on a system without Infiniband, using the standard TCP sockets:
 
 `./configure --with-ethernet`
- 
+
 Such support is, however, primarily targetted at the development of
 GPI-2 applications without the need to access a system with
 Infiniband, with less focus on performance.
@@ -128,9 +134,9 @@ configure it with Slurm support:
  `./configure --with-slurm`
 
  or LoadLeveler support:
- 
+
 `./configure --with-loadleveler`
- 
+
 ### MPI Interoperability ###
 
 If the plan is to use GPI-2 with MPI to, for instance, start an
