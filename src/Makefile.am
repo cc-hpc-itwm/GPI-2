@@ -81,19 +81,19 @@ nodist_include_HEADERS = gaspi_types.mod gaspi.mod gaspi_ext.mod
 endif
 
 # PKG-CONFIG
-EXTRA_DIST += libgpi.pc.in
+EXTRA_DIST += GPI2.pc.in
 
-DISTCLEANFILES = libgpc.pc
+DISTCLEANFILES = GPI2.pc
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libgpi.pc
+pkgconfig_DATA = GPI2.pc
 
 if WITH_INFINIBAND
 install-data-hook:
-	echo "Libs.private: @ac_lib_infiniband@ -libverbs -pthread" >> $(libdir)/pkgconfig/libgpi.pc
+	echo "Libs.private: @ac_lib_infiniband@ -libverbs -pthread" >> $(libdir)/pkgconfig/GPI2.pc
 else
 install-data-hook:
-	echo "Libs.private: -lrt -pthread" >> $(libdir)/pkgconfig/libgpi.pc
+	echo "Libs.private: -lrt -pthread" >> $(libdir)/pkgconfig/GPI2.pc
 endif
 
 # CLEAN
