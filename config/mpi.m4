@@ -31,7 +31,9 @@ AC_DEFUN([ACX_MPI],[
 	   fi
 	   if test ${HAVE_MPI_HEADER} = 1 -a ${HAVE_MPI_LIB} = 1; then
 	      HAVE_MPI=1
-	      AC_SUBST([ac_inc_mpi],[-I$ac_inc_mpi])
+	      if test ! -z $ac_inc_mpi; then
+	      	 AC_SUBST([ac_inc_mpi],[-I$ac_inc_mpi])
+	      fi
 	      if test "x$with_mpi_extra_flags" = xno; then
 	      	 if test -z $ac_lib_mpi; then
 		    AC_SUBST([ac_lib_mpi],["-l$mpi_lib"])
