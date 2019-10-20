@@ -15,9 +15,10 @@ add=$1
 ##    project, to avoid future incompatibilities"
 
 atmk_ver=`automake --version | head -n 1 | awk '{print $NF}'`
-IFS='.'
-read -ra atmk_aver <<< "$atmk_ver"
-if [[ `echo ${atmk_aver[0]} \>= 1 | bc` -eq 1 && `echo ${atmk_aver[1]} \>= 14 | bc` -eq 1 ]]; then
+atmk_mjver=`echo $atmk_ver | awk -F "." {'print $1'}`
+atmk_miver=`echo $atmk_ver | awk -F "." {'print $2'}`
+
+if [ "$atmk_mjver" -ge 1 -a "$atmk_miver" -ge 14 ]; then
     sed 's/AUTOMAKE_SUBDIRS/subdir-objects/g' configure.ac.in > configure.ac
 else
     sed 's/AUTOMAKE_SUBDIRS//g' configure.ac.in > configure.ac
