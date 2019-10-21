@@ -146,9 +146,9 @@ AC_ARG_WITH([infiniband],[AS_HELP_STRING([--with-infiniband], [compile for infin
 			 [with_infiniband=$withval],
 			 [with_infiniband=no])
 
-AC_ARG_ENABLE([infiniband-ext],[AS_HELP_STRING([--disable-infiniband-ext],[do not build/install with Infiniband Extensions])],
+AC_ARG_ENABLE([infiniband-ext],[AS_HELP_STRING([--enable-infiniband-ext],[build/install with Infiniband Extensions])],
 			       [infiniband_ext=$enableval],
-			       [infiniband_ext=yes])
+			       [infiniband_ext=no])
 
 # CHECKS ETHERNET
 AC_ARG_WITH([ethernet],[AS_HELP_STRING([--with-ethernet], [compile for ethernet])],
