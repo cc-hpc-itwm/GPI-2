@@ -73,7 +73,7 @@ AC_DEFUN([ACX_INFINIBAND],[
 	      for ibinc in $inc_paths; do
 	      	  ac_inc_infiniband=$ibinc/infiniband
 		  ACX_IBVERBS_VERSION([$ac_inc_infiniband],[HAVE_INF_HEADER=1],[HAVE_INF_HEADER=0])
-	      	  if test ${HAVE_INF_HEADER} = 1; then
+	      	  if [test ${HAVE_INF_HEADER} = 1 -a x$infiniband_ext != xno]; then
 		     AC_CHECK_FILE($ac_inc_infiniband/verbs_exp.h,
 				   [HAVE_INFINIBAND_EXT=1],[HAVE_INFINIBAND_EXT=0])
 	      	     break
