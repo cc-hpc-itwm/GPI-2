@@ -1,13 +1,3 @@
-/**
- * @file   GASPI.h
- *
- *
- *
- * @brief  The GPI-2 interface.
- *
- *
- */
-
 #ifndef GPI2_H
 #define GPI2_H
 
