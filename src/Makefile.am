@@ -11,8 +11,8 @@ SRCS += GPI2_CM.h GPI2_Coll.h GPI2_Env.h GPI2_GRP.h \
 SRCS += devices/include/GPI2_Dev.h
 
 # HEADERS TO INSTALL
-include_HEADERS = include/GASPI.h include/GASPI_Ext.h include/GASPI_Threads.h \
-	include/PGASPI.h
+include_HEADERS = include/GASPI.h include/GASPI_types.h			\
+	          include/GASPI_Ext.h include/GASPI_Threads.h include/PGASPI.h
 
 # GENERAL C FLAGS
 default_includes = -I$(abs_top_srcdir)/src -I$(abs_top_srcdir)/src/include -I$(abs_top_srcdir)/src/devices/include
