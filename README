@@ -60,7 +60,6 @@ installation directory. By default, the script:
 
 - checks for the Infiniband header and library files, and fall backs
 to the Ethernet device in case they are not available or usable,
-- checks for Infiniband Extensions file (`verbs_exp.h`),
 - targets to the production, debugging and statistic libraries, as well
 as, the Fortran modules (if the Fortran compilers are found),
 - configures GPI-2 for use PBS as the batch system,
@@ -114,9 +113,10 @@ installation:
 
 `./configure --with-infiniband<=full_path_to_ofed>`
 
-By default, GPI-2 will be compiled with Infiniband Extensions
-support (if the header file is found), however the user can also
-disable it by `-disable-infiniband-ext`.
+By default, GPI-2 will be compiled without Infiniband Extensions
+support, however the user can also enable and using it (if the header
+file is found) by `-enable-infiniband-ext`. Note, however, they are
+for the moment an experimental feature.
 
 On the other hand, GPI-2 can be installed
 on a system without Infiniband, using the standard TCP sockets:
