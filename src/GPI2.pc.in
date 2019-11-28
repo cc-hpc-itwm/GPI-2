@@ -7,3 +7,4 @@ Name: GPI-2
 Description: GPI-2 library
 Version: @VERSION@
 Cflags: -I${includedir}
+Libs: -L${libdir} -lGPI2
