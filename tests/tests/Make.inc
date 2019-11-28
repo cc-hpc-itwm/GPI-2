@@ -5,7 +5,8 @@ LDADD = $(abs_top_builddir)/src/.libs/libGPI2-dbg.la
 
 LDFLAGS = -pthread
 if WITH_INFINIBAND
-LDFLAGS += @ac_lib_infiniband@ -libverbs
+LDFLAGS += @ac_lib_infiniband@
+LIBS += -libverbs
 endif
 
 if WITH_FORTRAN
@@ -25,4 +26,3 @@ AM_CXXFLAGS = $(AM_CFLAGS) $(AM_CPPFLAGS)
 
 # aux TESTS
 auxSRCS = ../test_utils.c ../test_utils.h
-
