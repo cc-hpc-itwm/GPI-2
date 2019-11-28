@@ -47,10 +47,10 @@ by the command line:
 
 `./autogen.sh`
 
-After this step, which can be skipped if GPI-2 has been download as a
-tarball, the configuration is done using the script `./configure`.
-The available options and the relevant environment variables are
-printed by `./configure --help`.  The basic configuration:
+After this step, the configuration is done using the script
+`./configure`.  The available options and the relevant environment
+variables are printed by `./configure --help`.  The basic
+configuration:
 
 `./configure --prefix=$HOME/local`
 
