@@ -64,6 +64,11 @@ AC_DEFUN([ACX_INFINIBAND],[
 		  if test ${HAVE_INF_LIB} = 1; then
 		     break
 		  fi
+      	      	  ac_lib_infiniband=$with_infiniband/lib
+		  AC_CHECK_FILE($ac_lib_infiniband/$iblib,[HAVE_INF_LIB=1],[HAVE_INF_LIB=0])
+		  if test ${HAVE_INF_LIB} = 1; then
+		     break
+		  fi
 	      done
    	   else
 	      # Try to determine path(s)
