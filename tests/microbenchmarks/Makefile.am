@@ -5,7 +5,8 @@ LDADD = $(abs_top_builddir)/src/.libs/libGPI2.la
 
 LDFLAGS = -pthread
 if WITH_INFINIBAND
-LDFLAGS += @ac_lib_infiniband@ -libverbs
+LDFLAGS += @ac_lib_infiniband@
+LIBS += -libverbs
 endif
 
 if WITH_MPI
