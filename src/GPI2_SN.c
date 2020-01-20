@@ -20,6 +20,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/tcp.h>
+#include <poll.h>
 #include <signal.h>
 #include <sys/resource.h>
 #include <sys/socket.h>
@@ -372,26 +373,19 @@ _gaspi_sn_wait_connection (int port, gaspi_timeout_t timeout_ms)
     return GPI2_SN_ERROR;
   }
 
-  fd_set rfds;
-  struct timeval tout;
+  struct pollfd pfd_read;
 
-  FD_ZERO (&rfds);
-  FD_SET (lsock, &rfds);
+  pfd_read.fd = lsock;
+  pfd_read.events = POLLIN;
+  const int pollret = poll (&pfd_read, 1, timeout_ms);
 
-  const long ts = (timeout_ms / 1000);
-  const long tus = (timeout_ms - ts * 1000) * 1000;
-
-  tout.tv_sec = ts;
-  tout.tv_usec = tus;
-
-  const int selret = select (FD_SETSIZE, &rfds, NULL, NULL, &tout);
-
-  if (selret < 0)
+  if (pollret < 0)
   {
+    GASPI_DEBUG_PRINT_ERROR ("Failed to wait connection (poll).");
     return GPI2_SN_ERROR;
   }
 
-  if (selret == 0)
+  if (pollret == 0)
   {
     return GPI2_SN_TIMEOUT;
   }
