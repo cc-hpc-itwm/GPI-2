@@ -295,6 +295,11 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   gaspi_return_t eret = GASPI_ERROR;
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
+  if (gctx->init)
+  {
+    return GASPI_ERR_INITED;
+  }
+
   if (lock_gaspi_tout (&(gctx->ctx_lock), timeout_ms))
   {
     return GASPI_TIMEOUT;
