@@ -115,11 +115,11 @@ installation:
 
 By default, GPI-2 will be compiled without Infiniband Extensions
 support, however the user can also enable and using it (if the header
-file is found) by `-enable-infiniband-ext`. Note, however, they are
+file is found) by `--enable-infiniband-ext`. Note, however, they are
 for the moment an experimental feature.
 
-On the other hand, GPI-2 can be installed
-on a system without Infiniband, using the standard TCP sockets:
+On the other hand, GPI-2 can be installed on a system without
+Infiniband, using standard TCP sockets:
 
 `./configure --with-ethernet`
 
@@ -152,7 +152,7 @@ must be invoked before gaspi_proc_init() and it is assumed that the
 application starts with mpirun (or mpiexec, etc.). Also, note that
 this option will require that the GPI-2 application is linked to the MPI
 library (even if MPI is not used). Therefore, if the interest is to
-use GPI-2 only, GPI-2 must not be build with with this option.
+use GPI-2 only, GPI-2 must not be build with this option.
 
 Furthermore fine control of MPI can be done through the
 `--with-mpi-extra-flags` option. For example, to configure with Intel
