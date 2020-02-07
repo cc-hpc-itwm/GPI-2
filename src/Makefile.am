@@ -42,6 +42,11 @@ lib_default_cflags += -DGPI2_WITH_MPI
 lib_default_cflags += @ac_inc_mpi@
 endif
 
+# INFINIBAND
+if WITH_INFINIBAND
+lib_default_cflags += @ac_lib_infiniband@ -libverbs
+endif
+
 # LOADLEVER SUPPORT
 if WITH_LOADLEVELER
 lib_default_cflags += -DLOADLEVELER
