@@ -167,7 +167,7 @@ do
     if [ "$i" = "-v" ]; then
 	continue
     fi
-    if [ `find ${RUNTESTS_DIR}/bin/.libs/ -maxdepth 1 -iname $i ` ]; then
+    if [ `find ${RUNTESTS_DIR}/bin/ -maxdepth 1 -iname $i ` ]; then
 	run_test ${RUNTESTS_DIR}/bin/$i
 	NUM_TESTS=$(($NUM_TESTS+1))
 	sleep 1
