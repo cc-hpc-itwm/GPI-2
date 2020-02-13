@@ -44,7 +44,7 @@ endif
 
 # INFINIBAND
 if WITH_INFINIBAND
-lib_default_cflags += @ac_lib_infiniband@ -libverbs
+lib_default_cflags += @ac_lib_infiniband@
 endif
 
 # LOADLEVER SUPPORT
@@ -95,7 +95,7 @@ pkgconfig_DATA = GPI2.pc
 
 if WITH_INFINIBAND
 install-data-hook:
-	echo "Libs.private: @ac_lib_infiniband@ -libverbs -pthread" >> $(libdir)/pkgconfig/GPI2.pc
+	echo "Libs.private: @ac_lib_infiniband@ -pthread" >> $(libdir)/pkgconfig/GPI2.pc
 else
 install-data-hook:
 	echo "Libs.private: -lrt -pthread" >> $(libdir)/pkgconfig/GPI2.pc
