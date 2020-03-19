@@ -234,6 +234,14 @@ if test $build_debug_lib = no; then
    AC_MSG_WARN([Debug library is required for testing])
 fi
 
+if test "$enable_shared" = "yes"; then
+   library_dir=$prefix/lib64
+   if test "$prefix" = "NONE"; then
+      library_dir="/usr/local/lib64"
+   fi
+   echo " please add $library_dir to LD_LIBRARY_PATH" >& AS_MESSAGE_FD
+fi
+
 echo "Batch system:" >& AS_MESSAGE_FD
 echo "$batchsys" >& AS_MESSAGE_FD
 

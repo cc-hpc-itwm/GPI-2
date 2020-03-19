@@ -60,8 +60,9 @@ installation directory. By default, the script:
 
 - checks for the Infiniband header and library files, and fall backs
 to the Ethernet device in case they are not available or usable,
-- targets to the production, debugging and statistic libraries, as well
-as, the Fortran modules (if the Fortran compilers are found),
+- targets to the production, debugging and statistic libraries (both
+static and shared), as well as, the Fortran modules (if the Fortran
+compilers are found),
 - configures GPI-2 for use PBS as the batch system,
 - checks the existence of `doxygen` and `dot` for the documentation target.
 
@@ -94,9 +95,14 @@ Installation and uninstallation:
 Finally, `make install` installs:
 
 - the running scripts in the `$HOME/local/bin` directory,
-- the libraries in `$HOME/local/lib64`,
+- the shared and static libraries in `$HOME/local/lib64`,
 - the headers and Fortran modules in `$HOME/local/include`,
 - the full tests directory in `$HOME/local/tests`
+
+Note, as usual, the path to the GPI-2 shared libraries need to be
+added to the `LD_LIBRARY_PATH` environment variable:
+
+`export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/local/lib64`
 
 If required the package can be removed from the target directory by
 using `make uninstall`.
@@ -164,13 +170,13 @@ Library:
 3. BUILDING GPI-2 APPLICATIONS
 ==============================
 
-GPI-2 provides two libraries: libGPI2.a and libGPI2-dbg.a.
+By default, GPI-2 provides two libraries: libGPI2.a and libGPI2-dbg.a,
+and their corresponding shared versions: libGPI2.so and libGPI2-dbg.so.
 
-The libGPI2.a aims at high-performance and is to be used in production
-whereas the libGPI2-dbg.a provides a debug version, with extra
+The libGPI2.* aims at high-performance and is to be used in production
+whereas the libGPI2-dbg.* provides a debug version, with extra
 parameter checking and debug messages and is to be used to debug and
 during development.
-
 
 4. RUNNING GPI-2 APPLICATIONS
 =============================
