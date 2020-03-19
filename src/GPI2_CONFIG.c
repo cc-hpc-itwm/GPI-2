@@ -21,14 +21,14 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 gaspi_config_t glb_gaspi_cfg = {
   1,				//logout
-  12121,                        //sn port 
+  12121,                        //sn port
   0,				//netinfo
   -1,				//netdev
   0,				//mtu
   1,				//port check
   0,				//user selected network
 #ifdef GPI2_DEVICE_IB
-  GASPI_IB,			
+  GASPI_IB,
 #else                           //network type
   GASPI_ETHERNET,
 #endif
@@ -61,7 +61,7 @@ gaspi_return_t
 pgaspi_config_set (const gaspi_config_t nconf)
 {
   gaspi_verify_setup("gaspi_config_set");
-  
+
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.build_infrastructure = nconf.build_infrastructure;
   glb_gaspi_cfg.logger = nconf.logger;
@@ -76,8 +76,16 @@ pgaspi_config_set (const gaspi_config_t nconf)
 	gaspi_print_error("Invalid value for parameter network");
 	return GASPI_ERR_CONFIG;
       }
+
+  if( nconf.network != glb_gaspi_cfg.network )
+    {
+      glb_gaspi_cfg.network = nconf.network;
+
+      //user has set the network
+      glb_gaspi_cfg.user_net = 1;
+    }
+
   glb_gaspi_cfg.network = nconf.network;
-  glb_gaspi_cfg.user_net = 1;
 
   if( nconf.netdev_id > 1 )
     {
@@ -118,12 +126,12 @@ pgaspi_config_set (const gaspi_config_t nconf)
       gaspi_print_error("Invalid value for parameter sn_port ( from 1024 to 65536)");
       return GASPI_ERR_CONFIG;
     }
-  
+
   glb_gaspi_cfg.sn_port = nconf.sn_port;
 
   glb_gaspi_cfg.net_info = nconf.net_info;
   glb_gaspi_cfg.logger = nconf.logger;
   glb_gaspi_cfg.port_check = nconf.port_check;
-  
+
   return GASPI_SUCCESS;
 }
