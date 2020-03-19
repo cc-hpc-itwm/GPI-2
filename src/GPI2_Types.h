@@ -29,7 +29,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 /* Macro-ed constants */
 #define GASPI_MAJOR_VERSION (1)
-#define GASPI_MINOR_VERSION (3)
+#define GASPI_MINOR_VERSION (4)
 #define GASPI_REVISION (0)
 
 #define GASPI_MAX_QP      (16)
