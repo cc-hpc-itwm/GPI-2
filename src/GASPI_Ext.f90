@@ -50,15 +50,6 @@ module GASPI_Ext
      end function gaspi_proc_local_num
   end interface
 
-  interface ! gaspi_machine_type
-     function gaspi_machine_type(machine_type) &
-	  &         result( res ) bind(C, name="gaspi_machine_type")
-       import
-       character(c_char), dimension(*) :: machine_type
-       integer(gaspi_return_t) :: res
-     end function gaspi_machine_type
-  end interface
-
   interface ! gaspi_cpu_frequency
      function gaspi_cpu_frequency(cpu_mhz) &
 	  & result( res ) bind(C, name="gaspi_cpu_frequency")

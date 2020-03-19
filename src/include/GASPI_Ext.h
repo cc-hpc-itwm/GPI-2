@@ -64,15 +64,6 @@ extern "C"
    */
   gaspi_return_t gaspi_proc_local_num (gaspi_rank_t * const local_num);
 
-  /** Get the machine type (CPU, accelerator...)
-   *
-   *
-   * @param machine_type Output parameter with machine type.
-   *
-   * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
-   */
-  gaspi_return_t gaspi_machine_type (char const machine_type[64]);
-
     /** Get the CPU frequency.
    *
    *

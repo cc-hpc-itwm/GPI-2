@@ -50,22 +50,6 @@ pgaspi_version (float *const version)
   return GASPI_SUCCESS;
 }
 
-#pragma weak gaspi_machine_type = pgaspi_machine_type
-gaspi_return_t
-pgaspi_machine_type (char const machine_type[64])
-{
-  GASPI_VERIFY_NULL_PTR (machine_type);
-
-  gaspi_context_t const *const gctx = &glb_gaspi_ctx;
-
-  memset ((void *) machine_type, 0, sizeof (gctx->machine_type));
-  snprintf ((char *) machine_type, sizeof (gctx->machine_type),
-            "%s",
-            gctx->machine_type);
-
-  return GASPI_SUCCESS;
-}
-
 #pragma weak gaspi_set_socket_affinity = pgaspi_set_socket_affinity
 gaspi_return_t
 pgaspi_set_socket_affinity (const gaspi_uchar sock)
@@ -104,21 +88,15 @@ pgaspi_numa_socket (gaspi_uchar * const sock)
 {
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
+  *sock = (gaspi_uchar) gctx->local_rank;
+
   char *numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
-
-  if (numaPtr)
+  if (!numaPtr)
   {
-    if (atoi (numaPtr) == 1)
-    {
-      *sock = (gaspi_uchar) gctx->local_rank;
-
-      return GASPI_SUCCESS;
-    }
+    GASPI_PRINT_WARNING ("NUMA was not enabled (-N option of gaspi_run)");
   }
 
-  GASPI_DEBUG_PRINT_ERROR ("NUMA was not enabled (-N option of gaspi_run)");
-
-  return GASPI_ERR_ENV;
+  return GASPI_SUCCESS;
 }
 
 static gaspi_return_t
@@ -310,11 +288,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   if (gctx->sn_init == 0)
   {
     struct utsname mbuf;
-
-    if (uname (&mbuf) == 0)
-    {
-      snprintf (gctx->machine_type, sizeof (mbuf.machine), "%s", mbuf.machine);
-    }
 
     //timing
     gctx->mhz = gaspi_get_cpufreq();
