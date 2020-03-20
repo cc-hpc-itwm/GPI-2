@@ -324,8 +324,6 @@ extern "C"
 
   gaspi_return_t pgaspi_cpu_frequency (gaspi_float * const cpu_mhz);
 
-  gaspi_return_t pgaspi_machine_type (char const machine_type[16]);
-
   gaspi_return_t pgaspi_state_vec_get (gaspi_state_vector_t state_vector);
 
   void pgaspi_printf (const char *fmt, ...);

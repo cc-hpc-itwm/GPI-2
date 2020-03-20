@@ -224,25 +224,10 @@ gaspi_handle_env (gaspi_context_t * ctx)
   {
     if (atoi (numaPtr) == 1)
     {
-      cpu_set_t sock_mask;
+      gaspi_uchar numa_socket;
+      gaspi_numa_socket (&numa_socket);
 
-      if (gaspi_get_affinity_mask (ctx->local_rank, &sock_mask) < 0)
-      {
-        GASPI_DEBUG_PRINT_ERROR ("Failed to get affinity mask");
-      }
-      else
-      {
-        char mtype[16];
-
-        gaspi_machine_type (mtype);
-        if (strncmp (mtype, "x86_64", 6) == 0)
-        {
-          if (sched_setaffinity (0, sizeof (cpu_set_t), &sock_mask) != 0)
-          {
-            GASPI_DEBUG_PRINT_ERROR ("Failed to set affinity (NUMA)");
-          }
-        }
-      }
+      gaspi_set_socket_affinity (numa_socket);
     }
   }
 #endif

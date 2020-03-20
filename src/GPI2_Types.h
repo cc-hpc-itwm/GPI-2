@@ -132,7 +132,6 @@ typedef struct
 
   gaspi_number_t mseg_cnt;
   gaspi_state_t *state_vec[GASPI_MAX_QP + 3];
-  char machine_type[64];
 
   //locks
   gaspi_lock_t ctx_lock;

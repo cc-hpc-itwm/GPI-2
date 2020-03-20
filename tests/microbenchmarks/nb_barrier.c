@@ -32,7 +32,6 @@ int main()
   gaspi_return_t ret;
   gaspi_float vers;
   gaspi_config_t gconf;
-  char mtype[16];
   int i;
   mcycles_t t0,t1,dt;
   int amount_work = 1;
@@ -47,13 +46,12 @@ int main()
   GPI2_ASSERT( gaspi_version(&vers) );
   GPI2_ASSERT( gaspi_proc_rank(&rank) );
   GPI2_ASSERT( gaspi_proc_num(&tnc) );
-  GPI2_ASSERT( gaspi_machine_type(mtype) );
   GPI2_ASSERT( gaspi_cpu_frequency(&cpu_freq));
 
   if(0 == rank)
   {
     printf("cpu freq: %.2f\n", cpu_freq);
-    printf("my rank: %d tnc: %d (vers: %.2f) machine:%s\n",rank, tnc, vers, mtype);
+    printf("my rank: %d tnc: %d (vers: %.2f)\n",rank, tnc, vers);
   }
 
   GPI2_ASSERT(gaspi_barrier(GASPI_GROUP_ALL,GASPI_BLOCK));
