@@ -112,7 +112,6 @@ pgaspi_config_set (const gaspi_config_t nconf)
   glb_gaspi_cfg.sn_port = nconf.sn_port;
 
   glb_gaspi_cfg.net_info = nconf.net_info;
-  glb_gaspi_cfg.user_net = 1;
   glb_gaspi_cfg.sn_persistent = nconf.sn_persistent;
   glb_gaspi_cfg.sn_timeout = nconf.sn_timeout;
 
@@ -165,7 +164,13 @@ pgaspi_config_set (const gaspi_config_t nconf)
   }
 
   //GASPI specified
-  glb_gaspi_cfg.network = nconf.network;
+  if (nconf.network != glb_gaspi_cfg.network)
+  {
+    glb_gaspi_cfg.network = nconf.network;
+
+    //user has set the network
+    glb_gaspi_cfg.user_net = 1;
+  }
 
   if (nconf.queue_size_max > GASPI_MAX_QSIZE || nconf.queue_size_max < 1)
   {
