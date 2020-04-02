@@ -237,6 +237,16 @@ The gaspi_run utility has the following further options [OPTIONS]:
 
   -h               Show help.
 
+Non-interactive usage
+---------------------
+
+If gaspi_run is used in a batch system, the machine file still must be
+provided. In general, the information required to setup such file job
+scheduler can be obtained from environment variables defined by the
+job scheduler. The directory docs/batch_examples includes sample
+scripts for setting the machine file and submitting jobs to common
+batch processing systems. They can be used as starting point for some
+elaborated applications and particular environments.
 
 5. THE GASPI_LOGGER
 ===================
