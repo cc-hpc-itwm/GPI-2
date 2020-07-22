@@ -43,6 +43,7 @@ tcp_dev_conn_state_t **rank_state = NULL;
 static int tcp_dev_port_in_use;
 static int tcp_dev_num_peers;
 static int tcp_dev_id;
+pthread_t tcp_dev_thread;
 
 /* list of remote operations */
 list delayedList =
