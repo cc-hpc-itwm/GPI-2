@@ -27,6 +27,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GASPI_Ext.h"
 #include "PGASPI.h"
 #include "GPI2.h"
+#include "GPI2_CONFIG.h"
 #include "GPI2_Coll.h"
 #include "GPI2_Env.h"
 #include "GPI2_Dev.h"
@@ -38,7 +39,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_VERSION \
   (GASPI_MAJOR_VERSION + GASPI_MINOR_VERSION/10.0f + GASPI_REVISION/100.0f)
 
-extern gaspi_config_t glb_gaspi_cfg;
+gaspi_context_t glb_gaspi_ctx;
 
 #pragma weak gaspi_version  = pgaspi_version
 gaspi_return_t

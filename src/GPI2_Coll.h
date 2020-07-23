@@ -23,9 +23,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GASPI.h"
 
-/* Number of collectives possibilities (Types x Ops) */
-#define GASPI_COLL_OP_TYPES 18
-
 typedef enum
 {
   GASPI_OP,
@@ -54,7 +51,66 @@ struct redux_args
   } f_args;
 };
 
-void (*fctArrayGASPI[GASPI_COLL_OP_TYPES]) (void *, void *, void *,
+/* Number of collectives possibilities (Types x Ops) */
+#define GASPI_COLL_OP_TYPES 18
+
+/* Collective functions' signatures */
+void
+opMinIntGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opMaxIntGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opSumIntGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opMinUIntGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opMaxUIntGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opSumUIntGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opMinFloatGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opMaxFloatGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opSumFloatGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opMinDoubleGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opMaxDoubleGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opSumDoubleGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opMinLongGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opMaxLongGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opSumLongGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opMinLongUGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opMaxLongUGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+void
+opSumLongUGASPI (void *res, void *localVal, void *dstVal, const int cnt);
+
+/* Declare the array of pre-defined collective operations */
+extern void (*fctArrayGASPI[GASPI_COLL_OP_TYPES]) (void *, void *, void *,
                                             const int cnt);
 
 void gaspi_init_collectives (void);

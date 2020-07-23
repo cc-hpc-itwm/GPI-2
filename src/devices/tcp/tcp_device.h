@@ -167,8 +167,6 @@ struct tcp_queue
 };
 
 /* the device */
-pthread_t tcp_dev_thread;
-
 struct tcp_dev_args
 {
   int peers_num;

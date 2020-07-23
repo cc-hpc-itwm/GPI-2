@@ -33,7 +33,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 #define NOTIFICATIONS_SPACE_SIZE ((65536 * sizeof(gaspi_notification_t)) + (64))
 
-gaspi_context_t glb_gaspi_ctx;
+extern gaspi_context_t glb_gaspi_ctx;
 
 static inline gaspi_cycles_t
 gaspi_get_cycles (void)
