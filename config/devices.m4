@@ -91,7 +91,7 @@ AC_DEFUN([ACX_INFINIBAND],[
 	   HAVE_INFINIBAND=1
 	   AC_SUBST(ac_inc_infiniband,[-I$ac_inc_infiniband])
 	   if test ! -z $ac_lib_infiniband; then
-	      AC_SUBST(ac_lib_infiniband,[-L$ac_lib_infiniband -libverbs])
+	      AC_SUBST(ac_lib_infiniband,["-L$ac_lib_infiniband -libverbs"])
 	   else
 	      AC_SUBST(ac_lib_infiniband,[-libverbs])
 	   fi
