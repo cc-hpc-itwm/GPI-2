@@ -8,7 +8,7 @@
 #PBS -N PBS_test
 #PBS -V
 
-gaspihome=$HOME/localgpi/ethernet_gcc
+gaspihome=$HOME/local
 gaspirun=$gaspihome/bin/gaspi_run
 
 # Generate a `machine` file from $PBS_NODEFILE. Repeated hosts are

@@ -10,7 +10,7 @@
 #$ -cwd
 #$ -w e
 
-gaspihome=$HOME/localgpi/ethernet_gcc
+gaspihome=$HOME/local
 gaspirun=$gaspihome/bin/gaspi_run
 
 # Generate a `machine` file from $PE_HOSTFILE. Repeated hosts are
