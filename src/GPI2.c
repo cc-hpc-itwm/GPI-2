@@ -39,7 +39,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_VERSION \
   (GASPI_MAJOR_VERSION + GASPI_MINOR_VERSION/10.0f + GASPI_REVISION/100.0f)
 
-/* Define the context */
 gaspi_context_t glb_gaspi_ctx;
 
 #pragma weak gaspi_version  = pgaspi_version
