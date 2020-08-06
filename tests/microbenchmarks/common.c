@@ -1,4 +1,28 @@
-#include "common.h"
+#include <GASPI.h>
+#include <GASPI_Ext.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+
+int
+mcycles_compare (const void *aptr, const void *bptr)
+{
+  const gaspi_cycles_t *a = (gaspi_cycles_t *) aptr;
+  const gaspi_cycles_t *b = (gaspi_cycles_t *) bptr;
+
+  if (*a < *b)
+  {
+    return -1;
+  }
+
+  if (*a > *b)
+  {
+    return 1;
+  }
+
+  return 0;
+}
+
 
 int
 start_bench (int max_nodes)

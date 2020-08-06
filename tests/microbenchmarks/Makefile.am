@@ -15,7 +15,7 @@ LDFLAGS += @ac_lib_mpi@  @mpi_extra_flags@
 endif
 
 # MICROBENCHMARKS
-auxMICSRCS = common.c common.h utils.h
+auxMICSRCS = common.c common.h
 
 micro_tests = allreduce.bin \
      barrier.bin \

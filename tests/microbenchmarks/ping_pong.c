@@ -1,11 +1,13 @@
-#include "utils.h"
 #include "common.h"
+
+#include <GASPI.h>
+#include <GASPI_Ext.h>
+
+#include <stdio.h>
+#include <stdlib.h>
 
 int main()
 {
-  int l, i;
-  gaspi_rank_t myrank;
-  unsigned short fid;
   const int skip = 10;
 
   //on numa architectures you have to map this process to the numa
@@ -20,39 +22,44 @@ int main()
     exit (-1);
   }
 
+  gaspi_rank_t myrank;
   gaspi_proc_rank (&myrank);
 
-
   gaspi_float cpu_freq;
-
   gaspi_cpu_frequency (&cpu_freq);
 
   const double cycles_to_msecs = 1.0 / (cpu_freq * 1000.0);
+
+
+  unsigned short fid;
 
   if (myrank == 0)
   {
     int bytes = 4;
 
-    for (i = 0; i < 19; i++)
+    for (int i = 0; i < 19; i++)
     {
       if (bytes == 4)
       {
-        for (l = 0; l < 1000; l++)
+        for (int l = 0; l < 1000; l++)
         {
-          const mcycles_t s0 = get_mcycles ();
+          gaspi_cycles_t s0;
+          gaspi_time_ticks (&s0);
+
           const int id = i * 1000 + l;
 
           gaspi_notify (0, 1, id, 1, 0, GASPI_BLOCK);
           gaspi_notify_waitsome (0, id, 1, &fid, GASPI_BLOCK);
 
-          const mcycles_t s1 = get_mcycles ();
+          gaspi_cycles_t s1;
+          gaspi_time_ticks (&s1);
 
           delta[l] = s1 - s0;
         }
 
         double avg = 0.0;
 
-        for (l = skip; l < 1000; l++)
+        for (int l = skip; l < 1000; l++)
         {
           avg += (double) delta[l] * cycles_to_msecs;
         }
@@ -64,22 +71,25 @@ int main()
       }
       else
       {
-        for (l = 0; l < 1000; l++)
+        for (int l = 0; l < 1000; l++)
         {
-          const mcycles_t s0 = get_mcycles ();
+          gaspi_cycles_t s0;
+          gaspi_time_ticks (&s0);
+
           const int id = i * 1000 + l;
 
           gaspi_write_notify (0, 0, 1, 0, 0, bytes, id, 1, 0, GASPI_BLOCK);
           gaspi_notify_waitsome (0, id, 1, &fid, GASPI_BLOCK);
 
-          const mcycles_t s1 = get_mcycles ();
+          gaspi_cycles_t s1;
+          gaspi_time_ticks (&s1);
 
           delta[l] = s1 - s0;
         }
 
         double avg = 0.0;
 
-        for (l = skip; l < 1000; l++)
+        for (int l = skip; l < 1000; l++)
         {
           avg += (double) delta[l] * cycles_to_msecs;
         }
@@ -97,11 +107,11 @@ int main()
   {
     int bytes = 4;
 
-    for (i = 0; i < 19; i++)
+    for (int i = 0; i < 19; i++)
     {
       if (bytes == 4)
       {
-        for (l = 0; l < 1000; l++)
+        for (int l = 0; l < 1000; l++)
         {
           const int id = i * 1000 + l;
 
@@ -111,7 +121,7 @@ int main()
       }
       else
       {
-        for (l = 0; l < 1000; l++)
+        for (int l = 0; l < 1000; l++)
         {
           const int id = i * 1000 + l;
 

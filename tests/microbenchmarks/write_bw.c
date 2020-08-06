@@ -1,11 +1,13 @@
-#include "utils.h"
 #include "common.h"
+
+#include <GASPI.h>
+#include <GASPI_Ext.h>
+
+#include <stdio.h>
+#include <stdlib.h>
 
 int main()
 {
-  int i, j, k, t;
-  gaspi_rank_t myrank;
-
   //on numa architectures you have to map this process to the numa
   //node where nic is installed
 
@@ -19,10 +21,10 @@ int main()
   }
 
   // BENCH //
+  gaspi_rank_t myrank;
   gaspi_proc_rank (&myrank);
 
   gaspi_float cpu_freq;
-
   gaspi_cpu_frequency (&cpu_freq);
 
   if (myrank == 0)
@@ -33,21 +35,23 @@ int main()
 
     int bytes = 2;
 
-    for (i = 0; i < 23; i++)
+    for (int i = 0; i < 23; i++)
     {
-      for (j = 0; j < 10; j++)
+      for (int j = 0; j < 10; j++)
       {
-        stamp[j] = get_mcycles ();
-        for (k = 0; k < 1000; k++)
+        gaspi_time_ticks (&(stamp[j]));
+
+        for (int k = 0; k < 1000; k++)
         {
           gaspi_write (0, 0, 1, 0, 0, bytes, 0, GASPI_BLOCK);
         }
 
         gaspi_wait (0, GASPI_BLOCK);
-        stamp2[j] = get_mcycles ();
+
+        gaspi_time_ticks (&(stamp2[j]));
       }
 
-      for (t = 0; t < 10; t++)
+      for (int t = 0; t < 10; t++)
       {
         delta[t] = stamp2[t] - stamp[t];
       }
