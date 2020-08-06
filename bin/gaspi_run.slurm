@@ -45,6 +45,7 @@ usage()
     echo "Usage: gaspi_run -m <machinefile> [OPTIONS] <path GASPI program>"
     echo
     echo "Available options:"
+    echo "  -m               machine file (optional)"
     echo "  -N               Enable NUMA for processes on same node."
     echo "  -n <procs>       Start as many <procs> from machine file."
     echo "  -p               Ping hosts before starting binary."
@@ -83,9 +84,9 @@ validate_machinefile()
     rm -f $TMP_MFILE
 
     touch $TMP_MFILE 2>/dev/null && chmod 777 $TMP_MFILE ||
-    {
-	print_error_exit "User permissions failure: $PWD is not writable"
-    }
+	    {
+		print_error_exit "User permissions failure: $PWD is not writable"
+	    }
 
     ncount=0
     while read LINE
@@ -94,9 +95,9 @@ validate_machinefile()
 	if [ -n "$i" ]; then
 	    if [ $PING_HOSTS -eq 1 ]; then
 		ping -c 1 $i >/dev/null 2>&1 ||
-		{
-		    print_error_exit "Host not reachable ($i)"
-		}
+		    {
+			print_error_exit "Host not reachable ($i)"
+		    }
 	    fi
 	    ncount=$((ncount+1))
 	    if [ $NTASKS -lt $ncount ]; then
@@ -117,8 +118,8 @@ validate_machinefile()
     fi
 }
 
-#at least we need machinefile and binary
-if [ $# -lt 3 ]; then
+#at least we need the binary
+if [ $# -lt 1 ]; then
     usage
     exit 1
 fi
@@ -150,9 +151,9 @@ while [ -n "$1" ]; do
 	-p | --ping)
 	    PING_HOSTS=1
 	    ;;
-        -*)
-            print_error_exit "Invalid option ($1)"
-            ;;
+	-*)
+	    print_error_exit "Invalid option ($1)"
+	    ;;
 	*) #Sucks! we're taking a small risk here
 	    if [ -x $1 ]; then
 
@@ -172,15 +173,20 @@ if [ -z "$PRG" ]; then
     print_error_exit "No binary file provided. See help (-h option)"
 fi
 
+#set machine file
+if [ -z "$MFILE" ]; then
+    MFILE="machines_"$SLURM_JOB_ID
+    scontrol show hostnames > $MFILE
+fi
 
 #sanity check and settings
 if [ $SET_NUMA -eq 1 ]; then
     which lscpu > /dev/null
     if [ $? = 0 ]; then
-        MAX_NUMA_NODES=`lscpu|grep "NUMA node(s)"|gawk '{print $3}'`
+	MAX_NUMA_NODES=`lscpu|grep "NUMA node(s)"|gawk '{print $3}'`
 	HAS_NUMA=1
     else
-        echo "Warning: unable to detect NUMA configuration. Option not used."
+	echo "Warning: unable to detect NUMA configuration. Option not used."
 	MAX_NUMA_NODES=1
 	HAS_NUMA=0
     fi
@@ -195,13 +201,13 @@ if [ $NTASKS -eq 0 ]; then
     if [ $NTASKS = 1 ]; then
 	echo "Warning: running a single instance of GPI-2!"
     fi
-
-    if [ $NTASKS -gt $SLURM_NPROCS ]; then
-        print_error_exit "Number of hosts in machinefile (${NTASKS}) exceeds the job's allocation number (${SLURM_NPROCS})."
-    fi
 fi
 
 validate_machinefile $MFILE
+
+if [ $NTASKS -gt $SLURM_NPROCS ]; then
+    print_error_exit "Number of hosts in machinefile (${NTASKS}) exceeds the job's allocation number (${SLURM_NPROCS})."
+fi
 
 #master binary is the same
 if [ -z "$MASTER_PRG" ]; then
@@ -216,7 +222,8 @@ if [ $(($NTASKS / $NNODES)) -gt $MAX_NUMA_NODES ]; then
     print_error_exit "NUMA option: incorrect machinefile (-m $ORIG_MFILE) (max procs per node: $MAX_NUMA_NODES)"
 fi
 
-$GASPI_LAUNCHER -n $NTASKS -N $NNODES  $(readlink -f `dirname $0`)/slurm.env $MFILE $SET_NUMA $MASTER_PRG $PRG_ARGS
+$GASPI_LAUNCHER -n $NTASKS -N $NNODES -w $MFILE $(readlink -f `dirname $0`)/slurm.env $MFILE $SET_NUMA $MASTER_PRG $PRG_ARGS
+
 
 if [ $? != 0 ]; then
     clean_exit 1

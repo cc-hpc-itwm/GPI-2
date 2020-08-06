@@ -11,13 +11,15 @@
 gaspihome=$HOME/local
 gaspirun=$gaspihome/bin/gaspi_run
 
-#Machine file name
-machine_file="machines_"$SLURM_JOB_ID
-if [ -e $machine_file ];then
-    rm -f $machine_file
-fi
+test_bin="hello_world.bin"
 
-scontrol show hostnames > $machine_file
+# Use an explicit machine file
+#machine_file="machines_"$SLURM_JOB_ID
+#if [ -e $machine_file ];then
+#    rm -f $machine_file
+#fi
+#scontrol show hostnames > $machine_file
+# $gaspirun -m $machine_file -N $gaspihome/tests/bin/$test_bin
 
-test_bin="proc_init.bin"
-$gaspirun -m $machine_file -N $gaspihome/tests/bin/$test_bin
+# Normal operation
+$gaspirun -N $gaspihome/tests/bin/$test_bin
