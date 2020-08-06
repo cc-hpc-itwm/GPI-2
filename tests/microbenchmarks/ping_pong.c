@@ -8,8 +8,6 @@
 
 int main()
 {
-  const int skip = 10;
-
   //on numa architectures you have to map this process to the numa
   //node where nic is installed
 
@@ -31,111 +29,74 @@ int main()
   const double cycles_to_msecs = 1.0 / (cpu_freq * 1000.0);
 
 
-  unsigned short fid;
+  int bytes = 4;
+  const int skip = 10;
+  const int max_iterations = 500;
 
-  if (myrank == 0)
+  for (int i = 0; i < 19; i++)
   {
-    int bytes = 4;
-
-    for (int i = 0; i < 19; i++)
+    for (int l = 0; l < max_iterations; l++)
     {
-      if (bytes == 4)
+      gaspi_cycles_t s0;
+      gaspi_time_ticks (&s0);
+
+      const gaspi_notification_id_t id =
+        (gaspi_notification_id_t) (i * 1000 + l);
+      gaspi_notification_id_t fid;
+
+      if (myrank == 0)
       {
-        for (int l = 0; l < 1000; l++)
+        if (bytes == 4)
         {
-          gaspi_cycles_t s0;
-          gaspi_time_ticks (&s0);
-
-          const int id = i * 1000 + l;
-
           gaspi_notify (0, 1, id, 1, 0, GASPI_BLOCK);
-          gaspi_notify_waitsome (0, id, 1, &fid, GASPI_BLOCK);
-
-          gaspi_cycles_t s1;
-          gaspi_time_ticks (&s1);
-
-          delta[l] = s1 - s0;
         }
-
-        double avg = 0.0;
-
-        for (int l = skip; l < 1000; l++)
+        else
         {
-          avg += (double) delta[l] * cycles_to_msecs;
-        }
-
-        printf ("# bytes: 2 \t\t%.2f usec\n",
-                (avg / (double) (1000 - skip) * 0.5) * 1000.0);
-        printf ("# bytes: 4 \t\t%.2f usec\n",
-                (avg / (double) (1000 - skip) * 0.5) * 1000.0);
-      }
-      else
-      {
-        for (int l = 0; l < 1000; l++)
-        {
-          gaspi_cycles_t s0;
-          gaspi_time_ticks (&s0);
-
-          const int id = i * 1000 + l;
-
           gaspi_write_notify (0, 0, 1, 0, 0, bytes, id, 1, 0, GASPI_BLOCK);
-          gaspi_notify_waitsome (0, id, 1, &fid, GASPI_BLOCK);
-
-          gaspi_cycles_t s1;
-          gaspi_time_ticks (&s1);
-
-          delta[l] = s1 - s0;
         }
 
-        double avg = 0.0;
+        gaspi_notify_waitsome (0, id, 1, &fid, GASPI_BLOCK);
 
-        for (int l = skip; l < 1000; l++)
-        {
-          avg += (double) delta[l] * cycles_to_msecs;
-        }
+        gaspi_cycles_t s1;
+        gaspi_time_ticks (&s1);
 
-        printf ("%d \t\t%.2f\n", bytes,
-                (avg / (double) (1000 - skip) * 0.5) * 1000.0);
+        delta[l] = s1 - s0;
       }
-
-      gaspi_wait (0, GASPI_BLOCK);
-      bytes <<= 1;
-    }
-
-  }
-  else if (myrank == 1)
-  {
-    int bytes = 4;
-
-    for (int i = 0; i < 19; i++)
-    {
-      if (bytes == 4)
+      else if (myrank == 1)
       {
-        for (int l = 0; l < 1000; l++)
-        {
-          const int id = i * 1000 + l;
+        gaspi_notify_waitsome (0, id, 1, &fid, GASPI_BLOCK);
 
-          gaspi_notify_waitsome (0, id, 1, &fid, GASPI_BLOCK);
+        if (bytes == 4)
+        {
           gaspi_notify (0, 0, id, 1, 0, GASPI_BLOCK);
         }
-      }
-      else
-      {
-        for (int l = 0; l < 1000; l++)
+        else
         {
-          const int id = i * 1000 + l;
-
-          gaspi_notify_waitsome (0, id, 1, &fid, GASPI_BLOCK);
           gaspi_write_notify (0, 0, 0, 0, 0, bytes, id, 1, 0, GASPI_BLOCK);
         }
       }
-
-      gaspi_wait (0, GASPI_BLOCK);
-      bytes <<= 1;
     }
+
+    if (myrank == 0)
+    {
+      double avg = 0.0;
+
+      for (int l = skip; l < max_iterations; l++)
+      {
+        avg += (double) delta[l] * cycles_to_msecs;
+      }
+
+      printf ("%12d\t%4.2f\n",
+              bytes,
+              (avg / (double) (max_iterations - skip) * 0.5) * 1000.0);
+    }
+
+    gaspi_wait (0, GASPI_BLOCK);
+
+    bytes <<= 1;
   }
 
-  end_bench ();
+  end_bench();
 
   return 0;
 }
