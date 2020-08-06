@@ -72,39 +72,39 @@ print_error_exit()
 validate_machinefile()
 {
     if [ ! -s $MFILE ]; then
-	print_error_exit "Empty machine file ($1)"
+        print_error_exit "Empty machine file ($1)"
     fi
     # newline at the end
     endl=`tail -c 1 $MFILE`
     if [ "$endl" != "" ]; then
-	print_error_exit "No newline at end of machine file ($1)";
+        print_error_exit "No newline at end of machine file ($1)";
     fi
 
     # create tmp_file
     rm -f $TMP_MFILE
 
     touch $TMP_MFILE 2>/dev/null && chmod 777 $TMP_MFILE ||
-	    {
-		print_error_exit "User permissions failure: $PWD is not writable"
-	    }
+            {
+                print_error_exit "User permissions failure: $PWD is not writable"
+            }
 
     ncount=0
     while read LINE
     do
-	i=`echo $LINE | gawk '{print $1}'   `
-	if [ -n "$i" ]; then
-	    if [ $PING_HOSTS -eq 1 ]; then
-		ping -c 1 $i >/dev/null 2>&1 ||
-		    {
-			print_error_exit "Host not reachable ($i)"
-		    }
-	    fi
-	    ncount=$((ncount+1))
-	    if [ $NTASKS -lt $ncount ]; then
-		break
-	    fi
-	    echo $i >> $TMP_MFILE
-	fi
+        i=`echo $LINE | gawk '{print $1}'   `
+        if [ -n "$i" ]; then
+            if [ $PING_HOSTS -eq 1 ]; then
+                ping -c 1 $i >/dev/null 2>&1 ||
+                    {
+                        print_error_exit "Host not reachable ($i)"
+                    }
+            fi
+            ncount=$((ncount+1))
+            if [ $NTASKS -lt $ncount ]; then
+                break
+            fi
+            echo $i >> $TMP_MFILE
+        fi
     done < $MFILE
 
     ORIG_MFILE=$MFILE
@@ -114,7 +114,7 @@ validate_machinefile()
     # number of nodes (NTASKS) must fit number of hosts
     n=$(wc -l < $MFILE)
     if [ $n -lt $NTASKS ]; then
-	print_error_exit "Not enough hosts ($n) for required number of nodes (-n $NTASKS)"
+        print_error_exit "Not enough hosts ($n) for required number of nodes (-n $NTASKS)"
     fi
 }
 
@@ -127,43 +127,43 @@ fi
 #command line parsing
 while [ -n "$1" ]; do
     case $1 in
-	-m | --machinefile)
-	    shift
-	    if [ -r $1 ]; then
-		MFILE=$1
-	    else
-		print_error_exit "Cannot read $1 (-m option) (or file does not exist)"
-	    fi
-	    ;;
-	-N | --NUMA)
-	    SET_NUMA=1
-	    ;;
-	-h | --help)
-	    usage
-	    ;;
-	-n | --nodes)
-	    shift
-	    if [ $1 = 1 ]; then
-		echo "Warning: running a single instance of GPI-2!"
-	    fi
-	    NTASKS=$1
-	    ;;
-	-p | --ping)
-	    PING_HOSTS=1
-	    ;;
-	-*)
-	    print_error_exit "Invalid option ($1)"
-	    ;;
-	*) #Sucks! we're taking a small risk here
-	    if [ -x $1 ]; then
+        -m | --machinefile)
+            shift
+            if [ -r $1 ]; then
+                MFILE=$1
+            else
+                print_error_exit "Cannot read $1 (-m option) (or file does not exist)"
+            fi
+            ;;
+        -N | --NUMA)
+            SET_NUMA=1
+            ;;
+        -h | --help)
+            usage
+            ;;
+        -n | --nodes)
+            shift
+            if [ $1 = 1 ]; then
+                echo "Warning: running a single instance of GPI-2!"
+            fi
+            NTASKS=$1
+            ;;
+        -p | --ping)
+            PING_HOSTS=1
+            ;;
+        -*)
+            print_error_exit "Invalid option ($1)"
+            ;;
+        *) #Sucks! we're taking a small risk here
+            if [ -x $1 ]; then
 
-		PRG=$(readlink -f $1)
-		shift
-		PRG_ARGS="$*"
-		break
-	    else
-		print_error_exit "Cannot execute $1 (or file does not exist)"
-	    fi
+                PRG=$(readlink -f $1)
+                shift
+                PRG_ARGS="$*"
+                break
+            else
+                print_error_exit "Cannot execute $1 (or file does not exist)"
+            fi
     esac
     shift
 done
@@ -183,12 +183,12 @@ fi
 if [ $SET_NUMA -eq 1 ]; then
     which lscpu > /dev/null
     if [ $? = 0 ]; then
-	MAX_NUMA_NODES=`lscpu|grep "NUMA node(s)"|gawk '{print $3}'`
-	HAS_NUMA=1
+        MAX_NUMA_NODES=`lscpu|grep "NUMA node(s)"|gawk '{print $3}'`
+        HAS_NUMA=1
     else
-	echo "Warning: unable to detect NUMA configuration. Option not used."
-	MAX_NUMA_NODES=1
-	HAS_NUMA=0
+        echo "Warning: unable to detect NUMA configuration. Option not used."
+        MAX_NUMA_NODES=1
+        HAS_NUMA=0
     fi
 else
     MAX_NUMA_NODES=256
@@ -199,7 +199,7 @@ fi
 if [ $NTASKS -eq 0 ]; then
     NTASKS=`sed /^$/d $MFILE  |wc -l`
     if [ $NTASKS = 1 ]; then
-	echo "Warning: running a single instance of GPI-2!"
+        echo "Warning: running a single instance of GPI-2!"
     fi
 fi
 

@@ -40,7 +40,7 @@ count=1
 for i in $@
 do
     if [ $count -gt 9 ]; then
-	ARGS="$ARGS ${i}"
+        ARGS="$ARGS ${i}"
     fi
     count=$((count+1))
 done
@@ -54,7 +54,7 @@ do
     cmd="$cmd; export GASPI_RANK=$(($5 * ($6 + 1) + $i));export GASPI_NRANKS=$7"
 
    if [ $8 -eq 1 ]; then
-	cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
+        cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
     fi
 
     cmd="$cmd; $PROG ${ARGS}'"
