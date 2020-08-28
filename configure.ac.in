@@ -251,6 +251,11 @@ if test -n "$DOXYGEN" -a -n "$DOT"; then
 else
    echo " Not available" >& AS_MESSAGE_FD
 fi
+
+AC_CANONICAL_HOST
+
+echo "Host CPU architecture:" >& AS_MESSAGE_FD
+echo " $host_cpu" >& AS_MESSAGE_FD
 echo >& AS_MESSAGE_FD
 
 AC_OUTPUT
