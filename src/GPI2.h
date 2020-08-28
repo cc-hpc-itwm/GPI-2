@@ -38,6 +38,8 @@ extern gaspi_context_t glb_gaspi_ctx;
 static inline gaspi_cycles_t
 gaspi_get_cycles (void)
 {
+#if defined(__x86_64__)
+
   unsigned low, high;
   unsigned long long val;
 
@@ -46,6 +48,14 @@ gaspi_get_cycles (void)
   val = high;
   val = (val << 32) | low;
   return val;
+
+#elif defined(__aarch64__)
+
+  unsigned long ts;
+  asm volatile ("isb; mrs %0, cntvct_el0" : "=r" (ts));
+  return ts;
+
+#endif
 }
 
 #ifdef MIC

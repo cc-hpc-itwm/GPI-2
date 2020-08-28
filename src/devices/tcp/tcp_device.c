@@ -497,7 +497,7 @@ _tcp_dev_post_wc (uint64_t wr_id,
   while (insert_ringbuffer (cqs_map[cq_handle]->rbuf, wc) < 0)
   {
     printf ("completion queue #%i is full.\n", cq_handle);
-    __asm__ ("pause;");         /* TODO */
+    GASPI_DELAY();
   }
 
   /* acknowledge receiver (if that's the case) */

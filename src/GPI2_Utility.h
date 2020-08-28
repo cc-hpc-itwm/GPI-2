@@ -25,12 +25,17 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+
+#if defined(__x86_64__)
 #include <xmmintrin.h>
+#endif
 
 #ifdef MIC
 #define GASPI_DELAY() _mm_delay_32(32)
-#else
+#elif defined(__x86_64__)
 #define GASPI_DELAY() _mm_pause()
+#elif defined(__aarch64__)
+#define GASPI_DELAY()  __asm__ __volatile__("yield")
 #endif
 
 #define MAX(a,b)  (((a)<(b)) ? (b) : (a))
