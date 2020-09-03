@@ -36,6 +36,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_DELAY() _mm_pause()
 #elif defined(__aarch64__)
 #define GASPI_DELAY()  __asm__ __volatile__("yield")
+#elif defined (__PPC64__)
+#define GASPI_DELAY() __asm__ volatile("ori 0,0,0" ::: "memory");
 #endif
 
 #define MAX(a,b)  (((a)<(b)) ? (b) : (a))

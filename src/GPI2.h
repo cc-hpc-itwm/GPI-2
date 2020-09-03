@@ -55,6 +55,12 @@ gaspi_get_cycles (void)
   asm volatile ("isb; mrs %0, cntvct_el0" : "=r" (ts));
   return ts;
 
+#elif defined (__PPC64__)
+
+  unsigned long cycles;
+  asm volatile ("mftb %0" : "=r" (cycles) : );
+  return cycles;
+
 #endif
 }
 
