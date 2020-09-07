@@ -50,7 +50,6 @@ check:
 endif
 
 # INSTALL RUN SCRIPTS
-bin_SCRIPTS = bin/gaspi_logger
 if WITH_LOADLEVELER
 install-exec-hook:
 	cp $(abs_top_srcdir)/bin/gaspi_run.poe $(DESTDIR)$(bindir)/gaspi_run
@@ -64,7 +63,7 @@ install-exec-hook:
 	head -n 18 $(abs_top_srcdir)/bin/gaspi_cleanup > $(DESTDIR)$(bindir)/gaspi_cleanup
 	chmod +x $(DESTDIR)$(bindir)/gaspi_cleanup
 else
-bin_SCRIPTS += bin/ssh.spawner bin/gaspi_cleanup
+bin_SCRIPTS = bin/ssh.spawner bin/gaspi_cleanup
 install-exec-hook:
 	cp $(abs_top_srcdir)/bin/gaspi_run.ssh $(DESTDIR)$(bindir)/gaspi_run
 endif

@@ -85,6 +85,10 @@ gaspi_ext.mod: GASPI_Ext.f90 gaspi_types.mod gaspi.mod
 nodist_include_HEADERS = gaspi_types.mod gaspi.mod gaspi_ext.mod
 endif
 
+# GASPI_LOGGER
+bin_PROGRAMS = gaspi_logger
+gaspi_logger_SOURCES = gaspi_logger.c
+
 # PKG-CONFIG
 EXTRA_DIST += GPI2.pc.in
 
