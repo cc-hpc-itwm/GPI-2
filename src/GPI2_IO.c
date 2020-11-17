@@ -149,6 +149,8 @@ pgaspi_queue_create (gaspi_queue_id_t * const queue_id,
 
   gaspi_number_t next_avail_q = __sync_fetch_and_add (&(gctx->num_queues), 0);
 
+  gaspi_return_t eret = GASPI_ERROR;
+
   /* Create it and advertise it to the already connected nodes */
   for (gaspi_rank_t n = 0; n < gctx->tnc; n++)
   {
@@ -158,13 +160,13 @@ pgaspi_queue_create (gaspi_queue_id_t * const queue_id,
     {
       if (0 != pgaspi_dev_comm_queue_create (gctx, next_avail_q, i))
       {
-        return GASPI_ERR_DEVICE;
+        eret = GASPI_ERR_DEVICE;
+        goto endL;
       }
 
       gaspi_dev_exch_info_t *const exch_info = &(gctx->ep_conn[i].exch_info);
 
-      gaspi_return_t const eret =
-        gaspi_sn_command (GASPI_SN_QUEUE_CREATE, i, timeout_ms, exch_info);
+      eret = gaspi_sn_command (GASPI_SN_QUEUE_CREATE, i, timeout_ms, exch_info);
       if (GASPI_SUCCESS != eret)
       {
         /* TODO: do we need to distinguish error type in order to set
@@ -174,8 +176,7 @@ pgaspi_queue_create (gaspi_queue_id_t * const queue_id,
           gctx->state_vec[GASPI_SN][i] = GASPI_STATE_CORRUPT;
         }
 
-        unlock_gaspi (&(gctx->ctx_lock));
-        return eret;
+        goto endL;
       }
     }
   }
@@ -188,7 +189,8 @@ pgaspi_queue_create (gaspi_queue_id_t * const queue_id,
     {
       if (pgaspi_dev_comm_queue_connect (gctx, next_avail_q, i) != 0)
       {
-        return GASPI_ERR_DEVICE;
+        eret = GASPI_ERR_DEVICE;
+        goto endL;
       }
     }
   }
@@ -198,9 +200,11 @@ pgaspi_queue_create (gaspi_queue_id_t * const queue_id,
 
   *queue_id = (gaspi_queue_id_t) next_avail_q;
 
-  unlock_gaspi (&(gctx->ctx_lock));
+  eret = GASPI_SUCCESS;
 
-  return GASPI_SUCCESS;
+endL:
+  unlock_gaspi (&(gctx->ctx_lock));
+  return eret;
 }
 
 #pragma weak gaspi_queue_delete = pgaspi_queue_delete
