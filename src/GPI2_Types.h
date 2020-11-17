@@ -28,10 +28,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define ALIGN64  __attribute__ ((aligned (64)))
 
 /* Macro-ed constants */
-#define GASPI_MAJOR_VERSION (1)
-#define GASPI_MINOR_VERSION (4)
-#define GASPI_REVISION (0)
-
 #define GASPI_MAX_QP      (16)
 #define GASPI_COLL_QP     (GASPI_MAX_QP)
 #define GASPI_PASSIVE_QP  (GASPI_MAX_QP+1)
