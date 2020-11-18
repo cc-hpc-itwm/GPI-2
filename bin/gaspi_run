@@ -177,9 +177,6 @@ while [ -n "$1" ]; do
             ;;
         -n | --nodes)
             shift
-            if [ $1 = 1 ]; then
-                echo "Warning: running a single instance of GPI-2!"
-            fi
             NNODES=$1
             ;;
         -p | --ping)
@@ -224,9 +221,6 @@ fi
 #use all host in machines file
 if [ $NNODES -eq 0 ]; then
     NNODES=`sed /^$/d $MFILE  |wc -l`
-    if [ $NNODES = 1 ]; then
-        echo "Warning: running a single instance of GPI-2!"
-    fi
 fi
 
 validate_machinefile $MFILE
@@ -246,7 +240,6 @@ if [ ! -x ${location}/ssh.spawner ]; then
     exit 1
 fi
 
-t0=$(date +%s)
 #who's master
 master_node=`head -n 1 $MFILE`
 previous="$master_node"
@@ -319,9 +312,6 @@ if [ -O /tmp/.last_gaspi_prg ]; then
 fi
 
 #start master
-t1=$(date +%s)
-tdiff=$((t1 - t0))
-echo Startup time: $tdiff sec
 
 if [ "$master_node" != "$HN" ]; then
     if [ $DEBUG != 0 ]; then

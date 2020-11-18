@@ -143,9 +143,6 @@ while [ -n "$1" ]; do
             ;;
         -n | --nodes)
             shift
-            if [ $1 = 1 ]; then
-                echo "Warning: running a single instance of GPI-2!"
-            fi
             NTASKS=$1
             ;;
         -p | --ping)
@@ -198,9 +195,6 @@ fi
 #use all hosts in machines file
 if [ $NTASKS -eq 0 ]; then
     NTASKS=`sed /^$/d $MFILE  |wc -l`
-    if [ $NTASKS = 1 ]; then
-        echo "Warning: running a single instance of GPI-2!"
-    fi
 fi
 
 validate_machinefile $MFILE
