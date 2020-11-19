@@ -473,7 +473,7 @@ includedir=\${prefix}/include
 
 Name: GPI-2
 Description: GPI-2 library
-Version: 1.3.1
+Version: 1.3.2
 Cflags: -I\${includedir}
 Libs: -L\${libdir} -lGPI2
 PKG
