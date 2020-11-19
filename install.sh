@@ -483,7 +483,7 @@ else
     echo "Libs.private: -lrt -lpthread" >> GPI2.pc
 fi
 
-mkdir $GPI2_PATH/lib64/pkgconfig/
+mkdir -p $GPI2_PATH/lib64/pkgconfig/
 mv GPI2.pc $GPI2_PATH/lib64/pkgconfig/
 
 exit 0
