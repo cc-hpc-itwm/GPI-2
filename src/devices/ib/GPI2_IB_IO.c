@@ -233,41 +233,56 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
     return GASPI_QUEUE_FULL;
   }
 
+  gaspi_number_t entries_counter = 0;
+
   for (gaspi_number_t i = 0; i < num; i++)
   {
-    slist[i].addr =
+    if (size[i] == 0)
+    {
+      continue;
+    }
+
+    slist[entries_counter].addr =
       (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +
                    offset_local[i]);
 
-    slist[i].length = size[i];
-    slist[i].lkey =
+    slist[entries_counter].length = size[i];
+    slist[entries_counter].lkey =
       ((struct ibv_mr *) gctx->rrmd[segment_id_local[i]][gctx->rank].
        mr[0])->lkey;
 
-    swr[i].wr.rdma.remote_addr =
+    swr[entries_counter].wr.rdma.remote_addr =
       (gctx->rrmd[segment_id_remote[i]][rank].data.addr + offset_remote[i]);
 
-    swr[i].wr.rdma.rkey = gctx->rrmd[segment_id_remote[i]][rank].rkey[0];
-    swr[i].sg_list = &slist[i];
-    swr[i].num_sge = 1;
-    swr[i].wr_id = rank;
-    swr[i].opcode = IBV_WR_RDMA_WRITE;
-    swr[i].send_flags = IBV_SEND_SIGNALED;
+    swr[entries_counter].wr.rdma.rkey = gctx->rrmd[segment_id_remote[i]][rank].rkey[0];
+    swr[entries_counter].sg_list = &slist[entries_counter];
+    swr[entries_counter].num_sge = 1;
+    swr[entries_counter].wr_id = rank;
+    swr[entries_counter].opcode = IBV_WR_RDMA_WRITE;
+    swr[entries_counter].send_flags = IBV_SEND_SIGNALED;
 
-    if (i == (num - 1))
-      swr[i].next = NULL;
-    else
-      swr[i].next = &swr[i + 1];
+    entries_counter++;
   }
 
-  gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
-
-  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr[0], &bad_wr))
+  if (entries_counter > 0)
   {
-    return GASPI_ERROR;
-  }
+    gaspi_number_t entry = 0;
+    for (entry = 0; entry < entries_counter - 1; entry++)
+    {
+      swr[entry].next = &swr[entry + 1];
+    }
 
-  gctx->ne_count_c[queue] += num;
+    swr[entry].next = NULL;
+
+    gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
+
+    if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr[0], &bad_wr))
+    {
+      return GASPI_ERROR;
+    }
+
+    gctx->ne_count_c[queue] += entries_counter;
+  }
 
   return GASPI_SUCCESS;
 }
@@ -291,40 +306,56 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
     return GASPI_QUEUE_FULL;
   }
 
+  gaspi_number_t entries_counter = 0;
+
   for (gaspi_number_t i = 0; i < num; i++)
   {
-    slist[i].addr =
+    if (size[i] == 0)
+    {
+      continue;
+    }
+
+    slist[entries_counter].addr =
       (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +
                    offset_local[i]);
 
-    slist[i].length = size[i];
-    slist[i].lkey =
+    slist[entries_counter].length = size[i];
+    slist[entries_counter].lkey =
       ((struct ibv_mr *) gctx->rrmd[segment_id_local[i]][gctx->rank].
        mr[0])->lkey;
 
-    swr[i].wr.rdma.remote_addr =
+    swr[entries_counter].wr.rdma.remote_addr =
       (gctx->rrmd[segment_id_remote[i]][rank].data.addr + offset_remote[i]);
 
-    swr[i].wr.rdma.rkey = gctx->rrmd[segment_id_remote[i]][rank].rkey[0];
-    swr[i].sg_list = &slist[i];
-    swr[i].num_sge = 1;
-    swr[i].wr_id = rank;
-    swr[i].opcode = IBV_WR_RDMA_READ;
-    swr[i].send_flags = IBV_SEND_SIGNALED;
-    if (i == (num - 1))
-      swr[i].next = NULL;
-    else
-      swr[i].next = &swr[i + 1];
+    swr[entries_counter].wr.rdma.rkey = gctx->rrmd[segment_id_remote[i]][rank].rkey[0];
+    swr[entries_counter].sg_list = &slist[entries_counter];
+    swr[entries_counter].num_sge = 1;
+    swr[entries_counter].wr_id = rank;
+    swr[entries_counter].opcode = IBV_WR_RDMA_READ;
+    swr[entries_counter].send_flags = IBV_SEND_SIGNALED;
+
+    entries_counter++;
   }
 
-  gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
-
-  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr[0], &bad_wr))
+  if (entries_counter > 0)
   {
-    return GASPI_ERROR;
-  }
+    gaspi_number_t entry = 0;
+    for (entry = 0; entry < entries_counter - 1; entry++)
+    {
+      swr[entry].next = &swr[entry + 1];
+    }
 
-  gctx->ne_count_c[queue] += num;
+    swr[entry].next = NULL;
+
+    gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
+
+    if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr[0], &bad_wr))
+    {
+      return GASPI_ERROR;
+    }
+
+    gctx->ne_count_c[queue] += entries_counter;
+  }
 
   return GASPI_SUCCESS;
 }
@@ -475,32 +506,52 @@ pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
     return GASPI_QUEUE_FULL;
   }
 
+  gaspi_number_t entries_counter = 0;
+
   for (gaspi_number_t i = 0; i < num; i++)
   {
+    if (size[i] == 0)
+    {
+      continue;
+    }
 
-    slist[i].addr =
-      (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +
-                   offset_local[i]);
+    slist[entries_counter].addr =
+      (uintptr_t)
+      (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +
+       offset_local[i]);
 
-    slist[i].length = size[i];
-    slist[i].lkey =
-      ((struct ibv_mr *) gctx->rrmd[segment_id_local[i]][gctx->rank].
-       mr[0])->lkey;
+    slist[entries_counter].length = size[i];
+    slist[entries_counter].lkey =
+      ((struct ibv_mr *)
+       gctx->rrmd[segment_id_local[i]][gctx->rank].mr[0])->lkey;
 
-    swr[i].wr.rdma.remote_addr =
-      (gctx->rrmd[segment_id_remote[i]][rank].data.addr + offset_remote[i]);
+    swr[entries_counter].wr.rdma.remote_addr =
+      (gctx->rrmd[segment_id_remote[i]][rank].data.addr
+       +
+       offset_remote[i]);
 
-    swr[i].wr.rdma.rkey = gctx->rrmd[segment_id_remote[i]][rank].rkey[0];
-    swr[i].sg_list = &slist[i];
-    swr[i].num_sge = 1;
-    swr[i].wr_id = rank;
-    swr[i].opcode = IBV_WR_RDMA_WRITE;
-    swr[i].send_flags = IBV_SEND_SIGNALED;
-    if (i == (num - 1))
-      swr[i].next = &swrN;
-    else
-      swr[i].next = &swr[i + 1];
+    swr[entries_counter].wr.rdma.rkey =
+      gctx->rrmd[segment_id_remote[i]][rank].rkey[0];
+
+    swr[entries_counter].sg_list = &slist[entries_counter];
+    swr[entries_counter].num_sge = 1;
+    swr[entries_counter].wr_id = rank;
+    swr[entries_counter].opcode = IBV_WR_RDMA_WRITE;
+    swr[entries_counter].send_flags = IBV_SEND_SIGNALED;
+
+    entries_counter++;
   }
+
+  gaspi_number_t entry = 0;
+  if (entries_counter > 0)
+  {
+    for (entry = 0; entry < entries_counter - 1; entry++)
+    {
+      swr[entry].next = &swr[entry + 1];
+
+    }
+  }
+  swr[entry].next = &swrN;
 
   slistN.addr =
     (uintptr_t) (gctx->nsrc.notif_spc.buf +
@@ -530,7 +581,7 @@ pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
     return GASPI_ERROR;
   }
 
-  gctx->ne_count_c[queue] += (int) (num + 1);
+  gctx->ne_count_c[queue] += (int) entries_counter + 1;
 
   return GASPI_SUCCESS;
 }
@@ -628,31 +679,53 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
     return GASPI_QUEUE_FULL;
   }
 
+  gaspi_number_t entries_counter = 0;
+
   for (gaspi_number_t i = 0; i < num; i++)
   {
-    slist[i].addr =
-      (uintptr_t) (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +
-                   offset_local[i]);
+    if (size[i] == 0)
+    {
+      continue;
+    }
 
-    slist[i].length = size[i];
-    slist[i].lkey =
-      ((struct ibv_mr *) gctx->rrmd[segment_id_local[i]][gctx->rank].
-       mr[0])->lkey;
+    slist[entries_counter].addr =
+      (uintptr_t)
+      (gctx->rrmd[segment_id_local[i]][gctx->rank].data.addr +
+       offset_local[i]);
 
-    swr[i].wr.rdma.remote_addr =
-      (gctx->rrmd[segment_id_remote[i]][rank].data.addr + offset_remote[i]);
+    slist[entries_counter].length = size[i];
+    slist[entries_counter].lkey =
+      ((struct ibv_mr *)
+       gctx->rrmd[segment_id_local[i]][gctx->rank]
+       .mr[0])->lkey;
 
-    swr[i].wr.rdma.rkey = gctx->rrmd[segment_id_remote[i]][rank].rkey[0];
-    swr[i].sg_list = &slist[i];
-    swr[i].num_sge = 1;
-    swr[i].wr_id = rank;
-    swr[i].opcode = IBV_WR_RDMA_READ;
-    swr[i].send_flags = IBV_SEND_SIGNALED;
-    if (i == (num - 1))
-      swr[i].next = &swrN;
-    else
-      swr[i].next = &swr[i + 1];
+    swr[entries_counter].wr.rdma.remote_addr =
+      (gctx->rrmd[segment_id_remote[i]][rank].data.addr
+       +
+       offset_remote[i]);
+
+    swr[entries_counter].wr.rdma.rkey =
+      gctx->rrmd[segment_id_remote[i]][rank].rkey[0];
+
+    swr[entries_counter].sg_list = &slist[entries_counter];
+    swr[entries_counter].num_sge = 1;
+    swr[entries_counter].wr_id = rank;
+    swr[entries_counter].opcode = IBV_WR_RDMA_READ;
+    swr[entries_counter].send_flags = IBV_SEND_SIGNALED;
+
+    entries_counter++;
   }
+
+  gaspi_number_t entry = 0;
+  if (entries_counter > 0)
+  {
+    for (entry = 0; entry < entries_counter - 1; entry++)
+    {
+      swr[entry].next = &swr[entry + 1];
+
+    }
+  }
+  swr[entry].next = &swrN;
 
   slistN.addr =
     (uintptr_t) (gctx->rrmd[segment_id_notification][gctx->rank].
@@ -683,7 +756,7 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
     return GASPI_ERROR;
   }
 
-  gctx->ne_count_c[queue] += (num + 1);
+  gctx->ne_count_c[queue] += (int) entries_counter + 1;
 
   return GASPI_SUCCESS;
 }

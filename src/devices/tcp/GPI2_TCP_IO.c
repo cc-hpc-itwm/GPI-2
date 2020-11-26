@@ -253,8 +253,16 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
 
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
+  gaspi_number_t num_entries = num;
+
   for (gaspi_number_t i = 0; i < num; i++)
   {
+    if (size[i] == 0)
+    {
+      num_entries--;
+      continue;
+    }
+
     tcp_dev_wr_t wr = {
       .wr_id = rank,
       .cq_handle = tcp_dev_ctx->scqC[queue]->num,
@@ -278,7 +286,7 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
     }
   }
 
-  gctx->ne_count_c[queue] += num;
+  gctx->ne_count_c[queue] += num_entries;
 
   return GASPI_SUCCESS;
 }
@@ -299,8 +307,16 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
   }
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
+  gaspi_number_t num_entries = num;
+
   for (gaspi_number_t i = 0; i < num; i++)
   {
+    if (size[i] == 0)
+    {
+      num_entries--;
+      continue;
+    }
+
     tcp_dev_wr_t wr =
       {
         .wr_id = rank,
@@ -325,7 +341,7 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
     }
   }
 
-  gctx->ne_count_c[queue] += num;
+  gctx->ne_count_c[queue] += num_entries;
 
   return GASPI_SUCCESS;
 }
