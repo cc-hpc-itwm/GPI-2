@@ -59,9 +59,7 @@ main (int argc, char *argv[])
 
   ASSERT (gaspi_queue_size_max (&qmax));
 
-  gaspi_size_t minSize;
-
-  ASSERT (gaspi_transfer_size_min (&minSize));
+  const gaspi_size_t minSize = 1;
 
   /* Connect and communicate */
   for (commSize = minSize; commSize <= _8MB; commSize *= 2)

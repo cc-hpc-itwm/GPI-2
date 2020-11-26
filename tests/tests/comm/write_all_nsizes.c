@@ -24,9 +24,9 @@ main (int argc, char *argv[])
   const gaspi_offset_t localOff = 0;
   const gaspi_offset_t remOff = 0;
   gaspi_size_t commSize;
-  gaspi_size_t minSize;
+  const gaspi_size_t minSize = 1;
 
-  ASSERT (gaspi_transfer_size_min (&minSize));
+
   for (commSize = minSize; commSize <= _8MB; commSize *= 2)
   {
     gaspi_rank_t rankSend;

@@ -12,9 +12,7 @@ work()
   gaspi_offset_t remOff = 0;
   gaspi_number_t queueSize, qmax;
   gaspi_size_t commSize;
-  gaspi_size_t minSize;
-
-  ASSERT (gaspi_transfer_size_min (&minSize));
+  const gaspi_size_t minSize = 1;
 
   ASSERT (gaspi_queue_size_max (&qmax));
 
