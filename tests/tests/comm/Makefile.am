@@ -23,7 +23,9 @@ comm_tests = \
 	../../bin/write_timeout.bin \
 	../../bin/z4k_pressure.bin \
 	../../bin/z4k_pressure_mtt.bin \
-	../../bin/comm_transfer_max_config.bin
+	../../bin/comm_transfer_max_config.bin \
+	../../bin/write_zero_size.bin \
+	../../bin/read_zero_size.bin
 
 ______bin_all_to_all_bin_SOURCES = all-to-all.c $(auxSRCS)
 ______bin_all_to_rank0_bin_SOURCES = all-to-rank0.c $(auxSRCS)
@@ -47,5 +49,7 @@ ______bin_write_timeout_bin_SOURCES = write_timeout.c $(auxSRCS)
 ______bin_z4k_pressure_bin_SOURCES = z4k_pressure.c $(auxSRCS)
 ______bin_z4k_pressure_mtt_bin_SOURCES = z4k_pressure_mtt.c $(auxSRCS)
 ______bin_comm_transfer_max_config_bin_SOURCES = comm_transfer_max_config.c $(auxSRCS)
+______bin_write_zero_size_bin_SOURCES = write_zero_size.c $(auxSRCS)
+______bin_read_zero_size_bin_SOURCES = read_zero_size.c $(auxSRCS)
 
 noinst_PROGRAMS = $(comm_tests)

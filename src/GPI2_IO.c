@@ -286,6 +286,11 @@ pgaspi_write (const gaspi_segment_id_t segment_id_local,
     }
   }
 
+  if (size == 0)
+  {
+    return GASPI_SUCCESS;
+  }
+
   if (lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
   {
     return GASPI_TIMEOUT;
@@ -337,6 +342,11 @@ pgaspi_read (const gaspi_segment_id_t segment_id_local,
     {
       return eret;
     }
+  }
+
+  if (size == 0)
+  {
+    return GASPI_SUCCESS;
   }
 
   if (lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
@@ -824,6 +834,13 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
     }
   }
 
+  if (size == 0)
+  {
+    return pgaspi_notify (segment_id_remote, rank,
+                          notification_id, notification_value,
+                          queue, timeout_ms);
+  }
+
   if (lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
   {
     return GASPI_TIMEOUT;
@@ -950,6 +967,13 @@ pgaspi_read_notify (const gaspi_segment_id_t segment_id_local,
     {
       return eret;
     }
+  }
+
+  if (size == 0)
+  {
+    return pgaspi_notify (segment_id_local, gctx->rank,
+                          notification_id, 1,
+                          queue, timeout_ms);
   }
 
   if (lock_gaspi_tout (&gctx->lockC[queue], timeout_ms))
