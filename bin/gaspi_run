@@ -134,7 +134,7 @@ kill_procs()
     for i in $(cat $UNIQ_MFILE)
     do
         P=`basename ${PRG}`
-       $GASPI_LAUNCHER $i "nohup killall -9 ${P}  ${PRG} $(cat /dev/null)" > /dev/null 2>&1 &
+       $GASPI_LAUNCHER $i "nohup killall -9 ${P}  lt-${P} ${PRG} $(cat /dev/null)" > /dev/null 2>&1 &
     done
     remove_temp_file
     wait

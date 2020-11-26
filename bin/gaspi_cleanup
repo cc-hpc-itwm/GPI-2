@@ -51,7 +51,7 @@ kill_procs()
     for i in $hlist
     do
         P=`basename ${PRG}`
-        ssh $i killall -s KILL $PRG $P > /dev/null 2>&1 &
+        ssh $i killall -s KILL $PRG $P lt-$P > /dev/null 2>&1 &
     done
     wait
 }
