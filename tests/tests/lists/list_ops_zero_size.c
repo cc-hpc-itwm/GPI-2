@@ -93,6 +93,37 @@ comm_list_with_one_elem_with_nonzero_size (struct segs_offsets_list* l,
   return comm_list_with_n_elems_with_nonzero_size (l, 1, &n);
 }
 
+gaspi_rank_t
+next_rank()
+{
+  gaspi_rank_t rank, nprocs;
+
+  ASSERT (gaspi_proc_num (&nprocs));
+  ASSERT (gaspi_proc_rank (&rank));
+
+  return (rank + nprocs + 1) % nprocs;
+}
+
+gaspi_rank_t
+previous_rank()
+{
+  gaspi_rank_t rank, nprocs;
+
+  ASSERT (gaspi_proc_num (&nprocs));
+  ASSERT (gaspi_proc_rank (&rank));
+
+  return (rank + nprocs - 1) % nprocs;
+}
+
+gaspi_rank_t
+my_rank()
+{
+  gaspi_rank_t rank;
+  ASSERT (gaspi_proc_rank (&rank));
+
+  return rank;
+}
+
 void
 initialize_data (gaspi_segment_id_t const seg_id, gaspi_number_t nelems)
 {
@@ -132,7 +163,6 @@ assert_elems_are_set (gaspi_segment_id_t const seg_id,
   {
     assert (mem[i] == value_b);
   }
-
 }
 
 void
@@ -144,7 +174,7 @@ assert_n_read_elem_are_set (gaspi_segment_id_t seg_id,
   ASSERT (gaspi_proc_num (&nprocs));
   ASSERT (gaspi_proc_rank (&rank));
 
-  gaspi_rank_t rank2read = (rank + 1) % nprocs;
+  gaspi_rank_t rank2read = next_rank();
 
   assert_elems_are_set (seg_id,
                         0, nelems_set, rank2read,
@@ -160,7 +190,7 @@ assert_n_write_elem_are_set (gaspi_segment_id_t seg_id,
   ASSERT (gaspi_proc_num (&nprocs));
   ASSERT (gaspi_proc_rank (&rank));
 
-  gaspi_rank_t rank2check = (rank + nprocs + 1) % nprocs;
+  gaspi_rank_t rank2check = previous_rank();
 
   assert_elems_are_set (seg_id,
                         0, nelems_total / 2, rank,
@@ -178,37 +208,6 @@ void
 assert_single_write_elem_is_set (gaspi_segment_id_t seg_id, int nelems)
 {
   return assert_n_write_elem_are_set (seg_id, nelems, 1);
-}
-
-gaspi_rank_t
-next_rank()
-{
-  gaspi_rank_t rank, nprocs;
-
-  ASSERT (gaspi_proc_num (&nprocs));
-  ASSERT (gaspi_proc_rank (&rank));
-
-  return (rank + 1) % nprocs;
-}
-
-gaspi_rank_t
-previous_rank()
-{
-  gaspi_rank_t rank, nprocs;
-
-  ASSERT (gaspi_proc_num (&nprocs));
-  ASSERT (gaspi_proc_rank (&rank));
-
-  return (rank + nprocs + 1) % nprocs;
-}
-
-gaspi_rank_t
-my_rank()
-{
-  gaspi_rank_t rank;
-  ASSERT (gaspi_proc_rank (&rank));
-
-  return rank;
 }
 
 void
