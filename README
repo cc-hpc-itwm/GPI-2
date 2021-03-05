@@ -1,10 +1,10 @@
 ******************************************************************************
-				  GPI-2
-			  http://www.gpi-site.com
+                  GPI-2
+              http://www.gpi-site.com
 
-		  	      Version: 1.5.0
-			  Copyright (C) 2013-2020
-			     Fraunhofer ITWM
+                  Version: 1.5.0
+              Copyright (C) 2013-2020
+                 Fraunhofer ITWM
 
 ******************************************************************************
 
@@ -167,6 +167,28 @@ Library:
 
 `CC=mpiicc FC=mpiifort ./configure --with-mpi-extra-flags=-mt_mpi`
 
+### GPU/CUDA interoperability ###
+
+GPI-2 allows a direct data transfer between NVIDIA GPUs through Mellanox
+HCA and the GPUDirectRDMA's API. To this end the system must satisfy
+the following requirements:
+
+- InfiniBand or RoCE adapter cards with Mellanox ConnectX-4 (or later)
+  technology,
+- Kepler, Tesla or Quadro GPUs
+- NVIDIA software components (CUDA 5.0 or above),
+- A properly loaded GPUDirect kernel module on each of the compute
+nodes (can be verified through `service nv_peer_mem status` or `lsmod
+| grep nv_peer_mem `)
+
+There is neither special configuration and/or compilation setup for
+GPI-2 nor special GASPI/GPI-2 functions to use GPUs and/or
+GPUdirectRDMA. The user just needs to properly allocate the memory
+segments and buffers into the host(s)/device(s) using the GPI-2 and
+CUDA APIs. Specific considerations about the memory management and
+general design of applications using GPUdirectRDMA can be found in
+[https://docs.nvidia.com/cuda/gpudirect-rdma/index.html].
+
 3. BUILDING GPI-2 APPLICATIONS
 ==============================
 
@@ -206,7 +228,7 @@ node04
 
 The gaspi_run utility is invoked as follows:
 
-	gaspi_run -m <machinefile> [OPTIONS] <path GASPI program>
+    gaspi_run -m <machinefile> [OPTIONS] <path GASPI program>
 
 IMPORTANT: The path to the program must exist on all nodes where the
 program should be started.
@@ -214,26 +236,26 @@ program should be started.
 The gaspi_run utility has the following further options [OPTIONS]:
 
   -b <binary file> Use a different binary for first node (master).
-     	     	   The master (first entry in the machine file) is
-		   started with a different application than the rest
-		   of the nodes (workers).
+                   The master (first entry in the machine file) is
+           started with a different application than the rest
+           of the nodes (workers).
 
   -N               Enable NUMA for processes on same node. With this
-  		   option it is only possible to start the same number
-		   of processes as NUMA nodes present on the system.
-		   The processes running on same node will be set with
-		   affinity to the proper NUMA node.
+           option it is only possible to start the same number
+           of processes as NUMA nodes present on the system.
+           The processes running on same node will be set with
+           affinity to the proper NUMA node.
 
   -n <procs>       Start as many <procs> from machine file.
-     		   This option is used to start less processes than
-		   those listed in the machine file.
+               This option is used to start less processes than
+           those listed in the machine file.
 
   -d               Run with GDB (debugger) on master node. With this
-  		   option, GDB is started in the master node, to allow
-		   debugging the application.
+           option, GDB is started in the master node, to allow
+           debugging the application.
 
   -p               Ping hosts before starting the binary to make sure
-  		   they are available.
+           they are available.
 
   -h               Show help.
 
