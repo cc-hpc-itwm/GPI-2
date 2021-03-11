@@ -29,4 +29,4 @@ ______bin_read_notify_zero_size_bin_SOURCES = read_notify_zero_size.c $(auxSRCS)
 #______bin_notification_value_bin_SOURCES = notification_value.cpp $(auxSRCS)
 #______bin_notification_value_bin_LDFLAGS = -std=c++11
 
-noinst_PROGRAMS = $(notifications_tests)
+test_pkglibexec_PROGRAMS = $(notifications_tests)

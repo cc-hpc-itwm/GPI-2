@@ -13,4 +13,4 @@ ______bin_fortran_seg_ptr_bin_SOURCES = fortran_seg_ptr.f90
 ______bin_fortran_seg_use_bin_SOURCES = fortran_seg_use.f90
 ______bin_fortran_use_bin_SOURCES = fortran_use.f90
 
-noinst_PROGRAMS = $(fortran_tests)
+test_pkglibexec_PROGRAMS = $(fortran_tests)

@@ -6,22 +6,6 @@ SUBDIRS = src
 
 if ENABLE_DEBUG
 SUBDIRS += tests
-if WITH_INFINIBAND
-defaults:
-	rsync -a $(abs_top_builddir)/tests/defs/default_ib.def $(abs_top_builddir)/tests/defs/default.def
-else
-defaults:
-	rsync -a $(abs_top_builddir)/tests/defs/default_tcp.def $(abs_top_builddir)/tests/defs/default.def
-endif
-
-all-local:
-	@if [[ $(abs_top_builddir) != $(abs_top_srcdir) ]]; then\
-		rsync -ar $(abs_top_srcdir)/bin/ $(abs_top_builddir)/bin/;\
-		rsync -ar $(abs_top_srcdir)/tests/defs/ $(abs_top_builddir)/tests/defs/;\
-		rsync -a $(abs_top_srcdir)/tests/README $(abs_top_builddir)/tests/README;\
-		rsync -a $(abs_top_srcdir)/tests/runtests.sh $(abs_top_builddir)/tests/runtests.sh;\
-	fi
-	$(MAKE) defaults
 endif
 
 # DOCS and TUTORIAL
@@ -71,12 +55,20 @@ endif
 
 # INSTALL TESTS
 if ENABLE_DEBUG
+if WITH_INFINIBAND
+defaults:
+	rsync -a $(abs_top_builddir)/tests/defs/default_ib.def $(abs_top_builddir)/tests/defs/default.def
+else
+defaults:
+	rsync -a $(abs_top_builddir)/tests/defs/default_tcp.def $(abs_top_builddir)/tests/defs/default.def
+endif
 install-data-hook:
 	mkdir -p $(prefix)/tests/
-	rsync -ar --exclude='.deps' --exclude='*.o' --exclude='*.log' --exclude='machines*' $(abs_top_srcdir)/tests/ $(prefix)/tests/
+	rsync -ar --exclude='.deps' --exclude='.libs' --exclude='*.o' --exclude='*.log' --exclude='machines*' --exclude='bin/' $(abs_top_srcdir)/tests/ $(prefix)/tests/
 	@if [[ $(abs_top_builddir) != $(abs_top_srcdir) ]]; then\
-		rsync -ar --exclude='.deps' --exclude='*.o' --exclude='*.log' --exclude='machines*' $(abs_top_builddir)/tests/ $(prefix)/tests/;\
+		rsync -ar --exclude='.deps' --exclude='*.o' --exclude='*.log' --exclude='machines*' --exclude='bin/' $(abs_top_builddir)/tests/ $(prefix)/tests/;\
 	fi
+	$(MAKE) defaults
 endif
 
 # CLEAN

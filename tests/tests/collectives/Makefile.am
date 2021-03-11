@@ -25,4 +25,4 @@ ______bin_barrier_grp_bin_SOURCES = barrier_grp.c $(auxSRCS)
 ______bin_barrier_timeout_bin_SOURCES = barrier_timeout.c $(auxSRCS)
 ______bin_loop_barrier_group_timeout_bin_SOURCES = loop_barrier_group_timeout.c $(auxSRCS)
 
-noinst_PROGRAMS = $(collectives_tests)
+test_pkglibexec_PROGRAMS = $(collectives_tests)

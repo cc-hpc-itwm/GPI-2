@@ -24,4 +24,4 @@ ______bin_passive_recvtimeout_bin_SOURCES = passive_recvtimeout.c $(auxSRCS)
 ______bin_passive_tout_test_bin_SOURCES = passive_tout_test.c $(auxSRCS)
 ______bin_passive_queue_max_config_bin_SOURCES= passive_queue_max_config.c $(auxSRCS)
 
-noinst_PROGRAMS = $(passive_tests)
+test_pkglibexec_PROGRAMS = $(passive_tests)

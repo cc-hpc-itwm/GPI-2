@@ -17,34 +17,35 @@ endif
 # MICROBENCHMARKS
 auxMICSRCS = common.c common.h
 
-micro_tests = allreduce.bin \
-     barrier.bin \
-     init_time.bin \
-     init_time_nobuild.bin \
-     nb_allreduce.bin \
-     nb_barrier.bin \
-     ping_pong.bin \
-     read_bw.bin \
-     read_notify_bw.bin \
-     write_bw.bin \
-     write_lat.bin \
-     write_notify_bw.bin \
-     write_notify_lat.bin
+micro_tests = bin/allreduce.bin \
+     bin/barrier.bin \
+     bin/init_time.bin \
+     bin/init_time_nobuild.bin \
+     bin/nb_allreduce.bin \
+     bin/nb_barrier.bin \
+     bin/ping_pong.bin \
+     bin/read_bw.bin \
+     bin/read_notify_bw.bin \
+     bin/write_bw.bin \
+     bin/write_lat.bin \
+     bin/write_notify_bw.bin \
+     bin/write_notify_lat.bin
 
-allreduce_bin_SOURCES = allreduce.c $(auxMICSRCS)
-barrier_bin_SOURCES = barrier.c $(auxMICSRCS)
-init_time_bin_SOURCES = init_time.c $(auxMICSRCS)
-init_time_nobuild_bin_SOURCES = init_time_nobuild.c $(auxMICSRCS)
-nb_allreduce_bin_SOURCES = nb_allreduce.c $(auxMICSRCS)
-nb_barrier_bin_SOURCES = nb_barrier.c $(auxMICSRCS)
-ping_pong_bin_SOURCES = ping_pong.c $(auxMICSRCS)
-read_bw_bin_SOURCES = read_bw.c $(auxMICSRCS)
-read_notify_bw_bin_SOURCES = read_notify_bw.c $(auxMICSRCS)
-write_bw_bin_SOURCES = write_bw.c $(auxMICSRCS)
-write_lat_bin_SOURCES = write_lat.c $(auxMICSRCS)
-write_notify_bw_bin_SOURCES = write_notify_bw.c $(auxMICSRCS)
-write_notify_lat_bin_SOURCES = write_notify_lat.c $(auxMICSRCS)
+bin_allreduce_bin_SOURCES = allreduce.c $(auxMICSRCS)
+bin_barrier_bin_SOURCES = barrier.c $(auxMICSRCS)
+bin_init_time_bin_SOURCES = init_time.c $(auxMICSRCS)
+bin_init_time_nobuild_bin_SOURCES = init_time_nobuild.c $(auxMICSRCS)
+bin_nb_allreduce_bin_SOURCES = nb_allreduce.c $(auxMICSRCS)
+bin_nb_barrier_bin_SOURCES = nb_barrier.c $(auxMICSRCS)
+bin_ping_pong_bin_SOURCES = ping_pong.c $(auxMICSRCS)
+bin_read_bw_bin_SOURCES = read_bw.c $(auxMICSRCS)
+bin_read_notify_bw_bin_SOURCES = read_notify_bw.c $(auxMICSRCS)
+bin_write_bw_bin_SOURCES = write_bw.c $(auxMICSRCS)
+bin_write_lat_bin_SOURCES = write_lat.c $(auxMICSRCS)
+bin_write_notify_bw_bin_SOURCES = write_notify_bw.c $(auxMICSRCS)
+bin_write_notify_lat_bin_SOURCES = write_notify_lat.c $(auxMICSRCS)
 
-noinst_PROGRAMS = $(micro_tests)
+micro_pkglibexecdir=$(prefix)/tests/microbenchmarks/bin
+micro_pkglibexec_PROGRAMS = $(micro_tests)
 
 CLEANFILES = *~ *.bak *.bin

@@ -32,4 +32,4 @@ ______bin_g_with_one_hole_bin_SOURCES = g_with_one_hole.c $(auxSRCS)
 ______bin_g_with_two_holes_bin_SOURCES = g_with_two_holes.c $(auxSRCS)
 #______bin_g_commit_try_block_bin_SOURCES = g_commit_try_block.c $(auxSRCS)
 
-noinst_PROGRAMS = $(groups_tests)
+test_pkglibexec_PROGRAMS = $(groups_tests)

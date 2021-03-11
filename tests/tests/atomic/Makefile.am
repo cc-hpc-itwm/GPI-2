@@ -21,4 +21,4 @@ ______bin_fetch_add_nobuild_bin_SOURCES = fetch_add_nobuild.c $(auxSRCS)
 ______bin_fetch_add_test_bin_SOURCES = fetch_add_test.c $(auxSRCS)
 ______bin_fetch_add_unalignd_bin_SOURCES = fetch_add_unalignd.c $(auxSRCS)
 
-noinst_PROGRAMS = $(atomic_tests)
+test_pkglibexec_PROGRAMS = $(atomic_tests)
