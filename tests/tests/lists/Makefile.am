@@ -23,4 +23,4 @@ ______bin_list_write_usermelems_bin_SOURCES = list_write_usermelems.c $(auxSRCS)
 ______bin_list_write_notify_bin_SOURCES = list_write_notify.c $(auxSRCS)
 ______bin_list_write_notify_usermelems_bin_SOURCES = list_write_notify_usermelems.c $(auxSRCS)
 
-noinst_PROGRAMS = $(lists_tests)
+test_pkglibexec_PROGRAMS = $(lists_tests)

@@ -23,4 +23,4 @@ ______bin_local_rank_bin_SOURCES = local_rank.c $(auxSRCS)
 ______bin_initialized_bin_SOURCES = initialized.c $(auxSRCS)
 ______bin_hello_world_bin_SOURCES = hello_world.c $(auxSRCS)
 
-noinst_PROGRAMS = $(init_tests)
+test_pkglibexec_PROGRAMS = $(init_tests)
