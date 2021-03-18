@@ -53,24 +53,6 @@ install-exec-hook:
 endif
 endif
 
-# INSTALL TESTS
-if ENABLE_DEBUG
-if WITH_INFINIBAND
-defaults:
-	rsync -a $(abs_top_builddir)/tests/defs/default_ib.def $(abs_top_builddir)/tests/defs/default.def
-else
-defaults:
-	rsync -a $(abs_top_builddir)/tests/defs/default_tcp.def $(abs_top_builddir)/tests/defs/default.def
-endif
-install-data-hook:
-	$(MAKE) defaults
-	mkdir -p $(prefix)/tests/
-	rsync -ar --exclude='.deps' --exclude='.libs' --exclude='*.o' --exclude='*.log' --exclude='machines*' --exclude='bin/' $(abs_top_srcdir)/tests/ $(prefix)/tests/
-	@if [[ $(abs_top_builddir) != $(abs_top_srcdir) ]]; then\
-		rsync -ar --exclude='.deps' --exclude='*.o' --exclude='*.log' --exclude='machines*' --exclude='bin/' $(abs_top_builddir)/tests/ $(prefix)/tests/;\
-	fi
-endif
-
 # CLEAN
 MOSTLYCLEANFILES = $(DX_CLEANFILES)
 CLEANFILES = *~ *.bak m4/*~
