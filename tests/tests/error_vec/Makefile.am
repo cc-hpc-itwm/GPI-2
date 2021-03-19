@@ -13,4 +13,4 @@ ______bin_get_error_vec_bin_SOURCES = get_error_vec.c $(auxSRCS)
 ______bin_one_dies_bin_SOURCES = one_dies.c $(auxSRCS)
 
 
-noinst_PROGRAMS = $(error_vec_tests)
+test_pkglibexec_PROGRAMS = $(error_vec_tests)

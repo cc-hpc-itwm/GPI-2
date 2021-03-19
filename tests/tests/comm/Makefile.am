@@ -52,4 +52,4 @@ ______bin_comm_transfer_max_config_bin_SOURCES = comm_transfer_max_config.c $(au
 ______bin_write_zero_size_bin_SOURCES = write_zero_size.c $(auxSRCS)
 ______bin_read_zero_size_bin_SOURCES = read_zero_size.c $(auxSRCS)
 
-noinst_PROGRAMS = $(comm_tests)
+test_pkglibexec_PROGRAMS = $(comm_tests)

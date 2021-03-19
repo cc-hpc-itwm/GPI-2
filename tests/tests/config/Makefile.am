@@ -8,4 +8,4 @@ ______bin_set_config_bin_SOURCES = set_config.c $(auxSRCS)
 ______bin_config_netinfo_bin_SOURCES = config_netinfo.c $(auxSRCS)
 ______bin_config_usernet_bin_SOURCES = config_usernet.c $(auxSRCS)
 
-noinst_PROGRAMS = $(config_tests)
+test_pkglibexec_PROGRAMS = $(config_tests)

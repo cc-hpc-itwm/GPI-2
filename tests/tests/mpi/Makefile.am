@@ -9,4 +9,4 @@ ______bin_mpi_allreduce_bin_SOURCES = mpi_allreduce.c   $(auxSRCS)
 ______bin_mpi_barrier_bin_SOURCES = mpi_barrier.c $(auxSRCS)
 ______bin_with_mpi_bin_SOURCES = with_mpi.c  $(auxSRCS)
 
-noinst_PROGRAMS = $(mpi_tests)
+test_pkglibexec_PROGRAMS = $(mpi_tests)

@@ -25,3 +25,6 @@ AM_CXXFLAGS = $(AM_CFLAGS) $(AM_CPPFLAGS)
 
 # aux TESTS
 auxSRCS = ../test_utils.c ../test_utils.h
+
+# Installation path
+test_pkglibexecdir=$(prefix)/tests/bin/

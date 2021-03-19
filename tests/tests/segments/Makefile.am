@@ -30,7 +30,4 @@ ______bin_seg_reuse_buffer_bin_SOURCES = seg_reuse_buffer.c $(auxSRCS)
 ______bin_seg_subsegments_bin_SOURCES = seg_subsegments.c $(auxSRCS)
 ______bin_seg_use_buffer_bin_SOURCES = seg_use_buffer.c $(auxSRCS)
 
-#______bin_seg_shmem_bin_SOURCES = seg_shmem.cpp $(auxSRCS)
-#______bin_seg_shmem_bin_LDFLAGS = -fpermissive -lrt
-
-noinst_PROGRAMS = $(segments_tests)
+test_pkglibexec_PROGRAMS = $(segments_tests)

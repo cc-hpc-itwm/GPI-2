@@ -11,4 +11,4 @@ ______bin_q_create_bin_SOURCES = q_create.c $(auxSRCS)
 ______bin_seg_avail_local_bin_SOURCES = seg_avail_local.c $(auxSRCS)
 ______bin_seg_avail_local_usermsegs_bin_SOURCES = seg_avail_local_usermsegs.c $(auxSRCS)
 
-noinst_PROGRAMS = $(extensions_tests)
+test_pkglibexec_PROGRAMS = $(extensions_tests)
