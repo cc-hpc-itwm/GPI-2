@@ -15,33 +15,49 @@ There are 2 main sub-directories: microbenchmarks and tests:
   sub-directories that organize the tests on how they test particular
   functionality (initialization, communication, collectives, etc.).
 
-  
 Usage
 =====
 
+## Tests ##
+
 The runtests.sh script is the driver to run all tests. It expects that
-a machine file named 'machines' resides on the same directory. This
-machine file contains the nodes where the tests should run.
+a machine file named 'machines' resides on the same directory, e.g.:
 
-Examples:
-	./runtests.sh 
-	runs all available tests.
+    ./runtests.sh
+        runs all available tests.
 
-	./runtests.sh gpiapp.bin
-	runs a particular test (gpiapp).
+    ./runtests.sh gpiapp.bin
+       runs a particular test (gpiapp).
 
-When testing GPI-2 or debugging a test, it may helpful to view the
-output of some or all tests. Hence, the previous examples can be
-executed as:
+    ./runtests.sh -f
+        a quick overall check
 
-	./runtests.sh -v
-	runs all available tests, creating a log file.
+If it does not exist in the directory, the 'machines' file can be
+specified with the `-m` flag and arbitrary name, e.g.:
 
-	./runtests.sh -v gpiapp.bin
-	runs a particular test (gpiapp), creating a log file.
+    ./runtests.sh -m ~/machines_for_gpi
 
-After the run, a log file (.log) will be available in the same
-directory.
+Note, just as with `gaspi_run`, the number of processes to start from
+the machine file can be given by using `-n`.
+
+When testing GPI-2 or debugging the tests, by default, a log file
+(runtests_$(date -Idate).log) will be available, in the same
+directory, to view the output of some or all of the tests (the name of
+the logfile can also be specified with `-o`)
+
+Finally, the maximum time to skip a given test (set by default to 1200
+s) can be changed by:
+
+    ./runtests.sh -e 10
+
+## Microbenchmarks ##
+
+These binaries can be run directly using `gaspi_run`, e.g., after
+compilation/installation:
+
+    gaspi_run -m ~/machines microbenchmarks/bin/ping_pong.bin
+
+assuming `tests` is the actual directory, of course.
 
 Definitions file
 ================
@@ -74,19 +90,5 @@ int  main(int argc, char *argv[])
   ASSERT(gaspi_proc_term(GASPI_BLOCK));
   return EXIT_SUCCESS;
 }
-
-With the Intel Xeon Phi (MIC)
-=============================
-
-The current setup does not support the MIC auto-magically. You need
-to:
-
-- compile the tests for the MIC by editing the make.defines file
-to setup the compiler and its flags.
-- copy the tests (bin directory) to the right path on the MIC(s)
-- make clean
-- re-edit the Makefile and set it up for the host
-- make again to create binaries for the host system
-
 
 Have fun!
