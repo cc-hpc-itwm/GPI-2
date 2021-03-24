@@ -113,6 +113,20 @@ pgaspi_dev_comm_queue_create (gaspi_context_t const *const gctx,
   return 0;
 }
 
+int
+pgaspi_dev_test_queue (gaspi_context_t const *const gctx,
+                                 const unsigned int id)
+{
+  gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *)gctx->device->ctx;
+
+  if (tcp_dev_ctx->qpC[id] == NULL)
+  {
+    return GASPI_ERR_INV_QUEUE;
+  }
+
+  return 0;
+}
+
 static void
 pgaspi_tcp_dev_print_info (gaspi_context_t const *const gctx)
 {
