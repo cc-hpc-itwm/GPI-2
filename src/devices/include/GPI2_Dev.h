@@ -57,8 +57,8 @@ pgaspi_dev_comm_queue_create (gaspi_context_t const *const,
                               const unsigned short);
 
 int
-pgaspi_dev_test_queue (gaspi_context_t const *const gctx,
-                      const unsigned int id);
+pgaspi_dev_comm_queue_is_valid (gaspi_context_t const *const gctx,
+                                const unsigned int id);
 
 int
 pgaspi_dev_comm_queue_connect (gaspi_context_t const *const,

@@ -114,8 +114,8 @@ pgaspi_dev_comm_queue_create (gaspi_context_t const *const gctx,
 }
 
 int
-pgaspi_dev_test_queue (gaspi_context_t const *const gctx,
-                                 const unsigned int id)
+pgaspi_dev_comm_queue_is_valid (gaspi_context_t const *const gctx,
+                                const unsigned int id)
 {
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *)gctx->device->ctx;
 

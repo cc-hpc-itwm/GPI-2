@@ -215,7 +215,7 @@ pgaspi_queue_delete (const gaspi_queue_id_t queue_id)
 
   if (gctx->num_queues == 1)
   {
-    return GASPI_ERROR; /* TODO: proper error code */
+    return GASPI_ERR_INV_QUEUE;
   }
 
   lock_gaspi(&(gctx->ctx_lock));

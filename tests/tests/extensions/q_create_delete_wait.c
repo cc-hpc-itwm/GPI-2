@@ -40,13 +40,14 @@ main (int argc, char *argv[])
   EXPECT_FAIL (gaspi_queue_create (&new_queue, GASPI_BLOCK));
 
   /* Delete the above created queues */
-  for (id = queue_number - 1; id > 0; id--) {
+  for (id = queue_number - 1; id > 0; id--)
+  {
     ASSERT (gaspi_queue_delete (id));
 
     ASSERT (gaspi_queue_num (&queue_number));
 
     /* Wait on a deleted queue must fail */
-    EXPECT_FAIL(gaspi_wait(id, GASPI_BLOCK));
+    EXPECT_FAIL (gaspi_wait(id, GASPI_BLOCK));
 
     assert (queue_number == id);
   }

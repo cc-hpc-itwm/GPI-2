@@ -94,7 +94,8 @@ extern gaspi_config_t glb_gaspi_cfg;
 #define GASPI_VERIFY_QUEUE(queue)                                              \
   {                                                                            \
     if (queue > GASPI_MAX_QP ||                                                \
-        pgaspi_dev_test_queue(&glb_gaspi_ctx, queue)) {                        \
+        pgaspi_dev_comm_queue_is_valid (&glb_gaspi_ctx, queue))                \
+    {                                                                          \
       return GASPI_ERR_INV_QUEUE;                                              \
     }                                                                          \
   }
