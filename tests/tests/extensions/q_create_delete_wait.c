@@ -52,9 +52,6 @@ main (int argc, char *argv[])
     assert (queue_number == id);
   }
 
-  /* Must be have at least a queue */
-  EXPECT_FAIL (gaspi_queue_delete (id - 1));
-
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 
   ASSERT (gaspi_proc_term (GASPI_BLOCK));

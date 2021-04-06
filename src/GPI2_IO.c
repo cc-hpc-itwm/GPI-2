@@ -213,12 +213,7 @@ pgaspi_queue_delete (const gaspi_queue_id_t queue_id)
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
 
-  if (gctx->num_queues == 1)
-  {
-    return GASPI_ERR_INV_QUEUE;
-  }
-
-  lock_gaspi(&(gctx->ctx_lock));
+  lock_gaspi (&(gctx->ctx_lock));
 
   if (pgaspi_dev_comm_queue_delete (gctx, queue_id) != 0)
   {
