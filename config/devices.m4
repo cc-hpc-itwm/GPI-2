@@ -65,6 +65,18 @@ AC_DEFUN([ACX_INFINIBAND],[
 	      	      [HAVE_INF_HEADER=1],[HAVE_INF_HEADER=0])
 	      AC_CHECK_FILE($ac_inc_infiniband/verbs_exp.h,
 			    [HAVE_INFINIBAND_EXT=1],[HAVE_INFINIBAND_EXT=0])
+	      for iblib in libibverbs.so libibverbs.a; do
+	          for iblib_path in lib lib64; do
+	      	      ac_lib_infiniband=$ac_path_infiniband/$iblib_path
+		      AC_CHECK_FILE($ac_lib_infiniband/$iblib,[HAVE_INF_LIB=1],[HAVE_INF_LIB=0])
+		      if test ${HAVE_INF_LIB} = 1; then
+	      	          break
+		      fi
+		  done
+	          if test ${HAVE_INF_LIB} = 1; then
+	             break
+	  	  fi
+  	      done
    	   else
 	      # Try to determine path(s)
 	      inc_paths=`cpp -v /dev/null >& cppt`
@@ -80,21 +92,29 @@ AC_DEFUN([ACX_INFINIBAND],[
 	      	     break
 	      	  fi
 	      done
-	      ac_path_infiniband=${ac_inc_infiniband%/include*}
+	      for ibinc in $inc_paths; do
+	      	  ac_path_infiniband=${ibinc%/include*}
+		  for iblib in libibverbs.so libibverbs.a; do
+	              for iblib_path in lib lib64; do
+	      	      	  ac_lib_infiniband=$ac_path_infiniband/$iblib_path
+		  	  AC_CHECK_FILE($ac_lib_infiniband/$iblib,[HAVE_INF_LIB=1],[HAVE_INF_LIB=0])
+		          if test ${HAVE_INF_LIB} = 1; then
+	      	      	     break
+		          fi
+		      done
+	              if test ${HAVE_INF_LIB} = 1; then
+	              	 break
+	  	      fi
+  		  done
+		  if test ${HAVE_INF_LIB} = 1; then
+	             break
+	  	  fi
+	      done
+	      if test ${HAVE_INF_LIB} != 1; then
+	      	 AC_CHECK_LIB([ibverbs],[ibv_open_device],[HAVE_INF_LIB=1],[HAVE_INF_LIB=0])
+  	      fi
    	   fi
 	fi
-	for iblib in libibverbs.so libibverbs.a; do
-		for iblib_path in lib lib64; do
-	      	    ac_lib_infiniband=$ac_path_infiniband/$iblib_path
-		    AC_CHECK_FILE($ac_lib_infiniband/$iblib,[HAVE_INF_LIB=1],[HAVE_INF_LIB=0])
-		    if test ${HAVE_INF_LIB} = 1; then
-		       break
-		    fi
-		done
-		if test ${HAVE_INF_LIB} = 1; then
-		   break
-		fi
-	done
 	if test ${HAVE_INF_HEADER} = 1 -a ${HAVE_INF_LIB} = 1; then
 	   ACX_IB_DEVI($ac_inc_infiniband,$ac_lib_infiniband,[HAVE_INFINIBAND=1],[HAVE_INFINIBAND=0])
 	   AC_SUBST(ac_inc_infiniband,[-I$ac_inc_infiniband])
@@ -130,8 +150,12 @@ return num_devices;
 _ACEOF
 
 	OLD_CFLAGS=$CFLAGS
-	CFLAGS="$AM_CFLAGS $CFLAGS -Wno-unused-variable -I$1 -L$2 -libverbs"
-	AS_IF($CC $CFLAGS conftest_ib.c -o conftest_ib.exe,
+	if test ! -z $2; then
+	   CFLAGS="$AM_CFLAGS $CFLAGS -Wno-unused-variable -I$1 -L$2 -libverbs"
+	else
+	   CFLAGS="$AM_CFLAGS $CFLAGS -Wno-unused-variable -I$1 -libverbs"
+        fi
+	AS_IF($CC conftest_ib.c $CFLAGS -o conftest_ib.exe,
 	  [AC_MSG_RESULT([yes]);
 	  $3],
 	  [AC_MSG_RESULT([no]);
