@@ -1092,7 +1092,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
         return -1;
       }
 
-      for (unsigned int c = 0; c < gctx->config->queue_num; c++)
+      for (unsigned int c = 0; c < gctx->num_queues; c++)
       {
         if (ibv_destroy_qp (ib_dev_ctx->qpC[c][i]))
         {
@@ -1109,7 +1109,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   free (ib_dev_ctx->qpP);
   ib_dev_ctx->qpP = NULL;
 
-  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->num_queues; c++)
   {
     free (ib_dev_ctx->qpC[c]);
   }

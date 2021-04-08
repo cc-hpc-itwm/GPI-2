@@ -322,7 +322,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   tcp_dev_destroy_queue (tcp_dev_ctx->qpGroups);
   tcp_dev_destroy_queue (tcp_dev_ctx->qpP);
 
-  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->num_queues; c++)
   {
     tcp_dev_destroy_queue (tcp_dev_ctx->qpC[c]);
   }
@@ -346,7 +346,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   tcp_dev_destroy_cq (tcp_dev_ctx->scqP);
   tcp_dev_destroy_cq (tcp_dev_ctx->rcqP);
 
-  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->num_queues; c++)
   {
     tcp_dev_destroy_cq (tcp_dev_ctx->scqC[c]);
   }
