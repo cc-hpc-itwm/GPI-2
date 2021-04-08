@@ -1076,8 +1076,9 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  for (int i = 0; i < gctx->tnc; i++)
-  {
+  gaspi_number_t num_remaining_queues = MIN (gctx->num_queues, gctx->config->queue_num);
+
+  for (int i = 0; i < gctx->tnc; i++) {
     if (GASPI_ENDPOINT_CREATED == gctx->ep_conn[i].istat)
     {
       if (ibv_destroy_qp (ib_dev_ctx->qpGroups[i]))
@@ -1092,7 +1093,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
         return -1;
       }
 
-      for (unsigned int c = 0; c < gctx->config->queue_num; c++)
+      for (unsigned int c = 0; c < num_remaining_queues; c++)
       {
         if (ibv_destroy_qp (ib_dev_ctx->qpC[c][i]))
         {
@@ -1109,7 +1110,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   free (ib_dev_ctx->qpP);
   ib_dev_ctx->qpP = NULL;
 
-  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < num_remaining_queues; c++)
   {
     free (ib_dev_ctx->qpC[c]);
   }

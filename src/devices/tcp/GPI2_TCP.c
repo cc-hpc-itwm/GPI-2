@@ -313,6 +313,8 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
 {
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
+  gaspi_number_t num_remaining_queues = MIN (gctx->num_queues, gctx->config->queue_num);
+
   if (tcp_dev_stop_device (tcp_dev_ctx->device_channel) != 0)
   {
     GASPI_DEBUG_PRINT_ERROR ("Failed to stop device.");
@@ -322,7 +324,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   tcp_dev_destroy_queue (tcp_dev_ctx->qpGroups);
   tcp_dev_destroy_queue (tcp_dev_ctx->qpP);
 
-  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < num_remaining_queues; c++)
   {
     tcp_dev_destroy_queue (tcp_dev_ctx->qpC[c]);
   }
@@ -346,7 +348,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   tcp_dev_destroy_cq (tcp_dev_ctx->scqP);
   tcp_dev_destroy_cq (tcp_dev_ctx->rcqP);
 
-  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < num_remaining_queues; c++)
   {
     tcp_dev_destroy_cq (tcp_dev_ctx->scqC[c]);
   }
