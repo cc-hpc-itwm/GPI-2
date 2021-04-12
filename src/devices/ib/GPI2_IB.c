@@ -146,7 +146,160 @@ pgaspi_ib_dev_print_info (gaspi_context_t * const gctx,
 }
 
 int
-pgaspi_dev_init_core (gaspi_context_t * const gctx)
+pgaspi_dev_query_port(gaspi_ib_ctx *const ib_dev_ctx,
+                      char const exit_on_error,
+                      gaspi_int *configured_port)
+{
+  for (uint8_t p = 0;
+       p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, GASPI_MAX_PORTS); p++)
+  {
+    if (ibv_query_port (ib_dev_ctx->context, (p + 1),
+                        &ib_dev_ctx->port_attr[p]))
+    {
+      if (exit_on_error)
+      {
+        GASPI_DEBUG_PRINT_ERROR ("Failed to query port (%u) (libibverbs)",
+                                 (p + 1));
+        return -1;
+      }
+      else
+      {
+        continue;
+      }
+    }
+    if (ib_dev_ctx->port_attr[p].state != IBV_PORT_ACTIVE)
+    {
+      if (exit_on_error)
+      {
+        GASPI_DEBUG_PRINT_ERROR ("No IB active port found.");
+        return -1;
+      }
+      else
+      {
+        continue;
+      }
+    }
+    if (ib_dev_ctx->port_attr[p].phys_state != PORT_LINK_UP)
+    {
+      if (exit_on_error)
+      {
+        GASPI_DEBUG_PRINT_ERROR ("No IB active link found.");
+        return -1;
+      }
+      else
+      {
+        continue;
+      }
+    }
+    *configured_port = (gaspi_int) p;
+    break;
+  }
+
+  return 0;
+}
+
+
+int
+pgaspi_dev_query_id_dev (gaspi_ib_ctx *ib_dev_ctx,
+                         char const exit_on_error,
+                         gaspi_int const configured_dev_id)
+{
+  /* Query device */
+  ib_dev_ctx->ib_dev = ib_dev_ctx->dev_list[configured_dev_id];
+  if (NULL == ib_dev_ctx->ib_dev)
+  {
+    if (exit_on_error)
+    {
+      GASPI_DEBUG_PRINT_ERROR ("Failed to get device %d (libibverbs)",
+                              configured_dev_id);
+      return -1;
+    }
+    else
+    {
+      return 0;
+    }
+  }
+
+  if (NULL == ib_dev_ctx->ib_dev)
+  {
+    if (exit_on_error)
+    {
+      GASPI_DEBUG_PRINT_ERROR ("Failed to find IB device.");
+      return -1;
+    }
+    else
+    {
+      return 0;
+    }
+  }
+
+  if (ib_dev_ctx->ib_dev->transport_type != IBV_TRANSPORT_IB)
+  {
+    if (exit_on_error)
+    {
+      GASPI_DEBUG_PRINT_ERROR ("Device does not support IB transport");
+      return -1;
+    }
+    else
+    {
+      return 0;
+    }
+  }
+
+  ib_dev_ctx->context = ibv_open_device (ib_dev_ctx->ib_dev);
+  if (NULL == ib_dev_ctx->context)
+  {
+    if (exit_on_error)
+    {
+      GASPI_DEBUG_PRINT_ERROR ("Failed to open IB device (libibverbs)");
+      return -1;
+    }
+    else
+    {
+      return 0;
+    }
+  }
+
+  if (ibv_query_device (ib_dev_ctx->context, &ib_dev_ctx->device_attr))
+  {
+    if (exit_on_error)
+    {
+      GASPI_DEBUG_PRINT_ERROR ("Failed to query device (libibverbs)");
+      return -1;
+    }
+    else
+    {
+      if (ibv_close_device (ib_dev_ctx->context))
+      {
+        if (exit_on_error)
+        {
+          GASPI_DEBUG_PRINT_ERROR ("Failed to close device (libibverbs)");
+          return -1;
+        }
+        else
+        {
+          return 0;
+        }
+      }
+    }
+  }
+
+  /* Query port(s) */
+  gaspi_int configured_port = -1;
+  pgaspi_dev_query_port (ib_dev_ctx, exit_on_error, &configured_port);
+  if (configured_port >= 0)
+  {
+    ib_dev_ctx->ib_port = configured_port + 1;
+    return 1;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+int
+pgaspi_dev_init_core(gaspi_context_t *const gctx)
 {
   gctx->device = calloc (1, sizeof (gctx->device));
   if (NULL == gctx->device)
@@ -180,6 +333,7 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   }
 
   gaspi_int configured_dev_id = gctx->config->dev_config.params.ib.netdev_id;
+  char exit_on_error;
 
   /* Has user configured which device to use ? */
   if (configured_dev_id >= 0)
@@ -191,67 +345,26 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
       return -1;
     }
 
-    ib_dev_ctx->ib_dev = ib_dev_ctx->dev_list[configured_dev_id];
-    if (NULL == ib_dev_ctx->ib_dev)
-    {
-      GASPI_DEBUG_PRINT_ERROR ("Failed to get device %d (libibverbs)",
-                               configured_dev_id);
-      return -1;
-    }
+    exit_on_error = 1;
+    pgaspi_dev_query_id_dev (ib_dev_ctx, exit_on_error, configured_dev_id);
+
   }
   else
   {
     /* Look for one with IB Transport */
-    for (int i = 0; i < avail_num_dev; i++)
+    exit_on_error = 0;
+    for (gaspi_int i = 0; i < avail_num_dev; i++)
     {
-      ib_dev_ctx->ib_dev = ib_dev_ctx->dev_list[i];
-
-      if (NULL == ib_dev_ctx->ib_dev ||
-          ib_dev_ctx->ib_dev->transport_type != IBV_TRANSPORT_IB)
+      if (pgaspi_dev_query_id_dev (ib_dev_ctx, exit_on_error, i))
       {
-        continue;
+        configured_dev_id = i;
+        break;
       }
-
-      configured_dev_id = i;
-      break;
     }
-  }
 
-  if (NULL == ib_dev_ctx->ib_dev)
-  {
-    GASPI_DEBUG_PRINT_ERROR ("Failed to find IB device.");
-    return -1;
-  }
-
-  if (ib_dev_ctx->ib_dev->transport_type != IBV_TRANSPORT_IB)
-  {
-    GASPI_DEBUG_PRINT_ERROR ("Device does not support IB transport");
-    return -1;
-  }
-
-  ib_dev_ctx->context = ibv_open_device (ib_dev_ctx->ib_dev);
-  if (NULL == ib_dev_ctx->context)
-  {
-    GASPI_DEBUG_PRINT_ERROR ("Failed to open IB device (libibverbs)");
-    return -1;
-  }
-
-  /* Query device */
-  if (ibv_query_device (ib_dev_ctx->context, &ib_dev_ctx->device_attr))
-  {
-    GASPI_DEBUG_PRINT_ERROR ("Failed to query device (libibverbs)");
-    return -1;
-  }
-
-  /* Query port(s) */
-  for (uint8_t p = 0; p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, GASPI_MAX_PORTS);
-       p++)
-  {
-    if (ibv_query_port
-        (ib_dev_ctx->context, (p + 1), &ib_dev_ctx->port_attr[p]))
+    if (configured_dev_id < 0)
     {
-      GASPI_DEBUG_PRINT_ERROR ("Failed to query port (%u) (libibverbs)",
-                               (p + 1));
+      GASPI_DEBUG_PRINT_ERROR ("Failed to auto-setup device (libibverbs)");
       return -1;
     }
   }
@@ -259,35 +372,6 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   /* Port check and set */
   if (gctx->config->dev_config.params.ib.port_check)
   {
-    if ((ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE) &&
-        (ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE))
-    {
-      GASPI_DEBUG_PRINT_ERROR ("No IB active port found.");
-      return -1;
-    }
-
-    if ((ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP) &&
-        (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP))
-    {
-      GASPI_DEBUG_PRINT_ERROR ("No IB active link found.");
-      return -1;
-    }
-
-    ib_dev_ctx->ib_port = 1;
-
-    if ((ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE) ||
-        (ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP))
-    {
-      if ((ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE) ||
-          (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP))
-      {
-        GASPI_DEBUG_PRINT_ERROR ("No IB active port with active link found.");
-        return -1;
-      }
-
-      ib_dev_ctx->ib_port = 2;
-    }
-
     /* user didn't set network type, use the one set for the port */
     if (!gctx->config->user_net)
     {
@@ -303,25 +387,27 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
         gctx->config->network = GASPI_ROCE;
       }
     }
-
-    if (gctx->config->network == GASPI_ROCE)
+    else
     {
-      ib_dev_ctx->ib_port = 1;
-
-      if ((ib_dev_ctx->port_attr[0].state != IBV_PORT_ACTIVE) ||
-          (ib_dev_ctx->port_attr[0].phys_state != PORT_LINK_UP) ||
-          (ib_dev_ctx->port_attr[0].link_layer != IBV_LINK_LAYER_ETHERNET))
+      if (gctx->config->network == GASPI_IB)
       {
-        if ((ib_dev_ctx->port_attr[1].state != IBV_PORT_ACTIVE) ||
-            (ib_dev_ctx->port_attr[1].phys_state != PORT_LINK_UP) ||
-            (ib_dev_ctx->port_attr[1].link_layer != IBV_LINK_LAYER_ETHERNET))
+        if (ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].link_layer !=
+            IBV_LINK_LAYER_INFINIBAND)
         {
           GASPI_DEBUG_PRINT_ERROR
-            ("No active Ethernet (RoCE) port with active link found.");
+                  ("No active Infiniband port with active link found.");
           return -1;
         }
-
-        ib_dev_ctx->ib_port = 2;
+      }
+      else if (gctx->config->network == GASPI_ROCE)
+      {
+        if (ib_dev_ctx->port_attr[ib_dev_ctx->ib_port - 1].link_layer !=
+            IBV_LINK_LAYER_ETHERNET)
+        {
+          GASPI_DEBUG_PRINT_ERROR(
+              "No active Ethernet (RoCE) port with active link found.");
+          return -1;
+        }
       }
     }
   }
