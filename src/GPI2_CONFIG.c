@@ -135,7 +135,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
 
   glb_gaspi_cfg.dev_config.params.ib.netdev_id =
     nconf.dev_config.params.ib.netdev_id;
-  if (nconf.dev_config.params.ib.netdev_id > 1)
+  if (nconf.dev_config.params.ib.netdev_id > 4)
   {
     GASPI_DEBUG_PRINT_ERROR ("Invalid value for parameter netdev_id");
     return GASPI_ERR_CONFIG;
