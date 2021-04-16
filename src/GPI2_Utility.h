@@ -71,7 +71,7 @@ extern gaspi_config_t glb_gaspi_cfg;
 
 #define GASPI_PRINT_WARNING(msg, ...)                                   \
   {                                                                     \
-    fprintf(stderr,"[Rank %4u]: Warning: " msg "\n", glb_gaspi_ctx.rank, ##__VA_ARGS__);	\
+    fprintf(stderr,"[Rank %4u]: Warning: " msg "\n", glb_gaspi_ctx.rank, ##__VA_ARGS__);        \
   }
 
 #define GASPI_VERIFY_NULL_PTR(ptr)                                      \
@@ -91,12 +91,13 @@ extern gaspi_config_t glb_gaspi_cfg;
     }                                           \
   }
 
-#define GASPI_VERIFY_QUEUE(queue)               \
-  {                                             \
-    if (queue > glb_gaspi_ctx.num_queues - 1)   \
-    {                                           \
-      return GASPI_ERR_INV_QUEUE;               \
-    }                                           \
+#define GASPI_VERIFY_QUEUE(queue)                                              \
+  {                                                                            \
+    if (queue > GASPI_MAX_QP ||                                                \
+        pgaspi_dev_comm_queue_is_valid (&glb_gaspi_ctx, queue))                \
+    {                                                                          \
+      return GASPI_ERR_INV_QUEUE;                                              \
+    }                                                                          \
   }
 
 #define GASPI_VERIFY_SEGMENT(seg_id)                      \

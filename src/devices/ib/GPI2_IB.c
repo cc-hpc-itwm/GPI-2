@@ -814,6 +814,20 @@ pgaspi_dev_comm_queue_create (gaspi_context_t const *const gctx,
 }
 
 int
+pgaspi_dev_comm_queue_is_valid (gaspi_context_t const *const gctx,
+                                const unsigned int id)
+{
+  gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *)gctx->device->ctx;
+
+  if (ib_dev_ctx->qpC[id] == NULL)
+  {
+    return GASPI_ERR_INV_QUEUE;
+  }
+
+  return 0;
+}
+
+int
 pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx, const int i,
                             void **info, void **remote_info,
                             size_t * info_size)
@@ -1078,7 +1092,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
         return -1;
       }
 
-      for (unsigned int c = 0; c < gctx->config->queue_num; c++)
+      for (unsigned int c = 0; c < gctx->num_queues; c++)
       {
         if (ibv_destroy_qp (ib_dev_ctx->qpC[c][i]))
         {
@@ -1095,7 +1109,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   free (ib_dev_ctx->qpP);
   ib_dev_ctx->qpP = NULL;
 
-  for (unsigned int c = 0; c < gctx->config->queue_num; c++)
+  for (unsigned int c = 0; c < gctx->num_queues; c++)
   {
     free (ib_dev_ctx->qpC[c]);
   }
