@@ -165,7 +165,7 @@ _ACEOF
 	AC_LANG_POP([C])
 
 AC_MSG_CHECKING([whether there are actual IB devices])
-AS_IF(test `./conftest_ib.exe` > 0,
+AS_IF(test `./conftest_ib.exe; echo $?` -gt 0,
 	   [AC_MSG_RESULT([yes]);
 	   HAVE_INFINIBAND_DEVICES=1],
 	   [AC_MSG_RESULT([no]);
