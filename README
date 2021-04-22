@@ -80,6 +80,12 @@ predefined tests by:
 
 `make check`
 
+or by using an environment variable for the working hosts, e.g.:
+
+`RUNTEST_OPTIONS="-m ~/my_machines" make check`
+
+(see more options in [tests usage](tests/README)).
+
 Cleaning of the configuration/compilation files can be done as usual
 with the commands `make distclean` and `make clean`.
 
