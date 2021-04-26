@@ -22,7 +22,7 @@ main (int argc, char *argv[])
     default_conf.dev_config.params.ib.mtu = 4096;
     ASSERT (gaspi_config_set (default_conf));
 
-    default_conf.dev_config.params.ib.netdev_id = 2;
+    default_conf.dev_config.params.ib.netdev_id = 5;
     EXPECT_FAIL (gaspi_config_set (default_conf));
 
     default_conf.dev_config.params.ib.netdev_id = 0;
