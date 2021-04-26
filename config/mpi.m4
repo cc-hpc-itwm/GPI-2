@@ -44,6 +44,6 @@ AC_DEFUN([ACX_MPI],[
 	      fi
 	   else
 	      HAVE_MPI=0
-	      AC_MSG_NOTICE([MPI compiler requested, but could not use it])
+	      AC_MSG_ERROR([MPI compiler requested, but could not use it])
 	   fi
 	])
