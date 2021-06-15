@@ -11,7 +11,7 @@ endif
 if WITH_MPI
 AM_CFLAGS += -DGPI2_WITH_MPI
 AM_CFLAGS += @ac_inc_mpi@
-LDFLAGS += @ac_lib_mpi@  @mpi_extra_flags@
+LDADD += @ac_lib_mpi@  @mpi_extra_flags@
 endif
 
 # MICROBENCHMARKS
