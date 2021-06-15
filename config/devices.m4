@@ -130,14 +130,17 @@ return num_devices;
 _ACEOF
 
 	OLD_CFLAGS=$CFLAGS
-	CFLAGS="$AM_CFLAGS $CFLAGS -Wno-unused-variable -I$1 -L$2 -libverbs"
-	AS_IF($CC $CFLAGS conftest_ib.c -o conftest_ib.exe,
+	OLD_LDFLAGS=$LDFLAGS
+	CFLAGS="$AM_CFLAGS $CFLAGS -Wno-unused-variable -I$1"
+	LDFLAGS="$AM_LDFLAGS $LDFLAGS -L$2 -libverbs"
+	AS_IF($CC $CFLAGS conftest_ib.c -o conftest_ib.exe $LDFLAGS, 
 	  [AC_MSG_RESULT([yes]);
 	  $3],
 	  [AC_MSG_RESULT([no]);
 	  $4]
 	  )
 	CFLAGS=$OLD_CFLAGS
+	LDFLAGS=$OLD_LDFLAGS
 	AC_LANG_POP([C])
 
 AC_MSG_CHECKING([whether there are actual IB devices])
