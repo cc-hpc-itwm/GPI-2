@@ -82,7 +82,7 @@ predefined tests by:
 
 or by using an environment variable for the working hosts, e.g.:
 
-`RUNTEST_OPTIONS="-m ~/my_machines" make check`
+`GPI2_RUNTEST_OPTIONS="-m ~/my_machines" make check`
 
 (see more options in [tests usage](tests/README)).
 
