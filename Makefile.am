@@ -30,7 +30,7 @@ EXTRA_DIST = configure.ac.in config.site autogen.sh bin tutorial/* \
 # TESTING
 if ENABLE_DEBUG
 check:
-	cd tests/; ./runtests.sh
+	cd tests/; ./runtests.sh $(GPI2_RUNTEST_OPTIONS)
 endif
 
 # INSTALL RUN SCRIPTS
