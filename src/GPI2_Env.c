@@ -227,7 +227,10 @@ gaspi_handle_env (gaspi_context_t * ctx)
       gaspi_uchar numa_socket;
       gaspi_numa_socket (&numa_socket);
 
-      gaspi_set_socket_affinity (numa_socket);
+      if (gaspi_set_socket_affinity (numa_socket) < 0)
+      {
+        return -1;
+      }
     }
   }
 #endif
