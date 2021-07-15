@@ -25,12 +25,11 @@ main (int argc, char *argv[])
     default_conf.dev_config.params.ib.netdev_id = 5;
     EXPECT_FAIL (gaspi_config_set (default_conf));
 
-    default_conf.dev_config.params.ib.netdev_id = 0;
+    default_conf.dev_config.params.ib.netdev_id = -1; /**< Automatic selection of the device */
     default_conf.dev_config.params.ib.mtu = 2048;
     ASSERT (gaspi_config_set (default_conf));
 
     ASSERT (gaspi_config_get (&default_conf));
-    assert (default_conf.dev_config.params.ib.netdev_id == 0);
     assert (default_conf.dev_config.params.ib.mtu == 2048);
   }
   else if (default_conf.network == GASPI_ETHERNET)
