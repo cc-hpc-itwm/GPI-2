@@ -39,8 +39,9 @@ main (int argc, char *argv[])
   /* Can not go above the limit */
   EXPECT_FAIL (gaspi_queue_create (&new_queue, GASPI_BLOCK));
 
+  gaspi_notification_id_t upper_queue_id = 11;
   /* Delete the above created queues */
-  for (id = queue_number - 1; id > 0; id--)
+  for (id = queue_number - 1; id > upper_queue_id; id--)
   {
     ASSERT (gaspi_queue_delete (id));
 
