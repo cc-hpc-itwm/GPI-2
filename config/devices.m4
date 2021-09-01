@@ -78,7 +78,7 @@ AC_DEFUN([ACX_INFINIBAND],[
 	  	  fi
   	      done
    	   else
-	      # Try to determine path(s)
+	      # Try to determine include path(s)
 	      inc_paths=`cpp -v /dev/null >& cppt`
 	      inc_paths=`sed -n '/^#include </,/^End/p' cppt | sed '1d;$d'`
 	      rm -f cppt
@@ -92,6 +92,7 @@ AC_DEFUN([ACX_INFINIBAND],[
 	      	     break
 	      	  fi
 	      done
+	      # Try to determine library path(s)
 	      for ibinc in $inc_paths; do
 	      	  ac_path_infiniband=${ibinc%/include*}
 		  for iblib in libibverbs.so libibverbs.a; do
@@ -110,7 +111,9 @@ AC_DEFUN([ACX_INFINIBAND],[
 	             break
 	  	  fi
 	      done
+	      # If the above lib search fails, use autotools
 	      if test ${HAVE_INF_LIB} != 1; then
+ 	         ac_lib_infiniband=
 	      	 AC_CHECK_LIB([ibverbs],[ibv_open_device],[HAVE_INF_LIB=1],[HAVE_INF_LIB=0])
   	      fi
    	   fi
@@ -143,8 +146,9 @@ int a = IBV_LINK_LAYER_ETHERNET;
 struct ibv_device **device_list;
 int num_devices;
 device_list = ibv_get_device_list(&num_devices);
-assert(device_list);
+if (device_list != NULL){
 ibv_free_device_list(device_list);
+}
 return num_devices;
 }
 _ACEOF
