@@ -167,7 +167,7 @@ AC_ARG_WITH(loadleveler,[AS_HELP_STRING([--with-loadleveler],[compile with LoadL
 		      [with_loadleveler=no])
 
 #  SLURM
-AC_ARG_WITH(slurm,[AS_HELP_STRING([--with-slurm],[compile with slurm support])],
+AC_ARG_WITH(slurm,[AS_HELP_STRING([--with-slurm],[compile with Slurm support])],
 		  [with_slurm=$withval],
 		  [with_slurm=no])
 
