@@ -67,7 +67,16 @@ compilers are found),
 - configures GPI-2 for use PBS as the batch system,
 - checks the existence of `doxygen` and `dot` for the documentation target.
 
-### Compilation, testing and cleaning:
+In the case autotools is not available in the target system, the user
+can create a tarball distribution of GPI-2 in a system with autotools
+by:
+
+`./autogen.sh ; ./configure ; make dist`
+
+After unpacking the distribution `gpi-2*.tar.gz` in the target system,
+GPI-2 can be configured and compiled.
+
+Compilation, testing and cleaning:
 
 The compilation step:
 
