@@ -31,20 +31,20 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define NEXT_OFFSET       (COLL_MEM_RECV + 73728)
 #define NOTIFY_OFFSET     (65536*4)
 
-gaspi_context glb_gaspi_ctx;
-gaspi_group_ctx glb_gaspi_group_ctx[GASPI_MAX_GROUPS];
+extern gaspi_context glb_gaspi_ctx;
+extern gaspi_group_ctx glb_gaspi_group_ctx[GASPI_MAX_GROUPS];
 
 /* TODO: Move these to context */
-volatile int glb_gaspi_init;         //Is GPI-2 initialized?
-volatile int glb_gaspi_sn_init;      //Is the SN up?
-volatile int glb_gaspi_dev_init;     //Is device initialized?
-volatile int gaspi_master_topo_data; //Do we have topology info from master?
+extern volatile int glb_gaspi_init;         //Is GPI-2 initialized?
+extern volatile int glb_gaspi_sn_init;      //Is the SN up?
+extern volatile int glb_gaspi_dev_init;     //Is device initialized?
+extern volatile int gaspi_master_topo_data; //Do we have topology info from master?
 
 //locks
-gaspi_lock_t glb_gaspi_ctx_lock;
-gaspi_lock_t gaspi_create_lock;
-gaspi_lock_t gaspi_ccontext_lock;
-gaspi_lock_t gaspi_mseg_lock;
+extern gaspi_lock_t glb_gaspi_ctx_lock;
+extern gaspi_lock_t gaspi_create_lock;
+extern gaspi_lock_t gaspi_ccontext_lock;
+extern gaspi_lock_t gaspi_mseg_lock;
 
 static inline gaspi_cycles_t
 gaspi_get_cycles (void)

@@ -166,7 +166,7 @@ struct tcp_queue
 };
 
 /* the device */
-pthread_t tcp_dev_thread;
+extern pthread_t tcp_dev_thread;
 
 struct tcp_cq *
 tcp_dev_create_cq(int, struct tcp_passive_channel *);

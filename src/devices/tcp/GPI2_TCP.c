@@ -28,6 +28,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Utility.h"
 #include "tcp_device.h"
 
+gaspi_tcp_ctx glb_gaspi_ctx_tcp;
+
 extern gaspi_config_t glb_gaspi_cfg;
 
 /* TODO: empty functions smell */

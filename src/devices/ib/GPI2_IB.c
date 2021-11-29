@@ -37,6 +37,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 /* TODO: to remove */
 extern gaspi_config_t glb_gaspi_cfg;
 
+gaspi_ib_ctx glb_gaspi_ctx_ib;
+
 static const char *port_state_str[] = {
   "NOP",
   "Down",

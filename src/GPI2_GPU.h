@@ -47,6 +47,6 @@ typedef struct
 } gaspi_gpu;
 
 /* Global */
-gaspi_gpu *gpus;
+extern gaspi_gpu *gpus;
 
 #endif //GPI2_GPU_H_
