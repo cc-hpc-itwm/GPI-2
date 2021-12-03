@@ -52,7 +52,7 @@ struct redux_args
   } f_args;
 };
 
-void (*fctArrayGASPI[GASPI_COLL_OP_TYPES]) (void *, void *, void *, const unsigned char cnt);
+extern void (*fctArrayGASPI[GASPI_COLL_OP_TYPES]) (void *, void *, void *, const unsigned char cnt);
 
 void
 gaspi_init_collectives (void);

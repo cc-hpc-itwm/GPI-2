@@ -39,6 +39,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "tcp_device.h"
 #include "list.h"
 
+pthread_t tcp_dev_thread;
+
 volatile gaspi_tcp_dev_status_t gaspi_tcp_dev_status = GASPI_TCP_DEV_STATUS_DOWN;
 tcp_dev_conn_state_t **rank_state = NULL;
 

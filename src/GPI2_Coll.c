@@ -18,6 +18,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Coll.h"
 #include "GPI2_Utility.h"
 
+void (*fctArrayGASPI[GASPI_COLL_OP_TYPES]) (void *, void *, void *, const unsigned char cnt);
 
 //pre-defined coll. operations
 void

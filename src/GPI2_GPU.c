@@ -27,6 +27,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_GPU.h"
 #include "GASPI_GPU.h"
 
+gaspi_gpu *gpus;
 
 /* void* cudaThread(void *data);  */
 /* TODO: need to move this somewhere else */
