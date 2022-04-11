@@ -443,6 +443,7 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
   //notification
+  gaspi_number_t notifications_space_size = pgaspi_notifications_space_size ();
   tcp_dev_wr_t wr =
     {
       .wr_id = rank,
@@ -454,7 +455,7 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
                    notification_id * sizeof (gaspi_notification_t)),
       .remote_addr =
         (gctx->rrmd[segment_id_remote][rank].notif_spc.addr
-         + NOTIFICATIONS_SPACE_SIZE
+         + notifications_space_size
          - sizeof (gaspi_notification_t)),
       .length = sizeof (gaspi_notification_t),
       .swap = 0,
@@ -505,6 +506,7 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
   //notification
+  gaspi_number_t notifications_space_size = pgaspi_notifications_space_size ();
   tcp_dev_wr_t wr =
     {
       .wr_id = rank,
@@ -512,11 +514,11 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
       .source = gctx->rank,
       .target = rank,
       .local_addr =
-      (uintptr_t) (gctx->rrmd[segment_id_notification][gctx->rank].notif_spc.
-                   addr + notification_id * sizeof (gaspi_notification_t)),
+      (uintptr_t) (gctx->rrmd[segment_id_notification][gctx->rank].notif_spc.addr +
+          notification_id * sizeof (gaspi_notification_t)),
       .remote_addr =
         (gctx->rrmd[segment_id_notification][rank].notif_spc.addr
-         + NOTIFICATIONS_SPACE_SIZE
+         + notifications_space_size
          - sizeof (gaspi_notification_t)),
       .length = sizeof (gaspi_notification_t),
       .swap = 0,

@@ -632,9 +632,10 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
   slistN.lkey =
     ((struct ibv_mr *) gctx->rrmd[segment_id_local][gctx->rank].mr[1])->lkey;
 
+  gaspi_number_t notifications_space_size = pgaspi_notifications_space_size ();
   swrN.wr.rdma.remote_addr =
     (gctx->rrmd[segment_id_remote][rank].notif_spc.addr
-     + NOTIFICATIONS_SPACE_SIZE
+     + notifications_space_size
      - sizeof (gaspi_notification_t));
   swrN.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].rkey[1];
 
@@ -736,9 +737,10 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
     ((struct ibv_mr *) gctx->rrmd[segment_id_notification][gctx->rank].
      mr[1])->lkey;
 
+  gaspi_number_t notifications_space_size = pgaspi_notifications_space_size ();
   swrN.wr.rdma.remote_addr =
     (gctx->rrmd[segment_id_notification][rank].notif_spc.addr
-     + NOTIFICATIONS_SPACE_SIZE
+     + notifications_space_size
      - sizeof (gaspi_notification_t));
   swrN.wr.rdma.rkey = gctx->rrmd[segment_id_notification][rank].rkey[1];
 
