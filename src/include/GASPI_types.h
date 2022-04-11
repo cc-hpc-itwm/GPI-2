@@ -49,7 +49,7 @@ extern "C"
   typedef unsigned long gaspi_atomic_value_t;
   typedef float gaspi_time_t;
   typedef unsigned long gaspi_cycles_t;
-  typedef unsigned short gaspi_notification_id_t;
+  typedef unsigned int gaspi_notification_id_t;
   typedef unsigned int gaspi_notification_t;
   typedef unsigned int gaspi_statistic_counter_t;
   typedef char * gaspi_string_t;
@@ -229,7 +229,7 @@ extern "C"
   typedef struct gaspi_config
   {
     /* GPI-2 only */
-    gaspi_uint logger;	                      /* flag to set logging */
+    gaspi_uint logger;                        /* flag to set logging */
     gaspi_uint sn_port;                       /* port for internal comm */
     gaspi_uint net_info;                      /* flag to set network information display*/
     gaspi_uint user_net;                      /* flag if user has set the network */

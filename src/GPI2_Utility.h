@@ -181,6 +181,14 @@ extern gaspi_config_t glb_gaspi_cfg;
     }                                                                   \
   }
 
+#define GASPI_VERIFY_NOTIFICATION_NUM(notif_id)                                    \
+  {                                                                                \
+    if (notif_id >= glb_gaspi_ctx.config->notification_num)                        \
+    {                                                                              \
+      return GASPI_ERR_INV_NOTIF_ID;                                               \
+    }                                                                              \
+  }
+
 #else
 
 #define GASPI_DEBUG_PRINT_ERROR(msg, ...)
@@ -197,6 +205,7 @@ extern gaspi_config_t glb_gaspi_cfg;
 #define GASPI_VERIFY_COMM_SIZE(size, seg_id_loc, seg_id_rem, rank, min, max)
 #define GASPI_VERIFY_SEGMENT_SIZE(size)
 #define GASPI_VERIFY_INIT(funcname)
+#define GASPI_VERIFY_NOTIFICATION_NUM(notif_id)
 
 #endif //DEBUG
 
@@ -228,5 +237,7 @@ gaspi_thread_sleep (int msecs)
 
   return nanosleep (&sleep_time, &rem);
 }
+
+gaspi_number_t pgaspi_notifications_space_size (void);
 
 #endif //GPI2_UTILITY_H

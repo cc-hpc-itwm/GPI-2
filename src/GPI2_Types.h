@@ -34,7 +34,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_SN          (GASPI_MAX_QP+2)
 #define GASPI_MIN_TSIZE_C (0)
 #define GASPI_MIN_TSIZE_P (1)
-#define GASPI_MAX_NOTIFICATION  (65536)
+#define GASPI_DEFAULT_MAX_NOTIFICATION (65536)
 #define GASPI_MAX_NUMAS   (16)
 #define GASPI_MAX_PPN     (256)
 #define GASPI_RW_LIST_ELEM_MAX (255)

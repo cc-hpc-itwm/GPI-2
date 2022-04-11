@@ -98,9 +98,26 @@ pgaspi_notification_num (gaspi_number_t * const notification_num)
   GASPI_VERIFY_NULL_PTR (notification_num);
   GASPI_VERIFY_INIT ("gaspi_notification_num");
 
-  *notification_num = GASPI_MAX_NOTIFICATION;
+  gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
+  *notification_num = gctx->config->notification_num;
   return GASPI_SUCCESS;
+}
+
+/* Notifications space size:
+   allowed number of number of notifications + read notification value
+   space. For the latter we use 64 though, to have a larger alignment
+   of the data space (hacky!). */
+#pragma weak gaspi_notifications_space_size = pgaspi_notifications_space_size
+gaspi_number_t
+pgaspi_notifications_space_size (void)
+{
+  gaspi_context_t const *const gctx = &glb_gaspi_ctx;
+
+  gaspi_number_t notifications_space_size =
+      gctx->config->notification_num * sizeof(gaspi_notification_t) + 64;
+
+  return notifications_space_size;
 }
 
 #pragma weak gaspi_rw_list_elem_max = pgaspi_rw_list_elem_max
@@ -588,6 +605,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
     return GASPI_ERR_INV_NOTIF_VAL;
   }
 
+  GASPI_VERIFY_NOTIFICATION_NUM (notification_id);
   gaspi_return_t eret = GASPI_ERROR;
 
   if (GASPI_ENDPOINT_DISCONNECTED == gctx->ep_conn[rank].cstat)
@@ -639,19 +657,14 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
   GPI2_STATS_START_TIMER (GASPI_WAITSOME_TIMER);
 
 #ifdef DEBUG
-  if (num > GASPI_MAX_NOTIFICATION)
-  {
-    return GASPI_ERR_INV_NUM;
-  }
-
   if (num == 0)
   {
     GASPI_PRINT_WARNING
       ("Waiting for 0 notifications (gaspi_notify_waitsome).");
   }
 
-  if (notification_begin + (gaspi_notification_id_t) num >
-      GASPI_MAX_NOTIFICATION)
+  if (notification_begin + (gaspi_notification_id_t)num >
+      gctx->config->notification_num)
   {
     return GASPI_ERR_INV_NOTIF_ID;
   }
