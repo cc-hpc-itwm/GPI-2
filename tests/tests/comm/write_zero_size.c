@@ -9,7 +9,6 @@ main (int argc, char *argv[])
 
   ASSERT (gaspi_proc_init (GASPI_BLOCK));
 
-  gaspi_notification_id_t n = 0;
   gaspi_rank_t rank, nprocs, i;
   const gaspi_segment_id_t seg_id = 0;
   gaspi_offset_t offset;
