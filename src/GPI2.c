@@ -286,8 +286,6 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
 
   if (gctx->sn_init == 0)
   {
-    struct utsname mbuf;
-
     //timing
     gctx->mhz = gaspi_get_cpufreq();
     if (gctx->mhz == 0.0f)
