@@ -73,7 +73,7 @@ gaspi_config_t glb_gaspi_cfg =
   GASPI_MAX_GROUPS,                 //group_max;
   GASPI_MAX_MSEGS,                  //segment_max;
   GASPI_MAX_TSIZE_C,                //transfer_size_max;
-  GASPI_MAX_NOTIFICATION,           //notification_num;
+  GASPI_DEFAULT_MAX_NOTIFICATION,   //notification_num;
   GASPI_DEFAULT_QSIZE,              //passive_queue_size_max;
   GASPI_MAX_TSIZE_P,                //passive_transfer_size_max;
   GASPI_DEFAULT_ALLREDUCE_BUF_SIZE, //allreduce_buf_size;
@@ -214,12 +214,7 @@ pgaspi_config_set (const gaspi_config_t nconf)
   }
   glb_gaspi_cfg.transfer_size_max = nconf.transfer_size_max;
 
-  if (nconf.notification_num != GASPI_MAX_NOTIFICATION)
-  {
-    GASPI_PRINT_WARNING
-      ("The current implementation does not consider the use of the parameter\
- notification_num");
-  }
+  glb_gaspi_cfg.notification_num = nconf.notification_num;
 
   if (nconf.passive_queue_size_max != GASPI_DEFAULT_QSIZE)
   {

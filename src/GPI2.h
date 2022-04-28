@@ -26,14 +26,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GPI2_Stats.h"
 
-/* Notifications space size:
-   allowed number of number of notifications + read notification value
-   space. For the latter we use 64 though, to have a larger alignment
-   of the data space (hacky!).
-*/
-#define NOTIFICATIONS_SPACE_SIZE                                               \
-  ((GASPI_MAX_NOTIFICATION * sizeof(gaspi_notification_t)) + (64))
-
 extern gaspi_context_t glb_gaspi_ctx;
 
 static inline gaspi_cycles_t

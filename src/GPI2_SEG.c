@@ -238,10 +238,11 @@ pgaspi_segment_alloc_maybe (gaspi_segment_id_t const segment_id,
     goto endL;
   }
 
+  gaspi_number_t notifications_space_size = pgaspi_notifications_space_size ();
   size_t const allocation_size =
     pointer == NULL
-      ? size + NOTIFICATIONS_SPACE_SIZE
-      : NOTIFICATIONS_SPACE_SIZE;
+      ? size + notifications_space_size
+      : notifications_space_size;
 
 
   int const allocation_failed =
@@ -254,16 +255,16 @@ pgaspi_segment_alloc_maybe (gaspi_segment_id_t const segment_id,
     goto endL;
   }
 
-  memset (myrank_mseg->notif_spc.ptr, 0, NOTIFICATIONS_SPACE_SIZE);
+  memset (myrank_mseg->notif_spc.ptr, 0, notifications_space_size);
 
   myrank_mseg->user_provided = NULL != pointer;
 
   myrank_mseg->data.ptr = myrank_mseg->user_provided
     ? pointer
-    : myrank_mseg->notif_spc.ptr + NOTIFICATIONS_SPACE_SIZE;
+    : myrank_mseg->notif_spc.ptr + notifications_space_size;
 
   myrank_mseg->size = size;
-  myrank_mseg->notif_spc_size = NOTIFICATIONS_SPACE_SIZE;
+  myrank_mseg->notif_spc_size = notifications_space_size;
   myrank_mseg->trans = 1;
 
   if (pgaspi_dev_register_mem (gctx, myrank_mseg) < 0)
@@ -276,7 +277,7 @@ pgaspi_segment_alloc_maybe (gaspi_segment_id_t const segment_id,
   /* set fixed notification value ( =1) for read_notify */
   unsigned char *segPtr =
     (unsigned char *) myrank_mseg->notif_spc.addr +
-    NOTIFICATIONS_SPACE_SIZE - sizeof (gaspi_notification_t);
+    notifications_space_size - sizeof (gaspi_notification_t);
 
   gaspi_notification_t *p = (gaspi_notification_t *) segPtr;
 
