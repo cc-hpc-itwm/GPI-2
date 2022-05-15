@@ -76,7 +76,7 @@ by:
 After unpacking the distribution `gpi-2*.tar.gz` in the target system,
 GPI-2 can be configured and compiled.
 
-Compilation, testing and cleaning:
+### Compilation, testing and cleaning:
 
 The compilation step:
 
