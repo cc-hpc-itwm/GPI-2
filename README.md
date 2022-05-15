@@ -8,8 +8,7 @@
 
 ******************************************************************************
 
-1. INTRODUCTION
-===============
+## 1. INTRODUCTION
 
 GPI-2 is the second generation of GPI (www.gpi-site.com). GPI-2
 implements the GASPI specification (www.gaspi.de), an API
@@ -20,11 +19,10 @@ flexible, scalable and fault tolerant interface for parallel
 applications.
 
 
-2. INSTALLATION
-===============
+## 2. INSTALLATION
 
-Requirements:
-------------
+
+### Requirements
 
 The current version of GPI-2 has the following requirements.
 
@@ -38,21 +36,24 @@ Hardware:
 - Infiniband/RoCE device or Ethernet device.
 
 
-Basic configuration:
--------------------
+### Basic configuration
 
 If GPI-2 is cloned from the repository, it is necessary to generate
 the files and scripts required for its configuration. This is achieved
 by the command line:
 
-`./autogen.sh`
+```
+./autogen.sh
+```
 
 After this step, the configuration is done using the script
 `./configure`.  The available options and the relevant environment
 variables are printed by `./configure --help`.  The basic
 configuration:
 
-`./configure --prefix=$HOME/local`
+```
+./configure --prefix=$HOME/local
+```
 
 uses the compilers defined by the environment variables CC and FC for
 the general checking procedure and sets up `$HOME/local` as the
@@ -75,37 +76,40 @@ by:
 After unpacking the distribution `gpi-2*.tar.gz` in the target system,
 GPI-2 can be configured and compiled.
 
-Compilation, testing and cleaning:
------------------------
+### Compilation, testing and cleaning:
 
 The compilation step:
 
-`make -j$NPROC`
+```
+make -j$NPROC
+```
 
 builds in parallel the GPI-2 libraries, the Fortran modules, and the
 binary tests and microbenchmarks.  After successful completion, the
 user can define the working hosts in `tests/machines` and run the
 predefined tests by:
 
-`make check`
+```
+make check
+```
 
 or by using an environment variable for the working hosts, e.g.:
 
-`GPI2_RUNTEST_OPTIONS="-m ~/my_machines" make check`
+```
+GPI2_RUNTEST_OPTIONS="-m ~/my_machines" make check
+```
 
 (see more options in [tests usage](tests/README)).
 
 Cleaning of the configuration/compilation files can be done as usual
 with the commands `make distclean` and `make clean`.
 
-Documentation and tutorial:
---------------------------
+### Documentation and tutorial
 
 If required, the (doxygen) documentation and the tutorial code are
 built through `make docs` and `make tutorial`, respectively.
 
-Installation and uninstallation:
--------------------------------
+### Installation and uninstallation
 
 Finally, `make install` installs:
 
@@ -117,22 +121,26 @@ Finally, `make install` installs:
 Note, as usual, the path to the GPI-2 shared libraries need to be
 added to the `LD_LIBRARY_PATH` environment variable:
 
-`export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/local/lib64`
+```
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/local/lib64
+```
 
 If required the package can be removed from the target directory by
 using `make uninstall`.
 
-Custom configurations:
-----------------------
+### Custom configurations
+
 Specific configurations can be setup by predefined flags.
 
-### DEVICES ###
+#### DEVICES
 GPI-2 is intended to be linked to the libibverbs from the OFED stack.
 In case the configure script is not able to find it in the default paths
 of the host system, the user can pass the path of the OFED
 installation:
 
-`./configure --with-infiniband<=full_path_to_ofed>`
+```
+./configure --with-infiniband<=full_path_to_ofed>
+```
 
 By default, GPI-2 will be compiled without Infiniband Extensions
 support, however the user can also enable and using it (if the header
@@ -142,23 +150,29 @@ for the moment an experimental feature.
 On the other hand, GPI-2 can be installed on a system without
 Infiniband, using standard TCP sockets:
 
-`./configure --with-ethernet`
+```
+./configure --with-ethernet
+```
 
 Such support is, however, primarily targetted at the development of
 GPI-2 applications without the need to access a system with
 Infiniband, with less focus on performance.
 
-### BATCH SYSTEM ###
+#### BATCH SYSTEM
 PBS is the default batch system of GPI-2, however, the user can
 configure it with Slurm support:
 
- `./configure --with-slurm`
+```
+./configure --with-slurm
+```
 
- or LoadLeveler support:
+or LoadLeveler support:
 
-`./configure --with-loadleveler`
+```
+./configure --with-loadleveler
+```
 
-### MPI Interoperability ###
+#### MPI Interoperability
 
 If the plan is to use GPI-2 with MPI to, for instance, start an
 incremental port of a large application or to use some libraries that
@@ -180,9 +194,11 @@ Furthermore fine control of MPI can be done through the
 MPI compilers and link to the thread safe version of the Intel MPI
 Library:
 
-`CC=mpiicc FC=mpiifort ./configure --with-mpi-extra-flags=-mt_mpi`
+```
+CC=mpiicc FC=mpiifort ./configure --with-mpi-extra-flags=-mt_mpi
+```
 
-### GPU/CUDA interoperability ###
+#### GPU/CUDA interoperability
 
 GPI-2 allows a direct data transfer between NVIDIA GPUs through Mellanox
 HCA and the GPUDirectRDMA's API. To this end the system must satisfy
@@ -204,34 +220,35 @@ CUDA APIs. Specific considerations about the memory management and
 general design of applications using GPUdirectRDMA can be found in
 [https://docs.nvidia.com/cuda/gpudirect-rdma/index.html].
 
-3. BUILDING GPI-2 APPLICATIONS
-==============================
+## 3. BUILDING GPI-2 APPLICATIONS
 
-By default, GPI-2 provides two libraries: libGPI2.a and libGPI2-dbg.a,
-and their corresponding shared versions: libGPI2.so and libGPI2-dbg.so.
+By default, GPI-2 provides two libraries: `libGPI2.a` and `libGPI2-dbg.a`,
+and their corresponding shared versions: `libGPI2.so` and `libGPI2-dbg.so`.
 
-The libGPI2.* aims at high-performance and is to be used in production
-whereas the libGPI2-dbg.* provides a debug version, with extra
+The `libGPI2.*` aims at high-performance and is to be used in production
+whereas the `libGPI2-dbg.*` provides a debug version, with extra
 parameter checking and debug messages and is to be used to debug and
 during development.
 
-4. RUNNING GPI-2 APPLICATIONS
-=============================
+## 4. RUNNING GPI-2 APPLICATIONS
 
-The gaspi_run utility is used to start and run GPI-2
+The `gaspi_run` utility is used to start and run GPI-2
 applications. A machine file with the hostnames of nodes where the
 application will run, must be provided.
 
 For example, to start 1 process per node (on 4 nodes), the machine
 file looks like:
 
+```
 node01
 node02
 node03
 node04
+```
 
 Similarly, to start 2 processes per node (on 4 nodes):
 
+```
 node01
 node01
 node02
@@ -240,16 +257,20 @@ node03
 node03
 node04
 node04
+```
 
-The gaspi_run utility is invoked as follows:
+The `gaspi_run` utility is invoked as follows:
 
-    gaspi_run -m <machinefile> [OPTIONS] <path GASPI program>
+```
+gaspi_run -m <machinefile> [OPTIONS] <path GASPI program>
+```
 
 IMPORTANT: The path to the program must exist on all nodes where the
 program should be started.
 
-The gaspi_run utility has the following further options [OPTIONS]:
+The `gaspi_run` utility has the following further options `[OPTIONS]`:
 
+```
   -b <binary file> Use a different binary for first node (master).
                    The master (first entry in the machine file) is
            started with a different application than the rest
@@ -273,11 +294,11 @@ The gaspi_run utility has the following further options [OPTIONS]:
            they are available.
 
   -h               Show help.
+```
 
-Non-interactive usage
----------------------
+### Non-interactive usage
 
-If gaspi_run is used in a batch system, the machine file still must be
+If `gaspi_run` is used in a batch system, the machine file still must be
 provided. In general, the information required to setup such file job
 scheduler can be obtained from environment variables defined by the
 job scheduler. The directory docs/batch_examples includes sample
@@ -285,27 +306,27 @@ scripts for setting the machine file and submitting jobs to common
 batch processing systems. They can be used as starting point for some
 elaborated applications and particular environments.
 
-5. THE GASPI_LOGGER
-===================
+## 5. THE GASPI_LOGGER
 
-The gaspi_logger utility is used to view and separate the output from
-all nodes when the function gaspi_printf is called. The gaspi_logger
+The `gaspi_logger` utility is used to view and separate the output from
+all nodes when the function gaspi_printf is called. The `gaspi_logger`
 is started, on another session, on the master node. The output of the
 application, when using gaspi_printf, will be redirected to the
-gaspi_logger. Other I/O routines (e.g. printf) will not.
+`gaspi_logger`. Other I/O routines (e.g. printf) will not.
 
 A further separation of output (useful for debugging) can be achieved
 by using the routine gaspi_printf_to which sends the output to the
-gaspi_logger started on a particular node. For example,
+`gaspi_logger` started on a particular node. For example,
 
-  gaspi_printf_to(1, "Hello 1\n");
+```
+gaspi_printf_to(1, "Hello 1\n");
+```
 
-will display the string "Hello 1" in the gaspi_logger started on rank
+will display the string "Hello 1" in the `gaspi_logger` started on rank
 1.
 
 
-6. TROUBLESHOOTING AND KNOWN ISSUES
-===================================
+## 6. TROUBLESHOOTING AND KNOWN ISSUES
 
 If there are troubles when building GPI-2 with support for Infiniband,
 make sure the OFED stack is correctly installed and running. As above
@@ -319,13 +340,12 @@ libraries, try to setup directly the MPI compilers (wrappers) through
 the environment variables CC and FC.
 
 
-Environment variables
----------------------
+### Environment variables
 
 You might have some trouble when your application requires some
-dynamically set environment setting (e.g. the LD_LIBRARY_PATH), for
+dynamically set environment setting (e.g. the `LD_LIBRARY_PATH`), for
 instance, through the module system of your jobs batch
-system. Currently, neither the gaspi_run or the GPI-2 library take
+system. Currently, neither the `gaspi_run` or the GPI-2 library take
 care of such environment settings. To this situation there are 2
 workarounds:
 
@@ -334,27 +354,30 @@ initialization file (e.g. ~/.bashrc).
 
 ii) you create an executable shell script which sets the required
 environment variables and then starts the application. Then you can
-use gaspi_run to start the application, providing the shell script as
+use `gaspi_run` to start the application, providing the shell script as
 the application to execute.
 
-    gaspi_run -m machinefile ./my_wrapper_script.sh
+```
+gaspi_run -m machinefile ./my_wrapper_script.sh
+```
 
-where my_wrapper_script.sh contains:
+where `my_wrapper_script.sh` contains:
 
-      #!/bin/sh
+```shell
+#!/bin/sh
 
-      LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<path_to_my_lib>
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:<path_to_my_lib>
 
-      <path_to_my_application>/my_application <my_app_args>
+<path_to_my_application>/my_application <my_app_args>
 
-      exit $?
+exit $?
+```
 
 If you're running in MPI mixed-mode, starting your application with
 mpirun/mpiexec, this should not be an issue.
 
 
-7. UP COMING FEATURES
-=====================
+## 7. UP COMING FEATURES
 
 GPI-2 is on-going work and more features are still to come. Here are
 some that are in our roadmap:
@@ -363,8 +386,11 @@ some that are in our roadmap:
 - better debugging possibilities
 
 
-8. MORE INFORMATION
-====================
+## 8. LICENSE
+GPI-2 is released under the GPL-3 license (see [COPYING](COPYING)).
+
+
+## 9. MORE INFORMATION
 
 For more information, check the GPI-2 website ( www.gpi-site.com ) and
 don't forget to subscribe to the GPI-2 mailing list. You subscribe it
