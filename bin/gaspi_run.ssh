@@ -183,9 +183,16 @@ while [ -n "$1" ]; do
             VALIDATE_MACHINEFILE=1
             ;;
         *) #Sucks! we're taking a small risk here
-            if [ -x $1 ]; then
+            # Try to see if it is an executable found on the PATH
+            FULLPATH=$(which "$1")
+            # If this did not turn up anything, try to convert the argumen to a full path
+            if [ -z "$FULLPATH" ]; then
+              FULLPATH=$(readlink -f "$1")
+            fi
+            # Finally, check if we find an executable file at the location
+            if [ -x "$FULLPATH" ]; then
 
-                PRG=$(readlink -f $1)
+                PRG="$FULLPATH"
                 shift
                 PRG_ARGS="$*"
                 break
