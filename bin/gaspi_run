@@ -26,6 +26,7 @@ HN=$(hostname)
 TMP_PATTERN="/tmp/.gpi2.XXXXXXXX"
 TMP_MFILE=$(mktemp ${TMP_PATTERN})
 UNIQ_MFILE=$(mktemp ${TMP_PATTERN})
+AUTO_MFILE=$(mktemp ${TMP_PATTERN})
 ORIG_MFILE=""
 NNODES=0
 DEBUG=0
@@ -38,6 +39,7 @@ remove_temp_files()
 {
     rm -f $TMP_MFILE
     rm -f $UNIQ_MFILE
+    rm -f $AUTO_MFILE
 }
 
 #helper functions
@@ -212,6 +214,14 @@ done
 
 if [ -z "$PRG" ]; then
     print_error_exit_failure "No binary file provided. See help (-h option)"
+fi
+
+if [ -z "$MFILE" ]; then
+  if [ $NNODES -eq 0 ]; then
+    print_error_exit "Number of procs must be non-zero if no machinefile is provided. See help (-n option)"
+  fi
+  yes $(hostname) | head -n $NNODES > "$AUTO_MFILE"
+  MFILE="$AUTO_MFILE"
 fi
 
 trap kill_procs TERM INT QUIT
