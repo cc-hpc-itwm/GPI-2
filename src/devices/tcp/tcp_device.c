@@ -891,14 +891,16 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
               .swap = swr.swap
             };
 
-          list_insert (&delayedList, &wr);
-
           estate->read.wr_id = estate->rank;
           estate->read.cq_handle = rwr.cq_handle;
           estate->read.opcode = RECV_SEND;
           estate->read.addr = (uintptr_t) rwr.local_addr;
           estate->read.length = swr.length;
           estate->read.done = 0;
+          /* Because a work completion for this rank has not been posted yet,
+          * another read operation cannot be done and wr_buff cannot be
+          * overwritten */
+          estate->wr_buff = wr;
         }
 
         break;
@@ -938,6 +940,10 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
 
   else if (estate->read.opcode == RECV_SEND)
   {
+    /* Post a notification to the sender that data has been received,
+     * see the request processing of NOTIFICATION_SEND.*/
+    list_insert (&delayedList, &(estate->wr_buff));
+    
     if (_tcp_dev_post_wc (estate->read.wr_id,
                           TCP_WC_SUCCESS,
                           TCP_DEV_WC_RECV, estate->read.cq_handle) != 0)
