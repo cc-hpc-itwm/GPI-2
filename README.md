@@ -28,7 +28,8 @@ The current version of GPI-2 has the following requirements.
 
 Software:
 - libibverbs v1.1.6 (Verbs library from OFED) if running on Infiniband.
-- ssh server running on compute nodes (requiring no password).
+- ssh server running on compute nodes, requiring no password, if
+  running with ssh support (default).
 - autotools utilities (autoconf>=2.63,libtool>=2.2,automake>=1.11)
 - gawk (GNU Awk) and sed utilities.
 
@@ -156,7 +157,7 @@ Infiniband, using standard TCP sockets:
 
 Such support is, however, primarily targetted at the development of
 GPI-2 applications without the need to access a system with
-Infiniband, with less focus on performance.
+Infiniband, **with less focus on performance**.
 
 #### BATCH SYSTEM
 PBS is the default batch system of GPI-2, however, the user can
@@ -182,8 +183,8 @@ require MPI, the user can enable MPI interoperability in several ways:
 - checking for MPI in a specific path, e.g.: `./configure --with-mpi=<=path_to_mpi_installation>`
 - specifying the MPI compilers, e.g.: `CC=mpicc FC=mpif90 ./configure`
 
-For this MPI+GPI2 mixed mode, the only constraint is that MPI_Init()
-must be invoked before gaspi_proc_init() and it is assumed that the
+For this MPI+GPI2 mixed mode, the only constraint is that **MPI_Init()
+must be invoked before gaspi_proc_init()** and it is assumed that the
 application starts with mpirun (or mpiexec, etc.). Also, note that
 this option will require that the GPI-2 application is linked to the MPI
 library (even if MPI is not used). Therefore, if the interest is to
@@ -229,6 +230,11 @@ The `libGPI2.*` aims at high-performance and is to be used in production
 whereas the `libGPI2-dbg.*` provides a debug version, with extra
 parameter checking and debug messages and is to be used to debug and
 during development.
+
+There is also `libGPI2-stats.*` which prints some statistics about
+operations at `gaspi_proc_term`. It is useful to get an impression of
+which and how often operations where invoked to pinpoint some
+performance bottlenecks.
 
 ## 4. RUNNING GPI-2 APPLICATIONS
 
@@ -308,14 +314,15 @@ elaborated applications and particular environments.
 
 ## 5. THE GASPI_LOGGER
 
-The `gaspi_logger` utility is used to view and separate the output from
-all nodes when the function gaspi_printf is called. The `gaspi_logger`
-is started, on another session, on the master node. The output of the
-application, when using gaspi_printf, will be redirected to the
-`gaspi_logger`. Other I/O routines (e.g. printf) will not.
+The `gaspi_logger` utility is used to view and separate the output
+from all nodes when the function gaspi_printf is called. The
+`gaspi_logger` is started, on another session or in the backgroun, on
+the master node. The output of the application, when using
+gaspi_printf, will be redirected to the `gaspi_logger`. Other I/O
+routines (e.g. printf) will not.
 
 A further separation of output (useful for debugging) can be achieved
-by using the routine gaspi_printf_to which sends the output to the
+by using the routine `gaspi_printf_to` which sends the output to the
 `gaspi_logger` started on a particular node. For example,
 
 ```
