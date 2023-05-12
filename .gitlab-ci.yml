@@ -11,7 +11,6 @@ minimal_configure:
   script: CC=~/external_software/gcc/5.3.0/bin/gcc ./configure --prefix=$PWD/gpi2-install-dir --with-ethernet
   tags:
     - centos-6.5
-    - gcc-5.3.0
   cache:
     untracked: true
 
@@ -20,7 +19,6 @@ minimal_build:
   script: make
   tags:
     - centos-6.5
-    - gcc-5.3.0
   cache:
     untracked: true
 
@@ -29,7 +27,6 @@ minimal_install:
   script: make install
   tags:
     - centos-6.5
-    - gcc-5.3.0
   cache:
     untracked: true
 
@@ -41,6 +38,5 @@ minimal_test:
     - make check
   tags:
     - centos-6.5
-    - gcc-5.3.0
   cache:
     untracked: true
