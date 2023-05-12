@@ -40,7 +40,7 @@ endif
 # MPI MODE
 if WITH_MPI
 lib_default_cflags += -DGPI2_WITH_MPI
-lib_default_cflags += @ac_inc_mpi@
+lib_default_cflags += @ac_lib_mpi@
 endif
 
 # INFINIBAND
