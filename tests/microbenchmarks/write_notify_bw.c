@@ -38,7 +38,7 @@ int main()
       {
         gaspi_time_ticks (&(stamp[j]));
 
-        for (int k = 0; k < 1000; k++)
+        for (int k = 0; k < 500; k++)
         {
           gaspi_write_notify (0, 0, 1, 0, 0, bytes, 0, 1, 0, GASPI_BLOCK);
         }
@@ -57,9 +57,9 @@ int main()
       const double div = 1.0 / cpu_freq / (1000.0 * 1000.0);
       const double ts = (double) delta[5] * div;
 
-      const double bw = (double) bytes / ts * 1000.0;
+      const double bw = (double) bytes / ts * 500.0;
       const double bw_mb = bw / (1024.0 * 1024.0);
-      const double rate = (double) 1000.0 / ts;
+      const double rate = (double) 500.0 / ts;
 
       printf ("%12d\t%4.2f\t\t%.4f\n", bytes, bw_mb, rate / 1e6);
 
