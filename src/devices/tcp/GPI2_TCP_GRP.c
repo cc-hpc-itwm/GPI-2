@@ -47,7 +47,7 @@ pgaspi_dev_post_group_write (gaspi_context_t * const gctx,
     return 1;
   }
 
-  gctx->ne_count_grp++;
+  __atomic_add_fetch (&gctx->ne_count_grp, 1, __ATOMIC_RELAXED);
 
   return 0;
 }
@@ -56,7 +56,8 @@ pgaspi_dev_post_group_write (gaspi_context_t * const gctx,
 int
 pgaspi_dev_poll_groups (gaspi_context_t * const gctx)
 {
-  const int nr = gctx->ne_count_grp;
+  const int nr = __atomic_exchange_n(&gctx->ne_count_grp, 0, __ATOMIC_RELAXED);
+
   tcp_dev_wc_t wc;
 
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
@@ -88,8 +89,6 @@ pgaspi_dev_poll_groups (gaspi_context_t * const gctx)
       return -1;
     }
   }
-
-  gctx->ne_count_grp -= nr;
 
   return nr;
 }
