@@ -48,12 +48,12 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
   }
 
   //TODO: repeated code (what changes is the ctx)
-  gctx->ne_count_grp++;
+  int nr = __atomic_exchange_n (&gctx->ne_count_grp, 0, __ATOMIC_RELAXED) + 1;
 
   int ne = 0;
   tcp_dev_wc_t wc;
 
-  for (gaspi_uint i = 0; i < gctx->ne_count_grp; i++)
+  for (gaspi_uint i = 0; i < nr; i++)
   {
     do
     {
@@ -66,9 +66,6 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
       return GASPI_ERROR;
     }
   }
-
-  //TODO: repeated code (what changes is the ctx)
-  gctx->ne_count_grp = 0;
 
   return GASPI_SUCCESS;
 }
@@ -104,12 +101,12 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
   }
 
   //TODO: repeated code (what changes is the ctx)
-  gctx->ne_count_grp++;
+  int nr = __atomic_exchange_n (&gctx->ne_count_grp, 0, __ATOMIC_RELAXED) + 1;
 
   int ne = 0;
   tcp_dev_wc_t wc;
 
-  for (gaspi_uint i = 0; i < gctx->ne_count_grp; i++)
+  for (gaspi_uint i = 0; i < nr; i++)
   {
     do
     {
@@ -122,9 +119,6 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
       return GASPI_ERROR;
     }
   }
-
-  //TODO: repeated code (what changes is the ctx)
-  gctx->ne_count_grp = 0;
 
   return GASPI_SUCCESS;
 }

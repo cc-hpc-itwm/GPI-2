@@ -55,7 +55,7 @@ pgaspi_dev_poll_groups (gaspi_context_t * const gctx)
     return -1;
   }
 
-  gctx->ne_count_grp -= pret;
+  __atomic_sub_fetch (&gctx->ne_count_grp, pret, __ATOMIC_RELAXED);
 
   return pret;
 }
@@ -93,7 +93,7 @@ pgaspi_dev_post_group_write (gaspi_context_t * const gctx,
     return 1;
   }
 
-  gctx->ne_count_grp++;
+  __atomic_add_fetch (&gctx->ne_count_grp, 1, __ATOMIC_RELAXED);
 
   return 0;
 }
