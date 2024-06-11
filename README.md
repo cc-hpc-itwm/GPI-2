@@ -65,7 +65,7 @@ to the Ethernet device in case they are not available or usable,
 - targets to the production, debugging and statistic libraries (both
 static and shared), as well as, the Fortran modules (if the Fortran
 compilers are found),
-- configures GPI-2 for use PBS as the batch system,
+- configures GPI-2 to use ssh for application start,
 - checks the existence of `doxygen` and `dot` for the documentation target.
 
 In the case autotools is not available in the target system, the user
@@ -114,16 +114,20 @@ built through `make docs` and `make tutorial`, respectively.
 
 Finally, `make install` installs:
 
-- the running scripts in the `$HOME/local/bin` directory,
-- the shared and static libraries in `$HOME/local/lib64`,
-- the headers and Fortran modules in `$HOME/local/include`,
-- the full tests directory in `$HOME/local/tests`
+- the running scripts in the `$PREFIX/bin` directory,
+- the shared and static libraries in `$PREFIX/lib64`,
+- the headers and Fortran modules in `$PREFIX/include`,
+- the full tests directory in `$PREFIX/tests`
+
+Where `$PREFIX` refers to the path provided with the `--prefix` option
+in `configure`. If not path is provided, and by default, the location
+is `/usr/local/`
 
 Note, as usual, the path to the GPI-2 shared libraries need to be
 added to the `LD_LIBRARY_PATH` environment variable:
 
 ```
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/local/lib64
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PREFIX/lib64
 ```
 
 If required the package can be removed from the target directory by
@@ -160,14 +164,15 @@ GPI-2 applications without the need to access a system with
 Infiniband, **with less focus on performance**.
 
 #### BATCH SYSTEM
-PBS is the default batch system of GPI-2, however, the user can
-configure it with Slurm support:
+By default, GPI-2 uses `ssh` to initialize the application on the
+chosen/provided nodes. However, the user can configure it to use
+Slurm:
 
 ```
 ./configure --with-slurm
 ```
 
-or LoadLeveler support:
+or LoadLeveler:
 
 ```
 ./configure --with-loadleveler
@@ -183,14 +188,14 @@ require MPI, the user can enable MPI interoperability in several ways:
 - checking for MPI in a specific path, e.g.: `./configure --with-mpi=<=path_to_mpi_installation>`
 - specifying the MPI compilers, e.g.: `CC=mpicc FC=mpif90 ./configure`
 
-For this MPI+GPI2 mixed mode, the only constraint is that **MPI_Init()
+For this MPI+GPI-2 mixed mode, the only constraint is that **MPI_Init()
 must be invoked before gaspi_proc_init()** and it is assumed that the
 application starts with mpirun (or mpiexec, etc.). Also, note that
 this option will require that the GPI-2 application is linked to the MPI
 library (even if MPI is not used). Therefore, if the interest is to
 use GPI-2 only, GPI-2 must not be build with this option.
 
-Furthermore fine control of MPI can be done through the
+Furthermore, fine control of MPI can be done through the
 `--with-mpi-extra-flags` option. For example, to configure with Intel
 MPI compilers and link to the thread safe version of the Intel MPI
 Library:
@@ -271,8 +276,8 @@ The `gaspi_run` utility is invoked as follows:
 gaspi_run -m <machinefile> [OPTIONS] <path GASPI program>
 ```
 
-IMPORTANT: The path to the program must exist on all nodes where the
-program should be started.
+**IMPORTANT: The path to the program must exist on all nodes where the
+program should be started.**
 
 The `gaspi_run` utility has the following further options `[OPTIONS]`:
 
@@ -304,13 +309,13 @@ The `gaspi_run` utility has the following further options `[OPTIONS]`:
 
 ### Non-interactive usage
 
-If `gaspi_run` is used in a batch system, the machine file still must be
-provided. In general, the information required to setup such file job
-scheduler can be obtained from environment variables defined by the
-job scheduler. The directory docs/batch_examples includes sample
-scripts for setting the machine file and submitting jobs to common
-batch processing systems. They can be used as starting point for some
-elaborated applications and particular environments.
+`gaspi_run` can of course be used used in a batch job. In general, the
+information required to setup such file job scheduler can be obtained
+from environment variables defined by the job scheduler. The directory
+`docs/batch_examples` includes sample scripts for setting the machine
+file and submitting jobs to common batch processing systems. They can
+be used as starting point for some elaborated applications and
+particular environments.
 
 ## 5. THE GASPI_LOGGER
 
