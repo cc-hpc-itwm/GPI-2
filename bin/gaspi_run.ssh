@@ -201,7 +201,7 @@ while [ -n "$1" ]; do
         *) #Sucks! we're taking a small risk here
             # Try to see if it is an executable found on the PATH
             FULLPATH=$(which "$1")
-            # If this did not turn up anything, try to convert the argumen to a full path
+            # If this did not turn up anything, try to convert the argument to a full path
             if [ -z "$FULLPATH" ]; then
               FULLPATH=$(readlink -f "$1")
             fi
