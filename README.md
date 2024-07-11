@@ -279,6 +279,16 @@ gaspi_run -m <machinefile> [OPTIONS] <path GASPI program>
 **IMPORTANT: The path to the program must exist on all nodes where the
 program should be started.**
 
+There are however a couple of exceptions that do not require the usage
+of a machine file (-m option):
+1. if GPI-2 was configured to use Slurm as the batch system. In this
+  case, the allocated nodes from Slurm will be used and there is no
+  need to pass the machine file.
+2. to run processes on a local host. In this case, it is only
+   necessary to provide the number of processes using `-n N`
+   option. This will run the number of process on the current
+   hostname.
+
 The `gaspi_run` utility has the following further options `[OPTIONS]`:
 
 ```
