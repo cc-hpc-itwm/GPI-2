@@ -21,7 +21,6 @@ PRG=""
 PRG_ARGS=""
 TYPE=GASPI_MASTER
 MAX_NUMA_NODES=1
-HAS_NUMA=0
 HN=$(hostname)
 GASPI_LAUNCHER=poe
 VALIDATE_MACHINEFILE=0
@@ -119,10 +118,8 @@ if [ $SET_NUMA -eq 1 ]; then
     which numactl > /dev/null
     if [ $? = 0 ]; then
         MAX_NUMA_NODES=`numactl --hardware|grep available|gawk '{print $2}'`
-        HAS_NUMA=1
     else
         MAX_NUMA_NODES=1
-        HAS_NUMA=0
     fi
 else
     MAX_NUMA_NODES=256
