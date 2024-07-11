@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2023
+# Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2024
 
 # This file is part of GPI-2.
 

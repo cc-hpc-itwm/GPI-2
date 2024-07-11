@@ -3,7 +3,7 @@
               http://www.gpi-site.com
 
                   Version: 1.5.1
-              Copyright (C) 2013-2023
+              Copyright (C) 2013-2024
                  Fraunhofer ITWM
 
 ******************************************************************************
