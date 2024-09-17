@@ -32,14 +32,14 @@ NNODES=0
 DEBUG=0
 GASPI_LAUNCHER="ssh"
 PING_HOSTNAMES=0
-GASPI_BINS_LOCATION=$(readlink -f $(dirname $0))
+GASPI_BINS_LOCATION="$(readlink -f "$(dirname "$0")")"
 LAUNCHER_SPAWNER=${GASPI_BINS_LOCATION}/ssh.spawner
 
 remove_temp_files()
 {
-    rm -f $TMP_MFILE
-    rm -f $UNIQ_MFILE
-    rm -f $AUTO_MFILE
+    rm -f "$TMP_MFILE"
+    rm -f "$UNIQ_MFILE"
+    rm -f "$AUTO_MFILE"
 }
 
 #helper functions
@@ -63,9 +63,9 @@ usage()
 
 clean_exit()
 {
-    if [ $1 = 1 ]; then
-        if [ -x $GASPI_BINS_LOCATION/gaspi_cleanup ]; then
-            $GASPI_BINS_LOCATION/gaspi_cleanup -m $UNIQ_MFILE
+    if [ "$1" = 1 ]; then
+        if [ -x "${GASPI_BINS_LOCATION}/gaspi_cleanup" ]; then
+            "${GASPI_BINS_LOCATION}/gaspi_cleanup" -m "${UNIQ_MFILE}"
         fi
     fi
     remove_temp_files
@@ -82,51 +82,51 @@ print_error_exit_failure()
 
 validate_machinefile()
 {
-    if [ ! -s $MFILE ]; then
+    if [ ! -s "$MFILE" ]; then
         print_error_exit_failure "Empty machine file ($1)"
     fi
     # newline at the end
-    endl=$(tail -c 1 $MFILE)
+    endl=$(tail -c 1 "$MFILE")
     if [ "$endl" != "" ]; then
         print_error_exit_failure "No newline at end of machine file ($1)";
     fi
 
     # create tmp_file
-    rm -f $TMP_MFILE
+    rm -f "$TMP_MFILE"
 
-    touch $TMP_MFILE 2>/dev/null && chmod 777 $TMP_MFILE ||
+    touch "$TMP_MFILE" 2>/dev/null && chmod 777 "$TMP_MFILE" ||
     {
         print_error_exit_failure "User permissions failure: $PWD is not writable"
     }
 
     # ping nodes (if requested)
     ncount=0
-    while read LINE
+    while read -r LINE
     do
-        i=$(echo $LINE | gawk '{print $1}')
+        i=$(echo "$LINE" | gawk '{print $1}')
         if [ -n "$i" ]; then
             if [ $PING_HOSTNAMES -eq 1 ]; then
-                ping -c 1 $i >/dev/null 2>&1 ||
+                ping -c 1 "$i" >/dev/null 2>&1 ||
                 {
                     print_error_exit_failure "Host not reachable ($i)"
                 }
             fi
             ncount=$((ncount+1))
-            if [ $NNODES -lt $ncount ]; then
+            if [ "$NNODES" -lt $ncount ]; then
                 break
             fi
-            echo $i >> $TMP_MFILE
+            echo "$i" >> "$TMP_MFILE"
         fi
-    done < $MFILE
+    done < "$MFILE"
 
     ORIG_MFILE=$MFILE
     MFILE=$TMP_MFILE
 
-    uniq $MFILE > $UNIQ_MFILE
+    uniq "$MFILE" > "$UNIQ_MFILE"
 
     # number of nodes (NNODES) must fit number of hosts
-    n=$(wc -l < $MFILE)
-    if [ $n -lt $NNODES ]; then
+    n=$(wc -l < "$MFILE")
+    if [ "$n" -lt "$NNODES" ]; then
         print_error_exit_failure "Not enough hosts ($n) for required number of nodes (-n $NNODES)"
     fi
 }
@@ -135,17 +135,17 @@ kill_procs()
 {
     echo "Killing GASPI procs..."
 
-    for i in $(cat $UNIQ_MFILE)
+    while IFS= read -r host
     do
-        P=$(basename ${PRG})
-       $GASPI_LAUNCHER $i "nohup killall -9 ${P}  lt-${P} ${PRG} $(cat /dev/null)" > /dev/null 2>&1 &
-    done
+        P=$(basename "$PRG")
+        "$GASPI_LAUNCHER" "$host" "nohup killall -9 ${P}  lt-${P} ${PRG} $(cat /dev/null)" > /dev/null 2>&1 &
+    done < "$UNIQ_MFILE"
     remove_temp_files
     wait
     exit 1
 }
 
-if [ ! -x ${LAUNCHER_SPAWNER} ]; then
+if [ ! -x "${LAUNCHER_SPAWNER}" ]; then
     echo
     echo "The required spawner is missing (or not executable)"
     echo
@@ -164,10 +164,10 @@ while [ -n "$1" ]; do
     case $1 in
         -m | --machinefile)
             shift
-            if [ -r $1 ]; then
+            if [ -r "$1" ]; then
                 MFILE=$1
             else
-                print_error_exit_failure "Cannot read $1 (-m option) (or file does not exist)"
+                print_error_exit_failure "Cannot read file $1 (-m option) (or file does not exist)"
             fi
             ;;
         -N | --NUMA)
@@ -182,7 +182,7 @@ while [ -n "$1" ]; do
             ;;
         -b | --binary)
             shift
-            if [ -x $1 ]; then
+            if [ -x "$1" ]; then
                 MASTER_PRG=$1
             else
                 print_error_exit_failure "Cannot find $1 (-b option) (or file is not executable)"
@@ -224,10 +224,10 @@ if [ -z "$PRG" ]; then
 fi
 
 if [ -z "$MFILE" ]; then
-  if [ $NNODES -eq 0 ]; then
+  if [ "$NNODES" -eq 0 ]; then
     print_error_exit "Number of procs must be non-zero if no machinefile is provided. See help (-n option)"
   fi
-  yes $(hostname) | head -n $NNODES > "$AUTO_MFILE"
+  yes "$(hostname)" | head -n "$NNODES" > "$AUTO_MFILE"
   MFILE="$AUTO_MFILE"
 fi
 
@@ -236,34 +236,33 @@ trap kill_procs TERM INT QUIT
 #sanity check and settings
 if [ $SET_NUMA -eq 1 ]; then
     MAX_NUMA_NODES=1
-    which numactl > /dev/null
-    if [ $? = 0 ]; then
+    if which numactl > /dev/null ; then
         MAX_NUMA_NODES=$(numactl --hardware|grep available|gawk '{print $2}')
     fi
 fi
 
 #use all hosts in machines file
-if [ $NNODES -eq 0 ]; then
-    NNODES=$(sed /^$/d $MFILE  |wc -l)
+if [ "$NNODES" -eq 0 ]; then
+    NNODES=$(sed /^$/d "$MFILE"  |wc -l)
 fi
 
-validate_machinefile $MFILE
+validate_machinefile "$MFILE"
 
 #master binary is the same
 if [ -z "$MASTER_PRG" ]; then
     MASTER_PRG=$PRG
 fi
 
-master_node=$(head -n 1 $MFILE)
+master_node=$(head -n 1 "$MFILE")
 previous="$master_node"
 j=0
 node=-1
 rank=0
-for LINE in $(tail -n +2 $MFILE)
+for LINE in $(tail -n +2 "$MFILE")
 do
     if [ "$LINE" = "$previous" ]; then
         j=$((j+1))
-        if [ $j -eq $MAX_NUMA_NODES ]; then
+        if [ $j -eq "$MAX_NUMA_NODES" ]; then
             echo
             echo "Error: incorrect machine file (-m $ORIG_MFILE) (max procs per node: $MAX_NUMA_NODES)"
             echo
@@ -272,14 +271,14 @@ do
         fi
     else
         if [ "$previous" != "$master_node" ]; then
-            cmd="${LAUNCHER_SPAWNER} ${master_node} 0 $(readlink -f $MFILE) $j "
+            cmd="${LAUNCHER_SPAWNER} ${master_node} 0 $(readlink -f "$MFILE") $j "
         else
             if [ $j -eq 0 ]; then
                 node=$((node+1))
                 previous="$LINE"
                 continue;
             else
-            cmd="${LAUNCHER_SPAWNER} ${master_node} 1 $(readlink -f $MFILE) $j "
+            cmd="${LAUNCHER_SPAWNER} ${master_node} 1 $(readlink -f "$MFILE") $j "
             fi
         fi
         rank=$j
@@ -292,7 +291,7 @@ do
         fi
         cmd="$cmd ${PRG} ${PRG_ARGS}"
 
-        $GASPI_LAUNCHER $previous "nohup $cmd $(cat /dev/null)"  &
+        $GASPI_LAUNCHER "$previous" "nohup $cmd $(cat /dev/null)"  &
 
         j=0
     fi
@@ -302,9 +301,9 @@ done
 
 node=$((node+1))
 if [ "$previous" != "$master_node" ]; then
-    cmd="${LAUNCHER_SPAWNER} ${master_node} 0 $(readlink -f $MFILE) $j"
+    cmd="${LAUNCHER_SPAWNER} ${master_node} 0 $(readlink -f "$MFILE") $j"
 else
-    cmd="${LAUNCHER_SPAWNER} ${master_node} 1 $(readlink -f $MFILE) $j"
+    cmd="${LAUNCHER_SPAWNER} ${master_node} 1 $(readlink -f "$MFILE") $j"
 fi
 
 cmd="$cmd $node $rank $NNODES"
@@ -315,9 +314,9 @@ else
 fi
 cmd="$cmd ${PRG} ${PRG_ARGS}"
 
-$GASPI_LAUNCHER $previous "nohup $cmd $(cat /dev/null) 2>&1" &
+$GASPI_LAUNCHER "$previous" "nohup $cmd $(cat /dev/null) 2>&1" &
 
-echo $PRG > /tmp/.last_gaspi_prg
+echo "$PRG" > /tmp/.last_gaspi_prg
 if [ -O /tmp/.last_gaspi_prg ]; then
     chmod a+rw /tmp/.last_gaspi_prg > /dev/null 2>&1
 fi
@@ -332,16 +331,15 @@ if [ "$master_node" != "$HN" ]; then
         exit 1
     fi
     #prepare differently for remote node
-    chmod a+r $MFILE > /dev/null 2>&1
-    TMP_FILE=`readlink -f $MFILE`
+    chmod a+r "$MFILE" > /dev/null 2>&1
+    TMP_FILE=$(readlink -f "$MFILE")
     MFILE=$TMP_FILE
-    scp $MFILE ${master_node}:${MFILE} > /dev/null 2>&1
-    if [ $? != 0 ]; then
+    if ! scp "$MFILE" "${master_node}":"${MFILE}" > /dev/null 2>&1 ; then
         echo "Warning: Failed to copy machinefile to remote host. Program might not start correctly."
     fi
 
     cmd="/bin/sh -c"
-    cmd="$cmd 'export GASPI_MASTER=$master_node"
+    cmd="$cmd export GASPI_MASTER=$master_node"
     cmd="$cmd; export GASPI_SOCKET=0"
     cmd="$cmd; export GASPI_MFILE=$MFILE"
     cmd="$cmd; export GASPI_RANK=0"
@@ -350,29 +348,28 @@ if [ "$master_node" != "$HN" ]; then
     if [ $SET_NUMA -eq 1 ]; then
         cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
     fi
-    cmd="$cmd; $MASTER_PRG $PRG_ARGS'"
-    $GASPI_LAUNCHER $master_node $cmd
+    cmd="$cmd; $MASTER_PRG $PRG_ARGS"
 
-    if [ $? != 0 ]; then
+    if ! $GASPI_LAUNCHER "$master_node" "$cmd" ; then
         echo "Error: Failed to start $MASTER_PRG on $master_node"
         clean_exit 1
         exit 1
     fi
 else
-    export GASPI_MASTER=$HN
+    export GASPI_MASTER="$HN"
 
     if [ $SET_NUMA -eq 1 ]; then
         export GASPI_SET_NUMA_SOCKET=1
     fi
     export GASPI_SOCKET=0
-    export GASPI_MFILE=$MFILE
+    export GASPI_MFILE="$MFILE"
     export GASPI_RANK=0
-    export GASPI_NRANKS=$NNODES
+    export GASPI_NRANKS="$NNODES"
 
     if [ $DEBUG != 0 ]; then
-        gdb --args $MASTER_PRG $PRG_ARGS
+        gdb --args "$MASTER_PRG" "$PRG_ARGS"
     else
-        $MASTER_PRG $PRG_ARGS
+        $MASTER_PRG "$PRG_ARGS"
     fi
     if [ $? != 0 ]; then
         clean_exit 1

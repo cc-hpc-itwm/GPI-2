@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
-PRG=`/bin/cat /tmp/.last_gaspi_prg 2> /dev/null`
+PRG=$(/bin/cat /tmp/.last_gaspi_prg 2> /dev/null)
 MFILE=""
 
 #helper functions
@@ -30,17 +30,16 @@ usage()
 validate_machinefile()
 {
     #empty
-    if [ ! -s $MFILE ]; then
+    if [ ! -s "$MFILE" ]; then
         echo "Empty machine file ($1)"
         exit 1
     fi
 
     #valid hosts
-    hlist=`cat $1`
+    hlist=$(cat "$1")
     for i in $hlist
     do
-        ping -c 1 $i > /dev/null 2>&1
-        if [ $? != 0 ]; then
+        if ! ping -c 1 "$i" > /dev/null 2>&1 ; then
            echo "Host not reachable ($i)"
         fi
     done
@@ -50,8 +49,8 @@ kill_procs()
 {
     for i in $hlist
     do
-        P=`basename ${PRG}`
-        ssh $i killall -s KILL $PRG $P lt-$P > /dev/null 2>&1 &
+        P=$(basename "${PRG}")
+        ssh "$i" killall -s KILL "$PRG" "$P" lt-"$P" > /dev/null 2>&1 &
     done
     wait
 }
@@ -72,7 +71,7 @@ while [ "$1" != "" ]; do
     case $1 in
         -m | --machinefile)
             shift
-            if [ -r $1 ]; then
+            if [ -r "$1" ]; then
                 MFILE=$1
             else
                 echo "Error: Cannot read $1 (-m option) (or file does not exist)"
@@ -86,9 +85,9 @@ while [ "$1" != "" ]; do
     shift
 done
 
-validate_machinefile $MFILE
+validate_machinefile "$MFILE"
 
-hlist=`/bin/cat $MFILE`
+hlist=$(/bin/cat "$MFILE")
 
 kill_procs
 

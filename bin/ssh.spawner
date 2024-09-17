@@ -37,7 +37,7 @@ PROG=$9
 ARGS=""
 
 count=1
-for i in $@
+for i in "$@"
 do
     if [ $count -gt 9 ]; then
         ARGS="$ARGS ${i}"
@@ -45,7 +45,7 @@ do
     count=$((count+1))
 done
 
-for i in $(seq $2 1 $4)
+for i in $(seq "$2" 1 "$4")
 do
     cmd="/bin/sh -c"
     cmd="$cmd 'export GASPI_MASTER=$1"
@@ -53,12 +53,12 @@ do
     cmd="$cmd; export GASPI_MFILE=$3"
     cmd="$cmd; export GASPI_RANK=$(($5 * ($6 + 1) + $i));export GASPI_NRANKS=$7"
 
-   if [ $8 -eq 1 ]; then
+   if [ "$8" -eq 1 ]; then
         cmd="$cmd; export GASPI_SET_NUMA_SOCKET=1"
     fi
 
     cmd="$cmd; $PROG ${ARGS}'"
-    eval $cmd &
+    eval "$cmd" &
 
 done
 wait

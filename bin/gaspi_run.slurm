@@ -31,8 +31,8 @@ PING_HOSTS=0
 
 remove_temp_files()
 {
-    rm -f $TMP_MFILE
-    rm -f $UNIQ_MFILE
+    rm -f "$TMP_MFILE"
+    rm -f "$UNIQ_MFILE"
 }
 
 #helper functions
@@ -68,49 +68,49 @@ print_error_exit_failure()
 
 validate_machinefile()
 {
-    if [ ! -s $MFILE ]; then
+    if [ ! -s "$MFILE" ]; then
         print_error_exit_failure "Empty machine file ($1)"
     fi
     # newline at the end
-    endl=`tail -c 1 $MFILE`
+    endl=$(tail -c 1 "$MFILE")
     if [ "$endl" != "" ]; then
         print_error_exit_failure "No newline at end of machine file ($1)";
     fi
 
     # create tmp_file
-    rm -f $TMP_MFILE
+    rm -f "$TMP_MFILE"
 
-    touch $TMP_MFILE 2>/dev/null && chmod 777 $TMP_MFILE ||
+    touch "$TMP_MFILE" 2>/dev/null && chmod 777 "$TMP_MFILE" ||
     {
         print_error_exit_failure "User permissions failure: $PWD is not writable"
     }
 
     ncount=0
-    while read LINE
+    while read -r LINE
     do
-        i=`echo $LINE | gawk '{print $1}'   `
+        i=$(echo "$LINE" | gawk '{print $1}')
         if [ -n "$i" ]; then
             if [ $PING_HOSTS -eq 1 ]; then
-                ping -c 1 $i >/dev/null 2>&1 ||
+                ping -c 1 "$i" >/dev/null 2>&1 ||
                 {
                     print_error_exit_failure "Host not reachable ($i)"
                 }
             fi
             ncount=$((ncount+1))
-            if [ $NTASKS -lt $ncount ]; then
+            if [ "$NTASKS" -lt $ncount ]; then
                 break
             fi
-            echo $i >> $TMP_MFILE
+            echo "$i" >> "$TMP_MFILE"
         fi
-    done < $MFILE
+    done < "$MFILE"
 
     ORIG_MFILE=$MFILE
     MFILE=$TMP_MFILE
 
-    uniq $MFILE > $UNIQ_MFILE
+    uniq "$MFILE" > "$UNIQ_MFILE"
     # number of nodes (NTASKS) must fit number of hosts
-    n=$(wc -l < $MFILE)
-    if [ $n -lt $NTASKS ]; then
+    n=$(wc -l < "$MFILE")
+    if [ "$n" -lt "$NTASKS" ]; then
         print_error_exit_failure "Not enough hosts ($n) for required number of nodes (-n $NTASKS)"
     fi
 }
@@ -126,7 +126,7 @@ while [ -n "$1" ]; do
     case $1 in
         -m | --machinefile)
             shift
-            if [ -r $1 ]; then
+            if [ -r "$1" ]; then
                 MFILE=$1
             else
                 print_error_exit_failure "Cannot read $1 (-m option) (or file does not exist)"
@@ -150,9 +150,9 @@ while [ -n "$1" ]; do
             print_error_exit_failure "Invalid option ($1). Use -h (or --help) for available options."
             ;;
         *) #Sucks! we're taking a small risk here
-            if [ -x $1 ]; then
+            if [ -x "$1" ]; then
 
-                PRG=$(readlink -f $1)
+                PRG=$(readlink -f "$1")
                 shift
                 PRG_ARGS="$*"
                 break
@@ -171,14 +171,13 @@ fi
 #set machine file
 if [ -z "$MFILE" ]; then
     MFILE="machines_"$SLURM_JOB_ID
-    scontrol show hostnames > $MFILE
+    scontrol show hostnames > "$MFILE"
 fi
 
 #sanity check and settings
 if [ $SET_NUMA -eq 1 ]; then
     MAX_NUMA_NODES=1
-    which lscpu > /dev/null
-    if [ $? = 0 ]; then
+    if which lscpu > /dev/null ; then
         MAX_NUMA_NODES=$(lscpu|grep "NUMA node(s)"|gawk '{print $3}')
     else
         echo "Warning: unable to detect NUMA configuration. Option not used."
@@ -186,27 +185,25 @@ if [ $SET_NUMA -eq 1 ]; then
 fi
 
 #use all hosts in machines file
-if [ $NTASKS -eq 0 ]; then
-    NTASKS=`sed /^$/d $MFILE  |wc -l`
+if [ "$NTASKS" -eq 0 ]; then
+    NTASKS=$(sed /^$/d "$MFILE"  |wc -l)
 fi
 
-validate_machinefile $MFILE
+validate_machinefile "$MFILE"
 
-if [ $NTASKS -gt $SLURM_NPROCS ]; then
+if [ "$NTASKS" -gt "$SLURM_NPROCS" ]; then
     print_error_exit_failure "Number of hosts in machinefile (${NTASKS}) exceeds the job's allocation number (${SLURM_NPROCS})."
 fi
 
 if [ 0 -eq "$SLURM_PROCID" ]; then
-    NNODES=`wc -l < $UNIQ_MFILE`
+    NNODES=$(wc -l < "$UNIQ_MFILE")
 fi
 
-if [ $(($NTASKS / $NNODES)) -gt $MAX_NUMA_NODES ]; then
+if [ $((NTASKS / NNODES)) -gt "$MAX_NUMA_NODES" ]; then
     print_error_exit_failure "NUMA option: incorrect machinefile (-m $ORIG_MFILE) (max procs per node: $MAX_NUMA_NODES)"
 fi
 
-$GASPI_LAUNCHER -n $NTASKS -N $NNODES -w $MFILE $(readlink -f `dirname $0`)/slurm.env $MFILE $SET_NUMA $PRG $PRG_ARGS
-
-if [ $? != 0 ]; then
+if ! $GASPI_LAUNCHER -n "$NTASKS" -N "$NNODES" -w "$MFILE" "$(readlink -f "$(dirname "$0")")/slurm.env" "$MFILE" $SET_NUMA "$PRG" "$PRG_ARGS" l ; then
     clean_exit 1
     exit 1
 fi

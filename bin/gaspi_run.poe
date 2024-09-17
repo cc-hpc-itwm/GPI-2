@@ -19,9 +19,7 @@
 SET_NUMA=0
 PRG=""
 PRG_ARGS=""
-TYPE=GASPI_MASTER
 MAX_NUMA_NODES=1
-HN=$(hostname)
 GASPI_LAUNCHER=poe
 VALIDATE_MACHINEFILE=0
 
@@ -48,20 +46,20 @@ print_error_exit()
 
 validate_machinefile()
 {
-    if [ ! -s $MFILE ]; then
+    if [ ! -s "$MFILE" ]; then
         print_error_exit "Empty machine file ($1)"
     fi
 
-    while read LINE
+    while read -r LINE
     do
-        i=`echo $LINE | gawk '{print $1}'   `
+        i=$(echo "$LINE" | gawk '{print $1}')
         if [ -n "$i" ]; then
-            ping -c 1 $i >/dev/null 2>&1 ||
+            ping -c 1 "$i" >/dev/null 2>&1 ||
             {
                 print_error_exit "Host not reachable ($i)"
             }
         fi
-    done < $MFILE
+    done < "$MFILE"
 }
 
 #at least we need binary
@@ -97,8 +95,8 @@ while [ -n "$1" ]; do
             VALIDATE_MACHINEFILE=1
             ;;
         *) #Sucks! we're taking a small risk here
-            if [ -x $1 ]; then
-                PRG=$(readlink -f $1)
+            if [ -x "$1" ]; then
+                PRG=$(readlink -f "$1")
                 shift
                 PRG_ARGS="$*"
                 break
@@ -115,9 +113,8 @@ fi
 
 #sanity check and settings
 if [ $SET_NUMA -eq 1 ]; then
-    which numactl > /dev/null
-    if [ $? = 0 ]; then
-        MAX_NUMA_NODES=`numactl --hardware|grep available|gawk '{print $2}'`
+    if which numactl > /dev/null ;then
+        MAX_NUMA_NODES=$(numactl --hardware|grep available|gawk '{print $2}')
     else
         MAX_NUMA_NODES=1
     fi
@@ -126,29 +123,32 @@ else
 fi
 
 #let's rock
-if [ -z $LOADL_HOSTFILE ]; then
+if [ -z "$LOADL_HOSTFILE" ]; then
     print_error_exit "No machine file (LOADL_HOSTFILE)"
 else
     MFILE=$LOADL_HOSTFILE
     if [ $VALIDATE_MACHINEFILE -eq 1 ]; then
-        validate_machinefile $MFILE
+        validate_machinefile "$MFILE"
     fi
 fi
 
-export GASPI_MASTER=`head -n 1 $LOADL_HOSTFILE`
-export GASPI_MFILE=$LOADL_HOSTFILE
-export GASPI_SOCKET=0
+GASPI_MASTER=$(head -n 1 "$LOADL_HOSTFILE")
+export GASPI_MASTER
+GASPI_MFILE="$LOADL_HOSTFILE"
+export GASPI_MFILE
+GASPI_SOCKET=0
+export GASPI_SOCKET
+GASPI_SET_NUMA_SOCKET=0;
 if [ $SET_NUMA -eq 1 ]; then
-    export GASPI_SET_NUMA_SOCKET=1
-else
-    export GASPI_SET_NUMA_SOCKET=0
+    GASPI_SET_NUMA_SOCKET=1
 fi
+export GASPI_SET_NUMA_SOCKET
 
-for LINE in $(tail -n +2 $GASPI_MFILE)
+for LINE in $(tail -n +2 "$GASPI_MFILE")
 do
     if [ "$LINE" = "$previous" ]; then
         j=$((j+1))
-        if [ $j -eq $MAX_NUMA_NODES ]; then
+        if [ $j -eq "$MAX_NUMA_NODES" ]; then
             print_error_exit "max procs per node: $MAX_NUMA_NODES"
         fi
     else
@@ -157,9 +157,9 @@ do
     previous="$LINE"
 done
 exit_status=0
-export GASPI_NRANKS=`wc -l $LOADL_HOSTFILE|gawk '{print $1}'`
-$GASPI_LAUNCHER $PRG $PRG_ARGS
-if [ $? != 0 ]; then
+GASPI_NRANKS=$(wc -l "$LOADL_HOSTFILE" | gawk '{print $1}')
+export GASPI_NRANKS
+if ! $GASPI_LAUNCHER "$PRG" "$PRG_ARGS" ; then
     exit_status=1
 fi
 
