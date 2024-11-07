@@ -24,11 +24,11 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <signal.h>
 #include <sys/resource.h>
 #include <sys/socket.h>
-#include <sys/timeb.h>
 #include <sys/epoll.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "GPI2.h"
 #include "GPI2_CM.h"
@@ -58,6 +58,15 @@ enum
   GPI2_SN_ERROR = -1
 };
 
+static uint64_t
+get_delta_msecs (struct timespec *start, struct timespec* end)
+{
+    uint64_t delta_us =
+      (end->tv_sec - start->tv_sec) * 1000000 +
+      (end->tv_nsec - start->tv_nsec) / 1000;
+
+    return delta_us / 1000; // Convert usecs to millisecs
+}
 int
 gaspi_sn_set_blocking (const int sock)
 {
@@ -217,20 +226,19 @@ gaspi_sn_connect2port (const char *const hn, const unsigned short port,
                        const unsigned long timeout_ms)
 {
   int sockfd = -1;
-  struct timeb t0, t1;
+  struct timespec t0, t1;
 
   const useconds_t max_backoff = 1000000;
   useconds_t cur_backoff = 1000;
 
-  ftime (&t0);
+  clock_gettime (CLOCK_MONOTONIC_RAW, &t0);
 
   while (-1 == sockfd)
   {
     sockfd = gaspi_sn_connect2port_intern (hn, port);
 
-    ftime (&t1);
-    const unsigned int delta_ms =
-      (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
+    clock_gettime (CLOCK_MONOTONIC_RAW, &t1);
+    const uint64_t delta_ms = get_delta_msecs (&t0, &t1);
 
     if (sockfd < 0)
     {
@@ -641,9 +649,9 @@ gaspi_sn_connect_to_rank (const gaspi_rank_t rank,
                           const gaspi_timeout_t timeout_ms)
 {
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
-  struct timeb t0, t1;
+  struct timespec t0, t1;
 
-  ftime (&t0);
+  clock_gettime (CLOCK_MONOTONIC_RAW, &t0);
 
 #ifdef DEBUG
   if (strcmp (pgaspi_gethostname (rank), "") == 0)
@@ -667,9 +675,8 @@ gaspi_sn_connect_to_rank (const gaspi_rank_t rank,
 
     if (-1 == gctx->sockfd[rank])
     {
-      ftime (&t1);
-      const unsigned int delta_ms =
-        (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
+      clock_gettime (CLOCK_MONOTONIC_RAW, &t1);
+      const uint64_t delta_ms = get_delta_msecs (&t0, &t1);
 
       if (delta_ms > timeout_ms)
         return GASPI_TIMEOUT;
@@ -1038,9 +1045,9 @@ _gaspi_sn_group_check (const gaspi_rank_t rank,
 
   int i = (int) rank;
 
-  struct timeb t0, t1;
+  struct timespec t0, t1;
 
-  ftime (&t0);
+  clock_gettime (CLOCK_MONOTONIC_RAW, &t0);
 
   gaspi_cd_header cdh;
 
@@ -1078,9 +1085,9 @@ _gaspi_sn_group_check (const gaspi_rank_t rank,
 
     if ((rem_gb.ret < 0) || (gb->cs != rem_gb.cs))
     {
-      ftime (&t1);
-      const unsigned int delta_ms =
-        (t1.time - t0.time) * 1000 + (t1.millitm - t0.millitm);
+      clock_gettime (CLOCK_MONOTONIC_RAW, &t1);
+      const uint64_t delta_ms = get_delta_msecs (&t0, &t1);
+
       if (delta_ms > timeout_ms)
       {
         return 1;
