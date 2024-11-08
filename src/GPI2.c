@@ -39,6 +39,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 gaspi_context_t glb_gaspi_ctx;
 
+//TODO: maybe it return a string instead?
 #pragma weak gaspi_version  = pgaspi_version
 gaspi_return_t
 pgaspi_version (float *const version)
