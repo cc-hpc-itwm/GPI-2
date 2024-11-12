@@ -191,6 +191,9 @@ while [ -n "$1" ]; do
 	    find_set_NUMA_config
             ;;
         -d | --debug)
+	    if ! command -v gdb > /dev/null 2>&1 ; then
+		print_error_exit_failure "Cannot find GDB (debugger). Please do not use (-d) option."
+	    fi
             DEBUG=1
             ;;
         -h | --help)
