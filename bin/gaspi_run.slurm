@@ -66,6 +66,23 @@ print_error_exit_failure()
     exit 1
 }
 
+find_set_NUMA_config()
+{
+    which numactl &> /dev/null
+    if [ $? = 0 ]; then
+        MAX_NUMA_NODES=$(numactl --hardware|grep available|gawk '{print $2}')
+	SET_NUMA=1
+    else
+	which lscpu &> /dev/null
+	if [ $? = 0 ]; then
+            MAX_NUMA_NODES=$(lscpu|grep "NUMA node(s)"|gawk '{print $3}')
+	else
+            echo "Warning: unable to detect NUMA configuration. Option not used."
+	    SET_NUMA=0
+	fi
+    fi
+}
+
 validate_machinefile()
 {
     if [ ! -s $MFILE ]; then
@@ -133,7 +150,7 @@ while [ -n "$1" ]; do
             fi
             ;;
         -N | --NUMA)
-            SET_NUMA=1
+	    find_set_numa_config
             ;;
         -h | --help)
             usage
@@ -175,15 +192,6 @@ if [ -z "$MFILE" ]; then
 fi
 
 #sanity check and settings
-if [ $SET_NUMA -eq 1 ]; then
-    MAX_NUMA_NODES=1
-    which lscpu > /dev/null
-    if [ $? = 0 ]; then
-        MAX_NUMA_NODES=$(lscpu|grep "NUMA node(s)"|gawk '{print $3}')
-    else
-        echo "Warning: unable to detect NUMA configuration. Option not used."
-    fi
-fi
 
 #use all hosts in machines file
 if [ $NTASKS -eq 0 ]; then
