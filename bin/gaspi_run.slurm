@@ -66,15 +66,22 @@ print_error_exit_failure()
     exit 1
 }
 
+utility_exists()
+{
+    if command -v "$1" > /dev/null 2>&1 ; then
+	return 0;
+    else
+	return 1;
+    fi
+}
+
 find_set_NUMA_config()
 {
-    which numactl &> /dev/null
-    if [ $? = 0 ]; then
+    if utility_exists numactl ; then
         MAX_NUMA_NODES=$(numactl --hardware|grep available|gawk '{print $2}')
 	SET_NUMA=1
     else
-	which lscpu &> /dev/null
-	if [ $? = 0 ]; then
+	if utility_exists lscpu ; then
             MAX_NUMA_NODES=$(lscpu|grep "NUMA node(s)"|gawk '{print $3}')
 	else
             echo "Warning: unable to detect NUMA configuration. Option not used."
