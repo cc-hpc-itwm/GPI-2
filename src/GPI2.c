@@ -88,15 +88,20 @@ pgaspi_numa_socket (gaspi_uchar * const sock)
 {
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
-  *sock = (gaspi_uchar) gctx->local_rank;
-
   char *numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
-  if (!numaPtr)
+  if (numaPtr)
   {
-    GASPI_PRINT_WARNING ("NUMA was not enabled (-N option of gaspi_run)");
+    if (atoi (numaPtr) == 1)
+    {
+      *sock = (gaspi_uchar) gctx->local_rank;
+
+      return GASPI_SUCCESS;
+    }
   }
 
-  return GASPI_SUCCESS;
+  GASPI_DEBUG_PRINT_ERROR ("NUMA was not enabled (-N option of gaspi_run)");
+
+  return GASPI_ERR_ENV;
 }
 
 static gaspi_return_t
