@@ -2,7 +2,7 @@
                   GPI-2
               http://www.gpi-site.com
 
-                  Version: 1.5.1
+                  Version: 1.5.2-rc1
               Copyright (C) 2013-2024
                  Fraunhofer ITWM
 

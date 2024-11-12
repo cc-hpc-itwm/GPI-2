@@ -54,17 +54,17 @@ extern "C"
    */
   gaspi_return_t gaspi_proc_local_rank (gaspi_rank_t * const local_rank);
 
-  /** Get the number of processes (ranks) started by the application.
+  /** Get the number of processes (ranks) within a node of calling process.
    *
    *
-   * @param local_num The number of processes (ranks) in the same node
+   * @param local_num The number of processes (ranks) in the same node.
    *
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case of error.
    */
   gaspi_return_t gaspi_proc_local_num (gaspi_rank_t * const local_num);
 
-    /** Get the CPU frequency.
+  /** Get the CPU frequency.
    *
    *
    * @param cpu_mhz Output parameter with the frequency.
@@ -94,10 +94,10 @@ extern "C"
    */
   void gaspi_print_affinity_mask (void);
 
-  /** Get NUMA socket
+  /** Get NUMA socket where calling process is running on.
    *
    *
-   * @param socket Output parameter with the socket
+   * @param socket Output parameter with the NUMA socket number.
    *
    * @return GASPI_SUCCESS in case of success, GASPI_ERROR in case
    * GPI2 was not started with NUMA enabled.
