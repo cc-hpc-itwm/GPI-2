@@ -22,8 +22,18 @@ MFILE=""
 #helper functions
 usage()
 {
+    echo "The gaspi_cleanup utility tries to kill the last run GASPI application."
+    echo "This can be useful if the application was interrupted or finished unproperly."
+    echo "Some resources might still be in use (particularly on remote nodes)."
+    echo "For instance, a necessary might still be in use."
+    echo "Note: there is guarantee for that it fully successful."
     echo
-    echo "usage: gaspi_cleanup -m <machinefile>"
+    echo "Usage: gaspi_cleanup -m <machinefile>"
+    echo "OR"
+    echo "gaspi_cleanup --machinefile <machinefile"
+    echo
+    echo "Other options:"
+    echo "   -h, --help        This help."
     echo
 }
 
@@ -63,12 +73,17 @@ fi
 
 
 if [ "$PRG" = "" ]; then
-    echo "Error: GASPI binary not found."
+    echo "Error: GASPI application to cleanup not found."
     exit 1
 fi
 
 while [ "$1" != "" ]; do
     case $1 in
+	-h | --help)
+	    usage
+	    exit 0
+	    ;;
+
         -m | --machinefile)
             shift
             if [ -r "$1" ]; then
