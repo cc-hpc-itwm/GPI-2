@@ -1,8 +1,36 @@
+#include <stdio.h>
 #include <test_utils.h>
 
 /* Test allocates 45% of system memory and creates a segment that
    large or if several ranks per node exist, divided among that
    number */
+
+gaspi_size_t
+gaspi_get_system_mem (void)
+{
+  FILE *fp = fopen ("/proc/meminfo", "r");
+  if (fp == NULL)
+  {
+    gaspi_printf ("Cannot open file /proc/meminfo\n");
+    return 0;
+  }
+
+  gaspi_size_t memory = 0;
+  char line[1024];
+
+  while (fgets (line, sizeof (line), fp))
+  {
+    if (!strncmp ("MemTotal", line, 8))
+    {
+      strtok (line, ":");
+      memory = strtol ((char *) strtok (NULL, " kB\n"), (char **) NULL, 0);
+    }
+  }
+
+  fclose (fp);
+  return memory;
+}
+
 int
 main (int argc, char *argv[])
 {

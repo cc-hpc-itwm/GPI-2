@@ -25,16 +25,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define USECSTEP 10
 #define USECSTART 100
 
-ulong
-gaspi_load_ulong (volatile ulong * ptr)
-{
-  ulong v = *ptr;
-
-  __asm__ volatile("" ::: "memory");
-
-  return v;
-}
-
 /* CPU frequency through sampling and linear regression */
 float
 _gaspi_sample_cpu_freq (void)

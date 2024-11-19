@@ -57,25 +57,8 @@ gaspi_get_cycles (void)
 #endif
 }
 
-#ifdef MIC
-static inline unsigned char
-gaspi_atomic_xchg (volatile unsigned char *addr, const char new_val)
-{
-  unsigned char res;
-  __asm__ volatile ("lock; xchgb %0, %1":"+m" (*addr),
-                "=a" (res):"1" (new_val):"memory");
-  return res;
-}
-
-#define GASPI_ATOMIC_TRY_LOCK(l) gaspi_atomic_xchg(l, 1)
-#define GASPI_ATOMIC_UNLOCK(l)   gaspi_atomic_xchg(l, 0)
-
-#else //!MIC
-
 #define GASPI_ATOMIC_TRY_LOCK(l) __sync_lock_test_and_set (l, 1)
 #define GASPI_ATOMIC_UNLOCK(l)  __sync_lock_release (l)
-
-#endif
 
 static inline void
 lock_gaspi (gaspi_lock_t * l)

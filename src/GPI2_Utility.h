@@ -30,9 +30,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <xmmintrin.h>
 #endif
 
-#ifdef MIC
-#define GASPI_DELAY() _mm_delay_32(32)
-#elif defined(__x86_64__)
+#if defined(__x86_64__)
 #define GASPI_DELAY() _mm_pause()
 #elif defined(__aarch64__)
 #define GASPI_DELAY()  __asm__ __volatile__("yield")
@@ -220,8 +218,6 @@ extern gaspi_config_t glb_gaspi_cfg;
   }
 
 float gaspi_get_cpufreq (void);
-
-ulong gaspi_load_ulong (volatile ulong * ptr);
 
 int gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset);
 

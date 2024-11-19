@@ -217,7 +217,6 @@ gaspi_handle_env (gaspi_context_t * ctx)
     return -1;
   }
 
-#ifndef MIC
   const char *numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
 
   if (numaPtr)
@@ -233,7 +232,6 @@ gaspi_handle_env (gaspi_context_t * ctx)
       }
     }
   }
-#endif
 
   const char *mfilePtr = getenv ("GASPI_MFILE");
 
