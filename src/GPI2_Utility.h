@@ -223,17 +223,4 @@ int gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset);
 
 char *pgaspi_gethostname (const unsigned int id);
 
-static inline int
-gaspi_thread_sleep (int msecs)
-{
-  struct timespec sleep_time, rem;
-
-  sleep_time.tv_sec = msecs / 1000;
-  sleep_time.tv_nsec = 0;       // msecs * 1000000;
-
-  return nanosleep (&sleep_time, &rem);
-}
-
-gaspi_number_t pgaspi_notifications_space_size (void);
-
 #endif //GPI2_UTILITY_H

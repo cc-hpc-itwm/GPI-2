@@ -1033,6 +1033,16 @@ _gaspi_sn_ping_command (const gaspi_rank_t rank)
   return 0;
 }
 
+static inline int
+gaspi_sn_thread_sleep (int msecs)
+{
+  struct timespec sleep_time, rem;
+
+  sleep_time.tv_sec = msecs / 1000;
+  sleep_time.tv_nsec = 0;       // msecs * 1000000;
+
+  return nanosleep (&sleep_time, &rem);
+}
 
 static inline int
 _gaspi_sn_group_check (const gaspi_rank_t rank,
@@ -1093,7 +1103,7 @@ _gaspi_sn_group_check (const gaspi_rank_t rank,
         return 1;
       }
 
-      if (gaspi_thread_sleep (250) < 0)
+      if (gaspi_sn_thread_sleep (250) < 0)
       {
         gaspi_printf ("gaspi_thread_sleep Error %d: (%s)\n", ret,
                       (char *) strerror (errno));
