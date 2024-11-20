@@ -31,7 +31,6 @@ Software:
 - ssh server running on compute nodes, requiring no password, if
   running with ssh support (default).
 - autotools utilities (autoconf>=2.63,libtool>=2.2,automake>=1.11)
-- gawk (GNU Awk) and sed utilities.
 
 Hardware:
 - Infiniband/RoCE device or Ethernet device.

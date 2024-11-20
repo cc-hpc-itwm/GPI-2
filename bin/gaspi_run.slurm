@@ -78,11 +78,11 @@ utility_exists()
 find_set_NUMA_config()
 {
     if utility_exists numactl ; then
-	GPI2_MAX_NUMA_NODES=$(numactl --hardware|grep available|gawk '{print $2}')
+	GPI2_MAX_NUMA_NODES=$(numactl --hardware|grep available|cut -d' ' -f2)
 	GPI2_SET_NUMA=1
     else
 	if utility_exists lscpu ; then
-	    GPI2_MAX_NUMA_NODES=$(lscpu|grep "NUMA node(s)"|gawk '{print $3}')
+	    GPI2_MAX_NUMA_NODES=$(lscpu|grep "NUMA node(s)"|tr -d [:space:]|cut -d':' -f2)
 	else
 	    echo "Warning: unable to detect NUMA configuration. Option not used."
 	    GPI2_SET_NUMA=0
@@ -96,7 +96,7 @@ find_set_NUMA_config()
 while [ -n "$1" ]; do
     case $1 in
 	-m | --machinefile)
-	    if [ -r "$1" ]; then
+	    if [ -r "$2" ]; then
 		GPI2_MFILE=$2
 	    else
 		print_error_exit_failure "Cannot read $2 (-m option) (or file does not exist)"
@@ -191,7 +191,7 @@ fi
 
 #user-provided number of tasks
 if [ "$GPI2_NTASKS" -ne 0 ]; then
-    tasks_in_mfile=$(sed /^$/d "$GPI2_MFILE"  |wc -l)
+    tasks_in_mfile=$(wc -l "$GPI2_MFILE"  | cut -d' ' -f1)
     if [ $GPI2_NTASKS -gt $tasks_in_mfile ]; then
 	print_error_exit_failure "Number of requested tasks (-n) exceeds available/provided resources."
     fi
@@ -200,7 +200,7 @@ if [ "$GPI2_NTASKS" -ne 0 ]; then
     uniq "$GPI2_MFILE" > "$UNIQ_MFILE"
 fi
 
-GPI2_NTASKS=$(sed /^$/d "$GPI2_MFILE"  |wc -l)
+GPI2_NTASKS=$(wc -l "$GPI2_MFILE" | cut -d' ' -f1)
 
 if [ "$GPI2_NTASKS" -gt "$SLURM_NTASKS" ]; then
     print_error_exit_failure "Resources requested (${GPI2_NTASKS}) exceeds the Slurm job's allocation (${SLURM_NTASKS})."
