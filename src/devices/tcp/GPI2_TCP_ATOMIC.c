@@ -15,8 +15,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
-#include "GASPI.h"
+
+#include <stdint.h>
+#include <unistd.h>
+#include "GASPI_types.h"
 #include "GPI2_TCP.h"
+#include "GPI2_Types.h"
 
 gaspi_return_t
 pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,

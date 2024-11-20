@@ -340,6 +340,7 @@ extern "C"
 
   gaspi_return_t pgaspi_statistic_counter_max(gaspi_statistic_counter_t* counter_max);
 
+  void pgaspi_statistic_print_counters (void);
 
   gaspi_return_t
   pgaspi_statistic_counter_info(gaspi_statistic_counter_t counter,

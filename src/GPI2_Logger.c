@@ -15,21 +15,25 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
-#include <fcntl.h>
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <netdb.h>
 #include <netinet/in.h>
-#include <netinet/tcp.h>
 #include <pthread.h>
+#include <sched.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 #include <unistd.h>
-
+#include "GASPI_types.h"
 #include "GPI2.h"
-#include "GPI2_Utility.h"
+#include "GPI2_Sys.h"
+#include "GPI2_Types.h"
 
 #define GPI2_PORT_LOGGER 17825
 
@@ -176,7 +180,7 @@ gaspi_print_affinity_mask (void)
   //simple os view
   if (sched_getaffinity (0, sizeof (cpu_set_t), &node_mask) != 0)
   {
-    GASPI_DEBUG_PRINT_ERROR ("Failed to get affinity mask");
+    printf ("Failed to get affinity mask");
     return;
   }
 

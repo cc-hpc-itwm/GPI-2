@@ -15,26 +15,31 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
+
 #include <arpa/inet.h>
+#include <errno.h>
+#include <ifaddrs.h>
+#include <linux/sockios.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <pthread.h>
 #include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/epoll.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
-#include <ifaddrs.h>
-
-#ifdef __linux__
-#include <linux/sockios.h>
-#endif
-
-#include "GPI2.h"
+#include "GASPI_types.h"
 #include "GPI2_SN.h"
+#include "GPI2_Sys.h"
 #include "GPI2_Utility.h"
-#include "tcp_device.h"
 #include "list.h"
+#include "rb.h"
+#include "tcp_device.h"
 
 volatile gaspi_tcp_dev_status_t gaspi_tcp_dev_status =
   GASPI_TCP_DEV_STATUS_DOWN;
@@ -943,7 +948,7 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
     /* Post a notification to the sender that data has been received,
      * see the request processing of NOTIFICATION_SEND.*/
     list_insert (&delayedList, &(estate->wr_buff));
-    
+
     if (_tcp_dev_post_wc (estate->read.wr_id,
                           TCP_WC_SUCCESS,
                           TCP_DEV_WC_RECV, estate->read.cq_handle) != 0)

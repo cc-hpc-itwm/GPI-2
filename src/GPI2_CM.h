@@ -19,7 +19,9 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef _GPI2_CM_H_
 #define _GPI2_CM_H_
 
-#include "PGASPI.h"
+#include <stdlib.h>
+
+#include "GASPI_types.h"
 
 typedef enum
 {

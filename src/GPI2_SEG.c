@@ -16,16 +16,20 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 #include <stddef.h>
-#include <sys/timeb.h>
-#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "PGASPI.h"
+#include "GASPI.h"
+#include "GASPI_types.h"
 #include "GPI2.h"
 #include "GPI2_Dev.h"
 #include "GPI2_Mem.h"
-#include "GPI2_Utility.h"
-#include "GPI2_SN.h"
 #include "GPI2_SEG.h"
+#include "GPI2_SN.h"
+#include "GPI2_Stats.h"
+#include "GPI2_Types.h"
+#include "GPI2_Utility.h"
+#include "PGASPI.h"
 
 #pragma weak gaspi_segment_max = pgaspi_segment_max
 gaspi_return_t
@@ -434,7 +438,7 @@ gaspi_segment_set (const gaspi_segment_descriptor_t snp)
     return -1;
   }
 
-  if (snp.seg_id < 0 || snp.seg_id >= gctx->config->segment_max)
+  if (snp.seg_id >= gctx->config->segment_max)
   {
     return -1;
   }

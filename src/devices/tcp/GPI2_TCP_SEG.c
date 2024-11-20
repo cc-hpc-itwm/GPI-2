@@ -16,7 +16,6 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "GASPI.h"
 #include "GPI2_Types.h"
 
 int

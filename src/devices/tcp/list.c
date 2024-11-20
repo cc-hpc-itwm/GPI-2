@@ -16,10 +16,9 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdint.h>
 #include <stdlib.h>
-
 #include "list.h"
+#include "tcp_device.h"
 
 inline void
 list_insert (list * l, const tcp_dev_wr_t * wr)

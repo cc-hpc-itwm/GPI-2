@@ -15,9 +15,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
-#include "GPI2.h"
-#include "GASPI.h"
+
+#include <infiniband/verbs.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "GASPI_types.h"
 #include "GPI2_IB.h"
+#include "GPI2_Types.h"
 
 gaspi_return_t
 pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
@@ -73,7 +77,7 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
 
   int ne = 0;
 
-  for (gaspi_uint i = 0; i < nr; i++)
+  for (int i = 0; i < nr; i++)
   {
     do
     {
@@ -148,7 +152,7 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
 
   int ne = 0;
 
-  for (gaspi_uint i = 0; i < nr; i++)
+  for (int i = 0; i < nr; i++)
   {
     do
     {

@@ -19,7 +19,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef _GPI2_DEV_H_
 #define _GPI2_DEV_H_
 
-#include "GASPI.h"
+#include "GPI2_Types.h"
 
 /* Device interface */
 int pgaspi_dev_init_core (gaspi_context_t * const);

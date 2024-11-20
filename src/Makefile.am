@@ -1,11 +1,12 @@
 # SOURCES
-SRCS = GPI2_Env.c GPI2_Utility.c GPI2_SN.c GPI2_Logger.c GPI2_Stats.c \
+SRCS = GPI2_Env.c GPI2_SN.c GPI2_Logger.c GPI2_Stats.c \
 	GPI2_Mem.c GPI2_Threads.c GPI2_Coll.c GPI2_IO.c GPI2_ATOMIC.c \
 	GPI2_PASSIVE.c GPI2_SEG.c GPI2_GRP.c GPI2_CONFIG.c GPI2_CM.c \
-	GPI2.c
+	GPI2.c GPI2_Sys.c
 SRCS += GPI2_CM.h GPI2_Coll.h GPI2_Env.h GPI2_GRP.h \
 	GPI2.h GPI2_Mem.h GPI2_SEG.h GPI2_SN.h GPI2_Stats.h \
-	GPI2_Types.h GPI2_Utility.h GPI2_CONFIG.h GPI2_VERSION.h
+	GPI2_Types.h GPI2_Utility.h GPI2_CONFIG.h GPI2_VERSION.h \
+	GPI2_Sys.h
 
 # DEVICES GENERIC
 SRCS += devices/include/GPI2_Dev.h

@@ -20,23 +20,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GPI2_UTILITY_H 1
 
 #include <errno.h>
-#include <sched.h>
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <time.h>
-
-#if defined(__x86_64__)
-#include <xmmintrin.h>
-#endif
-
-#if defined(__x86_64__)
-#define GASPI_DELAY() _mm_pause()
-#elif defined(__aarch64__)
-#define GASPI_DELAY()  __asm__ __volatile__("yield")
-#elif defined (__PPC64__)
-#define GASPI_DELAY() __asm__ volatile("ori 0,0,0" ::: "memory");
-#endif
+#include <string.h>
 
 #define MAX(a,b)  (((a)<(b)) ? (b) : (a))
 #define MIN(a,b)  (((a)>(b)) ? (b) : (a))
@@ -48,8 +33,9 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #ifdef DEBUG
-#include "GPI2.h"
-extern gaspi_config_t glb_gaspi_cfg;
+
+#include "GPI2_Types.h"
+extern gaspi_context_t glb_gaspi_ctx;
 #define GASPI_DEBUG_PRINT_ERROR(msg, ...)                               \
   {                                                                     \
     int gaspi_debug_errsv = errno;                                      \
@@ -143,8 +129,7 @@ extern gaspi_config_t glb_gaspi_cfg;
 
 #define GASPI_VERIFY_COMM_SIZE(sz, seg_id_loc, seg_id_rem, rnk, min, max) \
   {                                                                     \
-    if (sz < min                                                        \
-        || sz > max                                                     \
+    if (sz > max                                                     \
         || sz > glb_gaspi_ctx.rrmd[seg_id_rem][rnk].size                \
         || sz > glb_gaspi_ctx.rrmd[seg_id_loc][glb_gaspi_ctx.rank].size) \
     {                                                                   \
@@ -216,11 +201,4 @@ extern gaspi_config_t glb_gaspi_cfg;
       return GASPI_ERR_INITED;                                          \
     }                                                                   \
   }
-
-float gaspi_get_cpufreq (void);
-
-int gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset);
-
-char *pgaspi_gethostname (const unsigned int id);
-
 #endif //GPI2_UTILITY_H

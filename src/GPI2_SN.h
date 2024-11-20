@@ -19,8 +19,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef _GPI2_SN_H_
 #define _GPI2_SN_H_ 1
 
-#include "GPI2.h"
-#include "GASPI.h"
+#include <stddef.h>
+#include "GASPI_types.h"
 #include "GPI2_Types.h"
 
 enum gaspi_sn_ops

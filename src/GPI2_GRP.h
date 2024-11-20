@@ -19,6 +19,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef GPI2_GRP_H_
 #define GPI2_GRP_H_
 
+#include <stddef.h>
+#include "GASPI_types.h"
 #include "GPI2_Types.h"
 
 typedef struct
@@ -55,7 +57,8 @@ pgaspi_group_all_local_create (gaspi_context_t * const gctx,
 gaspi_return_t
 pgaspi_group_delete_no_verify (const gaspi_group_t);
 
-gaspi_group_exch_info_t *pgaspi_group_create_exch_info (gaspi_group_t group,
-                                                        int tnc);
+gaspi_group_exch_info_t*
+pgaspi_group_create_exch_info (gaspi_group_t group,
+             int tnc);
 
 #endif /* GPI2_GRP_H_ */

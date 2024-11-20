@@ -20,7 +20,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define _TCP_DEVICE_H_
 
 #include <stdint.h>
-#include <unistd.h>
 #include "rb.h"
 
 

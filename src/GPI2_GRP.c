@@ -15,19 +15,21 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
-#include <stdint.h>
-#include <sys/timeb.h>
-#include <sys/mman.h>
-#include <unistd.h>
-
-#include "PGASPI.h"
+#include <stdlib.h>
+#include <string.h>
+#include "GASPI_types.h"
 #include "GPI2.h"
+#include "GPI2_CM.h"
 #include "GPI2_Coll.h"
 #include "GPI2_Dev.h"
 #include "GPI2_GRP.h"
 #include "GPI2_Mem.h"
 #include "GPI2_SN.h"
+#include "GPI2_Stats.h"
+#include "GPI2_Sys.h"
+#include "GPI2_Types.h"
 #include "GPI2_Utility.h"
+#include "PGASPI.h"
 
 #define GASPI_COLL_NUM_DATATYPES 6
 const size_t glb_gaspi_typ_size[GASPI_COLL_NUM_DATATYPES] =
@@ -49,6 +51,9 @@ const size_t glb_gaspi_typ_size[GASPI_COLL_NUM_DATATYPES] =
    ulong) = 8) * (peers to communicate) * toggling value(2) */
 #define DATA_BUF_SIZE(peers, max_elems)                         \
   ((max_elems * sizeof(unsigned long) * (peers) * TOGGLE_SIZE))
+
+
+extern gaspi_context_t glb_gaspi_ctx;
 
 static inline int
 calc_next_pof2 (int total)
@@ -157,8 +162,8 @@ pgaspi_group_create (gaspi_group_t * const group)
     return GASPI_ERR_MANY_GRP;
   }
 
-  int id = gctx->config->group_max;
-  for (int i = 0; i < gctx->config->group_max; i++)
+  gaspi_number_t id = gctx->config->group_max;
+  for (gaspi_number_t i = 0; i < gctx->config->group_max; i++)
   {
     if (gctx->groups[i].id == -1)
     {

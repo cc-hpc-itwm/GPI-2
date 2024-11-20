@@ -15,27 +15,34 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
-
 #include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <poll.h>
 #include <signal.h>
-#include <sys/resource.h>
-#include <sys/socket.h>
-#include <sys/epoll.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <sys/epoll.h>
+#include <sys/resource.h>
+#include <sys/socket.h>
 #include <time.h>
+#include <unistd.h>
 
+#include "GASPI_types.h"
 #include "GPI2.h"
 #include "GPI2_CM.h"
-#include "GPI2_Dev.h"
-#include "GPI2_SN.h"
-#include "GPI2_Utility.h"
+#include "GPI2_GRP.h"
 #include "GPI2_SEG.h"
+#include "GPI2_SN.h"
+#include "GPI2_Sys.h"
+#include "GPI2_Types.h"
+#include "GPI2_Utility.h"
+
+struct timespec;
 
 #define GASPI_EPOLL_CREATE  (256)
 #define GASPI_EPOLL_MAX_EVENTS  (2048)
@@ -891,7 +898,7 @@ gaspi_sn_allgather (gaspi_context_t const *const gctx,
 
   ssize_t ret = gaspi_sn_writen (right_sock, src, size);
 
-  if (ret != size)
+  if (ret != (ssize_t) size)
   {
     GASPI_DEBUG_PRINT_ERROR ("Failed to write to %u.", right_rank);
     close (right_sock);
@@ -910,7 +917,7 @@ gaspi_sn_allgather (gaspi_context_t const *const gctx,
   {
     ssize_t rret = gaspi_sn_readn (left_sock, recv_buf, size);
 
-    if (rret != size)
+    if (rret != (ssize_t) size)
     {
       GASPI_DEBUG_PRINT_ERROR ("Failed to read from peer (%u).",
                                grp_ctx->rank_grp[r]);
@@ -920,7 +927,7 @@ gaspi_sn_allgather (gaspi_context_t const *const gctx,
     }
 
     ret = gaspi_sn_writen (right_sock, recv_buf, size);
-    if (ret != size)
+    if (ret != (ssize_t) size)
     {
       GASPI_DEBUG_PRINT_ERROR ("Failed to write to peer (%u).",
                                grp_ctx->rank_grp[r]);
@@ -1105,8 +1112,8 @@ _gaspi_sn_group_check (const gaspi_rank_t rank,
 
       if (gaspi_sn_thread_sleep (250) < 0)
       {
-        gaspi_printf ("gaspi_thread_sleep Error %d: (%s)\n", ret,
-                      (char *) strerror (errno));
+        printf ("gaspi_thread_sleep Error %ld: (%s)\n",
+    ret, (char *) strerror (errno));
       }
 
       //check if groups match

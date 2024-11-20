@@ -16,12 +16,13 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-
+#include "GASPI_types.h"
 #include "GPI2_Env.h"
+#include "GPI2_Types.h"
+#include "GPI2_Utility.h"
+#include "PGASPI.h"
 
 #ifdef GPI2_WITH_MPI
 #include <errno.h>
@@ -224,9 +225,9 @@ gaspi_handle_env (gaspi_context_t * ctx)
     if (atoi (numaPtr) == 1)
     {
       gaspi_uchar numa_socket;
-      gaspi_numa_socket (&numa_socket);
+      pgaspi_numa_socket (&numa_socket);
 
-      if (gaspi_set_socket_affinity (numa_socket) != GASPI_SUCCESS)
+      if (pgaspi_set_socket_affinity (numa_socket) != GASPI_SUCCESS)
       {
         return -1;
       }

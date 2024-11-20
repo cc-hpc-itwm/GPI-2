@@ -15,28 +15,35 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
-#include <errno.h>
-#include <pthread.h>
-#include <signal.h>
-#include <sys/resource.h>
-#include <sys/socket.h>
-#include <sys/timeb.h>
-#include <sys/utsname.h>
-#include <unistd.h>
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 
-#include "GASPI_Ext.h"
-#include "PGASPI.h"
+#include <pthread.h>
+#include <sched.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include "GASPI_types.h"
 #include "GPI2.h"
-#include "GPI2_CONFIG.h"
+#include "GPI2_CM.h"
 #include "GPI2_Coll.h"
-#include "GPI2_Env.h"
 #include "GPI2_Dev.h"
+#include "GPI2_Env.h"
+#include "GPI2_GRP.h"
 #include "GPI2_Mem.h"
+#include "GPI2_SEG.h"
 #include "GPI2_SN.h"
+#include "GPI2_Sys.h"
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
 #include "GPI2_VERSION.h"
+#include "PGASPI.h"
 
+extern gaspi_config_t glb_gaspi_cfg;
 gaspi_context_t glb_gaspi_ctx;
 
 //TODO: maybe it return a string instead?

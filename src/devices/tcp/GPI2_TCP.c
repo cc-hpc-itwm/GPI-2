@@ -15,18 +15,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>
-#include <sys/mman.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include "GASPI.h"
-#include "GPI2.h"
+#include "GASPI_types.h"
 #include "GPI2_Dev.h"
 #include "GPI2_SN.h"
+#include "GPI2_Sys.h"
 #include "GPI2_TCP.h"
+#include "GPI2_Types.h"
 #include "GPI2_Utility.h"
-#include "tcp_device.h"
 
 int
 pgaspi_dev_create_endpoint (gaspi_context_t const *const GASPI_UNUSED (gctx),
@@ -130,8 +128,8 @@ pgaspi_dev_comm_queue_is_valid (gaspi_context_t const *const gctx,
 static void
 pgaspi_tcp_dev_print_info (gaspi_context_t const *const gctx)
 {
-  gaspi_printf ("<<<<<<<<<<<<<<<< TCP-info >>>>>>>>>>>>>>>>>>>\n");
-  gaspi_printf ("  Hostname: %s\n", pgaspi_gethostname (gctx->rank));
+  printf ("<<<<<<<<<<<<<<<< TCP-info >>>>>>>>>>>>>>>>>>>\n");
+  printf ("  Hostname: %s\n", pgaspi_gethostname (gctx->rank));
 
   char *ip = tcp_dev_get_local_ip (pgaspi_gethostname (gctx->rank));
 
@@ -139,14 +137,14 @@ pgaspi_tcp_dev_print_info (gaspi_context_t const *const gctx)
   {
     char *iface = tcp_dev_get_local_if (ip);
 
-    gaspi_printf ("  %-8s: %s\n", iface, ip);
+    printf ("  %-8s: %s\n", iface, ip);
     free (iface);
   }
   else
   {
-    gaspi_printf ("  Failed to retrieve more info\n");
+    printf ("  Failed to retrieve more info\n");
   }
-  gaspi_printf ("<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+  printf ("<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>\n");
 }
 
 int

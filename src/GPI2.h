@@ -19,43 +19,11 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef _GPI2_H_
 #define _GPI2_H_
 
-#include "GASPI.h"
-#include "GPI2_GRP.h"
+#include "GASPI_types.h"
+#include "GPI2_Sys.h"
 #include "GPI2_Types.h"
-#include "GPI2_Utility.h"
-
-#include "GPI2_Stats.h"
 
 extern gaspi_context_t glb_gaspi_ctx;
-
-static inline gaspi_cycles_t
-gaspi_get_cycles (void)
-{
-#if defined(__x86_64__)
-
-  unsigned low, high;
-  unsigned long long val;
-
-  __asm__ volatile ("rdtsc":"=a" (low), "=d" (high));
-
-  val = high;
-  val = (val << 32) | low;
-  return val;
-
-#elif defined(__aarch64__)
-
-  unsigned long ts;
-  asm volatile ("isb; mrs %0, cntvct_el0" : "=r" (ts));
-  return ts;
-
-#elif defined (__PPC64__)
-
-  unsigned long cycles;
-  asm volatile ("mftb %0" : "=r" (cycles) : );
-  return cycles;
-
-#endif
-}
 
 #define GASPI_ATOMIC_TRY_LOCK(l) __sync_lock_test_and_set (l, 1)
 #define GASPI_ATOMIC_UNLOCK(l)  __sync_lock_release (l)

@@ -19,6 +19,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef _GPI2_MEM_H_
 #define _GPI2_MEM_H_ 1
 
+#include <stdlib.h>
+
 int pgaspi_alloc_page_aligned (void **ptr, size_t size);
 
 #endif //_GPI2_MEM_H_

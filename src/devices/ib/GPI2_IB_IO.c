@@ -15,9 +15,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
-#include "GASPI.h"
-#include "GPI2.h"
+
+#include <infiniband/verbs.h>
+#include <stddef.h>
+#include <stdint.h>
+#include "GASPI_types.h"
 #include "GPI2_IB.h"
+#include "GPI2_SEG.h"
+#include "GPI2_Sys.h"
+#include "GPI2_Types.h"
+#include "GPI2_Utility.h"
 
 /* Communication functions */
 gaspi_return_t

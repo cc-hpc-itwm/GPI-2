@@ -16,7 +16,9 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "GPI2.h"
+#include <string.h>
+#include "GASPI_types.h"
+#include "GPI2_Types.h"
 #include "GPI2_Utility.h"
 
 #define GASPI_MAX_GROUPS  (32)
@@ -28,6 +30,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_DEFAULT_ALLREDUCE_ELEM_MAX 255
 #define GASPI_DEFAULT_ALLREDUCE_BUF_SIZE        \
   (GASPI_DEFAULT_ALLREDUCE_ELEM_MAX * sizeof (unsigned long))
+
+extern gaspi_context_t glb_gaspi_ctx;
 
 gaspi_config_t glb_gaspi_cfg =
 {

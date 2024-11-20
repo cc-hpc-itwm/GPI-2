@@ -16,12 +16,18 @@
   along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "PGASPI.h"
+#include <stddef.h>
+#include "GASPI.h"
+#include "GASPI_types.h"
 #include "GPI2.h"
+#include "GPI2_CM.h"
 #include "GPI2_Dev.h"
-#include "GPI2_Utility.h"
-
 #include "GPI2_SN.h"
+#include "GPI2_Stats.h"
+#include "GPI2_Sys.h"
+#include "GPI2_Types.h"
+#include "GPI2_Utility.h"
+#include "PGASPI.h"
 
 /* Queue utilities and IO limits */
 #pragma weak gaspi_queue_size = pgaspi_queue_size
@@ -601,7 +607,7 @@ pgaspi_notify (const gaspi_segment_id_t segment_id_remote,
 
   if (notification_value == 0)
   {
-    gaspi_printf ("Zero is not allowed as notification value.");
+    pgaspi_printf ("Zero is not allowed as notification value.");
     return GASPI_ERR_INV_NOTIF_VAL;
   }
 
@@ -832,7 +838,7 @@ pgaspi_write_notify (const gaspi_segment_id_t segment_id_local,
 
   if (notification_value == 0)
   {
-    gaspi_printf ("Zero is not allowed as notification value.");
+    pgaspi_printf ("Zero is not allowed as notification value.");
     return GASPI_ERR_INV_NOTIF_VAL;
   }
 
@@ -901,7 +907,7 @@ pgaspi_write_list_notify (const gaspi_number_t num,
 #ifdef DEBUG
   if (notification_value == 0)
   {
-    gaspi_printf ("Zero is not allowed as notification value.");
+    pgaspi_printf ("Zero is not allowed as notification value.");
     return GASPI_ERR_INV_NOTIF_VAL;
   }
 

@@ -19,11 +19,13 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef _GPI2_SEG_H_
 #define _GPI2_SEG_H_ 1
 
+#include "GASPI_types.h"
+
 typedef struct
 {
   int rank;
   int ret;
-  int seg_id;
+  unsigned int seg_id;
   unsigned long addr;
   unsigned long size;
   unsigned long notif_addr;
@@ -35,5 +37,7 @@ typedef struct
 
 
 int gaspi_segment_set (const gaspi_segment_descriptor_t snp);
+
+gaspi_number_t pgaspi_notifications_space_size (void);
 
 #endif //_GPI2_SEG_H_

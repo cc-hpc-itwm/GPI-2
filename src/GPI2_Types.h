@@ -20,10 +20,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define _GPI2_TYPES_H_ 1
 
 #include <pthread.h>
-
-#include "GASPI.h"
+#include <stddef.h>
+#include "GASPI_types.h"
 #include "GPI2_CM.h"
-#include "GASPI_Ext.h"
+
 
 #define ALIGN64  __attribute__ ((aligned (64)))
 
@@ -118,7 +118,7 @@ typedef struct
   int *sockfd;
   char *hn_poff;
   char *poff;
-  int group_cnt;
+  gaspi_number_t group_cnt;
   gaspi_group_ctx_t *groups;
 
   volatile int init; //Is GPI-2 initialized?

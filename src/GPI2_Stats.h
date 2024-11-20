@@ -18,6 +18,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef _GPI2_STATS_H_
 #define _GPI2_STATS_H_
 
+#include "GASPI_types.h"
+
 enum
 {
   GASPI_STATS_COUNTER_BYTES_WRITE,    /* bytes written */
@@ -102,8 +104,5 @@ float gaspi_stats_get_timer_ms (enum gaspi_timer t);
 #define GPI2_STATS_STOP_TIMER(t)
 #define GPI2_STATS_GET_TIMER(t)
 #endif /* GPI2_STATS */
-
-void pgaspi_statistic_print_counters (void);
-
 
 #endif //_GPI2_STATS_H_

@@ -24,7 +24,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #endif
 #include <infiniband/verbs.h>
 
-#include "GPI2_Dev.h"
+#include "GPI2_Types.h"
 
 #define GASPI_GID_INDEX   (0)
 #define PORT_LINK_UP      (5)

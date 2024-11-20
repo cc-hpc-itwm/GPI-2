@@ -15,11 +15,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
+#include <stddef.h>
+#include "GASPI_types.h"
 #include "GPI2.h"
 #include "GPI2_CM.h"
 #include "GPI2_Dev.h"
 #include "GPI2_SN.h"
 #include "GPI2_Types.h"
+#include "GPI2_Utility.h"
+
+extern gaspi_context_t glb_gaspi_ctx;
 
 gaspi_return_t
 pgaspi_create_endpoint_to (const gaspi_rank_t rank,

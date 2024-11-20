@@ -16,11 +16,13 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "GASPI.h"
+#include "GASPI_types.h"
 #include "GPI2.h"
 #include "GPI2_Stats.h"
-#include "GPI2_Utility.h"
+#include "GPI2_Sys.h"
 #include "GPI2_Types.h"
+#include "GPI2_Utility.h"
+#include "PGASPI.h"
 
 struct gaspi_stats_timer
   {
@@ -337,8 +339,8 @@ pgaspi_statistic_print_counters (void)
 #ifdef GPI2_STATS
   gaspi_rank_t myrank, nranks;
 
-  gaspi_proc_rank (&myrank);
-  gaspi_proc_num (&nranks);
+  pgaspi_proc_rank (&myrank);
+  pgaspi_proc_num (&nranks);
 
   /* Use verbosity level to disable statistics (and barrier(s) below
      are not counted */

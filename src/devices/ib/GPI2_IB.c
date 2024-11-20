@@ -16,19 +16,24 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <errno.h>
-#include <sys/mman.h>
+#include <infiniband/verbs.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
-#include <sys/timeb.h>
 #include <unistd.h>
+#include "GASPI_types.h"
+#include "GPI2_CM.h"
+#include "GPI2_Dev.h"
+#include "GPI2_IB.h"
+#include "GPI2_Types.h"
+#include "GPI2_Utility.h"
 
 #ifdef GPI2_EXP_VERBS
 #include <math.h>
 #endif
 
-#include "GPI2.h"
-#include "GPI2_Dev.h"
-#include "GPI2_IB.h"
 
 /* Globals */
 static const char *port_state_str[] = {
@@ -79,29 +84,29 @@ pgaspi_ib_dev_print_info (gaspi_context_t * const gctx,
 {
   char boardIDbuf[256];
 
-  gaspi_printf ("<<<<<<<<<<<<<<<<IB-info>>>>>>>>>>>>>>>>>>>\n");
-  gaspi_printf ("\tib_dev     : %d (%s)\n",
+  printf ("<<<<<<<<<<<<<<<<IB-info>>>>>>>>>>>>>>>>>>>\n");
+  printf ("\tib_dev     : %d (%s)\n",
                 dev_idx, ibv_get_device_name (ib_dev_ctx->dev_list[dev_idx]));
-  gaspi_printf ("\tca type    : %d\n", ib_dev_ctx->device_attr.vendor_part_id);
+  printf ("\tca type    : %d\n", ib_dev_ctx->device_attr.vendor_part_id);
 
   if (gctx->config->dev_config.params.ib.mtu == 0)
-    gaspi_printf ("\tmtu        : (active_mtu)\n");
+    printf ("\tmtu        : (active_mtu)\n");
   else
-    gaspi_printf ("\tmtu        : %d (user)\n",
+    printf ("\tmtu        : %d (user)\n",
                   gctx->config->dev_config.params.ib.mtu);
 
-  gaspi_printf ("\tfw_version : %s\n", ib_dev_ctx->device_attr.fw_ver);
-  gaspi_printf ("\thw_version : %x\n", ib_dev_ctx->device_attr.hw_ver);
+  printf ("\tfw_version : %s\n", ib_dev_ctx->device_attr.fw_ver);
+  printf ("\thw_version : %x\n", ib_dev_ctx->device_attr.hw_ver);
 
   if (ibv_read_sysfs_file
       (ib_dev_ctx->ib_dev->ibdev_path, "board_id", boardIDbuf,
        sizeof (boardIDbuf)) > 0)
   {
-    gaspi_printf ("\tpsid       : %s\n", boardIDbuf);
+    printf ("\tpsid       : %s\n", boardIDbuf);
   }
 
-  gaspi_printf ("\t# ports    : %d\n", ib_dev_ctx->device_attr.phys_port_cnt);
-  gaspi_printf ("\t# rd_atom  : %d\n", ib_dev_ctx->device_attr.max_qp_rd_atom);
+  printf ("\t# ports    : %d\n", ib_dev_ctx->device_attr.phys_port_cnt);
+  printf ("\t# rd_atom  : %d\n", ib_dev_ctx->device_attr.max_qp_rd_atom);
 
   int id0[2] = { 0, 0 };
   int id1[2] = { 0, 0 };
@@ -109,29 +114,29 @@ pgaspi_ib_dev_print_info (gaspi_context_t * const gctx,
   for (uint8_t p = 0; p < MIN (ib_dev_ctx->device_attr.phys_port_cnt, GASPI_MAX_PORTS);
        p++)
   {
-    gaspi_printf ("\tport Nr    : %d\n", p + 1);
+    printf ("\tport Nr    : %d\n", p + 1);
 
     id0[p] =
       ib_dev_ctx->port_attr[p].state < 6 ? ib_dev_ctx->port_attr[p].state : 0;
-    gaspi_printf ("\t  state      : %s\n", port_state_str[id0[p]]);
+    printf ("\t  state      : %s\n", port_state_str[id0[p]]);
 
     id1[p] =
       ib_dev_ctx->port_attr[p].phys_state <
       8 ? ib_dev_ctx->port_attr[p].phys_state : 3;
-    gaspi_printf ("\t  phy state  : %s\n", port_phy_state_str[id1[p]]);
+    printf ("\t  phy state  : %s\n", port_phy_state_str[id1[p]]);
 
-    gaspi_printf ("\t  link layer : %s\n",
+    printf ("\t  link layer : %s\n",
                   link_layer_str (ib_dev_ctx->port_attr[p].link_layer));
   }
 
-  gaspi_printf ("\tusing port : %d\n", ib_dev_ctx->ib_port);
-  gaspi_printf ("\tmtu        : %d\n", gctx->config->dev_config.params.ib.mtu);
+  printf ("\tusing port : %d\n", ib_dev_ctx->ib_port);
+  printf ("\tmtu        : %d\n", gctx->config->dev_config.params.ib.mtu);
 
   if (gctx->config->network == GASPI_ROCE)
   {
     if (!pgaspi_null_gid (&ib_dev_ctx->gid))
     {
-      gaspi_printf
+      printf
         ("gid[0]: %02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
          ib_dev_ctx->gid.raw[0], ib_dev_ctx->gid.raw[1],
          ib_dev_ctx->gid.raw[2], ib_dev_ctx->gid.raw[3],

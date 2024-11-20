@@ -16,13 +16,22 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <pthread.h>
 #include <sched.h>
+#include <stddef.h>
 #include <unistd.h>
 
 #include <GASPI_Threads.h>
+#include "GPI2_Sys.h"
 #include "GPI2_Utility.h"
 #include "GASPI_Ext.h"
+#include "GASPI_types.h"
+#include "PGASPI.h"
+
 
 #define GASPI_MAX_THREADS (1024)
 
@@ -282,7 +291,7 @@ gaspi_threads_sync_all (const gaspi_group_t g,
           GASPI_DELAY();
       }
 
-      ret = gaspi_barrier (g, timeout_ms);
+      ret = pgaspi_barrier (g, timeout_ms);
       if (ret != GASPI_SUCCESS)
       {
         return ret;
