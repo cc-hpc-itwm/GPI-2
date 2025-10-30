@@ -16,6 +16,10 @@ main (int argc, char *argv[])
   {
     EXPECT_FAIL (gaspi_numa_socket (&numa_socket));
   }
+  else if (atoi (numaPtr) == 0)
+  {
+    EXPECT_FAIL (gaspi_numa_socket (&numa_socket));
+  }
   else
   {
     ASSERT (gaspi_numa_socket (&numa_socket));
