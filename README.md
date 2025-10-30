@@ -1,9 +1,9 @@
 ******************************************************************************
-                  GPI-2
+                       GPI-2
               http://www.gpi-site.com
 
-                  Version: 1.5.2-rc1
-              Copyright (C) 2013-2024
+                  Version: 1.6.0
+              Copyright (C) 2013-2025
                  Fraunhofer ITWM
 
 ******************************************************************************
@@ -31,9 +31,7 @@ Software:
 - ssh server running on compute nodes, requiring no password, if
   running with ssh support (default).
 - autotools utilities (autoconf>=2.63,libtool>=2.2,automake>=1.11)
-
-Hardware:
-- Infiniband/RoCE device or Ethernet device.
+- libfabric (recommended v2.2.0) if support for libfabric is necessary.
 
 
 ### Basic configuration
@@ -137,6 +135,8 @@ using `make uninstall`.
 Specific configurations can be setup by predefined flags.
 
 #### DEVICES
+
+##### Infiniband
 GPI-2 is intended to be linked to the libibverbs from the OFED stack.
 In case the configure script is not able to find it in the default paths
 of the host system, the user can pass the path of the OFED
@@ -151,6 +151,7 @@ support, however the user can also enable and using it (if the header
 file is found) by `--enable-infiniband-ext`. Note, however, they are
 for the moment an experimental feature.
 
+##### Ethernet / TCP
 On the other hand, GPI-2 can be installed on a system without
 Infiniband, using standard TCP sockets:
 
@@ -161,6 +162,30 @@ Infiniband, using standard TCP sockets:
 Such support is, however, primarily targetted at the development of
 GPI-2 applications without the need to access a system with
 Infiniband, **with less focus on performance**.
+
+##### Other interconnects and fabrics (libfabric)
+
+Support for other devices and fabrics such as Amazon EFA, Cray
+Slingshot or Omnipath is provided by libfabric, the Open Fabrics
+Interfaces (ofi), framework.
+
+GPI-2 aims to support all of the different fabric providers available
+with libfabric. Currently this is **not yet** completely tested on all
+the different providers and some issues may exist.
+
+To configure GPI-2 with libfabric
+```
+./configure --with-ofi
+```
+
+If a libfabric version is found, that is enough. If however, it cannot
+be found, one can provide a path to the option:
+
+```
+./configure --with-ofi=<full_path_to_libfabric_installation>
+
+```
+
 
 #### BATCH SYSTEM
 By default, GPI-2 uses `ssh` to initialize the application on the
@@ -291,29 +316,31 @@ of a machine file (-m option):
 The `gaspi_run` utility has the following further options `[OPTIONS]`:
 
 ```
-  -b <binary file> Use a different binary for first node (master).
+  -b, --binary <binary file>
+                   Use a different binary for first node (master).
                    The master (first entry in the machine file) is
-           started with a different application than the rest
-           of the nodes (workers).
+                   started with a different application than the rest
+                   of the nodes (workers).
 
-  -N               Enable NUMA for processes on same node. With this
-           option it is only possible to start the same number
-           of processes as NUMA nodes present on the system.
-           The processes running on same node will be set with
-           affinity to the proper NUMA node.
+  -N, --NUMMA      Enable NUMA for processes on same node. With this
+                   option it is only possible to start the same number
+                   of processes as NUMA nodes present on the system.
+                   The processes running on same node will be set with
+                   affinity to the proper NUMA node.
 
-  -n <procs>       Start as many <procs> from machine file.
-               This option is used to start less processes than
-           those listed in the machine file.
+  -n, --nodes <procs>
+                   Start as many <procs> from machine file.
+                   This option is used to start less processes than
+                   those listed in the machine file.
 
-  -d               Run with GDB (debugger) on master node. With this
-           option, GDB is started in the master node, to allow
-           debugging the application.
+  -d, --debug      Run with GDB (debugger) on master node. With this
+                   option, GDB is started in the master node, to allow
+                   debugging the application.
 
-  -p               Ping hosts before starting the binary to make sure
-           they are available.
+  -p, --ping       Ping hosts before starting the binary to make sure
+                   they are available.
 
-  -h               Show help.
+  -h, --help       Show help.
 ```
 
 ### Non-interactive usage
@@ -396,26 +423,3 @@ exit $?
 
 If you're running in MPI mixed-mode, starting your application with
 mpirun/mpiexec, this should not be an issue.
-
-
-## 7. UP COMING FEATURES
-
-GPI-2 is on-going work and more features are still to come. Here are
-some that are in our roadmap:
-
-- support to add spare nodes (fault tolerance)
-- better debugging possibilities
-
-
-## 8. LICENSE
-GPI-2 is released under the GPL-3 license (see [COPYING](COPYING)).
-
-If you would like to contribute to GPI-2, please get in touch with the
-development team at the CC-HPC of the Fraunhofer ITWM, lead by Rui
-Machado (contact can be found in the commits log).
-
-## 9. MORE INFORMATION
-
-For more information, check the GPI-2 website ( www.gpi-site.com ) and
-don't forget to subscribe to the GPI-2 mailing list. You subscribe it
-at https://listserv.itwm.fraunhofer.de/mailman/listinfo/gpi2-users

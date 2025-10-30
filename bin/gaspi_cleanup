@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright (c) Fraunhofer ITWM - Carsten Lojewski <lojewski@itwm.fhg.de>, 2013-2024
+# Copyright (c) Fraunhofer ITWM, 2013-2025
 
 # This file is part of GPI-2.
 
@@ -25,14 +25,15 @@ usage()
     echo "The gaspi_cleanup utility tries to kill the last run GASPI application."
     echo "This can be useful if the application was interrupted or finished unproperly."
     echo "Some resources might still be in use (particularly on remote nodes)."
-    echo "For instance, a necessary might still be in use."
-    echo "Note: there is guarantee for that it fully successful."
+    echo "For instance, a necessary port might still be in use."
+    echo "Note: there is no guarantee for this operations to be always successful."
     echo
     echo "Usage: gaspi_cleanup -m <machinefile>"
     echo "OR"
     echo "gaspi_cleanup --machinefile <machinefile"
     echo
     echo "Other options:"
+    echo "   -c, --check       Only check if GASPI program is running on hosts."
     echo "   -h, --help        This help."
     echo
 }
@@ -57,12 +58,27 @@ validate_machinefile()
 
 kill_procs()
 {
-    for i in $hlist
+    GASPI_PRG=$(basename "$1")
+    GASPI_HOSTS=$(/bin/cat "$2")
+
+    for i in $GASPI_HOSTS
     do
-        P=$(basename "${PRG}")
-        ssh "$i" killall -s KILL "$PRG" "$P" lt-"$P" > /dev/null 2>&1 &
+        ssh "$i" killall -s KILL "$1" "$GASPI_PRG" lt-"$GASPI_PRG" > /dev/null 2>&1 &
     done
     wait
+}
+
+check_gaspi_procs()
+{
+    GASPI_PRG=$(basename "$1")
+    GASPI_HOSTS=$(/bin/cat "$2")
+
+    for i in $GASPI_HOSTS
+    do
+        if ssh "$i" "pgrep -x ${GASPI_PRG}  > /dev/null 2>&1"; then
+            echo ${GASPI_PRG} "running on ${i}"
+        fi
+    done
 }
 
 #at least we need machinefile
@@ -79,11 +95,14 @@ fi
 
 while [ "$1" != "" ]; do
     case $1 in
+        -c | --check)
+            check_gaspi_procs $PRG $MFILE
+            exit 0
+            ;;
 	-h | --help)
 	    usage
 	    exit 0
 	    ;;
-
         -m | --machinefile)
             shift
             if [ -r "$1" ]; then
@@ -102,8 +121,6 @@ done
 
 validate_machinefile "$MFILE"
 
-hlist=$(/bin/cat "$MFILE")
-
-kill_procs
+kill_procs "$PRG" "$MFILE"
 
 exit 0
