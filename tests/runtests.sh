@@ -11,18 +11,36 @@ TESTS_FAIL=0
 TESTS_PASS=0
 TESTS_TIMEOUT=0
 TESTS_SKIPPED=0
-Results=1 #if we want to look at the results/output
-Time=1
 opts_used=0
 LOG_FILE=runtests_$(date -Idate).log
 
 MAX_TIME=1200
 
 #Functions
-exit_timeout(){
+usage()
+{
+    echo "Usage: $0 [OPTIONS]"
+    echo "  -e <max_time>         Use max_time seconds as timeout for tests."
+    echo "  -n <number_of_tasks>  Use number_of_tasks tasks."
+    echo "  -f                    Run fast (a sub-set of tests)."
+    echo "  -m <machine_file>     Use machine_file as machine file."
+    echo "  -o <output_file>      Log tests output to output_file."
+    echo "  -h                    This help."
+    echo
+
+}
+
+reset_terminal()
+{
+    tput -T xterm sgr0
+}
+
+exit_timeout()
+{
     echo "Stop this program"
+
     trap - TERM INT QUIT
-    $GASPI_CLEAN  -m ${GPI2_TSUITE_MFILE}
+    $GASPI_CLEAN -m ${GPI2_TSUITE_MFILE}
     kill -9 $TPID > /dev/null 2>&1
     killall -9 sleep > /dev/null 2>&1
     sleep 1
@@ -31,13 +49,14 @@ exit_timeout(){
     TESTS_FAIL=$(($TESTS_FAIL+1))
     printf '\033[31m'"KILLED\n"
 
-    #reset terminal to normal
-    tput -T xterm sgr0
+    reset_terminal
 }
 
-run_test(){
+run_test()
+{
     TEST_NAME=$(basename $1)
     TEST_ARGS=""
+
     #check definitions file for particular test
     F="${TEST_NAME%.*}"
     if [ -r ${RUNTESTS_DIR}/defs/${F}.def ]; then
@@ -46,17 +65,17 @@ run_test(){
 	if [ -n "$SKIP" ]; then
 	    printf '\033[34m'"SKIPPED\n"
 	    TESTS_SKIPPED=$((TESTS_SKIPPED+1))
-   #reset terminal to normal
-	    tput -T xterm sgr0
+
+            reset_terminal
 	    return
 	fi
 
 	TEST_ARGS=`gawk 'BEGIN{FS="="} /ARGS/{print $2}' ${RUNTESTS_DIR}/defs/${F}.def`
     else
-
-    #check definitions file (default)
+        #check default definitions file
 	if [ -r ${RUNTESTS_DIR}/defs/default.def ]; then
 	    printf "%51s: " "$TEST_NAME [default.def]"
+
 	    TEST_ARGS=`gawk 'BEGIN{FS="="} /NETWORK/{print $2}' ${RUNTESTS_DIR}/defs/default.def`
 	    TEST_ARGS="$TEST_ARGS "" `gawk 'BEGIN{FS="="} /TOPOLOGY/{print $2}' ${RUNTESTS_DIR}/defs/default.def`"
 	    TEST_ARGS="$TEST_ARGS "" `gawk 'BEGIN{FS="="} /SN_PERSISTENT/{print $2}' ${RUNTESTS_DIR}/defs/default.def`"
@@ -65,26 +84,23 @@ run_test(){
 	fi
     fi
 
-    if [ $Results = 0 ] ; then
-	$GASPI_RUN -m ${GPI2_TSUITE_MFILE} $1 > results/$1-$(date -Idate).dat 2>&1 &
-	PID=$!
-    else
-	echo "=================================== $1 ===================================" >> $LOG_FILE 2>&1 &
-	$GASPI_RUN -m ${GPI2_TSUITE_MFILE} $1 $TEST_ARGS >> $LOG_FILE 2>&1 &
-	PID=$!
-    fi
+    echo "=================================== $1 ===================================" >> $LOG_FILE 2>&1 &
+    $GASPI_RUN -m ${GPI2_TSUITE_MFILE} $1 $TEST_ARGS >> $LOG_FILE 2>&1 &
+    PID=$!
 
     TIMEDOUT=0
-    if [ $Time = 1 ] ; then
-	export PID
-	(sleep $MAX_TIME; kill -9 $PID;) &
-	TPID=$!
-   #wait test to finish
-	wait $PID 2>/dev/null
-    fi
+
+    export PID
+    (sleep $MAX_TIME; kill -9 $PID;) &
+    TPID=$!
+
+    #wait test to finish
+    wait $PID 2>/dev/null
 
     TEST_RESULT=$?
-    kill -0 $TPID || TIMEDOUT=1
+
+    kill -0 "$TPID" 2>/dev/null || TIMEDOUT=1
+
     if [ $TIMEDOUT = 1 ];then
 	TESTS_TIMEOUT=$(($TESTS_TIMEOUT+1))
 	printf '\033[33m'"TIMEOUT\n"
@@ -100,30 +116,29 @@ run_test(){
 	fi
     fi
 
-   #reset terminal to normal
-    tput -T xterm sgr0
+    reset_terminal
 
-    if [ $Time = 1 ] ; then
-	if [ $TIMEDOUT = 0 ];then
-	    kill $TPID  > /dev/null 2>&1
-	fi
+    if [ $TIMEDOUT = 0 ];then
+	kill $TPID  > /dev/null 2>&1
     fi
 }
 
 trap exit_timeout TERM INT QUIT
 
-#Script starts here
+#Start
+
+start_time=$(date +%s)
+
 OPTERR=0
-while getopts "e:vtn:fm:o:" option ; do
+while getopts "e:n:fm:o:h" option ; do
     case $option in
 	e ) MAX_TIME=${OPTARG}; opts_used=$(($opts_used + 2));;
-	v ) Results=1;opts_used=$(($opts_used + 1));echo "" > $LOG_FILE ;;
-	t ) Time=0;;
 	n ) GASPI_RUN="${GASPI_RUN} -n ${OPTARG}";opts_used=$(($opts_used + 2));;
 	f ) TESTS_GO_FAST=1;opts_used=$(($opts_used + 1));;
 	m ) GPI2_TSUITE_MFILE=`readlink -f ${OPTARG}`;opts_used=$(($opts_used + 2));;
 	o ) LOG_FILE=${OPTARG};opts_used=$(($opts_used + 2));;
-	\?) shift $(($OPTIND-2));echo;echo "Unknown option ($1)";echo;exit 1;;
+        h ) usage; exit 0;;
+	\?) shift $(($OPTIND-2));echo;echo "Unknown option ($1)";usage;exit 1;;
     esac
 done
 
@@ -155,6 +170,7 @@ if [ ! -r $GPI2_TSUITE_MFILE ]; then
     echo
     exit 1
 fi
+
 #check if tests were compiled (if exist)
 if [ "$TESTS" = "" ]; then
     printf "\nNo tests found. Did you type make before?\n"
@@ -164,9 +180,6 @@ fi
 #run them
 for i in $TESTS
 do
-    if [ "$i" = "-v" ]; then
-	continue
-    fi
     if [ `find ${RUNTESTS_DIR}/bin/ -maxdepth 1 -iname $i ` ]; then
 	run_test ${RUNTESTS_DIR}/bin/$i
 	NUM_TESTS=$(($NUM_TESTS+1))
@@ -178,11 +191,21 @@ done
 
 killall sleep 2>/dev/null
 
+end_time=$(date +%s)
 printf "Run $NUM_TESTS tests:\n \
 $TESTS_PASS passed\n \
 $TESTS_FAIL failed\n \
 $TESTS_TIMEOUT timed-out\n \
 $TESTS_SKIPPED skipped\nTimeout $MAX_TIME (secs)\n"
+
+elapsed_time=$((end_time - start_time))
+if [ $elapsed_time -le 59 ]; then
+    echo "Execution time: ${elapsed_time} seconds"
+else
+    minutes=$((elapsed_time / 60))
+    seconds=$((elapsed_time % 60))
+    echo "Execution time: ${minutes} minute(s) and ${seconds} second(s)."
+fi
 
 if [ $TESTS_FAIL -gt 0 -o $TESTS_TIMEOUT -gt 0 ]; then
     exit 1
