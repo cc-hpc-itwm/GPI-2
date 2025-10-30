@@ -11,6 +11,12 @@ AC_DEFUN([ACX_USABLE_DEVICE],[
            if test x${HAVE_INFINIBAND} = x0; then
               AC_MSG_ERROR([Infiniband requested, but can not use it])
            fi
+        elif test x${with_ofi} != xno; then
+           TITLE([Checking for OFI])
+           ACX_OFI
+           if test x${HAVE_OFI} = x0; then
+             AC_MSG_ERROR([OFI requested, but can not use it])
+           fi
         elif test x${with_infiniband} = xno -a x${with_ethernet} != xno; then
            TITLE([Checking for Ethernet])
            ACX_ETHERNET
@@ -22,7 +28,7 @@ AC_DEFUN([ACX_USABLE_DEVICE],[
            with_infiniband=yes
            ACX_INFINIBAND
            if test x${HAVE_INFINIBAND} = x0; then
-	      AC_MSG_NOTICE([Infiniband can not be used])
+	            AC_MSG_NOTICE([Infiniband can not be used])
               TITLE([Checking for Ethernet])
               ACX_ETHERNET
               if test x${HAVE_TCP} = x0; then
@@ -32,12 +38,16 @@ AC_DEFUN([ACX_USABLE_DEVICE],[
         fi
 
 	# COPY DEFAULT FILES FOR TESTING
+        AM_CONDITIONAL([WITH_OFI], [test x${HAVE_OFI} = x1])
+        if [test x${HAVE_OFI} = x1]; then
+          options="$options OFI"
+        fi
         AM_CONDITIONAL([WITH_ETHERNET], test x${HAVE_TCP} = x1)
         if [test x${HAVE_TCP} = x1]; then
            options="$options Ethernet"
         fi
         AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
- 	AM_CONDITIONAL([WITH_INFINIBAND_EXT],[test x${HAVE_INFINIBAND_EXT} = x1 -a x$infiniband_ext != xno])
+ 	      AM_CONDITIONAL([WITH_INFINIBAND_EXT],[test x${HAVE_INFINIBAND_EXT} = x1 -a x$infiniband_ext != xno])
         if [test x${HAVE_INFINIBAND} = x1]; then
            if [test x${HAVE_INFINIBAND_EXT} = x1 -a x$infiniband_ext != xno]; then
               options="$options Infiniband Extensions"
@@ -68,16 +78,16 @@ AC_DEFUN([ACX_INFINIBAND],[
 	      for iblib in libibverbs.so libibverbs.a; do
 	          for iblib_path in lib lib64; do
 	      	      ac_lib_infiniband=$ac_path_infiniband/$iblib_path
-		      AC_CHECK_FILE($ac_lib_infiniband/$iblib,[HAVE_INF_LIB=1],[HAVE_INF_LIB=0])
-		      if test ${HAVE_INF_LIB} = 1; then
+		            AC_CHECK_FILE($ac_lib_infiniband/$iblib,[HAVE_INF_LIB=1],[HAVE_INF_LIB=0])
+		            if test ${HAVE_INF_LIB} = 1; then
 	      	          break
-		      fi
-		  done
-	          if test ${HAVE_INF_LIB} = 1; then
-	             break
-	  	  fi
-  	      done
-   	   else
+		            fi
+		        done
+	        if test ${HAVE_INF_LIB} = 1; then
+	           break
+	  	    fi
+  	    done
+  else
 	      # Try to determine include path(s)
 	      inc_paths=`cpp -v /dev/null >& cppt`
 	      inc_paths=`sed -n '/^#include </,/^End/p' cppt | sed '1d;$d'`
@@ -175,6 +185,86 @@ AS_IF(test `./conftest_ib.exe; echo $?` -gt 0,
 	   [AC_MSG_RESULT([no]);
 	   HAVE_INFINIBAND_DEVICES=0]
 	   )
+])
+
+################################################
+# Check and set OFI path
+# ----------------------------------
+AC_DEFUN([ACX_OFI],[
+	if test "x$with_ofi" != xno; then
+   	   if test "x$with_ofi" != xyes; then
+	      # User specifies path(s)
+	      ac_path_ofi=$with_ofi
+      	      ac_inc_ofi=$ac_path_ofi/include/
+	      AC_CHECK_FILE($ac_inc_ofi/rdma/fi_endpoint.h,
+	      	      [HAVE_OFI_HEADER=1],[HAVE_OFI_HEADER=0])
+	      for ofilib in libfabric.so libfabric.a; do
+	          for ofilib_path in lib lib64; do
+	      	      ac_lib_ofi=$ac_path_ofi/$ofilib_path
+		            AC_CHECK_FILE($ac_lib_ofi/$ofilib,[HAVE_OFI_LIB=1],[HAVE_OFI_LIB=0])
+		            if test ${HAVE_OFI_LIB} = 1; then
+	      	          break
+		            fi
+		        done
+	        if test ${HAVE_OFI_LIB} = 1; then
+	           break
+    	        fi
+  	      done
+           else
+	      # Try to determine include path(s)
+	      inc_paths=`cpp -v /dev/null >& cppt`
+	      inc_paths=`sed -n '/^#include </,/^End/p' cppt | sed '1d;$d'`
+	      rm -f cppt
+	      for ofiinc in $inc_paths; do
+	      	  ac_inc_ofi=$ofiinc/ofi
+		  AC_CHECK_FILE($ac_inc_ofi/rdma/fi_endpoint.h,
+		  	      	  [HAVE_OFI_HEADER=1],[HAVE_OFI_HEADER=0])
+	      done
+	      # Try to determine library path(s)
+	      for ofiinc in $inc_paths; do
+	      	  ac_path_ofi=${ofiinc%/include*}
+		  for ofilib in libfabric.so libfabric.a; do
+	              for ofilib_path in lib lib64; do
+	      	      	  ac_lib_ofi=$ac_path_ofi/$ofilib_path
+		  	  AC_CHECK_FILE($ac_lib_ofi/$ofilib,[HAVE_OFI_LIB=1],[HAVE_OFI_LIB=0])
+		          if test ${HAVE_OFI_LIB} = 1; then
+	      	      	     break
+		          fi
+		      done
+	              if test ${HAVE_OFI_LIB} = 1; then
+	              	 break
+	  	      fi
+  		  done
+		  if test ${HAVE_OFI_LIB} = 1; then
+	             break
+	  	  fi
+	      done
+	      # If the above lib search fails, use autotools
+	      if test ${HAVE_OFI_LIB} != 1; then
+ 	         ac_lib_ofi=
+	      	 AC_CHECK_LIB([fabric],[fi_endpoint],[HAVE_OFI_LIB=1],[HAVE_OFI_LIB=0])
+  	      fi
+   	   fi
+	fi
+	if test ${HAVE_OFI_HEADER} = 1 -a ${HAVE_OFI_LIB} = 1; then
+	   AC_SUBST(ac_inc_ofi,[-I$ac_inc_ofi])
+	   if test ! -z $ac_lib_ofi; then
+	      AC_SUBST(ac_lib_ofi,["-L$ac_lib_ofi -lfabric"])
+	   else
+	      AC_SUBST(ac_lib_ofi,[-libfabric])
+	   fi
+     HAVE_OFI=1
+	else
+	   HAVE_OFI=0
+	fi
+	])
+
+#ac_inc_ofi=/home/machado/libfabric_poc/installations/libfabric/include
+#ac_lib_ofi=/home/machado/libfabric_poc/installations/libfabric/lib/
+#AC_CHECK_FILE($ac_inc_ofi/rdma/fi_endpoint.h,[HAVE_OFI=1],[HAVE_OFI=0])
+#AC_CHECK_FILE($ac_lib_ofi/libfabric.so,[HAVE_OFI=1],[HAVE_OFI=0])
+#AC_SUBST(ac_inc_ofi,[-I$ac_inc_ofi])
+#AC_SUBST(ac_lib_ofi,["-L$ac_lib_ofi -lfabric"])
 ])
 
 ################################################

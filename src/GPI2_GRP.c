@@ -593,7 +593,8 @@ pgaspi_allreduce_elem_max (gaspi_number_t * const elem_max)
 static inline gaspi_return_t
 _gaspi_sync_wait (gaspi_context_t * const gctx,
                   volatile unsigned char *poll_buf,
-                  unsigned char expected_val, gaspi_timeout_t timeout_ms)
+                  unsigned char expected_val,
+                  gaspi_timeout_t timeout_ms)
 {
   const gaspi_cycles_t s0 = gaspi_get_cycles();
 

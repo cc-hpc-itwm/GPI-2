@@ -27,6 +27,11 @@
 # 8: set numa?
 # 9 and beyond: programs <args>
 
+if [ ! -z "$GPI2_OFI_PROVIDER" ]; then
+    echo "Provider is set: " $GPI2_OFI_PROVIDER
+    export FI_PROVIDER=$GPI2_OFI_PROVIDER
+fi
+
 if [ $# -lt 9 ]; then
     echo "Missing args (need at least 9, have $#)"
     exit 1

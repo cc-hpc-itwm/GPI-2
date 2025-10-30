@@ -52,11 +52,16 @@ gaspi_config_t glb_gaspi_cfg =
       },
       {
         0                           //port to use
+      },
+      {
+        1,                          //use shmem
+        0,                          //print provider info
+        1,                          //progress auto
       }
     }
   },
   GASPI_IB,                         //network type
-#else
+#elif GPI2_DEVICE_TCP
   {
     GASPI_ETHERNET,
     {
@@ -67,10 +72,35 @@ gaspi_config_t glb_gaspi_cfg =
       },
       {
         19000                       //port to use
+      },
+      {
+        1,                          //use shmem
+        0,                          //print provider info
+        1,                          //progress auto
       }
     }
   },
   GASPI_ETHERNET,                   //network type
+#elif GPI2_DEVICE_OFI
+  {
+    GASPI_OFI,
+    {
+      {
+        -1,                         //netdev
+        0,                          //mtu
+        1,                          //port check
+      },
+      {
+        19000                       //port to use
+      },
+      {
+        1,                          //use shmem
+        0,                          //print provider info
+        1,                          //progress auto
+      }
+    }
+  },
+  GASPI_OFI,                   //network type
 #endif
   GASPI_DEFAULT_QSIZE,              //queue size max
   8,                                //queue count
@@ -150,6 +180,8 @@ pgaspi_config_set (const gaspi_config_t nconf)
   if (GASPI_ETHERNET == nconf.network)
 #elif GPI2_DEVICE_TCP
   if (GASPI_ETHERNET != nconf.network)
+#elif GPI2_DEVICE_OFI
+  if (GASPI_OFI != nconf.network)
 #endif
   {
 #ifdef DEBUG
@@ -166,6 +198,31 @@ pgaspi_config_set (const gaspi_config_t nconf)
                              gaspi_network_str[nconf.network]);
     return GASPI_ERR_CONFIG;
   }
+
+#if GPI2_DEVICE_OFI
+  if (nconf.dev_config.params.ofi.use_shm >= 0)
+  {
+    glb_gaspi_cfg.dev_config.params.ofi.use_shm =
+      nconf.dev_config.params.ofi.use_shm;
+  }
+  else
+  {
+    GASPI_DEBUG_PRINT_ERROR ("Invalid value for parameter use_shm");
+    return GASPI_ERR_CONFIG;
+  }
+
+  if (nconf.dev_config.params.ofi.provider_info >= 0)
+  {
+    glb_gaspi_cfg.dev_config.params.ofi.provider_info =
+      nconf.dev_config.params.ofi.provider_info;
+  }
+  else
+  {
+    GASPI_DEBUG_PRINT_ERROR ("Invalid value for parameter provider_info");
+    return GASPI_ERR_CONFIG;
+  }
+
+#endif
 
   //GASPI specified
   if (nconf.network != glb_gaspi_cfg.network)

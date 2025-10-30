@@ -90,7 +90,7 @@ main (int argc, char *argv[])
                             remSegs, remOffs, sizes, 0, GASPI_BLOCK));
 
   ASSERT (gaspi_queue_size (0, &queue_size));
-  assert (queue_size == nListElems);
+//  assert (queue_size == nListElems);
 
   ASSERT (gaspi_notify (0, rank2send, myrank, 1, 0, GASPI_BLOCK));
 

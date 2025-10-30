@@ -29,7 +29,15 @@ default_includes += -I$(abs_top_srcdir)/src/devices/ib @ac_inc_infiniband@ -DGPI
 if WITH_INFINIBAND_EXT
 default_includes += -DGPI2_EXP_VERBS
 endif
-else
+endif
+if WITH_OFI
+SRCS += devices/ofi/GPI2_OFI_IO.c devices/ofi/GPI2_OFI_PASSIVE.c devices/ofi/GPI2_OFI_ATOMIC.c \
+devices/ofi/GPI2_OFI_GRP.c devices/ofi/GPI2_OFI_SEG.c devices/ofi/GPI2_OFI.c
+SRCS += devices/ofi/GPI2_OFI.h
+default_includes += -I$(abs_top_srcdir)/src/devices/ofi @ac_inc_ofi@ -DGPI2_DEVICE_OFI
+endif
+#else
+if WITH_ETHERNET
 SRCS += devices/tcp/list.c devices/tcp/rb.c devices/tcp/tcp_device.c \
 devices/tcp/GPI2_TCP.c devices/tcp/GPI2_TCP_IO.c devices/tcp/GPI2_TCP_SEG.c \
 devices/tcp/GPI2_TCP_PASSIVE.c devices/tcp/GPI2_TCP_ATOMIC.c \
@@ -47,6 +55,11 @@ endif
 # INFINIBAND
 if WITH_INFINIBAND
 lib_default_cflags += @ac_lib_infiniband@
+endif
+
+#OFI
+if WITH_OFI
+lib_default_cflags += @ac_lib_ofi@
 endif
 
 # LOADLEVER SUPPORT

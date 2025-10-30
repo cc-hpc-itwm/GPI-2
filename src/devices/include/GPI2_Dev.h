@@ -19,6 +19,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #ifndef _GPI2_DEV_H_
 #define _GPI2_DEV_H_
 
+#include "GASPI.h"
 #include "GPI2_Types.h"
 
 /* Device interface */
@@ -219,5 +220,12 @@ pgaspi_dev_passive_receive (gaspi_context_t * const,
                             gaspi_rank_t * const,
                             const gaspi_size_t,
                             const gaspi_timeout_t);
+
+#ifdef GPI2_DEVICE_OFI
+uint64_t
+pgaspi_dev_get_mr_rkey (gaspi_context_t const *const gctx,
+                        void* mr,
+                        gaspi_rank_t rank);
+#endif
 
 #endif //_GPI2_DEV_H_

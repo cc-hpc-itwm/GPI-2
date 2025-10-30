@@ -22,6 +22,7 @@ main (int argc, char *argv[])
 
   if (nprocs < 3)
   {
+    ASSERT (gaspi_proc_term (GASPI_BLOCK));
     return EXIT_SUCCESS;
   }
 

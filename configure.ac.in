@@ -147,6 +147,11 @@ AC_ARG_ENABLE([infiniband-ext],[AS_HELP_STRING([--enable-infiniband-ext],[build/
 			       [infiniband_ext=$enableval],
 			       [infiniband_ext=no])
 
+# CHECKS OFI
+AC_ARG_WITH([ofi],[AS_HELP_STRING([--with-ofi], [compile for OFI])],
+[with_ofi=$withval],
+[with_ofi=no])
+
 # CHECKS ETHERNET
 AC_ARG_WITH([ethernet],[AS_HELP_STRING([--with-ethernet], [compile for ethernet])],
 		       [with_ethernet=$withval],

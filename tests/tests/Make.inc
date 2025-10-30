@@ -4,8 +4,13 @@ AM_CPPFLAGS = -I$(abs_top_srcdir)/src/include -I$(abs_top_srcdir)/tests/tests
 LDADD = $(abs_top_builddir)/src/.libs/libGPI2-dbg.la
 
 LDFLAGS = -pthread
+
 if WITH_INFINIBAND
 LDFLAGS += @ac_lib_infiniband@
+endif
+
+if WITH_OFI
+LDFLAGS += @ac_lib_ofi@
 endif
 
 if WITH_FORTRAN

@@ -248,12 +248,3 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
 
   return 0;
 }
-
-char *
-pgaspi_gethostname (const unsigned int id)
-{
-  //TODO: ctx as arg
-  gaspi_context_t const *const gctx = &glb_gaspi_ctx;
-
-  return gctx->hn_poff + id * 64;
-}

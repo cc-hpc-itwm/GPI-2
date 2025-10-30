@@ -178,7 +178,7 @@ pgaspi_init_core (gaspi_context_t * const gctx)
   }
 
   /* Create internal memory space (notifications + atomic value placeholder) */
-  gaspi_number_t notifications_space_size = pgaspi_notifications_space_size ();
+  gaspi_number_t notifications_space_size = pgaspi_notifications_space_size();
   const unsigned int size =
       notifications_space_size + sizeof(gaspi_atomic_value_t);
 
@@ -385,6 +385,8 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
     {
       for (int i = gctx->rank; i >= 0; i--)
       {
+        //   if (i == gctx->rank) continue;
+
         if ((eret =
              pgaspi_connect ((gaspi_rank_t) i, timeout_ms)) != GASPI_SUCCESS)
         {
@@ -448,7 +450,8 @@ pgaspi_cleanup_core (gaspi_context_t * const gctx)
   /* Delete extra queues created */
   if (gctx->num_queues != gctx->config->queue_num)
   {
-    for (gaspi_uint q = gctx->config->queue_num; q < gctx->num_queues; q++)
+//    for (gaspi_uint q = gctx->config->queue_num; q < gctx->num_queues; q++)
+    for (gaspi_uint q = gctx->num_queues; q > gctx->config->queue_num; q--)
     {
       if (pgaspi_dev_comm_queue_delete (gctx, q) != 0)
       {
@@ -515,7 +518,7 @@ pgaspi_cleanup_core (gaspi_context_t * const gctx)
   free (gctx->hn_poff);
   gctx->hn_poff = NULL;
 
-  free (gctx->ep_conn);
+  //  free (gctx->ep_conn);
   gctx->ep_conn = NULL;
 
   for (int i = 0; i < GASPI_MAX_QP + 3; i++)
@@ -526,6 +529,7 @@ pgaspi_cleanup_core (gaspi_context_t * const gctx)
 
   return GASPI_SUCCESS;
 }
+
 
 //cleanup
 #pragma weak gaspi_proc_term = pgaspi_proc_term

@@ -30,8 +30,9 @@ main (int argc, char *argv[])
     int_GlbMem[0] = 11223344;
     gaspi_rank_t n;
 
-    for (n = 1; n < P; n++)
+    for (n = 0; n < P; n++)
     {
+      if (n == myrank) continue;
       ASSERT (gaspi_passive_send (0, 0, n, msgSize, GASPI_BLOCK));
     }
   }
@@ -43,6 +44,7 @@ main (int argc, char *argv[])
     assert (int_GlbMem[0] == 11223344);
   }
 
+  //  getchar();
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
   ASSERT (gaspi_proc_term (GASPI_BLOCK));
 

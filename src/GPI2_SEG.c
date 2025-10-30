@@ -363,10 +363,20 @@ pgaspi_segment_delete (const gaspi_segment_id_t segment_id)
   myrank_mseg->trans = 0;
   myrank_mseg->mr[0] = NULL;
   myrank_mseg->mr[1] = NULL;
+
 #ifdef GPI2_DEVICE_IB
   myrank_mseg->rkey[0] = 0;
   myrank_mseg->rkey[1] = 0;
 #endif
+
+#ifdef GPI2_DEVICE_OFI
+  myrank_mseg->rkey[0].local = 0;
+  myrank_mseg->rkey[0].remote = 0;
+
+  myrank_mseg->rkey[1].local = 0;
+  myrank_mseg->rkey[1].remote = 0;
+#endif
+
   myrank_mseg->user_provided = 0;
 
   /* Reset trans info flag for all ranks */
@@ -463,6 +473,14 @@ gaspi_segment_set (const gaspi_segment_descriptor_t snp)
   gctx->rrmd[snp.seg_id][snp.rank].rkey[1] = snp.rkey[1];
 #endif
 
+#ifdef GPI2_DEVICE_OFI
+  gctx->rrmd[snp.seg_id][snp.rank].rkey[0].local = snp.rkey[0].local;
+  gctx->rrmd[snp.seg_id][snp.rank].rkey[0].remote = snp.rkey[0].remote;
+
+  gctx->rrmd[snp.seg_id][snp.rank].rkey[1].local = snp.rkey[1].local;
+  gctx->rrmd[snp.seg_id][snp.rank].rkey[1].remote = snp.rkey[1].remote;
+#endif
+
   unlock_gaspi (&(gctx->mseg_lock));
   return 0;
 }
@@ -500,6 +518,14 @@ pgaspi_segment_register_group (gaspi_context_t * const gctx,
 #ifdef GPI2_DEVICE_IB
   cdh.rkey[0] = myrank_mseg->rkey[0];
   cdh.rkey[1] = myrank_mseg->rkey[1];
+#endif
+
+#ifdef GPI2_DEVICE_OFI
+  cdh.rkey[0].local = myrank_mseg->rkey[0].local;
+  cdh.rkey[0].remote = myrank_mseg->rkey[0].remote;
+
+  cdh.rkey[1].local = myrank_mseg->rkey[1].local;
+  cdh.rkey[1].remote = myrank_mseg->rkey[1].remote;
 #endif
 
   gaspi_segment_descriptor_t *result =
@@ -570,17 +596,17 @@ pgaspi_segment_create (const gaspi_segment_id_t segment_id,
     return eret;
   }
 
-  if (GASPI_TOPOLOGY_STATIC == gctx->config->build_infrastructure)
-  {
-    for (int r = gctx->groups[group].rank; r < gctx->groups[group].tnc; r++)
-    {
-      eret = pgaspi_connect (gctx->groups[group].rank_grp[r], timeout_ms);
-      if (eret != GASPI_SUCCESS)
-      {
-        return eret;
-      }
-    }
-  }
+  /* if (GASPI_TOPOLOGY_STATIC == gctx->config->build_infrastructure) */
+  /* { */
+  /*   for (int r = gctx->groups[group].rank; r < gctx->groups[group].tnc; r++) */
+  /*   { */
+  /*     eret = pgaspi_connect (gctx->groups[group].rank_grp[r], timeout_ms); */
+  /*     if (eret != GASPI_SUCCESS) */
+  /*     { */
+  /*       return eret; */
+  /*     } */
+  /*   } */
+  /* } */
 
   eret = pgaspi_barrier (group, timeout_ms);
 

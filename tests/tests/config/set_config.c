@@ -37,6 +37,11 @@ main (int argc, char *argv[])
     default_conf.dev_config.params.tcp.port = 30000;
   }
 
+  else if (default_conf.network == GASPI_OFI)
+  {
+    default_conf.dev_config.params.ofi.use_shm = 0;
+  }
+
   default_conf.sn_port = 21212;
   ASSERT (gaspi_config_set (default_conf));
 
