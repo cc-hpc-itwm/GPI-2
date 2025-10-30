@@ -1,5 +1,5 @@
 /*
-Copyright (c) Fraunhofer ITWM - 2013-2024
+Copyright (c) Fraunhofer ITWM - 2013-2025
 
 This file is part of GPI-2.
 
