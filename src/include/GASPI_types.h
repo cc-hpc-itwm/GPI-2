@@ -143,7 +143,8 @@ extern "C"
     GASPI_ROCE = 1,     /* RoCE */
     GASPI_ETHERNET = 2, /* Ethernet (TCP) */
     GASPI_GEMINI = 3,   /* Cray Gemini (not implemented) */
-    GASPI_ARIES = 4     /* Cray Aries (not implemented) */
+    GASPI_ARIES = 4,    /* Cray Aries (not implemented) */
+    GASPI_OFI = 5       /* Openfabrics libfabric */
   } gaspi_network_t;
 
   /**
@@ -175,6 +176,12 @@ extern "C"
         gaspi_uint port;
       } tcp;
 
+      struct
+      {
+        int use_shm; /* use shmem for intra-node communication */
+        int provider_info; /* print detailed provider info */
+        int progress_auto; /* use auto-progress, if available */
+      } ofi;
     } params;
   } gaspi_dev_config_t;
 

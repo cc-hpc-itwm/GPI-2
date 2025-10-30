@@ -8,6 +8,10 @@ if WITH_INFINIBAND
 LDFLAGS += @ac_lib_infiniband@
 endif
 
+if WITH_OFI
+LDFLAGS += @ac_lib_ofi@
+endif
+
 if WITH_MPI
 AM_CFLAGS += -DGPI2_WITH_MPI
 AM_CFLAGS += @ac_inc_mpi@

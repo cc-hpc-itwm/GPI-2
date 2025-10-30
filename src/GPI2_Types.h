@@ -21,6 +21,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include <pthread.h>
 #include <stddef.h>
+#include <stdint.h>
 #include "GASPI_types.h"
 #include "GPI2_CM.h"
 
@@ -65,6 +66,15 @@ typedef struct
 
 #ifdef GPI2_DEVICE_IB
   unsigned int rkey[2];
+#endif
+
+//TODO: TD: redundancy with gaspi_segment_descriptor_t
+#ifdef GPI2_DEVICE_OFI
+  struct
+  {
+    uint64_t local;
+    uint64_t remote;
+  } rkey[2];
 #endif
 
   unsigned long size;

@@ -397,7 +397,8 @@ endL:
 
 #pragma weak gaspi_wait = pgaspi_wait
 gaspi_return_t
-pgaspi_wait (const gaspi_queue_id_t queue, const gaspi_timeout_t timeout_ms)
+pgaspi_wait (const gaspi_queue_id_t queue,
+             const gaspi_timeout_t timeout_ms)
 {
   GASPI_VERIFY_INIT ("gaspi_wait");
   GASPI_VERIFY_QUEUE (queue);

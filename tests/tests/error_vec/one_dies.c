@@ -38,6 +38,7 @@ main (int argc, char *argv[])
   /* makes only sense with more than 3 nodes */
   if (nprocs < 3)
   {
+    ASSERT (gaspi_proc_term (GASPI_BLOCK));
     return EXIT_SUCCESS;
   }
 

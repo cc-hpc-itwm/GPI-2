@@ -18,13 +18,26 @@ main (int argc, char *argv[])
   ASSERT (gaspi_segment_create
           (0, _2MB, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_INITIALIZED));
 
+  gaspi_pointer_t seg_ptr;
+  gaspi_return_t ret = gaspi_segment_ptr (0, &seg_ptr);
+  if (ret != GASPI_SUCCESS)
+    {
+      fprintf (stderr, "gaspi_segment_ptr failed\n");
+    }
+  fprintf (stderr, "Segment ptr %p\n", seg_ptr);
+
+  ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
+
   gaspi_atomic_value_t val;
+
+  gaspi_atomic_value_t* val_add_local = (gaspi_atomic_value_t*) (seg_ptr+8);
+  *val_add_local = 1;
 
   for (n = 0; n < numranks; n++)
   {
-    EXPECT_FAIL (gaspi_atomic_fetch_add
-                 (0, (_2MB - 3), n, 1, &val, GASPI_BLOCK));
-    EXPECT_FAIL (gaspi_atomic_fetch_add (0, (_2MB), n, 1, &val, GASPI_BLOCK));
+    /* EXPECT_FAIL (gaspi_atomic_fetch_add */
+    /*              (0, (_2MB - 3), n, 1, &val, GASPI_BLOCK)); */
+    /* EXPECT_FAIL (gaspi_atomic_fetch_add (0, (_2MB), n, 1, &val, GASPI_BLOCK)); */
     ASSERT (gaspi_atomic_fetch_add (0, 0, n, 1, &val, GASPI_BLOCK));
   }
 

@@ -223,7 +223,7 @@ spawn_procs_on_hosts()
 	cmd="$cmd $GPI2_SET_NUMA"
 	cmd="$cmd ${prg} ${prg_args}"
 
-	$GPI2_LAUNCHER "$host" "nohup $cmd $(cat /dev/null) 2>&1" &
+	$GPI2_LAUNCHER "$host" "GPI2_OFI_PROVIDER=$(printf '%q' "$FI_PROVIDER") nohup $cmd $(cat /dev/null) 2>&1" &
 
 	rank=$((rank+count))
 	node=$((node+1))
@@ -346,6 +346,7 @@ if [ -z "$GPI2_MASTER_PRG" ]; then
     GPI2_MASTER_PRG=$GPI2_PRG
 fi
 
+
 echo "$GPI2_PRG" > /tmp/.last_gaspi_prg
 if [ -O /tmp/.last_gaspi_prg ]; then
     chmod a+rw /tmp/.last_gaspi_prg > /dev/null 2>&1
@@ -398,7 +399,7 @@ if [ "$first_hostname" != "$hn" ]; then
 
     cmd="$master_env; $GPI2_MASTER_PRG $GPI2_PRG_ARGS"
 
-    if ! $GPI2_LAUNCHER "$first_hostname" "eval $cmd" ; then
+    if ! $GPI2_LAUNCHER "$first_hostname" "GPI2_OFI_PROVIDER=$(printf '%q' "$FI_PROVIDER") eval $cmd" ; then
 	echo "Error: Failed to start $GPI2_MASTER_PRG on $first_hostname"
 	clean_exit 1
     fi

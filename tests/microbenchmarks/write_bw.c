@@ -29,9 +29,9 @@ int main()
 
   if (myrank == 0)
   {
-    printf ("--------------------------------------------------\n");
-    printf ("%12s\t%5s\t\t%s\n", "Bytes", "BW", "MsgRate(Mpps)");
-    printf ("--------------------------------------------------\n");
+    fprintf (stderr, "--------------------------------------------------\n");
+    fprintf (stderr, "%12s\t%5s\t\t%s\n", "Bytes", "BW", "MsgRate(Mpps)");
+    fprintf (stderr, "--------------------------------------------------\n");
 
     int bytes = 2;
 
@@ -65,7 +65,7 @@ int main()
       const double bw_mb = bw / (1024.0 * 1024.0);
       const double rate = (double) 1000.0 / ts;
 
-      printf ("%12d\t%4.2f\t\t%.4f\n", bytes, bw_mb, rate / 1e6);
+      fprintf (stderr, "%12d\t%4.2f\t\t%.4f\n", bytes, bw_mb, rate / 1e6);
 
       bytes <<= 1;
     }

@@ -126,7 +126,7 @@ success_or_exit (const char *file, const int line, const gaspi_return_t ec)
 {
   if (ec != GASPI_SUCCESS)
   {
-    gaspi_printf ("Assertion failed in %s[%i]: Return %d: %s\n", file, line,
+    fprintf (stderr, "Assertion failed in %s[%i]: Return %d: %s\n", file, line,
                   ec, gaspi_error_str (ec));
     exit (EXIT_FAILURE);
   }
@@ -137,7 +137,7 @@ must_fail (const char *file, const int line, const gaspi_return_t ec)
 {
   if (ec == GASPI_SUCCESS || ec == GASPI_TIMEOUT)
   {
-    gaspi_printf ("Non-expected success in %s[%i]\n", file, line);
+    fprintf (stderr, "Non-expected success in %s[%i]\n", file, line);
 
     exit (EXIT_FAILURE);
   }
@@ -149,7 +149,7 @@ must_return_err (const char *file, const int line, const gaspi_return_t ec,
 {
   if (ec != err)
   {
-    gaspi_printf ("Expected %d(%s) but got %d(%s) in %s[%i]\n",
+    fprintf (stderr, "Expected %d(%s) but got %d(%s) in %s[%i]\n",
                   err, gaspi_error_str (err),
                   ec, gaspi_error_str (ec), file, line);
 

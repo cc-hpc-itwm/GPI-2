@@ -32,6 +32,7 @@ pgaspi_create_endpoint_to (const gaspi_rank_t rank,
                            const gaspi_timeout_t timeout_ms)
 {
   gaspi_context_t *const gctx = &glb_gaspi_ctx;
+
   const int i = (int) rank;
 
   if (lock_gaspi_tout (&(gctx->create_lock), timeout_ms))

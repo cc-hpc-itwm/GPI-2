@@ -42,6 +42,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
 
+#ifdef GPI2_DEVICE_OFI
+#include "GPI2_Dev.h"
+#endif
+
 struct timespec;
 
 #define GASPI_EPOLL_CREATE  (256)
@@ -648,6 +652,14 @@ gaspi_sn_segment_register (const gaspi_cd_header snp)
   seg_desc.rkey[1] = snp.rkey[1];
 #endif
 
+#ifdef GPI2_DEVICE_OFI
+  seg_desc.rkey[0].local = snp.rkey[0];
+  seg_desc.rkey[0].remote = snp.rkey[0];
+
+  seg_desc.rkey[1].local = snp.rkey[1];
+  seg_desc.rkey[1].remote = snp.rkey[1];
+#endif
+
   return gaspi_segment_set (seg_desc);
 }
 
@@ -971,6 +983,18 @@ _gaspi_sn_segment_register_command (const gaspi_rank_t rank,
 #ifdef GPI2_DEVICE_IB
   cdh.rkey[0] = gctx->rrmd[segment_id][gctx->rank].rkey[0];
   cdh.rkey[1] = gctx->rrmd[segment_id][gctx->rank].rkey[1];
+#endif
+
+#ifdef GPI2_DEVICE_OFI
+  cdh.rkey[0] =
+    pgaspi_dev_get_mr_rkey (gctx,
+                            gctx->rrmd[segment_id][gctx->rank].mr[0],
+                            rank);
+
+  cdh.rkey[1] =
+    pgaspi_dev_get_mr_rkey (gctx,
+                            gctx->rrmd[segment_id][gctx->rank].mr[1],
+                            rank);
 #endif
 
   ssize_t ret =

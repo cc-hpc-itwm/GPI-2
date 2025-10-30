@@ -20,6 +20,8 @@ work()
   {
     for (rankSend = 0; rankSend < numranks; rankSend++)
     {
+      //      if (rankSend == myrank) continue;
+
       gaspi_queue_size (1, &queueSize);
 
       if (queueSize > qmax - 100)

@@ -167,7 +167,6 @@ extern "C"
    */
   gaspi_return_t gaspi_rw_list_elem_max (gaspi_number_t * const elem_max);
 
-
 #ifdef __cplusplus
 }
 #endif

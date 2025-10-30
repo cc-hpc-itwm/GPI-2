@@ -28,6 +28,7 @@ main (int argc, char *argv[])
     ASSERT (gaspi_group_add (g, n));
   }
 
+
   ASSERT (gaspi_group_commit (g, GASPI_BLOCK));
 
   ASSERT (gaspi_segment_create

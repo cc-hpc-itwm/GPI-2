@@ -56,8 +56,6 @@ main (int argc, char *argv[])
                                (gaspi_notification_id_t) i, 0, GASPI_BLOCK));
     ASSERT (gaspi_wait (0, GASPI_BLOCK));
     offset += sizeof (int);
-
-
   }
 
   do
