@@ -16,13 +16,15 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <infiniband/verbs.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
 #include <unistd.h>
+
+#include <infiniband/verbs.h>
+
 #include "GASPI_types.h"
 #include "GPI2_CM.h"
 #include "GPI2_Dev.h"
@@ -34,6 +36,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <math.h>
 #endif
 
+int ibv_read_sysfs_file (const char *dir, const char *file,
+                         char *buf, size_t size);
 
 /* Globals */
 static const char *port_state_str[] = {
