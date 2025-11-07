@@ -561,12 +561,12 @@ pgaspi_dev_write_notify_with_rma_iov (gaspi_context_t * const gctx,
 
   struct fi_msg_rma rma_msg;
 
-  rma_msg.msg_iov = &iov;
+  rma_msg.msg_iov = iov;
   rma_msg.desc = desc;
   rma_msg.iov_count = 2;
   rma_msg.addr = fabric_ctx->io_fi_addr[queue][rank];
 
-  rma_msg.rma_iov = &rma_iov;
+  rma_msg.rma_iov = rma_iov;
   rma_msg.rma_iov_count = 2;
   rma_msg.context = NULL;
   rma_msg.data = 0;
