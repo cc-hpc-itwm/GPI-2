@@ -127,7 +127,7 @@ typedef struct
   char mfile[1024];
   int *sockfd;
   char *hn_poff;
-  char *poff;
+  unsigned char *poff;
   gaspi_number_t group_cnt;
   gaspi_group_ctx_t *groups;
 

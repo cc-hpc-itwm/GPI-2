@@ -267,6 +267,14 @@ pgaspi_parse_machinefile (gaspi_context_t * const gctx)
       }
     }
 
+    if (inList >= GASPI_MAX_PPN)
+    {
+      GASPI_DEBUG_PRINT_ERROR
+        ("Too many entries for single host in machinefile (max %d)",
+         GASPI_MAX_PPN);
+      return -1;
+    }
+
     gctx->poff[id] = inList;
 
     strncpy (gctx->hn_poff + id * 64, line, MIN (lsize - 1, 63));
@@ -331,7 +339,7 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
   {
     if (pgaspi_parse_machinefile (gctx) != 0)
     {
-      eret = GASPI_ERR_ENV;
+      eret = GASPI_ERROR;
       goto errL;
     }
   }
