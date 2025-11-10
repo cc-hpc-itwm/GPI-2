@@ -263,3 +263,8 @@ pgaspi_ranks_are_local (gaspi_rank_t a, gaspi_rank_t b)
 {
   return strcmp (pgaspi_gethostname (a), pgaspi_gethostname (b)) == 0;
 }
+
+void gaspi_delay (void)
+{
+  GASPI_DELAY();
+}
