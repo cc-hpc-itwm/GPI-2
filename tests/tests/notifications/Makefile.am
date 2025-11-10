@@ -12,7 +12,8 @@ notifications_tests = ../../bin/not_zero_wait.bin \
       ../../bin/write_notify_outstanding.bin \
       ../../bin/write_notify_zero_size.bin \
       ../../bin/read_notify_zero_size.bin \
-      ../../bin/max_notifications_config.bin
+      ../../bin/max_notifications_config.bin \
+      ../../bin/write_notify_ordering.bin
 #      ../../bin/notification_value.bin
 
 ______bin_not_zero_wait_bin_SOURCES = not_zero_wait.c $(auxSRCS)
@@ -27,6 +28,7 @@ ______bin_write_notify_outstanding_bin_SOURCES = write_notify_outstanding.c $(au
 ______bin_write_notify_zero_size_bin_SOURCES = write_notify_zero_size.c $(auxSRCS)
 ______bin_read_notify_zero_size_bin_SOURCES = read_notify_zero_size.c $(auxSRCS)
 ______bin_max_notifications_config_bin_SOURCES = max_notifications_config.c $(auxSRCS)
+______bin_write_notify_ordering_bin_SOURCES = write_notify_ordering.c $(auxSRCS)
 
 #______bin_notification_value_bin_SOURCES = notification_value.cpp $(auxSRCS)
 #______bin_notification_value_bin_LDFLAGS = -std=c++11
