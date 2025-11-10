@@ -167,6 +167,9 @@ extern "C"
    */
   gaspi_return_t gaspi_rw_list_elem_max (gaspi_number_t * const elem_max);
 
+  /** Small delay and hint processor of a spin-wait loop. */
+  void gaspi_delay();
+
 #ifdef __cplusplus
 }
 #endif
