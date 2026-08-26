@@ -1,0 +1,18 @@
+#!/bin/bash
+# Mock sbcast for the gaspi_run.slurm tests.
+#
+# Real sbcast broadcasts a file to node-local storage on every job node. Here
+# (single node) we just copy SOURCE to DEST locally so the launcher's machine
+# file ends up where GASPI_MFILE points. Usage: sbcast [flags] SOURCE DEST.
+
+echo "MOCK_SBCAST args=$*" >> "$MOCK_LOG"
+
+# Drop leading flags; the remaining two args are SOURCE DEST.
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -*) shift ;;
+        *) break ;;
+    esac
+done
+
+cp "$1" "$2" 2>/dev/null || true
