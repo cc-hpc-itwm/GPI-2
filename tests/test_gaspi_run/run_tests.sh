@@ -412,6 +412,21 @@ test_trace_in_help() {
 }
 
 ######################################################################
+# Category 3d: Repository consistency (1 test)
+######################################################################
+
+test_gaspi_run_matches_ssh_variant() {
+    # bin/gaspi_run is the launcher used in the source tree (runtests.sh);
+    # it must be kept identical to bin/gaspi_run.ssh, which gets installed.
+    local bin_dir="$TEST_DIR/../../bin"
+    if ! cmp -s "$bin_dir/gaspi_run" "$bin_dir/gaspi_run.ssh"; then
+        fail "bin/gaspi_run differs from bin/gaspi_run.ssh"
+        return 1
+    fi
+    return 0
+}
+
+######################################################################
 # Category 4: Error cases (13 tests)
 ######################################################################
 
@@ -610,6 +625,11 @@ run_test test_trace_propagated_to_local_spawner
 run_test test_trace_propagated_to_remote_master
 run_test test_trace_no_category_before_binary
 run_test test_trace_in_help
+
+# Category 3d: Repository consistency
+echo
+echo "--- Repository consistency ---"
+run_test test_gaspi_run_matches_ssh_variant
 
 # Category 4: Error cases
 echo
