@@ -1,9 +1,12 @@
 #include <stdio.h>
+#include <sys/resource.h>
 #include <test_utils.h>
 
 /* Test allocates 45% of system memory and creates a segment that
    large or if several ranks per node exist, divided among that
-   number */
+   number. Except with TCP, the segment is registered (pinned) with the
+   network, so it is then limited to 90% of the locked memory limit of the
+   process; the rest is left for the internally registered memory. */
 
 gaspi_size_t
 gaspi_get_system_mem (void)
@@ -59,6 +62,22 @@ main (int argc, char *argv[])
 
   /* Divide it among the number of procs in node */
   mem /= local_procs;
+
+  gaspi_config_t config;
+  ASSERT (gaspi_config_get (&config));
+
+  struct rlimit memlock;
+  if (config.network != GASPI_ETHERNET
+      && getrlimit (RLIMIT_MEMLOCK, &memlock) == 0
+      && memlock.rlim_cur != RLIM_INFINITY)
+  {
+    const gaspi_size_t mem_lockable = memlock.rlim_cur / 10 * 9;
+
+    if (mem > mem_lockable)
+    {
+      mem = mem_lockable;
+    }
+  }
 
   ASSERT (gaspi_segment_create
           (0, mem, GASPI_GROUP_ALL, GASPI_BLOCK, GASPI_MEM_UNINITIALIZED));
