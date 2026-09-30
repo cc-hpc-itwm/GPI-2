@@ -598,6 +598,39 @@ write_notify_even_are_zero_size_others_not (gaspi_segment_id_t const seg_id,
   return GASPI_SUCCESS;
 }
 
+/* No element has a non-zero size: only the notification is transferred */
+#define ALL_ZERO_TEST_PROLOGUE(SEG, NELEMS)                           \
+  initialize_data (SEG, NELEMS);                                      \
+  struct segs_offsets_list* list = create_comm_list (NELEMS);         \
+  gaspi_number_t no_elem = NELEMS;                                    \
+  comm_list_with_n_elems_with_nonzero_size (list, 0, &no_elem)
+
+gaspi_return_t
+write_notify_all_zero_size (gaspi_segment_id_t const seg_id,
+                            gaspi_number_t const nelems)
+{
+  ALL_ZERO_TEST_PROLOGUE (seg_id, nelems);
+
+  do_write_notify_list_wait_notification (list);
+
+  assert_n_write_elem_are_set (0, 2 * nelems, 0);
+
+  return GASPI_SUCCESS;
+}
+
+gaspi_return_t
+read_notify_all_zero_size (gaspi_segment_id_t const seg_id,
+                           gaspi_number_t const nelems)
+{
+  ALL_ZERO_TEST_PROLOGUE (seg_id, nelems);
+
+  do_read_notify_list_wait_notification (list);
+
+  assert_n_read_elem_are_set (0, 2 * nelems, 0);
+
+  return GASPI_SUCCESS;
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -644,6 +677,8 @@ main (int argc, char *argv[])
     ASSERT (write_notify_all_zero_size_except_middle_element (seg_id, nelems));
 
     ASSERT (write_notify_even_are_zero_size_others_not (seg_id, nelems));
+
+    ASSERT (write_notify_all_zero_size (seg_id, nelems));
   }
 
   { //read_notify_list
@@ -654,6 +689,8 @@ main (int argc, char *argv[])
     ASSERT (read_notify_all_zero_size_except_middle_element (seg_id, nelems));
 
     ASSERT (read_notify_even_are_zero_size_others_not (seg_id, nelems));
+
+    ASSERT (read_notify_all_zero_size (seg_id, nelems));
   }
 
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));

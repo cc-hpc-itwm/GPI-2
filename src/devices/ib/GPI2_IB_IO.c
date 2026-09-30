@@ -583,7 +583,11 @@ pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr[0], &bad_wr))
+  /* Without any non-empty entry, only the notification is posted */
+  struct ibv_send_wr *const first_wr =
+    entries_counter > 0 ? &swr[0] : &swrN;
+
+  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], first_wr, &bad_wr))
   {
     return GASPI_ERROR;
   }
@@ -760,7 +764,11 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr[0], &bad_wr))
+  /* Without any non-empty entry, only the notification is posted */
+  struct ibv_send_wr *const first_wr =
+    entries_counter > 0 ? &swr[0] : &swrN;
+
+  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], first_wr, &bad_wr))
   {
     return GASPI_ERROR;
   }
