@@ -282,9 +282,9 @@ pgaspi_segment_alloc_maybe (gaspi_segment_id_t const segment_id,
   /* set fixed notification value ( =1) for read_notify */
   unsigned char *segPtr =
     (unsigned char *) myrank_mseg->notif_spc.addr +
-    notifications_space_size - sizeof (gaspi_notification_t);
+    notifications_space_size - sizeof (gaspi_notification_slot_t);
 
-  gaspi_notification_t *p = (gaspi_notification_t *) segPtr;
+  gaspi_notification_slot_t *p = (gaspi_notification_slot_t *) segPtr;
 
   *p = 1;
 

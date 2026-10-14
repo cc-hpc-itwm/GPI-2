@@ -40,6 +40,11 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define GASPI_MAX_PPN     (256)
 #define GASPI_RW_LIST_ELEM_MAX (255)
 
+/* Storage of one notification in the notification space. Values are
+   gaspi_notification_t (32-bit) but each slot is 64-bit wide so a
+   device can update it with a remote atomic operation. */
+typedef uint64_t gaspi_notification_slot_t;
+
 typedef struct
 {
   ALIGN64 volatile unsigned char lock;

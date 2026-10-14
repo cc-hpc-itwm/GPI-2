@@ -386,8 +386,9 @@ pgaspi_dev_notify (gaspi_context_t * const gctx,
 {
   gaspi_ofi_ctx* ofi_ctx = gctx->device->ctx;
 
-  *((gaspi_notification_t *) (gctx->nsrc.notif_spc.buf +
-                              notification_id * sizeof (gaspi_notification_t))) = notification_value;
+  *((gaspi_notification_slot_t *) (gctx->nsrc.notif_spc.buf +
+                                   notification_id * sizeof (gaspi_notification_slot_t))) =
+    notification_value;
 
   struct ofi_fabric* fabric_ctx = ofi_ctx->rank_fabric_map[rank];
 
@@ -398,8 +399,8 @@ pgaspi_dev_notify (gaspi_context_t * const gctx,
   uint64_t remote_addr =
     fabric_ctx->info->domain_attr->mr_mode & FI_MR_VIRT_ADDR ?
     (uint64_t) (gctx->rrmd[segment_id_remote][rank].notif_spc.addr +
-             notification_id * sizeof (gaspi_notification_t)) :
-    (uint64_t) (notification_id * sizeof (gaspi_notification_t));
+             notification_id * sizeof (gaspi_notification_slot_t)) :
+    (uint64_t) (notification_id * sizeof (gaspi_notification_slot_t));
 
   uint64_t key =
     pgaspi_ofi_is_local_fabric_avail (ofi_ctx, gctx->rank, rank) ?
@@ -410,17 +411,17 @@ pgaspi_dev_notify (gaspi_context_t * const gctx,
 
   struct fi_rma_iov rma_iov =
     { remote_addr,
-      sizeof (gaspi_notification_t),
+      sizeof (gaspi_notification_slot_t),
       key
     };
 
   void* const local_addr =
     (void*) (gctx->nsrc.notif_spc.buf +
-             notification_id * sizeof (gaspi_notification_t));
+             notification_id * sizeof (gaspi_notification_slot_t));
 
   struct iovec iov;
   iov.iov_base = local_addr;
-  iov.iov_len  = sizeof(gaspi_notification_t);
+  iov.iov_len  = sizeof (gaspi_notification_slot_t);
 
   struct fi_msg_rma rma_msg;
 
@@ -497,8 +498,9 @@ pgaspi_dev_write_notify_with_rma_iov (gaspi_context_t * const gctx,
 {
   gaspi_ofi_ctx* ofi_ctx = gctx->device->ctx;
 
-  *((gaspi_notification_t *) (gctx->nsrc.notif_spc.buf +
-                              notification_id * sizeof (gaspi_notification_t))) = notification_value;
+  *((gaspi_notification_slot_t *) (gctx->nsrc.notif_spc.buf +
+                                   notification_id * sizeof (gaspi_notification_slot_t))) =
+    notification_value;
 
   struct ofi_fabric* fabric_ctx = ofi_ctx->rank_fabric_map[rank];
 
@@ -512,8 +514,8 @@ pgaspi_dev_write_notify_with_rma_iov (gaspi_context_t * const gctx,
   uint64_t remote_notf_addr =
     fabric_ctx->info->domain_attr->mr_mode & FI_MR_VIRT_ADDR ?
     (uint64_t) (gctx->rrmd[segment_id_remote][rank].notif_spc.addr +
-             notification_id * sizeof (gaspi_notification_t)) :
-    (uint64_t) (notification_id * sizeof (gaspi_notification_t));
+             notification_id * sizeof (gaspi_notification_slot_t)) :
+    (uint64_t) (notification_id * sizeof (gaspi_notification_slot_t));
 
   uint64_t key =
     pgaspi_ofi_is_local_fabric_avail (ofi_ctx, gctx->rank, rank) ?
@@ -536,7 +538,7 @@ pgaspi_dev_write_notify_with_rma_iov (gaspi_context_t * const gctx,
   rma_iov[0].key = key;
 
   rma_iov[1].addr = remote_notf_addr;
-  rma_iov[1].len = sizeof (gaspi_notification_t);
+  rma_iov[1].len = sizeof (gaspi_notification_slot_t);
   rma_iov[1].key = key_notf;
 
   struct iovec iov[2];
@@ -550,10 +552,10 @@ pgaspi_dev_write_notify_with_rma_iov (gaspi_context_t * const gctx,
   //notification
   void* const local_notf_addr =
     (void*) (gctx->nsrc.notif_spc.buf +
-             notification_id * sizeof (gaspi_notification_t));
+             notification_id * sizeof (gaspi_notification_slot_t));
 
   iov[1].iov_base = local_notf_addr;
-  iov[1].iov_len  = sizeof(gaspi_notification_t);
+  iov[1].iov_len  = sizeof (gaspi_notification_slot_t);
 
   struct fi_msg_rma rma_msg;
 
@@ -703,7 +705,7 @@ pgaspi_dev_remote_notify (gaspi_context_t * const gctx,
 
   gaspi_number_t notifications_space_size = pgaspi_notifications_space_size();
   const size_t notifications_offset =
-    notifications_space_size - sizeof (gaspi_notification_t);
+    notifications_space_size - sizeof (gaspi_notification_slot_t);
 
   uint64_t remote_addr =
     fabric_ctx->info->domain_attr->mr_mode & FI_MR_VIRT_ADDR ?
@@ -712,7 +714,7 @@ pgaspi_dev_remote_notify (gaspi_context_t * const gctx,
 
   void* local_addr =
     (void*)local_seg.notif_spc.addr +
-    notification_id * sizeof (gaspi_notification_t);
+    notification_id * sizeof (gaspi_notification_slot_t);
 
   struct fid_ep *ep = fabric_ctx->qC[queue]->ep;
   fi_addr_t dest = fabric_ctx->io_fi_addr[queue][rank];
@@ -729,7 +731,7 @@ pgaspi_dev_remote_notify (gaspi_context_t * const gctx,
   {
     ret = fi_read (ep,
                    local_addr,
-                   sizeof (gaspi_notification_t),
+                   sizeof (gaspi_notification_slot_t),
                    desc,
                    dest,
                    remote_addr,

@@ -213,8 +213,8 @@ pgaspi_dev_notify (gaspi_context_t * const gctx,
 
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
-  gaspi_notification_t *not_val_ptr =
-    (gaspi_notification_t *) malloc (sizeof (notification_value));
+  gaspi_notification_slot_t *not_val_ptr =
+    (gaspi_notification_slot_t *) malloc (sizeof (gaspi_notification_slot_t));
   *not_val_ptr = notification_value;
 
   tcp_dev_wr_t wr =
@@ -226,8 +226,8 @@ pgaspi_dev_notify (gaspi_context_t * const gctx,
       .local_addr = (uintptr_t) not_val_ptr,
       .remote_addr =
       (gctx->rrmd[segment_id_remote][rank].notif_spc.addr +
-       notification_id * sizeof (gaspi_notification_t)),
-      .length = sizeof (notification_value),
+       notification_id * sizeof (gaspi_notification_slot_t)),
+      .length = sizeof (gaspi_notification_slot_t),
       .swap = 0,
       .opcode = POST_RDMA_WRITE_INLINED
     };
@@ -459,12 +459,12 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
       .target = rank,
       .local_addr =
       (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].notif_spc.addr +
-                   notification_id * sizeof (gaspi_notification_t)),
+                   notification_id * sizeof (gaspi_notification_slot_t)),
       .remote_addr =
         (gctx->rrmd[segment_id_remote][rank].notif_spc.addr
          + notifications_space_size
-         - sizeof (gaspi_notification_t)),
-      .length = sizeof (gaspi_notification_t),
+         - sizeof (gaspi_notification_slot_t)),
+      .length = sizeof (gaspi_notification_slot_t),
       .swap = 0,
       .opcode = POST_RDMA_READ
     };
@@ -522,12 +522,12 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
       .target = rank,
       .local_addr =
       (uintptr_t) (gctx->rrmd[segment_id_notification][gctx->rank].notif_spc.addr +
-          notification_id * sizeof (gaspi_notification_t)),
+          notification_id * sizeof (gaspi_notification_slot_t)),
       .remote_addr =
         (gctx->rrmd[segment_id_notification][rank].notif_spc.addr
          + notifications_space_size
-         - sizeof (gaspi_notification_t)),
-      .length = sizeof (gaspi_notification_t),
+         - sizeof (gaspi_notification_slot_t)),
+      .length = sizeof (gaspi_notification_slot_t),
       .swap = 0,
       .opcode = POST_RDMA_READ
     };

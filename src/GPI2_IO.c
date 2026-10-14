@@ -122,7 +122,7 @@ pgaspi_notifications_space_size (void)
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
 
   gaspi_number_t notifications_space_size =
-      gctx->config->notification_num * sizeof(gaspi_notification_t) + 64;
+      gctx->config->notification_num * sizeof (gaspi_notification_slot_t) + 64;
 
   return notifications_space_size;
 }
@@ -729,7 +729,8 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
     (volatile unsigned char *) gctx->rrmd[segment_id_local][gctx->rank].
     notif_spc.addr;
 
-  volatile gaspi_notification_t *p = (volatile gaspi_notification_t *) segPtr;
+  volatile gaspi_notification_slot_t *p =
+    (volatile gaspi_notification_slot_t *) segPtr;
 
   if (timeout_ms == GASPI_BLOCK)
   {
@@ -834,8 +835,8 @@ pgaspi_notify_reset (const gaspi_segment_id_t segment_id_local,
   }
 #endif
 
-  volatile gaspi_notification_t *notf_addr =
-    (volatile gaspi_notification_t *) gctx->rrmd[segment_id_local][gctx->rank].
+  volatile gaspi_notification_slot_t *notf_addr =
+    (volatile gaspi_notification_slot_t *) gctx->rrmd[segment_id_local][gctx->rank].
     notif_spc.buf;
 
   // TODO: one way to make sure people don't com to reset without
