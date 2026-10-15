@@ -8,5 +8,9 @@ cmd="$*"
 
 echo "MOCK_SSH host=$host cmd=$cmd" >> "$MOCK_LOG"
 
+# A remote login does not inherit the launcher's environment: whatever
+# must reach the remote side has to travel in the command.
+unset GASPI_IB_RELAXED_ORDERING
+
 # Execute the command locally so we can capture program output
 eval "$cmd"

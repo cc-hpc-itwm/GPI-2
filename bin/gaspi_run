@@ -242,7 +242,11 @@ spawn_procs_on_hosts()
 	          if [ -n "$GPI2_TRACE" ]; then
 	              trace_env="GASPI_TRACE=$(printf '%q' "$GPI2_TRACE")"
 	          fi
-	          $GPI2_LAUNCHER "$host" "GPI2_OFI_PROVIDER=$(printf '%q' "$FI_PROVIDER") $trace_env nohup $cmd $(cat /dev/null) 2>&1" &
+	          local ro_env=""
+	          if [ -n "${GASPI_IB_RELAXED_ORDERING:-}" ]; then
+	              ro_env="GASPI_IB_RELAXED_ORDERING=$(printf '%q' "$GASPI_IB_RELAXED_ORDERING")"
+	          fi
+	          $GPI2_LAUNCHER "$host" "GPI2_OFI_PROVIDER=$(printf '%q' "$FI_PROVIDER") $trace_env $ro_env nohup $cmd $(cat /dev/null) 2>&1" &
 	      fi
 
 	      rank=$((rank+count))
@@ -401,6 +405,12 @@ EOF
 if [ -n "$GPI2_TRACE" ]; then
     master_env="$master_env
  export GASPI_TRACE=\"$GPI2_TRACE\""
+fi
+
+# The notification mode must be the same on all ranks: forward it.
+if [ -n "${GASPI_IB_RELAXED_ORDERING:-}" ]; then
+    master_env="$master_env
+ export GASPI_IB_RELAXED_ORDERING=$(printf '%q' "$GASPI_IB_RELAXED_ORDERING")"
 fi
 
 if [ "$first_hostname" != "$hn" ]; then

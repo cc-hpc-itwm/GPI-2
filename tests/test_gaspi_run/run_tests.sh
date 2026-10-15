@@ -9,7 +9,7 @@
 set -u
 
 TEST_DIR="$(cd "$(dirname "$0")" && pwd)"
-GASPI_RUN="$(cd "$TEST_DIR/../../bin" && pwd)/gaspi_run"
+GASPI_RUN="${GASPI_RUN:-$(cd "$TEST_DIR/../../bin" && pwd)/gaspi_run}"
 MOCK_DIR="$TEST_DIR/mocks"
 FIXTURE_DIR="$TEST_DIR/fixtures"
 
@@ -26,6 +26,10 @@ HOSTNAME=$(hostname)
 ######################################################################
 
 setup() {
+    # The tests set these themselves where needed; values exported by the
+    # caller (e.g. when running the whole test suite) must not leak in.
+    unset GASPI_TRACE GASPI_IB_RELAXED_ORDERING
+
     export MOCK_LOG=$(mktemp /tmp/gaspi_test_mock.XXXXXX)
     TEST_STDOUT=$(mktemp /tmp/gaspi_test_out.XXXXXX)
     TEST_STDERR=$(mktemp /tmp/gaspi_test_err.XXXXXX)
@@ -412,6 +416,41 @@ test_trace_in_help() {
 }
 
 ######################################################################
+# Category 3c: IB relaxed ordering forwarding (5 tests)
+######################################################################
+
+test_ro_absent_master_local() {
+    run_gaspi_run -m "$MF_LOCAL" "$FIXTURE_DIR/trace_probe.sh"
+    assert_exit_code 0 &&
+    assert_output_contains "GASPI_IB_RELAXED_ORDERING=<unset>"
+}
+
+test_ro_master_local() {
+    GASPI_IB_RELAXED_ORDERING=1 run_gaspi_run -m "$MF_LOCAL" "$FIXTURE_DIR/trace_probe.sh"
+    assert_exit_code 0 &&
+    assert_output_contains "GASPI_IB_RELAXED_ORDERING=1"
+}
+
+test_ro_propagated_to_local_spawner() {
+    GASPI_IB_RELAXED_ORDERING=1 run_gaspi_run -m "$MF_LOCAL" "$FIXTURE_DIR/trace_probe.sh"
+    assert_exit_code 0 &&
+    assert_mock_log_contains "MOCK_SPAWNER GASPI_IB_RELAXED_ORDERING=1"
+}
+
+test_ro_propagated_to_remote_master() {
+    # The mock ssh drops the variable, so it must travel in the command.
+    GASPI_IB_RELAXED_ORDERING=1 run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/trace_probe.sh"
+    assert_exit_code 0 &&
+    assert_output_contains "GASPI_IB_RELAXED_ORDERING=1"
+}
+
+test_ro_propagated_to_remote_spawner() {
+    GASPI_IB_RELAXED_ORDERING=1 run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/trace_probe.sh"
+    assert_exit_code 0 &&
+    assert_mock_log_contains "MOCK_SPAWNER GASPI_IB_RELAXED_ORDERING=1"
+}
+
+######################################################################
 # Category 3d: Repository consistency (1 test)
 ######################################################################
 
@@ -625,6 +664,11 @@ run_test test_trace_propagated_to_local_spawner
 run_test test_trace_propagated_to_remote_master
 run_test test_trace_no_category_before_binary
 run_test test_trace_in_help
+run_test test_ro_absent_master_local
+run_test test_ro_master_local
+run_test test_ro_propagated_to_local_spawner
+run_test test_ro_propagated_to_remote_master
+run_test test_ro_propagated_to_remote_spawner
 
 # Category 3d: Repository consistency
 echo
