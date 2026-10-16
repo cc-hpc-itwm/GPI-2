@@ -72,6 +72,10 @@ typedef struct
 
   int qpC_cstat[GASPI_MAX_QP];
 
+  /* The NIC places data with relaxed PCIe ordering: set notifications with
+     an atomic (see GASPI_IB_RELAXED_ORDERING) */
+  int relaxed_ordering;
+
 } gaspi_ib_ctx;
 
 #endif // _GPI2_IB_H_

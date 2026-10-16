@@ -136,6 +136,16 @@ pgaspi_ib_dev_print_info (gaspi_context_t * const gctx,
   printf ("\tusing port : %d\n", ib_dev_ctx->ib_port);
   printf ("\tmtu        : %d\n", gctx->config->dev_config.params.ib.mtu);
 
+  /* With relaxed PCIe ordering for all inbound writes (NIC firmware setting
+     PCI_WR_ORDERING=force_relax), a notification may become visible before the
+     data written before it. This cannot be detected without privileges, so it
+     must be set explicitly with GASPI_IB_RELAXED_ORDERING. It is the setting
+     of the node where the data is placed that matters (the target of a
+     write): gaspi_run forwards the variable so all ranks use the same mode. */
+  printf ("\tnotify     : %s\n",
+          ib_dev_ctx->relaxed_ordering ? "atomic write (relaxed ordering)"
+                                       : "RDMA write");
+
   if (gctx->config->network == GASPI_ROCE)
   {
     if (!pgaspi_null_gid (&ib_dev_ctx->gid))
@@ -324,6 +334,9 @@ pgaspi_dev_init_core(gaspi_context_t *const gctx)
   }
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
+
+  const char *ro_env = getenv ("GASPI_IB_RELAXED_ORDERING");
+  ib_dev_ctx->relaxed_ordering = (ro_env != NULL && atoi (ro_env) != 0);
 
   /* TODO: magic number */
   for (int i = 0; i < 64; i++)
