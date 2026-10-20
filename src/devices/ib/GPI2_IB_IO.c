@@ -602,6 +602,50 @@ pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
   return GASPI_SUCCESS;
 }
 
+/* Prepare the work request that reads the notification of a read_notify into
+   the local notification slot. It must be posted after the reads whose data the
+   notification signals, on the same queue pair. */
+static inline void
+pgaspi_ib_prepare_read_notify_wr (gaspi_context_t * const gctx,
+                                  const gaspi_segment_id_t segment_id_local,
+                                  const gaspi_segment_id_t segment_id_remote,
+                                  const gaspi_rank_t rank,
+                                  const gaspi_notification_id_t notification_id,
+                                  struct ibv_sge * const slistN,
+                                  struct ibv_send_wr * const swrN)
+{
+  gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
+
+  slistN->addr =
+    (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].notif_spc.addr +
+                 notification_id * sizeof (gaspi_notification_slot_t));
+  slistN->length = sizeof (gaspi_notification_slot_t);
+  slistN->lkey =
+    ((struct ibv_mr *) gctx->rrmd[segment_id_local][gctx->rank].mr[1])->lkey;
+
+  /* The remote notification space ends with a slot holding the value 1 */
+  gaspi_number_t notifications_space_size = pgaspi_notifications_space_size ();
+  swrN->wr.rdma.remote_addr =
+    (gctx->rrmd[segment_id_remote][rank].notif_spc.addr
+     + notifications_space_size
+     - sizeof (gaspi_notification_slot_t));
+  swrN->wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].rkey[1];
+
+  swrN->sg_list = slistN;
+  swrN->num_sge = 1;
+  swrN->wr_id = rank;
+  swrN->opcode = IBV_WR_RDMA_READ;
+
+  /* With relaxed ordering, the responses of the data read and of the
+     notification read may become visible in local memory out of order. The
+     fence makes the notification read start only after the data reads have
+     completed (IB spec), and the data of a completed read is visible. */
+  swrN->send_flags = ib_dev_ctx->relaxed_ordering
+    ? IBV_SEND_SIGNALED | IBV_SEND_FENCE
+    : IBV_SEND_SIGNALED;
+  swrN->next = NULL;
+}
+
 gaspi_return_t
 pgaspi_dev_read_notify (gaspi_context_t * const gctx,
                         const gaspi_segment_id_t segment_id_local,
@@ -641,26 +685,8 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
   swr.send_flags = IBV_SEND_SIGNALED;
   swr.next = &swrN;
 
-  slistN.addr =
-    (uintptr_t) (gctx->rrmd[segment_id_local][gctx->rank].notif_spc.addr +
-                 notification_id * sizeof (gaspi_notification_slot_t));
-  slistN.length = sizeof (gaspi_notification_slot_t);
-  slistN.lkey =
-    ((struct ibv_mr *) gctx->rrmd[segment_id_local][gctx->rank].mr[1])->lkey;
-
-  gaspi_number_t notifications_space_size = pgaspi_notifications_space_size ();
-  swrN.wr.rdma.remote_addr =
-    (gctx->rrmd[segment_id_remote][rank].notif_spc.addr
-     + notifications_space_size
-     - sizeof (gaspi_notification_slot_t));
-  swrN.wr.rdma.rkey = gctx->rrmd[segment_id_remote][rank].rkey[1];
-
-  swrN.sg_list = &slistN;
-  swrN.num_sge = 1;
-  swrN.wr_id = rank;
-  swrN.opcode = IBV_WR_RDMA_READ;
-  swrN.send_flags = IBV_SEND_SIGNALED;  // | IBV_SEND_FENCE;;
-  swrN.next = NULL;
+  pgaspi_ib_prepare_read_notify_wr (gctx, segment_id_local, segment_id_remote,
+                                    rank, notification_id, &slistN, &swrN);
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
@@ -744,28 +770,9 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
   }
   swr[entry].next = &swrN;
 
-  slistN.addr =
-    (uintptr_t) (gctx->rrmd[segment_id_notification][gctx->rank].
-                 notif_spc.addr +
-                 notification_id * sizeof (gaspi_notification_slot_t));
-  slistN.length = sizeof (gaspi_notification_slot_t);
-  slistN.lkey =
-    ((struct ibv_mr *) gctx->rrmd[segment_id_notification][gctx->rank].
-     mr[1])->lkey;
-
-  gaspi_number_t notifications_space_size = pgaspi_notifications_space_size ();
-  swrN.wr.rdma.remote_addr =
-    (gctx->rrmd[segment_id_notification][rank].notif_spc.addr
-     + notifications_space_size
-     - sizeof (gaspi_notification_slot_t));
-  swrN.wr.rdma.rkey = gctx->rrmd[segment_id_notification][rank].rkey[1];
-
-  swrN.sg_list = &slistN;
-  swrN.num_sge = 1;
-  swrN.wr_id = rank;
-  swrN.opcode = IBV_WR_RDMA_READ;
-  swrN.send_flags = IBV_SEND_SIGNALED;  // | IBV_SEND_FENCE;
-  swrN.next = NULL;
+  pgaspi_ib_prepare_read_notify_wr (gctx, segment_id_notification,
+                                    segment_id_notification, rank,
+                                    notification_id, &slistN, &swrN);
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 

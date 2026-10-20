@@ -138,13 +138,15 @@ pgaspi_ib_dev_print_info (gaspi_context_t * const gctx,
 
   /* With relaxed PCIe ordering for all inbound writes (NIC firmware setting
      PCI_WR_ORDERING=force_relax), a notification may become visible before the
-     data written before it. This cannot be detected without privileges, so it
-     must be set explicitly with GASPI_IB_RELAXED_ORDERING. It is the setting
-     of the node where the data is placed that matters (the target of a
-     write): gaspi_run forwards the variable so all ranks use the same mode. */
+     data written or read before it. This cannot be detected without
+     privileges, so it must be set explicitly with GASPI_IB_RELAXED_ORDERING. It
+     is the setting of the node where the data is placed that matters (the
+     target of a write, the initiator of a read): gaspi_run forwards the
+     variable so all ranks use the same mode. */
   printf ("\tnotify     : %s\n",
-          ib_dev_ctx->relaxed_ordering ? "atomic write (relaxed ordering)"
-                                       : "RDMA write");
+          ib_dev_ctx->relaxed_ordering
+          ? "atomic write, fenced read (relaxed ordering)"
+          : "RDMA write, RDMA read");
 
   if (gctx->config->network == GASPI_ROCE)
   {
