@@ -61,4 +61,25 @@ gaspi_group_exch_info_t*
 pgaspi_group_create_exch_info (gaspi_group_t group,
              int tnc);
 
+/* Sync flag of a collective step as 32-bit immediate data: value (bits
+   0-7), toggle (bit 8), rank in group of the writer (bits 9-24) and
+   group (bits 25-31). */
+#define GPI2_GRP_SYNC_IMM_MAX_GROUPS (128)
+
+static inline uint32_t
+pgaspi_group_sync_imm (const gaspi_group_t group,
+                       const int rank_in_group,
+                       const unsigned char toggle,
+                       const unsigned char value)
+{
+  return ((uint32_t) group << 25)
+    | ((uint32_t) (rank_in_group & 0xffff) << 9)
+    | ((uint32_t) (toggle & 0x1) << 8)
+    | value;
+}
+
+/* Set the sync flag described by imm in the local group buffer */
+void
+pgaspi_group_sync_flag_set (gaspi_context_t * const gctx, const uint32_t imm);
+
 #endif /* GPI2_GRP_H_ */

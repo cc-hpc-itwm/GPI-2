@@ -613,6 +613,12 @@ _gaspi_sync_wait (gaspi_context_t * const gctx,
 
   while (*poll_buf != expected_val)
   {
+    /* the device may deliver sync flags as immediate data */
+    if (pgaspi_dev_poll_group_sync (gctx) < 0)
+    {
+      return GASPI_ERR_DEVICE;
+    }
+
     const gaspi_cycles_t s1 = gaspi_get_cycles();
     const gaspi_cycles_t tdelta = s1 - s0;
     const float ms = (float) tdelta * gctx->cycles_to_msecs;
@@ -623,7 +629,26 @@ _gaspi_sync_wait (gaspi_context_t * const gctx,
     }
   }
 
+  /* the data signalled by the flag is read after the flag */
+  __atomic_thread_fence (__ATOMIC_ACQUIRE);
+
   return GASPI_SUCCESS;
+}
+
+void
+pgaspi_group_sync_flag_set (gaspi_context_t * const gctx, const uint32_t imm)
+{
+  const gaspi_group_t group = (gaspi_group_t) (imm >> 25);
+  const int rank_in_group = (int) ((imm >> 9) & 0xffff);
+  const unsigned char toggle = (unsigned char) ((imm >> 8) & 0x1);
+  const unsigned char value = (unsigned char) (imm & 0xff);
+
+  gaspi_group_ctx_t *const grp_ctx = &(gctx->groups[group]);
+
+  unsigned char *const flag = grp_ctx->rrcd[gctx->rank].data.buf
+    + TOGGLE_SIZE * rank_in_group + toggle;
+
+  __atomic_store_n (flag, value, __ATOMIC_RELEASE);
 }
 
 #define GPI2_GRP_LOCAL_SYNC_ADDR(myrank, grp_ctx) \
@@ -740,14 +765,14 @@ pgaspi_barrier (const gaspi_group_t g, const gaspi_timeout_t timeout_ms)
     }
 
   B0:
-    if (_gaspi_sync_wait
-        (gctx, GPI2_GRP_SYNC_POLL_ADDR (grp_ctx, src), grp_ctx->barrier_cnt,
-         timeout_ms) != GASPI_SUCCESS)
+    eret = _gaspi_sync_wait (gctx, GPI2_GRP_SYNC_POLL_ADDR (grp_ctx, src),
+                             grp_ctx->barrier_cnt, timeout_ms);
+    if (eret != GASPI_SUCCESS)
     {
       grp_ctx->lastmask = mask | 0x80000000;
       unlock_gaspi (&grp_ctx->gl);
       GPI2_TRACE_END (GPI2_EV_BARRIER);
-      return GASPI_TIMEOUT;
+      return eret;
     }
 
     mask <<= 1;
@@ -825,20 +850,17 @@ _gaspi_allreduce_write_and_sync (gaspi_context_t * const gctx,
                                   gctx->config->allreduce_elem_max *
                                   sizeof (unsigned long))));
 
-  if (pgaspi_dev_post_group_write
-      (gctx, send_ptr, buf_size, dst, remote_addr, g) != 0)
-  {
-    gctx->state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
-    return GASPI_ERR_DEVICE;
-  }
-
   unsigned char *barrier_ptr = GPI2_GRP_LOCAL_SYNC_ADDR (gctx->rank, grp_ctx);
 
   barrier_ptr[0] = grp_ctx->barrier_cnt;
 
-  if (pgaspi_dev_post_group_write
-      (gctx, barrier_ptr, 1, dst,
-       (void *) GPI2_GRP_REMOTE_SYNC_ADDR (grp_ctx, dst), g) != 0)
+  const uint32_t imm = pgaspi_group_sync_imm (g, grp_ctx->rank,
+                                              grp_ctx->toggle,
+                                              grp_ctx->barrier_cnt);
+
+  if (pgaspi_dev_post_group_write_sync
+      (gctx, send_ptr, buf_size, dst, remote_addr, barrier_ptr,
+       (void *) GPI2_GRP_REMOTE_SYNC_ADDR (grp_ctx, dst), imm, g) != 0)
   {
     gctx->state_vec[GASPI_COLL_QP][dst] = GASPI_STATE_CORRUPT;
     return GASPI_ERR_DEVICE;
@@ -902,6 +924,7 @@ _gaspi_allreduce (gaspi_context_t * const gctx,
 {
   int idst, dst, bid = 0;
   int mask, tmprank, tmpdst;
+  gaspi_return_t sret;
 
   gaspi_group_ctx_t *const grp_ctx = &(gctx->groups[g]);
 
@@ -967,12 +990,14 @@ _gaspi_allreduce (gaspi_context_t * const gctx,
     }
     else
     {
-      if (_gaspi_sync_wait
-          (gctx, GPI2_GRP_SYNC_POLL_ADDR (grp_ctx, (rank_in_grp - 1)),
-           grp_ctx->barrier_cnt, timeout_ms) != GASPI_SUCCESS)
+      sret =
+        _gaspi_sync_wait (gctx,
+                          GPI2_GRP_SYNC_POLL_ADDR (grp_ctx, (rank_in_grp - 1)),
+                          grp_ctx->barrier_cnt, timeout_ms);
+      if (sret != GASPI_SUCCESS)
       {
         grp_ctx->level = 1;
-        return GASPI_TIMEOUT;
+        return sret;
       }
 
       if (_gaspi_apply_redux (g, &send_ptr, recv_ptr, bid, r_args, timeout_ms)
@@ -1025,13 +1050,14 @@ L2:
         return GASPI_ERR_DEVICE;
       }
     J2:
-      if (_gaspi_sync_wait
-          (gctx, GPI2_GRP_SYNC_POLL_ADDR (grp_ctx, idst), grp_ctx->barrier_cnt,
-           timeout_ms) != GASPI_SUCCESS)
+      sret =
+        _gaspi_sync_wait (gctx, GPI2_GRP_SYNC_POLL_ADDR (grp_ctx, idst),
+                          grp_ctx->barrier_cnt, timeout_ms);
+      if (sret != GASPI_SUCCESS)
       {
         grp_ctx->lastmask = (mask | 0x80000000);
         grp_ctx->bid = bid;
-        return GASPI_TIMEOUT;
+        return sret;
       }
 
       if (_gaspi_apply_redux (g, &send_ptr, recv_ptr, bid, r_args, timeout_ms)
@@ -1065,11 +1091,13 @@ L3:
     }
     else
     {
-      if (_gaspi_sync_wait
-          (gctx, GPI2_GRP_SYNC_POLL_ADDR (grp_ctx, (rank_in_grp + 1)),
-           grp_ctx->barrier_cnt, timeout_ms) != GASPI_SUCCESS)
+      sret =
+        _gaspi_sync_wait (gctx,
+                          GPI2_GRP_SYNC_POLL_ADDR (grp_ctx, (rank_in_grp + 1)),
+                          grp_ctx->barrier_cnt, timeout_ms);
+      if (sret != GASPI_SUCCESS)
       {
-        return GASPI_TIMEOUT;
+        return sret;
       }
 
       bid += grp_ctx->pof2_exp;

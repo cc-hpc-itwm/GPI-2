@@ -96,3 +96,28 @@ pgaspi_dev_poll_groups (gaspi_context_t * const gctx)
 
   return nr;
 }
+
+int
+pgaspi_dev_post_group_write_sync (gaspi_context_t * const gctx,
+                                  void *local_addr, int length, int dst,
+                                  void *remote_addr,
+                                  void *flag_local_addr,
+                                  void *flag_remote_addr,
+                                  uint32_t GASPI_UNUSED (imm),
+                                  unsigned char group)
+{
+  if (pgaspi_dev_post_group_write (gctx, local_addr, length, dst,
+                                   remote_addr, group) != 0)
+  {
+    return 1;
+  }
+
+  return pgaspi_dev_post_group_write (gctx, flag_local_addr, 1, dst,
+                                      flag_remote_addr, group);
+}
+
+int
+pgaspi_dev_poll_group_sync (gaspi_context_t * const GASPI_UNUSED (gctx))
+{
+  return 0;
+}

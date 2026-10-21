@@ -28,6 +28,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GASPI_types.h"
 #include "GPI2_CM.h"
 #include "GPI2_Dev.h"
+#include "GPI2_GRP.h"
 #include "GPI2_IB.h"
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
@@ -339,6 +340,17 @@ pgaspi_dev_init_core(gaspi_context_t *const gctx)
 
   const char *ro_env = getenv ("GASPI_IB_RELAXED_ORDERING");
   ib_dev_ctx->relaxed_ordering = (ro_env != NULL && atoi (ro_env) != 0);
+
+  /* The group id of a collective's sync flag sent as immediate data has 7
+     bits (see pgaspi_group_sync_imm) */
+  if (ib_dev_ctx->relaxed_ordering
+      && gctx->config->group_max > GPI2_GRP_SYNC_IMM_MAX_GROUPS)
+  {
+    fprintf (stderr, "GASPI_IB_RELAXED_ORDERING requires group_max <= %d"
+             " (configured: %u)\n", GPI2_GRP_SYNC_IMM_MAX_GROUPS,
+             gctx->config->group_max);
+    return -1;
+  }
 
   /* TODO: magic number */
   for (int i = 0; i < 64; i++)
@@ -964,6 +976,17 @@ pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx, const int i,
       return -1;
     }
 #endif
+
+    /* Accept sync flags as immediate data even without relaxed ordering
+       locally: a peer with GASPI_IB_RELAXED_ORDERING set sends them, and
+       without posted receives its writes would be retried forever. */
+    const int depth = MIN (GPI2_IB_GRP_RECV_DEPTH,
+                           (int) gctx->config->queue_size_max);
+
+    if (pgaspi_ib_post_group_recvs (gctx, i, depth) != 0)
+    {
+      return -1;
+    }
 
     ib_dev_ctx->local_info[i].qpnGroup = ib_dev_ctx->qpGroups[i]->qp_num;
 

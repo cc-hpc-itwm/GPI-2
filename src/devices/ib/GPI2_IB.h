@@ -73,9 +73,19 @@ typedef struct
   int qpC_cstat[GASPI_MAX_QP];
 
   /* The NIC places data with relaxed PCIe ordering: set notifications with
-     an atomic and fence notification reads (see GASPI_IB_RELAXED_ORDERING) */
+     an atomic, fence notification reads and send the allreduce sync flags as
+     immediate data (see GASPI_IB_RELAXED_ORDERING) */
   int relaxed_ordering;
 
 } gaspi_ib_ctx;
+
+/* Receive requests posted on each groups QP for the sync flags delivered as
+   immediate data by peers with relaxed ordering. A rank receives at most a
+   few of them per peer before polling (the collectives synchronize), so a
+   small depth suffices; more only delay the sender (RNR retry). */
+#define GPI2_IB_GRP_RECV_DEPTH (16)
+
+int pgaspi_ib_post_group_recvs (gaspi_context_t const *const gctx,
+                                const int rank, const int count);
 
 #endif // _GPI2_IB_H_

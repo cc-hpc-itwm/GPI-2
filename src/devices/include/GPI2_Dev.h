@@ -79,6 +79,27 @@ pgaspi_dev_post_group_write (gaspi_context_t * const,
                              void *,
                              unsigned char);
 
+/* Write the data of a collective step to rank dst, followed by the sync
+   flag that tells dst the data has arrived. A device may instead deliver
+   the flag as immediate data together with the data (imm, see
+   pgaspi_group_sync_imm); the receiving side then sets the flag in
+   pgaspi_dev_poll_group_sync. */
+int
+pgaspi_dev_post_group_write_sync (gaspi_context_t * const,
+                                  void *local_addr,
+                                  int length,
+                                  int dst,
+                                  void *remote_addr,
+                                  void *flag_local_addr,
+                                  void *flag_remote_addr,
+                                  uint32_t imm,
+                                  unsigned char group);
+
+/* Set the sync flags delivered as immediate data (see
+   pgaspi_dev_post_group_write_sync). Returns the number of flags set or
+   -1 on error. */
+int pgaspi_dev_poll_group_sync (gaspi_context_t * const);
+
 int pgaspi_dev_queue_size (const gaspi_queue_id_t);
 
 gaspi_return_t
