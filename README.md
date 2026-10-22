@@ -442,6 +442,34 @@ libraries, try to setup directly the MPI compilers (wrappers) through
 the environment variables CC and FC.
 
 
+### Infiniband with relaxed PCIe ordering
+
+On NVIDIA (Mellanox) NICs the firmware setting `PCI_WR_ORDERING=1`
+(`force_relax`) makes all writes of the NIC to host memory relaxed-ordered. With
+it, a notification may become visible before the data transferred just before
+it, so the application can read stale data. This affects `gaspi_notify` after
+`gaspi_write`, `gaspi_write_notify` and `gaspi_write_list_notify` at the target,
+and `gaspi_read_notify` and `gaspi_read_list_notify` at the initiator. It also
+affects `gaspi_allreduce`, which may compute its result from stale data. The
+default setting (`PCI_WR_ORDERING=0`, `per_mkey`) is not affected.
+
+If any node of a job uses `force_relax`, set `GASPI_IB_RELAXED_ORDERING=1` when
+starting the application:
+
+```
+GASPI_IB_RELAXED_ORDERING=1 gaspi_run -m machinefile my_app
+```
+
+Applications that signal the arrival of data with their own flag, written with
+`gaspi_write` after the data, instead of a notification remain affected, also
+with the variable set: GASPI only guarantees that the data written before a
+notification on the same queue has arrived when the notification is seen.
+
+GPI-2 cannot detect the NIC setting itself, so system administrators of affected
+clusters should set the variable for all users, for example in the GPI-2
+environment module.
+
+
 ### Environment variables
 
 You might have some trouble when your application requires some
