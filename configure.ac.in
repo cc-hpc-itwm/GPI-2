@@ -61,7 +61,7 @@ AM_INIT_AUTOMAKE([foreign nostdinc AUTOMAKE_SUBDIRS])
 
 # LIBTOOL
 LT_PREREQ([2.2])
-LT_INIT()
+LT_INIT([disable-fast-install])
 
 # CHECKS FOR PROGRAMS.
 TITLE([Checking for other used headers and libs, typedefs, structures and compiler characteristics])
