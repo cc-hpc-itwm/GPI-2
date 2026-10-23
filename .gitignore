@@ -3,7 +3,9 @@ machines
 *.log
 
 src/gaspi_logger
+src/gpi2_trace_dump
 src/GPI2.pc
+*.mod
 docs/Doxyfile
 src/.libs
 
