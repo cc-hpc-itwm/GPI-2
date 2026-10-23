@@ -492,6 +492,8 @@ pgaspi_cleanup_core (gaspi_context_t * const gctx)
     gctx->topology = NULL;
   }
 
+  gaspi_sn_release ();
+
   /* Release ctx_lock for group deletion (which acquires its own locks)
    * and re-acquire before device cleanup. The caller (pgaspi_proc_term)
    * expects ctx_lock to be held on return. */

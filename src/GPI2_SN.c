@@ -253,27 +253,110 @@ gaspi_sn_create_listen_socket (int port)
   return lsock;
 }
 
+/* Resolved addresses per host, kept until gaspi_sn_release: resolving can
+   take ~30 ms, and the SN connects to the same hosts again and again. */
+struct sn_resolved
+{
+  char *hn;
+  struct addrinfo *addrs;
+  struct sn_resolved *next;
+};
+
+static struct sn_resolved *sn_resolved_list = NULL;
+static gaspi_lock_t sn_resolved_lock;
+
+static const struct addrinfo *
+gaspi_sn_resolve (const char *const hn)
+{
+  lock_gaspi (&sn_resolved_lock);
+
+  struct sn_resolved *e = sn_resolved_list;
+  while (e != NULL && strcmp (e->hn, hn) != 0)
+  {
+    e = e->next;
+  }
+
+  if (NULL == e)
+  {
+    struct addrinfo hints;
+    memset (&hints, 0, sizeof (hints));
+    hints.ai_family   = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    struct addrinfo *addrs;
+
+    /* A failure is not cached: the next attempt resolves again. */
+    if (getaddrinfo (hn, NULL, &hints, &addrs) == 0)
+    {
+      e = malloc (sizeof (*e));
+      if (e != NULL && (e->hn = strdup (hn)) != NULL)
+      {
+        e->addrs = addrs;
+        e->next = sn_resolved_list;
+        sn_resolved_list = e;
+      }
+      else
+      {
+        free (e);
+        e = NULL;
+        freeaddrinfo (addrs);
+      }
+    }
+  }
+
+  unlock_gaspi (&sn_resolved_lock);
+
+  return e != NULL ? e->addrs : NULL;
+}
+
+static void
+gaspi_sn_free_resolved (void)
+{
+  lock_gaspi (&sn_resolved_lock);
+
+  while (sn_resolved_list != NULL)
+  {
+    struct sn_resolved *e = sn_resolved_list;
+    sn_resolved_list = e->next;
+
+    freeaddrinfo (e->addrs);
+    free (e->hn);
+    free (e);
+  }
+
+  unlock_gaspi (&sn_resolved_lock);
+}
+
 static int
 gaspi_sn_connect2port_intern (const char *const hn, const unsigned short port)
 {
-  char port_str[8];
-  snprintf (port_str, sizeof (port_str), "%hu", port);
-
-  struct addrinfo hints;
-  memset (&hints, 0, sizeof (hints));
-  hints.ai_family   = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-
-  struct addrinfo *results;
-  if (getaddrinfo (hn, port_str, &hints, &results) != 0)
+  const struct addrinfo *results = gaspi_sn_resolve (hn);
+  if (NULL == results)
   {
     return GPI2_SN_ERROR;
   }
 
   int sockfd = -1;
 
-  for (struct addrinfo *r = results; r != NULL; r = r->ai_next)
+  for (const struct addrinfo *r = results; r != NULL; r = r->ai_next)
   {
+    /* Resolved without a service: set the port on a copy. */
+    struct sockaddr_storage addr;
+    memcpy (&addr, r->ai_addr, r->ai_addrlen);
+
+    if (AF_INET == r->ai_family)
+    {
+      ((struct sockaddr_in *) &addr)->sin_port = htons (port);
+    }
+    else if (AF_INET6 == r->ai_family)
+    {
+      ((struct sockaddr_in6 *) &addr)->sin6_port = htons (port);
+    }
+    else
+    {
+      continue;
+    }
+
     sockfd = socket (r->ai_family, r->ai_socktype, r->ai_protocol);
     if (sockfd < 0)
     {
@@ -285,7 +368,6 @@ gaspi_sn_connect2port_intern (const char *const hn, const unsigned short port)
         }
         if (sockfd < 0)
         {
-          freeaddrinfo (results);
           return GPI2_SN_EMFILE;
         }
       }
@@ -298,7 +380,7 @@ gaspi_sn_connect2port_intern (const char *const hn, const unsigned short port)
     /* TODO: we need to be able to distinguish between an initialization
        connection attempt and a connection attempt during run-time where
        the remote node is gone (FT) */
-    if (connect (sockfd, r->ai_addr, r->ai_addrlen) == 0)
+    if (connect (sockfd, (struct sockaddr *) &addr, r->ai_addrlen) == 0)
     {
       if (gaspi_sn_set_default_opts (sockfd) != 0)
       {
@@ -308,7 +390,6 @@ gaspi_sn_connect2port_intern (const char *const hn, const unsigned short port)
         continue;
       }
 
-      freeaddrinfo (results);
       return sockfd;
     }
 
@@ -316,7 +397,6 @@ gaspi_sn_connect2port_intern (const char *const hn, const unsigned short port)
     sockfd = -1;
   }
 
-  freeaddrinfo (results);
   return GPI2_SN_ERROR;
 }
 
@@ -345,13 +425,13 @@ gaspi_sn_connect2port (const char *const hn, const unsigned short port,
       {
         return GPI2_SN_TIMEOUT;
       }
-    }
 
-    /* exponential backoff */
-    usleep (cur_backoff);
-    if (cur_backoff < max_backoff)
-    {
-      cur_backoff *= 2;
+      /* exponential backoff */
+      usleep (cur_backoff);
+      if (cur_backoff < max_backoff)
+      {
+        cur_backoff *= 2;
+      }
     }
   }
 
@@ -893,12 +973,65 @@ _gaspi_sn_single_command (const gaspi_rank_t rank, const enum gaspi_sn_ops op)
   NOTE that atm NO ordering of data is guaranteed in the recv buffer
   ie. that data of rank 0 is in recv[0], rank 1 in recv[1].
 
-*/
-int
-gaspi_sn_allgather (gaspi_context_t const *const gctx,
-                    void const *const src,
-                    void *const recv, size_t size,
-                    gaspi_group_t group, gaspi_timeout_t timeout_ms)
+  The listening socket stays open between allgathers, so that an early
+  neighbour waits in the backlog instead of backing off. It is closed on a
+  failure, so that the next allgather takes no late connection. */
+
+static int sn_allgather_lsock = -1;
+
+static void
+gaspi_sn_allgather_close_listen (void)
+{
+  if (sn_allgather_lsock >= 0)
+  {
+    close (sn_allgather_lsock);
+    sn_allgather_lsock = -1;
+  }
+}
+
+static int
+gaspi_sn_allgather_accept (int port, gaspi_timeout_t timeout_ms)
+{
+  if (sn_allgather_lsock < 0)
+  {
+    sn_allgather_lsock = gaspi_sn_create_listen_socket (port);
+    if (sn_allgather_lsock < 0)
+    {
+      GASPI_DEBUG_PRINT_ERROR ("Failed to create listen socket on port %d.",
+                               port);
+      sn_allgather_lsock = -1;
+      return GPI2_SN_ERROR;
+    }
+  }
+
+  struct pollfd pfd_read;
+
+  pfd_read.fd = sn_allgather_lsock;
+  pfd_read.events = POLLIN;
+  const int pollret = poll (&pfd_read, 1, timeout_ms);
+
+  if (pollret <= 0)
+  {
+    gaspi_sn_allgather_close_listen ();
+    return pollret == 0 ? GPI2_SN_TIMEOUT : GPI2_SN_ERROR;
+  }
+
+  int nsock = accept (sn_allgather_lsock, NULL, NULL);
+  if (nsock < 0)
+  {
+    GASPI_DEBUG_PRINT_ERROR ("Failed to accept connection.");
+    gaspi_sn_allgather_close_listen ();
+    return GPI2_SN_ERROR;
+  }
+
+  return nsock;
+}
+
+static int
+gaspi_sn_allgather_ring (gaspi_context_t const *const gctx,
+                         void const *const src,
+                         void *const recv, size_t size,
+                         gaspi_group_t group, gaspi_timeout_t timeout_ms)
 {
   int left_sock = -1, right_sock = -1;
 
@@ -920,7 +1053,7 @@ gaspi_sn_allgather (gaspi_context_t const *const gctx,
   if ((grp_ctx->rank % 2) == 0
       && !((grp_ctx->rank == grp_ctx->tnc - 1) && (grp_ctx->tnc % 2 != 0)))
   {
-    left_sock = _gaspi_sn_wait_connection (port_to_wait, timeout_ms);
+    left_sock = gaspi_sn_allgather_accept (port_to_wait, timeout_ms);
     if (left_sock < 0)
     {
       GASPI_DEBUG_PRINT_ERROR ("Failed to accept connection on %d(%d).",
@@ -952,7 +1085,7 @@ gaspi_sn_allgather (gaspi_context_t const *const gctx,
       return GPI2_SN_ERROR;
     }
 
-    left_sock = _gaspi_sn_wait_connection (port_to_wait, timeout_ms);
+    left_sock = gaspi_sn_allgather_accept (port_to_wait, timeout_ms);
     if (left_sock < 0)
     {
       close (right_sock);
@@ -1028,6 +1161,22 @@ gaspi_sn_allgather (gaspi_context_t const *const gctx,
   close (left_sock);
 
   return 0;
+}
+
+int
+gaspi_sn_allgather (gaspi_context_t const *const gctx,
+                    void const *const src,
+                    void *const recv, size_t size,
+                    gaspi_group_t group, gaspi_timeout_t timeout_ms)
+{
+  const int ret =
+    gaspi_sn_allgather_ring (gctx, src, recv, size, group, timeout_ms);
+  if (ret != 0)
+  {
+    gaspi_sn_allgather_close_listen ();
+  }
+
+  return ret;
 }
 
 static inline int
@@ -1435,10 +1584,12 @@ gaspi_sn_backend (void* GASPI_UNUSED (args))
 
   const gaspi_timeout_t sn_config_timeout = gctx->config->sn_timeout;
 
-  //TODO: still needed? why?
+  /* Wait for the topology (the listen port depends on the local rank),
+     sleeping: the main thread may share the core. */
+  const struct timespec topo_pause = { 0, 50000 };
   while (gctx->master_topo_data == 0)
   {
-    GASPI_DELAY();
+    nanosleep (&topo_pause, NULL);
   }
 
   lsock = gaspi_sn_create_listen_socket (gctx->config->sn_port
@@ -1793,4 +1944,11 @@ gaspi_sn_backend (void* GASPI_UNUSED (args))
   free (ret_ev);
 
   return NULL;
+}
+
+void
+gaspi_sn_release (void)
+{
+  gaspi_sn_free_resolved ();
+  gaspi_sn_allgather_close_listen ();
 }

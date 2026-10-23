@@ -109,4 +109,7 @@ gaspi_sn_connect2port (const char *hn,
                        const unsigned short port,
                        const unsigned long timeout_ms);
 
+/* Releases what the SN keeps between calls. */
+void gaspi_sn_release (void);
+
 #endif
