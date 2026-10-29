@@ -96,6 +96,10 @@ tsuite_init (int argc, char *argv[])
       {
         config.network = GASPI_ROCE;
       }
+      if (strcmp (argv[i], "GASPI_OFI") == 0)
+      {
+        config.network = GASPI_OFI;
+      }
       if (strcmp (argv[i], "STATIC_TOPO") == 0)
       {
         config.build_infrastructure = GASPI_TOPOLOGY_STATIC;

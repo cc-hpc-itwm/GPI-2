@@ -11,7 +11,10 @@ passive_tests = ../../bin/passive.bin \
       ../../bin/passive_recvtimeout.bin \
       ../../bin/passive_tout_test.bin   \
       ../../bin/passive_queue_max_config.bin \
-      ../../bin/passive_send_recv_notify.bin
+      ../../bin/passive_send_recv_notify.bin \
+      ../../bin/passive_send_retry.bin \
+      ../../bin/passive_recv_fabrics.bin \
+      ../../bin/passive_recv_cancel.bin
 
 
 ______bin_passive_bin_SOURCES = passive.c $(auxSRCS)
@@ -25,6 +28,9 @@ ______bin_passive_recvtimeout_bin_SOURCES = passive_recvtimeout.c $(auxSRCS)
 ______bin_passive_tout_test_bin_SOURCES = passive_tout_test.c $(auxSRCS)
 ______bin_passive_queue_max_config_bin_SOURCES= passive_queue_max_config.c $(auxSRCS)
 ______bin_passive_send_recv_notify_bin_SOURCES= passive_send_recv_notify.c $(auxSRCS)
+______bin_passive_send_retry_bin_SOURCES = passive_send_retry.c $(auxSRCS)
+______bin_passive_recv_cancel_bin_SOURCES = passive_recv_cancel.c $(auxSRCS)
+______bin_passive_recv_fabrics_bin_SOURCES = passive_recv_fabrics.c $(auxSRCS)
 
 ______bin_passive_send_recv_notify_bin_LDFLAGS= -lpthread
 

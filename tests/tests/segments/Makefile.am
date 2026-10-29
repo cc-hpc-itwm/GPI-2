@@ -10,7 +10,9 @@ segments_tests = ../../bin/max_mem.bin \
       ../../bin/seg_create_all_usermsegs.bin \
       ../../bin/seg_create_same.bin \
       ../../bin/seg_id_list.bin \
+      ../../bin/seg_overlap.bin \
       ../../bin/seg_reuse.bin \
+      ../../bin/seg_reuse_noshm.bin \
       ../../bin/seg_reuse_buffer.bin \
       ../../bin/seg_subsegments.bin \
       ../../bin/seg_use_buffer.bin
@@ -25,7 +27,9 @@ ______bin_seg_create_all_bin_SOURCES = seg_create_all.c $(auxSRCS)
 ______bin_seg_create_all_usermsegs_bin_SOURCES = seg_create_all_usermsegs.c $(auxSRCS)
 ______bin_seg_create_same_bin_SOURCES = seg_create_same.c $(auxSRCS)
 ______bin_seg_id_list_bin_SOURCES = seg_id_list.c $(auxSRCS)
+______bin_seg_overlap_bin_SOURCES = seg_overlap.c $(auxSRCS)
 ______bin_seg_reuse_bin_SOURCES = seg_reuse.c $(auxSRCS)
+______bin_seg_reuse_noshm_bin_SOURCES = seg_reuse_noshm.c $(auxSRCS)
 ______bin_seg_reuse_buffer_bin_SOURCES = seg_reuse_buffer.c $(auxSRCS)
 ______bin_seg_subsegments_bin_SOURCES = seg_subsegments.c $(auxSRCS)
 ______bin_seg_use_buffer_bin_SOURCES = seg_use_buffer.c $(auxSRCS)

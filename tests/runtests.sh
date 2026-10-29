@@ -57,6 +57,7 @@ detect_device()
     if [ -r "${RUNTESTS_DIR}/defs/default.def" ]; then
 	      case "`gawk 'BEGIN{FS=\"=\"} /NETWORK/{print $2}' ${RUNTESTS_DIR}/defs/default.def`" in
 	          *IB*)       echo ib  ; return ;;
+	          *OFI*)      echo ofi ; return ;;
 	          *ETHERNET*) echo tcp ; return ;;
 	      esac
     fi

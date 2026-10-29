@@ -23,7 +23,10 @@ test_defs_pkgdata_DATA = $(abs_top_srcdir)/tests/defs/barrier_recover.def \
 		$(abs_top_srcdir)/tests/defs/barrier_recover_ping.def \
 		$(abs_top_srcdir)/tests/defs/cmd_line_args.def \
 		$(abs_top_srcdir)/tests/defs/default_ib.def \
+		$(abs_top_srcdir)/tests/defs/default_ofi.def \
 		$(abs_top_srcdir)/tests/defs/default_tcp.def \
+		$(abs_top_srcdir)/tests/defs/one_dies_passive_atomic.def \
+		$(abs_top_srcdir)/tests/defs/passive_send_dead.def \
 		$(abs_top_builddir)/tests/defs/active_device
 
 # INSTALL RUN SCRIPT
@@ -34,8 +37,13 @@ if WITH_INFINIBAND
 defaults:
 	cp $(prefix)/tests/defs/default_ib.def $(prefix)/tests/defs/default.def
 else
+if WITH_OFI
+defaults:
+	cp $(prefix)/tests/defs/default_ofi.def $(prefix)/tests/defs/default.def
+else
 defaults:
 	cp $(prefix)/tests/defs/default_tcp.def $(prefix)/tests/defs/default.def
+endif
 endif
 install-data-hook:
 	$(MAKE) defaults

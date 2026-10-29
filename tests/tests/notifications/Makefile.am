@@ -11,6 +11,7 @@ notifications_tests = ../../bin/not_zero_wait.bin \
       ../../bin/notify_waitsome_mt.bin \
       ../../bin/notify_waitsome_timeout.bin \
       ../../bin/read_notify.bin \
+      ../../bin/read_notify_nowait.bin \
       ../../bin/write_m_to_1.bin \
       ../../bin/write_notify.bin \
       ../../bin/write_notify_outstanding.bin \
@@ -33,6 +34,7 @@ ______bin_notify_null_bin_SOURCES = notify_null.c $(auxSRCS)
 ______bin_notify_waitsome_mt_bin_SOURCES = notify_waitsome_mt.c $(auxSRCS)
 ______bin_notify_waitsome_timeout_bin_SOURCES = notify_waitsome_timeout.c $(auxSRCS)
 ______bin_read_notify_bin_SOURCES = read_notify.c $(auxSRCS)
+______bin_read_notify_nowait_bin_SOURCES = read_notify_nowait.c $(auxSRCS)
 ______bin_write_m_to_1_bin_SOURCES = write_m_to_1.c $(auxSRCS)
 ______bin_write_notify_bin_SOURCES = write_notify.c $(auxSRCS)
 ______bin_write_notify_outstanding_bin_SOURCES = write_notify_outstanding.c $(auxSRCS)
