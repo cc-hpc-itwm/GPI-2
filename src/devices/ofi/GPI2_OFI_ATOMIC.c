@@ -28,6 +28,8 @@ pgaspi_dev_poll_single_entry (struct ofi_fabric* fabric_ctx)
 {
   ssize_t ret = -1;
 
+  pgaspi_ofi_wait_begin();
+
   // Wait for the operation to complete by polling the CQ
   do
   {
@@ -36,6 +38,15 @@ pgaspi_dev_poll_single_entry (struct ofi_fabric* fabric_ctx)
 
     if (ret < 0 && ret != -FI_EAGAIN)
     {
+      pgaspi_ofi_wait_end();
+
+      /* An error completion fails the operation; the caller marks the rank. */
+      if (ret == -FI_EAVAIL
+          && 0 == pgaspi_ofi_cq_readerr (fabric_ctx->qAtomic->scq, NULL))
+      {
+        return GASPI_ERROR;
+      }
+
       GASPI_DEBUG_PRINT_ERROR
         ("Atomic CQ read error (%ld: %s)\n", ret, fi_strerror (-ret));
 
@@ -43,6 +54,8 @@ pgaspi_dev_poll_single_entry (struct ofi_fabric* fabric_ctx)
     }
   }
   while (ret <= 0);
+
+  pgaspi_ofi_wait_end();
 
   return GASPI_SUCCESS;
 }
@@ -56,34 +69,42 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
 {
   gaspi_ofi_ctx* ofi_ctx = gctx->device->ctx;
 
-  struct ofi_fabric* fabric_ctx = ofi_ctx->rank_fabric_map[rank];
+  /* Always the remote fabric: atomics across providers are not atomic. */
+  struct ofi_fabric* fabric_ctx = ofi_ctx->fabric_ctx[0];
 
   uint64_t remote_addr =
     fabric_ctx->info->domain_attr->mr_mode & FI_MR_VIRT_ADDR ?
     (uint64_t)(gctx->rrmd[segment_id][rank].data.addr + offset) :
     (uint64_t) offset;
 
-  void* const local_desc =
-    pgaspi_dev_get_mr_desc (gctx,
-                            gctx->rrmd[segment_id][gctx->rank].mr[0],
-                            rank);
-  void* const result_desc = pgaspi_dev_get_mr_desc (gctx, gctx->nsrc.mr[0], rank);
+  /* The operand goes into registered internal memory (FI_MR_LOCAL needs a
+     descriptor); others get none (cxi maps it). Atomics are serialized and
+     complete before returning. */
+  gaspi_atomic_value_t* const values =
+    (gaspi_atomic_value_t*) gctx->nsrc.data.buf;
+  values[1] = val_add;
+  void* const desc = pgaspi_ofi_get_remote_mr_desc (gctx->nsrc.mr[0]);
+  void* const operand_desc =
+    fabric_ctx->info->domain_attr->mr_mode & FI_MR_LOCAL ? desc : NULL;
 
-  uint64_t key =
-    pgaspi_ofi_is_local_fabric_avail (ofi_ctx, gctx->rank, rank) ?
-    gctx->rrmd[segment_id][rank].rkey[0].local :
-    gctx->rrmd[segment_id][rank].rkey[0].remote;
+  uint64_t key = gctx->rrmd[segment_id][rank].rkey[0].remote;
+
+  if (pgaspi_ofi_peer_known_dead (gctx, rank))
+  {
+    return GASPI_ERROR;
+  }
 
   ssize_t ret;
+  gaspi_cycles_t since = 0;
 
   do
   {
     ret = fi_fetch_atomic (fabric_ctx->qAtomic->ep,
-                           &val_add,
+                           &values[1],
                            1,
-                           local_desc,
-                           gctx->nsrc.data.buf,
-                           result_desc,
+                           operand_desc,
+                           &values[0],
+                           desc,
                            fabric_ctx->atomic_fi_addr[rank],
                            remote_addr,
                            key,
@@ -95,6 +116,17 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
     {
       GASPI_DEBUG_PRINT_ERROR ("Error initiating atomic fetch_add");
       return GASPI_ERR_DEVICE;
+    }
+
+    if (ret)
+    {
+      /* Marked dead by the ping. */
+      if (pgaspi_ofi_peer_dead (gctx, rank, &since))
+      {
+        return GASPI_ERROR;
+      }
+
+      pgaspi_ofi_progress_queue (fabric_ctx->qAtomic);
     }
   } while (ret);
 
@@ -111,7 +143,8 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
 {
   gaspi_ofi_ctx* ofi_ctx = gctx->device->ctx;
 
-  struct ofi_fabric* fabric_ctx = ofi_ctx->rank_fabric_map[rank];
+  /* Always the remote fabric: atomics across providers are not atomic. */
+  struct ofi_fabric* fabric_ctx = ofi_ctx->fabric_ctx[0];
 
   ssize_t ret;
 
@@ -120,28 +153,33 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
     (uint64_t)(gctx->rrmd[segment_id][rank].data.addr + offset) :
     (uint64_t) offset;
 
-    void* const local_desc =
-    pgaspi_dev_get_mr_desc (gctx,
-                            gctx->rrmd[segment_id][gctx->rank].mr[0],
-                            rank);
-  void* const result_desc =
-    pgaspi_dev_get_mr_desc (gctx, gctx->nsrc.mr[0], rank);
+  /* The operands go into internal registered memory, as for fetch_add. */
+  gaspi_atomic_value_t* const values =
+    (gaspi_atomic_value_t*) gctx->nsrc.data.buf;
+  values[1] = val_new;
+  values[2] = comparator;
+  void* const desc = pgaspi_ofi_get_remote_mr_desc (gctx->nsrc.mr[0]);
+  void* const operand_desc =
+    fabric_ctx->info->domain_attr->mr_mode & FI_MR_LOCAL ? desc : NULL;
 
-  uint64_t key =
-    pgaspi_ofi_is_local_fabric_avail (ofi_ctx, gctx->rank, rank) ?
-    gctx->rrmd[segment_id][rank].rkey[0].local :
-    gctx->rrmd[segment_id][rank].rkey[0].remote;
+  uint64_t key = gctx->rrmd[segment_id][rank].rkey[0].remote;
 
+  if (pgaspi_ofi_peer_known_dead (gctx, rank))
+  {
+    return GASPI_ERROR;
+  }
+
+  gaspi_cycles_t since = 0;
   do
   {
     ret = fi_compare_atomic (fabric_ctx->qAtomic->ep,
-                             &val_new,
+                             &values[1],
                              1,
-                             local_desc,
-                             &comparator,
-                             local_desc,
-                             gctx->nsrc.data.buf,
-                             result_desc,
+                             operand_desc,
+                             &values[2],
+                             operand_desc,
+                             &values[0],
+                             desc,
                              fabric_ctx->atomic_fi_addr[rank],
                              remote_addr,
                              key,
@@ -153,6 +191,17 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
     {
       GASPI_DEBUG_PRINT_ERROR ("Error initiating atomic compare_swap");
       return GASPI_ERR_DEVICE;
+    }
+
+    if (ret)
+    {
+      /* Marked dead by the ping. */
+      if (pgaspi_ofi_peer_dead (gctx, rank, &since))
+      {
+        return GASPI_ERROR;
+      }
+
+      pgaspi_ofi_progress_queue (fabric_ctx->qAtomic);
     }
   } while (ret);
 

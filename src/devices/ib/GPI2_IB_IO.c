@@ -789,3 +789,9 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
 
   return GASPI_SUCCESS;
 }
+
+/* The NIC places notifications: nothing to drive. */
+void
+pgaspi_dev_progress_waiting (gaspi_context_t const * const GASPI_UNUSED (gctx))
+{
+}

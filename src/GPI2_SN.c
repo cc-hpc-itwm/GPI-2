@@ -801,11 +801,11 @@ gaspi_sn_segment_register (const gaspi_cd_header snp)
 #endif
 
 #ifdef GPI2_DEVICE_OFI
-  seg_desc.rkey[0].local = snp.rkey[0];
-  seg_desc.rkey[0].remote = snp.rkey[0];
+  seg_desc.rkey[0].local = snp.rkey[0].local;
+  seg_desc.rkey[0].remote = snp.rkey[0].remote;
 
-  seg_desc.rkey[1].local = snp.rkey[1];
-  seg_desc.rkey[1].remote = snp.rkey[1];
+  seg_desc.rkey[1].local = snp.rkey[1].local;
+  seg_desc.rkey[1].remote = snp.rkey[1].remote;
 #endif
 
   return gaspi_segment_set (seg_desc);
@@ -1205,15 +1205,12 @@ _gaspi_sn_segment_register_command (const gaspi_rank_t rank,
 #endif
 
 #ifdef GPI2_DEVICE_OFI
-  cdh.rkey[0] =
-    pgaspi_dev_get_mr_rkey (gctx,
-                            gctx->rrmd[segment_id][gctx->rank].mr[0],
-                            rank);
+  /* Both keys: atomics use the remote fabric's key, also for a local rank. */
+  cdh.rkey[0].local = gctx->rrmd[segment_id][gctx->rank].rkey[0].local;
+  cdh.rkey[0].remote = gctx->rrmd[segment_id][gctx->rank].rkey[0].remote;
 
-  cdh.rkey[1] =
-    pgaspi_dev_get_mr_rkey (gctx,
-                            gctx->rrmd[segment_id][gctx->rank].mr[1],
-                            rank);
+  cdh.rkey[1].local = gctx->rrmd[segment_id][gctx->rank].rkey[1].local;
+  cdh.rkey[1].remote = gctx->rrmd[segment_id][gctx->rank].rkey[1].remote;
 #endif
 
   ssize_t ret =

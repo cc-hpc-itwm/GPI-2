@@ -752,11 +752,15 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
         }
       }
 
+      pgaspi_dev_progress_waiting (gctx);
       GASPI_DELAY();
     }
   }
   else if (timeout_ms == GASPI_TEST)
   {
+    /* A program may poll with GASPI_TEST only. */
+    pgaspi_dev_progress_waiting (gctx);
+
     for (gaspi_notification_id_t n = notification_begin;
          n < (notification_begin + num);
          n++)
@@ -804,6 +808,7 @@ pgaspi_notify_waitsome (const gaspi_segment_id_t segment_id_local,
       return GASPI_TIMEOUT;
     }
 
+    pgaspi_dev_progress_waiting (gctx);
     GASPI_DELAY();
   }
 

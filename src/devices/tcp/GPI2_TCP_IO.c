@@ -24,6 +24,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Sys.h"
 #include "GPI2_TCP.h"
 #include "GPI2_Types.h"
+#include "GPI2_Utility.h"
 
 /* Communication functions */
 gaspi_return_t
@@ -541,4 +542,10 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
   gctx->ne_count_c[queue]++;
 
   return GASPI_SUCCESS;
+}
+
+/* The device's own thread places notifications: nothing to drive. */
+void
+pgaspi_dev_progress_waiting (gaspi_context_t const * const GASPI_UNUSED (gctx))
+{
 }

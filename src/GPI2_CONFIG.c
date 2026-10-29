@@ -191,7 +191,8 @@ pgaspi_config_set (const gaspi_config_t nconf)
         [GASPI_ROCE] = "GASPI_ROCE",
         [GASPI_ETHERNET] = "GASPI_ETHERNET",
         [GASPI_GEMINI] = "GASPI_GEMINI",
-        [GASPI_ARIES] = "GASPI_ARIES"
+        [GASPI_ARIES] = "GASPI_ARIES",
+        [GASPI_OFI] = "GASPI_OFI"
       };
 #endif
     GASPI_DEBUG_PRINT_ERROR ("Invalid value for parameter network (%s)",

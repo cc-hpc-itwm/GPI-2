@@ -57,13 +57,11 @@ typedef struct
 
 //TODO: TD: redundancy with gaspi_segment_descriptor_t and rc_mseg_t
 #ifdef GPI2_DEVICE_OFI
-  /* struct */
-  /* { */
-  /*   uint64_t local; */
-  /*   uint64_t remote; */
-  /* } rkey[2]; */
-
-  uint64_t rkey[2];
+  struct
+  {
+    uint64_t local;
+    uint64_t remote;
+  } rkey[2];
 #endif
 
 } gaspi_cd_header;

@@ -100,6 +100,9 @@ pgaspi_dev_post_group_write_sync (gaspi_context_t * const,
    -1 on error. */
 int pgaspi_dev_poll_group_sync (gaspi_context_t * const);
 
+/* Lets a thread in gaspi_notify_waitsome drive progress (e.g. shm). */
+void pgaspi_dev_progress_waiting (gaspi_context_t const * const);
+
 int pgaspi_dev_queue_size (const gaspi_queue_id_t);
 
 gaspi_return_t
@@ -241,12 +244,5 @@ pgaspi_dev_passive_receive (gaspi_context_t * const,
                             gaspi_rank_t * const,
                             const gaspi_size_t,
                             const gaspi_timeout_t);
-
-#ifdef GPI2_DEVICE_OFI
-uint64_t
-pgaspi_dev_get_mr_rkey (gaspi_context_t const *const gctx,
-                        void* mr,
-                        gaspi_rank_t rank);
-#endif
 
 #endif //_GPI2_DEV_H_
