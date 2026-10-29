@@ -1586,7 +1586,9 @@ pgaspi_ofi_initialize (gaspi_context_t* gctx)
   /* - or at least, for communication with oneself */
   /* - EXCEPT if user tells us not to */
 
-  const int can_use_shm = gctx->config->dev_config.params.ofi.use_shm;
+  const char* shm_env = getenv ("GASPI_OFI_SHM");
+  const int can_use_shm = gctx->config->dev_config.params.ofi.use_shm
+    && !(shm_env != NULL && 0 == strcmp (shm_env, "0"));
 
   /* we use auto-progress if the user wants its (and the provider
    * supports it) */
