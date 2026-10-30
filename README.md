@@ -31,7 +31,10 @@ Software:
 - ssh server running on compute nodes, requiring no password, if
   running with ssh support (default).
 - autotools utilities (autoconf>=2.63,libtool>=2.2,automake>=1.11)
-- libfabric (recommended v2.2.0) if support for libfabric is necessary.
+- libfabric if support for libfabric is necessary; v2.7.0 or later is
+  recommended: earlier versions have bugs in the `ofi_rxm` provider
+  (crash at termination) and the `shm` provider (occasional hang at
+  start) that GPI-2 applications can hit.
 
 
 ### Basic configuration
@@ -185,6 +188,27 @@ be found, one can provide a path to the option:
 ./configure --with-ofi=<full_path_to_libfabric_installation>
 
 ```
+
+libfabric chooses the provider between nodes; `FI_PROVIDER` sets it (e.g.
+`cxi`, `verbs;ofi_rxm`). Processes on the same node use `shm`. With several
+cxi or InfiniBand NICs, a process bound to one NUMA node uses the NIC of
+that node. Environment variables of the device:
+
+| Variable | Meaning |
+|----------|---------|
+| `GASPI_OFI_DEVICE` | Use this device (e.g. `cxi2`). |
+| `GASPI_OFI_VERBOSE` | If set, print each process's provider and device at start. |
+| `GASPI_OFI_PROGRESS_PAUSE_US` | Pause between passes of a progress thread, in microseconds (default 10). |
+| `GASPI_OFI_PROGRESS_WAIT_PAUSE_US` | The same while the application waits for completions and drives progress itself (default 50). |
+| `GASPI_OFI_CONNECT_TIMEOUT_MS` | Wait for a process that does not respond before checking whether it is alive, in milliseconds (default 1000). |
+| `GASPI_OFI_UNSIGNALED_WRITES` | If `0`, each small write completes on its own instead of in `gaspi_wait`: a lower rate, but with cxi errors name the target rank. |
+| `GASPI_OFI_SHM` | If `0`, processes on the same node do not use `shm` but the provider between nodes. |
+| `GASPI_OFI_SHM_PTRACER` | If `0`, the user's other processes cannot ptrace the process, which shm's direct copies (CMA) need under Yama `ptrace_scope` 1: shm latency is then 3 to 12 times higher. |
+| `GASPI_OFI_SHM_FAST_RMA` | If `1`, shm does writes and reads as system calls in the caller instead of commands for the target: faster around 4 KB, much slower for small messages. |
+
+`gaspi_run` passes these variables to all processes. Failed processes are
+reported as with Infiniband. On HPE Cray systems with Slingshot (`cxi`),
+configure GPI-2 with PALS (see below).
 
 
 #### BATCH SYSTEM
@@ -459,6 +483,9 @@ starting the application:
 ```
 GASPI_IB_RELAXED_ORDERING=1 gaspi_run -m machinefile my_app
 ```
+
+With the libfabric device, the variable applies to `verbs;ofi_rxm` and
+requires `group_max <= 128`.
 
 Applications that signal the arrival of data with their own flag, written with
 `gaspi_write` after the data, instead of a notification remain affected, also
