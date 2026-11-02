@@ -93,7 +93,10 @@ int main (int argc, char *argv[])
   ASSERT(gaspi_proc_num(&nProc));
 
   if(nProc < 2)
+  {
+    TSUITE_SKIP ("needs 2 ranks");
     return EXIT_SUCCESS;
+  }
 
   ASSERT(gaspi_queue_size_max(&queue_max));
 

@@ -238,7 +238,17 @@ run_test()
 	      fi
     fi
 
-    if [ $IS_XFAIL = 1 ]; then
+    # A test that printed TSUITE_SKIP (e.g. too few ranks) did not run.
+    IS_SKIP=0
+    if [ $TEST_PASSED = 1 ] &&
+	       tail -n +$((LOG_START + 1)) $LOG_FILE | grep -q 'TSUITE_SKIP:'; then
+	      IS_SKIP=1
+    fi
+
+    if [ $IS_SKIP = 1 ]; then
+	      TESTS_SKIPPED=$((TESTS_SKIPPED+1))
+	      printf '\033[34m'"SKIPPED${TIME_STR}\n"
+    elif [ $IS_XFAIL = 1 ]; then
 	      if [ $TEST_PASSED = 0 ]; then
 	          # Expected failure (a timeout counts): XFAILED, not a suite failure.
 	          TESTS_XFAIL=$(($TESTS_XFAIL+1))

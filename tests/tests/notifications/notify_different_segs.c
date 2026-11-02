@@ -31,6 +31,7 @@ main (int argc, char *argv[])
   gaspi_number_t n_notifications = notif_num < 1024 ? notif_num : 1024;
   if (n_notifications == 0)
   {
+    TSUITE_SKIP ("no notifications");
     ASSERT (gaspi_proc_term (GASPI_BLOCK));
     return EXIT_SUCCESS;
   }

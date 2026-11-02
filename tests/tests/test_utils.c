@@ -133,6 +133,15 @@ tsuite_init (int argc, char *argv[])
   }
 }
 
+/* Marks the test as skipped (runtests.sh: SKIPPED, e.g. too few ranks); the
+   test then ends as usual. */
+void
+tsuite_skip (const char *reason)
+{
+  printf ("TSUITE_SKIP: %s\n", reason);
+  fflush (stdout);
+}
+
 /* As gaspi_threads_init (one thread per core), at most the thread cap. */
 gaspi_return_t
 tsuite_threads_init (gaspi_int * const num)

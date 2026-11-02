@@ -21,6 +21,7 @@ main (int argc, char *argv[])
 
   if (nranks < 3)
   {
+    TSUITE_SKIP ("needs 3 ranks");
     ASSERT (gaspi_segment_delete (0));
     ASSERT (gaspi_proc_term (GASPI_BLOCK));
     return EXIT_SUCCESS;
@@ -40,6 +41,7 @@ main (int argc, char *argv[])
 
   if (notif_per_sender == 0)
   {
+    TSUITE_SKIP ("too few notifications per sender");
     ASSERT (gaspi_segment_delete (0));
     ASSERT (gaspi_proc_term (GASPI_BLOCK));
     return EXIT_SUCCESS;

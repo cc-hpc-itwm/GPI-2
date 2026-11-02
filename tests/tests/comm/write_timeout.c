@@ -14,7 +14,7 @@ main (int argc, char *argv[])
 
   if (P < 2)
   {
-    gaspi_printf ("Must have more than 1 procs\n");
+    TSUITE_SKIP ("needs 2 ranks");
     return EXIT_SUCCESS;
   }
 

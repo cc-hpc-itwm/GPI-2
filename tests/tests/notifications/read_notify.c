@@ -22,6 +22,7 @@ main (int argc, char *argv[])
 
   if (nprocs < 2)
   {
+    TSUITE_SKIP ("needs 2 ranks");
     return EXIT_SUCCESS;
   }
 

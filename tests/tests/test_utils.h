@@ -20,6 +20,7 @@
 
 
 void tsuite_init (int argc, char *argv[]);
+void tsuite_skip (const char *reason);
 gaspi_return_t tsuite_threads_init (gaspi_int * const num);
 void success_or_exit (const char *file, const int line,
                       const gaspi_return_t ec);
@@ -29,6 +30,7 @@ void must_return_err (const char *file, const int line,
                       const gaspi_return_t ec, const gaspi_return_t err);
 
 #define TSUITE_INIT(argc, argv) tsuite_init(argc, argv)
+#define TSUITE_SKIP(reason) tsuite_skip(reason)
 #define ASSERT(ec) success_or_exit (__FILE__, __LINE__, ec)
 #define EXPECT_FAIL(ec) must_fail(__FILE__, __LINE__, ec)
 #define EXPECT_TIMEOUT(ec) must_return_err(__FILE__, __LINE__, ec, GASPI_TIMEOUT)

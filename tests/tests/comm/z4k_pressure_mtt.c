@@ -249,6 +249,7 @@ main (int argc, char *argv[])
   ASSERT (gaspi_proc_num (&highestnode));
   if (highestnode < 2)
   {
+    TSUITE_SKIP ("needs 2 ranks");
     goto exit;
   }
 

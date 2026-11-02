@@ -22,6 +22,7 @@ main (int argc, char *argv[])
   /* makes only sense with more than 3 nodes */
   if (nprocs < 3)
   {
+    TSUITE_SKIP ("needs 3 ranks");
     ASSERT (gaspi_proc_term (GASPI_BLOCK));
     return EXIT_SUCCESS;
   }

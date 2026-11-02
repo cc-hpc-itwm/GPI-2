@@ -24,6 +24,7 @@ main (int argc, char *argv[])
 
   if (nprocs < 2)
   {
+    TSUITE_SKIP ("needs 2 ranks");
     ASSERT (gaspi_proc_term (GASPI_BLOCK));
     return EXIT_SUCCESS;
   }
