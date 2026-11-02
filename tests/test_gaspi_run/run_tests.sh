@@ -28,7 +28,7 @@ HOSTNAME=$(hostname)
 setup() {
     # The tests set these themselves where needed; values exported by the
     # caller (e.g. when running the whole test suite) must not leak in.
-    unset GASPI_TRACE GASPI_IB_RELAXED_ORDERING
+    unset GASPI_TRACE GASPI_IB_RELAXED_ORDERING GASPI_OFI_PROGRESS_PAUSE_US FI_PROVIDER
 
     export MOCK_LOG=$(mktemp /tmp/gaspi_test_mock.XXXXXX)
     TEST_STDOUT=$(mktemp /tmp/gaspi_test_out.XXXXXX)
@@ -298,7 +298,7 @@ test_m_and_n_exact() {
 }
 
 ######################################################################
-# Category 3: Option interactions (8 tests)
+# Category 3: Option interactions (9 tests)
 ######################################################################
 
 test_master_binary_local() {
@@ -344,8 +344,36 @@ test_debug_remote_fails() {
 }
 
 test_numa_option() {
-    run_gaspi_run -N -m "$MF_LOCAL" "$FIXTURE_DIR/test_app.sh"
-    assert_exit_code 0
+    # Rank 0 gets GASPI_SET_NUMA_SOCKET=1, the other ranks the spawner
+    # argument before the program.
+    run_gaspi_run -N -m "$MF_LOCAL" "$FIXTURE_DIR/env_probe.sh"
+    assert_exit_code 0 &&
+    assert_output_contains "ENV_PROBE GASPI_SET_NUMA_SOCKET=1" &&
+    assert_mock_log_contains " 1 $FIXTURE_DIR/env_probe.sh"
+}
+
+test_numa_option_lscpu_only() {
+    # Without numactl, lscpu is enough to enable -N: the mocks without
+    # numactl, plus a mock lscpu.
+    local mocks=$(mktemp -d /tmp/gaspi_test_mocks.XXXXXX)
+    cp "$MOCK_DIR"/* "$mocks"/
+    rm "$mocks/numactl"
+    printf '#!/bin/sh\necho "NUMA node(s): 2"\n' > "$mocks/lscpu"
+    chmod +x "$mocks/lscpu"
+
+    local path_save="$PATH"
+    PATH="$mocks:${PATH//$MOCK_DIR:/}"
+    if command -v numactl > /dev/null; then
+        PATH="$path_save"; rm -rf "$mocks"
+        echo "  (skipped: numactl installed)"
+        return 0
+    fi
+    run_gaspi_run -N -m "$MF_LOCAL" "$FIXTURE_DIR/env_probe.sh"
+    PATH="$path_save"; rm -rf "$mocks"
+
+    assert_exit_code 0 &&
+    assert_output_contains "ENV_PROBE GASPI_SET_NUMA_SOCKET=1" &&
+    assert_mock_log_contains " 1 $FIXTURE_DIR/env_probe.sh"
 }
 
 test_ping_option() {
@@ -354,7 +382,7 @@ test_ping_option() {
 }
 
 ######################################################################
-# Category 3b: Tracing option (-t / --trace) (8 tests)
+# Category 3b: Tracing option (-t / --trace) (9 tests)
 ######################################################################
 
 test_trace_default_master_local() {
@@ -448,6 +476,48 @@ test_ro_propagated_to_remote_spawner() {
     GASPI_IB_RELAXED_ORDERING=1 run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/trace_probe.sh"
     assert_exit_code 0 &&
     assert_mock_log_contains "MOCK_SPAWNER GASPI_IB_RELAXED_ORDERING=1"
+}
+
+test_ofi_env_propagated_to_remote_master() {
+    # Settings of the OFI device travel in the command like the above.
+    GASPI_OFI_PROGRESS_PAUSE_US=20 run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/trace_probe.sh"
+    assert_exit_code 0 &&
+    assert_output_contains "GASPI_OFI_PROGRESS_PAUSE_US=20"
+}
+
+test_ofi_env_propagated_to_remote_spawner() {
+    GASPI_OFI_PROGRESS_PAUSE_US=20 run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/trace_probe.sh"
+    assert_exit_code 0 &&
+    assert_mock_log_contains "MOCK_SPAWNER GASPI_OFI_PROGRESS_PAUSE_US=20"
+}
+
+test_provider_unset_local_spawner() {
+    # Without FI_PROVIDER, the ranks on this host must not get a provider
+    # name: a quoted empty value ('') selected no provider at all.
+    run_gaspi_run -m "$MF_LOCAL" "$FIXTURE_DIR/trace_probe.sh"
+    assert_exit_code 0 &&
+    assert_mock_log_contains "MOCK_SPAWNER GPI2_OFI_PROVIDER=[]"
+}
+
+test_provider_set_local_spawner() {
+    FI_PROVIDER=verbs run_gaspi_run -m "$MF_LOCAL" "$FIXTURE_DIR/trace_probe.sh"
+    assert_exit_code 0 &&
+    assert_mock_log_contains "MOCK_SPAWNER GPI2_OFI_PROVIDER=[verbs]"
+}
+
+test_provider_propagated_to_remote_master() {
+    # The mock ssh drops FI_PROVIDER, and the remote master is started
+    # without the spawner, which sets it for the other ranks: it must get
+    # the same provider, ';' included.
+    FI_PROVIDER="tcp;ofi_rxm" run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/trace_probe.sh"
+    assert_exit_code 0 &&
+    assert_output_contains "TRACE_PROBE FI_PROVIDER=tcp;ofi_rxm"
+}
+
+test_provider_unset_remote_master() {
+    run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/trace_probe.sh"
+    assert_exit_code 0 &&
+    assert_output_contains "TRACE_PROBE FI_PROVIDER=<unset>"
 }
 
 ######################################################################
@@ -651,6 +721,7 @@ run_test test_master_binary_with_args_remote
 run_test test_debug_local
 run_test test_debug_remote_fails
 run_test test_numa_option
+run_test test_numa_option_lscpu_only
 run_test test_ping_option
 
 # Category 3b: Tracing option
@@ -669,6 +740,12 @@ run_test test_ro_master_local
 run_test test_ro_propagated_to_local_spawner
 run_test test_ro_propagated_to_remote_master
 run_test test_ro_propagated_to_remote_spawner
+run_test test_ofi_env_propagated_to_remote_master
+run_test test_ofi_env_propagated_to_remote_spawner
+run_test test_provider_unset_local_spawner
+run_test test_provider_set_local_spawner
+run_test test_provider_propagated_to_remote_master
+run_test test_provider_unset_remote_master
 
 # Category 3d: Repository consistency
 echo

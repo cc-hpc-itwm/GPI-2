@@ -1,0 +1,357 @@
+#!/bin/bash
+
+# Copyright (c) Fraunhofer ITWM, 2013-2026
+
+# This file is part of GPI-2.
+
+# GPI-2 is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public License
+# version 3 as published by the Free Software Foundation.
+
+# GPI-2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
+
+# Launcher for HPE Cray systems with PALS (PBS Pro): one mpiexec starts all
+# ranks and grants them the Slingshot network (CXI service and VNI).
+
+TMP_PATTERN="/tmp/.gpi2.XXXXXXXX"
+HOSTFILE=$(mktemp "${TMP_PATTERN}")    # one host per rank
+PALS_HOSTS=$(mktemp "${TMP_PATTERN}")  # unique hosts
+TMP_MFILE=$(mktemp "${TMP_PATTERN}")
+CWD_MFILE=""
+
+GPI2_BINS_LOCATION="$(cd "$(dirname "$0")" && pwd)"
+GPI2_ENV="${GPI2_BINS_LOCATION}/pals.env"
+GPI2_LAUNCHER="mpiexec"
+GPI2_MFILE=""
+GPI2_NTASKS=0
+GPI2_PPN=0
+GPI2_PRG=""
+GPI2_PRG_ARGS=()
+GPI2_SET_NUMA=0
+GPI2_TRACE=""
+
+remove_temp_files()
+{
+    rm -f "$HOSTFILE" "$PALS_HOSTS" "$TMP_MFILE"
+    if [ -n "$CWD_MFILE" ]; then
+        rm -f "$CWD_MFILE"
+    fi
+}
+
+clean_exit()
+{
+    remove_temp_files
+    exit "$1"
+}
+
+print_error_exit_failure()
+{
+    echo
+    echo "Error: $1"
+    echo
+    clean_exit 1
+}
+
+usage()
+{
+    echo
+    echo "Usage: gaspi_run [OPTIONS] <path GASPI program>"
+    echo
+    echo "Available [OPTIONS]:"
+    echo "  -m, --machinefile <machine file> File with hostnames to use."
+    echo "  -N, --NUMA                 Enable NUMA for processes on same node."
+    echo "  -n, --nodes  <procs>       Start as many as <procs>."
+    echo "  -t, --trace [categories]   Enable tracing (default: all)."
+    echo "  -h, --help                 This help."
+    echo
+    echo "Environment:"
+    echo "  GPI2_PALS_ARGS             Extra mpiexec options, e.g. a CPU binding:"
+    echo "                             \"--depth 24 --cpu-bind depth\" for hybrid"
+    echo "                             (OpenMP) programs (default: each rank on"
+    echo "                             the cores of one L3 cache next to its NIC,"
+    echo "                             see --cpu-bind list)."
+    echo
+    remove_temp_files
+}
+
+utility_exists()
+{
+    command -v "$1" > /dev/null 2>&1
+}
+
+find_set_NUMA_config()
+{
+    if utility_exists numactl || utility_exists lscpu ; then
+        GPI2_SET_NUMA=1
+    else
+        echo "Warning: unable to detect NUMA configuration. Option not used."
+        GPI2_SET_NUMA=0
+    fi
+}
+
+# Machine file to HOSTFILE, without blank lines.
+build_hostfile_from()
+{
+    local line
+    : > "$HOSTFILE"
+    while IFS= read -r line || [ -n "$line" ]; do
+        [ -z "$line" ] && continue
+        echo "$line" >> "$HOSTFILE"
+    done < "$1"
+}
+
+# mpiexec places --ppn ranks per host in hostfile order: check HOSTFILE has
+# that layout, set GPI2_PPN and write the unique hosts to PALS_HOSTS.
+build_pals_hostfile()
+{
+    local line i last
+    local -a hosts=() counts=()
+    local -A seen=()
+
+    while IFS= read -r line; do
+        last=$((${#hosts[@]} - 1))
+        if [ "$last" -ge 0 ] && [ "${hosts[last]}" = "$line" ]; then
+            counts[last]=$((counts[last] + 1))
+        elif [ -n "${seen[$line]:-}" ]; then
+            print_error_exit_failure "Ranks of host ${line} are not consecutive in the machine file (PALS places the ranks of a host together)."
+        else
+            seen[$line]=1
+            hosts+=( "$line" )
+            counts+=( 1 )
+        fi
+    done < "$HOSTFILE"
+
+    GPI2_PPN=${counts[0]}
+    last=$((${#hosts[@]} - 1))
+    for ((i = 0; i < last; i++)); do
+        if [ "${counts[i]}" -ne "$GPI2_PPN" ]; then
+            print_error_exit_failure "Host ${hosts[i]} has ${counts[i]} ranks, expected ${GPI2_PPN} (PALS places the same number of ranks on each host; only the last host may have fewer)."
+        fi
+    done
+    if [ "${counts[last]}" -gt "$GPI2_PPN" ]; then
+        print_error_exit_failure "Host ${hosts[last]} has ${counts[last]} ranks, more than the ${GPI2_PPN} of the hosts before it."
+    fi
+
+    printf '%s\n' "${hosts[@]}" > "$PALS_HOSTS"
+}
+
+# "0-2,8" -> one CPU per line.
+expand_cpulist()
+{
+    local part
+    local -a parts
+    IFS=',' read -r -a parts <<< "$1"
+    for part in "${parts[@]}"; do
+        if [[ "$part" == *-* ]]; then
+            seq "${part%-*}" "${part#*-}"
+        elif [ -n "$part" ]; then
+            echo "$part"
+        fi
+    done
+}
+
+# CPUs sharing the L3 cache with CPU $1, or nothing.
+l3_cpulist()
+{
+    local index sysfs="${GPI2_PALS_SYSFS:-/sys}"
+    for index in "$sysfs/devices/system/cpu/cpu$1/cache/index"[0-9]*; do
+        if [ "$(cat "$index/level" 2>/dev/null)" = "3" ]; then
+            cat "$index/shared_cpu_list" 2>/dev/null
+            return 0
+        fi
+    done
+}
+
+# "--cpu-bind list:" argument: the local ranks fill the NUMA nodes in turn,
+# each with an equal share of its cores (with SMT siblings), cut to one L3
+# cache. Nothing if the topology is unknown or ranks outnumber cores.
+numa_cpu_bind_list()
+{
+    local ppn=$1 sysfs="${GPI2_PALS_SYSFS:-/sys}"
+    local node cpu siblings i j c l3
+    local -a nodes=() cores=() lists=()
+    local -A in_l3=()
+
+    for node in $(ls -d "$sysfs"/devices/system/node/node[0-9]* 2>/dev/null | sort -V); do
+        [ -n "$(cat "$node/cpulist" 2>/dev/null)" ] && nodes+=( "$node" )
+    done
+    [ "${#nodes[@]}" -gt 0 ] || return 0
+
+    local per_node=$(( (ppn + ${#nodes[@]} - 1) / ${#nodes[@]} ))
+
+    for ((i = 0; i < ppn; i++)); do
+        node=${nodes[i / per_node]}
+        j=$(( i % per_node ))
+
+        # first CPU of each core
+        cores=()
+        for cpu in $(expand_cpulist "$(cat "$node/cpulist")"); do
+            siblings=$(cat "$sysfs/devices/system/cpu/cpu$cpu/topology/thread_siblings_list" 2>/dev/null) || return 0
+            [ "${siblings%%[-,]*}" = "$cpu" ] && cores+=( "$siblings" )
+        done
+
+        local share=$(( ${#cores[@]} / per_node ))
+        [ "$share" -gt 0 ] || return 0
+
+        in_l3=()
+        l3=$(l3_cpulist "${cores[j * share]%%[-,]*}")
+        for cpu in $(expand_cpulist "$l3"); do
+            in_l3[$cpu]=1
+        done
+
+        local cpus=""
+        for ((c = j * share; c < (j + 1) * share; c++)); do
+            if [ -z "$l3" ] || [ -n "${in_l3[${cores[c]%%[-,]*}]:-}" ]; then
+                cpus+="${cpus:+,}${cores[c]}"
+            fi
+        done
+        lists+=( "$cpus" )
+    done
+
+    local IFS=':'
+    echo "${lists[*]}"
+}
+
+################################ GASPI_RUN ######################################
+
+#command line parsing
+while [ -n "$1" ]; do
+    case $1 in
+        -m | --machinefile)
+            if [ -r "$2" ]; then
+                GPI2_MFILE=$2
+            else
+                print_error_exit_failure "Cannot read $2 (-m option) (or file does not exist)"
+            fi
+            shift
+            ;;
+        -N | --NUMA)
+            find_set_NUMA_config
+            ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        -n | --nodes)
+            if [ -n "$2" ] && expr "$2" + 0 > /dev/null 2>&1 ; then
+                GPI2_NTASKS=$2
+            else
+                print_error_exit_failure "Option -n requires a numeric argument greater than 0."
+            fi
+            shift
+            ;;
+        -t | --trace)
+            # optional category list, default "all"
+            if [ -n "$2" ] && [[ "$2" =~ ^[a-z0-9,]+$ ]]; then
+                GPI2_TRACE="$2"
+                shift
+            else
+                GPI2_TRACE="all"
+            fi
+            ;;
+        -*)
+            print_error_exit_failure "Invalid option ($1). Use -h (or --help) for available options."
+            ;;
+        *)
+            FULLPATH=$(which "$1" 2> /dev/null)
+            if [ -z "$FULLPATH" ]; then
+                FULLPATH="$1"
+            fi
+            FULLPATH=$(readlink -f "$FULLPATH")
+            if [ -f "$FULLPATH" ]; then
+                if [ -x "$FULLPATH" ]; then
+                    GPI2_PRG="$FULLPATH"
+                    shift
+                    GPI2_PRG_ARGS=("$@")
+                    break
+                else
+                    print_error_exit_failure "Cannot execute $1 (or file does not exist)"
+                fi
+            else
+                print_error_exit_failure "Cannot execute $1 (not a file)"
+            fi
+    esac
+    shift
+done
+
+if [ -z "$GPI2_PRG" ]; then
+    print_error_exit_failure "No binary file provided. See help (-h or --help options)"
+fi
+
+if [ -n "$GPI2_MFILE" ]; then
+    build_hostfile_from "$GPI2_MFILE"
+else
+    if [ -z "${PBS_NODEFILE:-}" ] || [ ! -r "$PBS_NODEFILE" ]; then
+        print_error_exit_failure "PBS_NODEFILE not defined or not readable. Are you running within a PBS job?"
+    fi
+    build_hostfile_from "$PBS_NODEFILE"
+fi
+
+if [ "$GPI2_NTASKS" -ne 0 ]; then
+    avail=$(wc -l < "$HOSTFILE")
+    if [ "$GPI2_NTASKS" -gt "$avail" ]; then
+        print_error_exit_failure "Number of requested tasks (-n ${GPI2_NTASKS}) exceeds available/provided resources (${avail})."
+    fi
+    head -n "$GPI2_NTASKS" "$HOSTFILE" > "$TMP_MFILE"
+    cp "$TMP_MFILE" "$HOSTFILE"
+fi
+
+NTASKS=$(wc -l < "$HOSTFILE")
+
+if [ "$NTASKS" -eq 0 ]; then
+    print_error_exit_failure "Machine file is empty (no hosts to run on)."
+fi
+
+build_pals_hostfile
+
+# Rank 0 reads the machine file on the first host: if that is not this node,
+# use a copy in the (shared) working directory.
+GPI2_NODE_MFILE="$HOSTFILE"
+GPI2_FIRST_HOST=$(head -n 1 "$HOSTFILE")
+if [ "${GPI2_FIRST_HOST%%.*}" != "$(hostname -s)" ]; then
+    CWD_MFILE=$(mktemp "${PWD}/.gpi2.mfile.XXXXXXXX") ||
+        print_error_exit_failure "Cannot create the machine file for ${GPI2_FIRST_HOST} in ${PWD}."
+    cp "$HOSTFILE" "$CWD_MFILE"
+    GPI2_NODE_MFILE="$CWD_MFILE"
+fi
+
+if [ -n "$GPI2_TRACE" ]; then
+    export GASPI_TRACE="$GPI2_TRACE"
+fi
+
+read -r -a PALS_EXTRA_ARGS <<< "${GPI2_PALS_ARGS:-}"
+
+# PALS binds a rank to one CPU, shared by GPI-2's progress threads: bind to
+# cores next to the NIC instead. A binding in GPI2_PALS_ARGS replaces it.
+PALS_CPU_LIST=$(numa_cpu_bind_list "$GPI2_PPN")
+if [ -n "$PALS_CPU_LIST" ]; then
+    PALS_BIND_ARGS=(--cpu-bind "list:$PALS_CPU_LIST")
+else
+    PALS_BIND_ARGS=(--cpu-bind none)
+fi
+for arg in "${PALS_EXTRA_ARGS[@]}"; do
+    case "$arg" in
+        --cpu-bind*|--depth*|-d) PALS_BIND_ARGS=() ;;
+    esac
+done
+
+( echo "$GPI2_PRG" > /tmp/.last_gaspi_prg ) 2> /dev/null
+if [ -O /tmp/.last_gaspi_prg ]; then
+    chmod a+rw /tmp/.last_gaspi_prg > /dev/null 2>&1
+fi
+
+# A single-node job needs a VNI too: GPI-2 always opens the remote fabric.
+if ! "$GPI2_LAUNCHER" -n "$NTASKS" --ppn "$GPI2_PPN" --hostfile "$PALS_HOSTS" \
+        --single-node-vni "${PALS_BIND_ARGS[@]}" "${PALS_EXTRA_ARGS[@]}" \
+        "$GPI2_ENV" "$GPI2_NODE_MFILE" "$NTASKS" "$GPI2_SET_NUMA" \
+        "$GPI2_PRG" "${GPI2_PRG_ARGS[@]}" ; then
+    clean_exit 1
+fi
+
+clean_exit 0

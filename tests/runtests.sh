@@ -290,6 +290,17 @@ if [ $TESTS_GO_FAST = 0 ] && [ $(($# - $opts_used)) = 0 ]; then
         fi
         echo
     fi
+
+    GASPI_RUN_PALS_TESTS="${RUNTESTS_DIR}/test_gaspi_run/run_pals_tests.sh"
+    if [ -x "$GASPI_RUN_PALS_TESTS" ]; then
+        echo
+        echo "Running gaspi_run.pals unit tests..."
+        if ! "$GASPI_RUN_PALS_TESTS"; then
+	    echo "gaspi_run.pals unit tests failed. Aborting."
+	    exit 1
+        fi
+        echo
+    fi
 fi
 
 # Run gaspi_cleanup unit tests (only when running full test suite)
@@ -300,6 +311,17 @@ if [ $TESTS_GO_FAST = 0 ] && [ $(($# - $opts_used)) = 0 ]; then
         echo "Running gaspi_cleanup unit tests..."
         if ! "$GASPI_CLEANUP_TESTS"; then
             echo "gaspi_cleanup unit tests failed. Aborting."
+            exit 1
+        fi
+        echo
+    fi
+
+    GASPI_CLEANUP_PALS_TESTS="${RUNTESTS_DIR}/test_gaspi_cleanup/run_pals_tests.sh"
+    if [ -x "$GASPI_CLEANUP_PALS_TESTS" ]; then
+        echo
+        echo "Running gaspi_cleanup.pals unit tests..."
+        if ! "$GASPI_CLEANUP_PALS_TESTS"; then
+            echo "gaspi_cleanup.pals unit tests failed. Aborting."
             exit 1
         fi
         echo

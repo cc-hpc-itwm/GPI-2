@@ -24,7 +24,6 @@ GPI2_BINS_LOCATION="$(cd "$(dirname "$0")" && pwd)"
 GPI2_LAUNCHER="ssh"
 GPI2_LAUNCHER_SPAWNER=${GPI2_BINS_LOCATION}/ssh.spawner
 GPI2_MASTER_PRG=""
-GPI2_MAX_NUMA_NODES=256
 GPI2_MFILE=""
 GPI2_NNODES=0
 GPI2_PING_HOSTNAMES_OPTION=0
@@ -97,6 +96,12 @@ print_error_exit_failure()
     clean_exit 1
 }
 
+# Device settings, passed to the ranks ssh starts without the environment.
+device_env_vars()
+{
+    compgen -e | grep -E '^(GASPI_IB_RELAXED_ORDERING|GASPI_OFI_[A-Z0-9_]+)$'
+}
+
 utility_exists()
 {
     if command -v "$1" > /dev/null 2>&1 ; then
@@ -108,16 +113,11 @@ utility_exists()
 
 find_set_NUMA_config()
 {
-    if utility_exists numactl ; then
-	      GPI2_MAX_NUMA_NODES=$(numactl --hardware|grep available|cut -d' ' -f2)
+    if utility_exists numactl || utility_exists lscpu ; then
 	      GPI2_SET_NUMA=1
     else
-	      if utility_exists lscpu ; then
-	          GPI2_MAX_NUMA_NODES=$(lscpu|grep "NUMA node(s)"|tr -d [:space:]|cut -d':' -f2)
-	      else
-	          echo "Warning: unable to detect NUMA configuration. Option not used."
-	          GPI2_SET_NUMA=0
-	      fi
+	      echo "Warning: unable to detect NUMA configuration. Option not used."
+	      GPI2_SET_NUMA=0
     fi
 }
 
@@ -236,17 +236,18 @@ spawn_procs_on_hosts()
 	      cmd="$cmd ${prg} ${prg_args}"
 
 	      if [ "$host" = "$local_hostname" ]; then
-	          GASPI_TRACE="$GPI2_TRACE" GPI2_OFI_PROVIDER=$(printf '%q' "$FI_PROVIDER") nohup $cmd > /dev/null 2>&1 &
+	          # No shell parses these values again (unlike over ssh): no quoting.
+	          GASPI_TRACE="$GPI2_TRACE" GPI2_OFI_PROVIDER="${FI_PROVIDER:-}" nohup $cmd > /dev/null 2>&1 &
 	      else
 	          local trace_env=""
 	          if [ -n "$GPI2_TRACE" ]; then
 	              trace_env="GASPI_TRACE=$(printf '%q' "$GPI2_TRACE")"
 	          fi
-	          local ro_env=""
-	          if [ -n "${GASPI_IB_RELAXED_ORDERING:-}" ]; then
-	              ro_env="GASPI_IB_RELAXED_ORDERING=$(printf '%q' "$GASPI_IB_RELAXED_ORDERING")"
-	          fi
-	          $GPI2_LAUNCHER "$host" "GPI2_OFI_PROVIDER=$(printf '%q' "$FI_PROVIDER") $trace_env $ro_env nohup $cmd $(cat /dev/null) 2>&1" &
+	          local dev_env="" var
+	          for var in $(device_env_vars); do
+	              dev_env="$dev_env $var=$(printf '%q' "${!var}")"
+	          done
+	          $GPI2_LAUNCHER "$host" "GPI2_OFI_PROVIDER=$(printf '%q' "$FI_PROVIDER") $trace_env $dev_env nohup $cmd $(cat /dev/null) 2>&1" &
 	      fi
 
 	      rank=$((rank+count))
@@ -407,10 +408,15 @@ if [ -n "$GPI2_TRACE" ]; then
  export GASPI_TRACE=\"$GPI2_TRACE\""
 fi
 
-# The notification mode must be the same on all ranks: forward it.
-if [ -n "${GASPI_IB_RELAXED_ORDERING:-}" ]; then
+# Device settings and the provider also go to the master.
+for var in $(device_env_vars); do
     master_env="$master_env
- export GASPI_IB_RELAXED_ORDERING=$(printf '%q' "$GASPI_IB_RELAXED_ORDERING")"
+ export $var=$(printf '%q' "${!var}")"
+done
+
+if [ -n "${FI_PROVIDER:-}" ]; then
+    master_env="$master_env
+ export FI_PROVIDER=$(printf '%q' "$FI_PROVIDER")"
 fi
 
 if [ "$first_hostname" != "$hn" ]; then

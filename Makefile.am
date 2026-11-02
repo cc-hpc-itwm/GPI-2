@@ -47,9 +47,17 @@ install-exec-hook:
 	head -n 18 $(abs_top_srcdir)/bin/gaspi_cleanup > $(DESTDIR)$(bindir)/gaspi_cleanup
 	chmod +x $(DESTDIR)$(bindir)/gaspi_cleanup
 else
+if WITH_PALS
+install-exec-hook:
+	cp $(abs_top_srcdir)/bin/gaspi_run.pals $(DESTDIR)$(bindir)/gaspi_run
+	cp $(abs_top_srcdir)/bin/pals.env $(DESTDIR)$(bindir)/
+	cp $(abs_top_srcdir)/bin/gaspi_cleanup.pals $(DESTDIR)$(bindir)/gaspi_cleanup
+	chmod +x $(DESTDIR)$(bindir)/gaspi_cleanup
+else
 bin_SCRIPTS = bin/ssh.spawner bin/gaspi_cleanup
 install-exec-hook:
 	cp $(abs_top_srcdir)/bin/gaspi_run.ssh $(DESTDIR)$(bindir)/gaspi_run
+endif
 endif
 endif
 
@@ -80,5 +88,6 @@ uninstall-hook:
 	-rm $(DESTDIR)$(bindir)/gaspi_run
 	-rm $(DESTDIR)$(bindir)/ssh.spawner
 	-rm $(DESTDIR)$(bindir)/slurm.env
+	-rm $(DESTDIR)$(bindir)/pals.env
 	-rm $(DESTDIR)$(bindir)/gaspi_cleanup
 	-rm -fr $(prefix)/tests/

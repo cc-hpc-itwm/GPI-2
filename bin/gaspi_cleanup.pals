@@ -1,0 +1,145 @@
+#!/bin/bash
+
+# Copyright (c) Fraunhofer ITWM, 2013-2026
+
+# This file is part of GPI-2.
+
+# GPI-2 is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public License
+# version 3 as published by the Free Software Foundation.
+
+# GPI-2 is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
+
+# gaspi_cleanup for PALS (installed as gaspi_cleanup with --with-pals):
+# kills the program on the hosts of the machine file through mpiexec, inside
+# the PBS job. The command line is matched, not the process name, which the
+# kernel cuts to 15 characters.
+
+PRG=$(/bin/cat /tmp/.last_gaspi_prg 2> /dev/null)
+MFILE=""
+PRG_OVERRIDE=""
+GPI2_LAUNCHER=${GPI2_LAUNCHER:-mpiexec}
+
+usage()
+{
+    echo "The gaspi_cleanup utility tries to kill the last run GASPI application."
+    echo "This can be useful if the application was interrupted or finished unproperly."
+    echo "With PALS it runs within the PBS job, on the hosts of the machine file."
+    echo "Note: there is no guarantee for this operations to be always successful."
+    echo
+    echo "Usage: gaspi_cleanup -m <machinefile> [-p <program>]"
+    echo "OR"
+    echo "gaspi_cleanup --machinefile <machinefile> [--program <program>]"
+    echo
+    echo "Other options:"
+    echo "   -c, --check       Only check if GASPI program is running on hosts."
+    echo "   -p, --program     Program name to kill (default: last run from /tmp/.last_gaspi_prg)."
+    echo "   -h, --help        This help."
+    echo
+}
+
+# Extended regular expression for the command line of the program (a path
+# or a name), also as started by a libtool wrapper (.libs/lt-<name>).
+prg_pattern()
+{
+    local name dir
+    name=$(basename "$1" | sed 's/[][\.*^$+?(){}|]/\\&/g')
+    case "$1" in
+        */*) dir=$(dirname "$1" | sed 's/[][\.*^$+?(){}|]/\\&/g')
+             echo "^${dir}/(\\.libs/)?(lt-)?${name}( |\$)" ;;
+        *)   echo "^([^ ]*/)?(lt-)?${name}( |\$)" ;;
+    esac
+}
+
+# Runs a command once on each host of the machine file.
+on_hosts()
+{
+    local hosts n rc
+    hosts=$(mktemp /tmp/.gpi2.cleanup.XXXXXXXX) || return 1
+    awk 'NF && !s[$1]++ {print $1}' "$MFILE" > "$hosts"
+    n=$(wc -l < "$hosts")
+    "$GPI2_LAUNCHER" -n "$n" --ppn 1 --hostfile "$hosts" --cpu-bind none "$@"
+    rc=$?
+    rm -f "$hosts"
+    return $rc
+}
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    usage
+    exit 0
+fi
+
+if [ $# -lt 2 ]; then
+    echo "Error: You need to provide a machinefile (-m option). Use -h or --help to view options."
+    exit 1
+fi
+
+check_only_option=0
+while [ "$1" != "" ]; do
+    case $1 in
+        -c | --check)
+            check_only_option=1
+            ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
+        -p | --program)
+            shift
+            if [ -z "$1" ]; then
+                echo "Error: -p requires a program name argument."
+                exit 1
+            fi
+            PRG_OVERRIDE=$1
+            ;;
+        -m | --machinefile)
+            shift
+            if [ -r "$1" ]; then
+                MFILE=$1
+            else
+                echo "Error: Cannot read file $1 (-m option) (or file does not exist)"
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Error: Unknown option $1. Use -h or --help for help."
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if [ -n "$PRG_OVERRIDE" ]; then
+    PRG="$PRG_OVERRIDE"
+elif [ -z "$PRG" ]; then
+    echo "Error: GASPI application to cleanup not found."
+    echo "Use -p <program> to specify the program name explicitly."
+    exit 1
+fi
+
+if [ ! -s "$MFILE" ]; then
+    echo "Empty machine file ($MFILE)"
+    exit 1
+fi
+
+if [ -z "${PBS_NODEFILE:-}" ]; then
+    echo "Error: PBS_NODEFILE not defined. Are you running within a PBS job?"
+    exit 1
+fi
+
+PATTERN=$(prg_pattern "$PRG")
+GASPI_USER=$(id -un)
+
+if [ $check_only_option = 1 ]; then
+    on_hosts sh -c "pgrep -u $GASPI_USER -f '$PATTERN' > /dev/null && echo \"$(basename "$PRG") running on \$(hostname)\"; true"
+else
+    on_hosts pkill -KILL -u "$GASPI_USER" -f "$PATTERN" > /dev/null 2>&1
+fi
+
+exit 0

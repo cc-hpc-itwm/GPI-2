@@ -1,0 +1,26 @@
+#!/bin/bash
+# Mock PALS mpiexec for the gaspi_run.pals tests.
+#
+# Logs the invocation, the --hostfile contents and GASPI_TRACE, then runs the
+# wrapper + binary locally once, as rank 0, so that the environment set up by
+# pals.env can be observed by the tests.
+
+echo "MOCK_MPIEXEC args=$* GASPI_TRACE=${GASPI_TRACE:-<unset>}" >> "$MOCK_LOG"
+
+# Strip the launcher flags ("-n N", "--ppn N", "--hostfile F",
+# "--single-node-vni", "--cpu-bind B", "--depth D"); what remains is
+# "<wrapper> <mfile> <nranks> <set_numa> <prg> [args...]", which we exec.
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -n|--ppn|--cpu-bind|--depth) shift 2 ;;
+        --single-node-vni) shift ;;
+        --hostfile)
+            echo "MOCK_MPIEXEC hosts=$(paste -s -d, "$2")" >> "$MOCK_LOG"
+            shift 2
+            ;;
+        *) break ;;
+    esac
+done
+
+export PALS_RANKID=0 PALS_LOCAL_RANKID=0
+exec "$@"

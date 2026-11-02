@@ -1,0 +1,15 @@
+#!/bin/bash
+# Mock PALS mpiexec for the gaspi_cleanup.pals tests: logs the invocation and
+# the --hostfile contents, then runs the command once, locally.
+echo "MOCK_MPIEXEC args=$*" >> "$MOCK_LOG"
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -n|--ppn|--cpu-bind) shift 2 ;;
+        --hostfile)
+            echo "MOCK_MPIEXEC hosts=$(paste -s -d, "$2")" >> "$MOCK_LOG"
+            shift 2
+            ;;
+        *) break ;;
+    esac
+done
+exec "$@"
