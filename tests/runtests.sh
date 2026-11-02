@@ -1,9 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 RUNTESTS_DIR=$(dirname `readlink -f "$0"`)
 GPI2_TSUITE_MFILE=${RUNTESTS_DIR}/machines
-GASPI_RUN="${RUNTESTS_DIR}/../bin/gaspi_run"
-GASPI_CLEAN="${RUNTESTS_DIR}/../bin/gaspi_cleanup"
+# Overridable, e.g. a batch system's launcher, or GPI2_TSUITE_CLEAN=true.
+GASPI_RUN="${GPI2_TSUITE_RUN:-${RUNTESTS_DIR}/../bin/gaspi_run}"
+GASPI_CLEAN="${GPI2_TSUITE_CLEAN:-$(dirname "$GASPI_RUN")/gaspi_cleanup}"
 TESTS_GO_FAST=0
 TESTS=`ls ${RUNTESTS_DIR}/bin`
 NUM_TESTS=0
@@ -19,7 +20,6 @@ LOG_FILE=runtests_$(date -Idate).log
 
 MAX_TIME=1200
 
-SETSID=$(command -v setsid 2>/dev/null)
 SELF_PGID=$(ps -o pgid= -p $$ 2>/dev/null | tr -d ' ')
 TIMEOUT_FLAG=$(mktemp /tmp/.gpi2_timeout.XXXXXX 2>/dev/null || echo /tmp/.gpi2_timeout.$$)
 rm -f "$TIMEOUT_FLAG"
@@ -64,6 +64,18 @@ detect_device()
     echo unknown
 }
 
+# The launcher is recognised by the helper each variant of gaspi_run uses.
+detect_launcher()
+{
+    if grep -q 'pals\.env' "$GASPI_RUN" 2>/dev/null; then
+	      echo pals
+    elif grep -q 'srun' "$GASPI_RUN" 2>/dev/null; then
+	      echo slurm
+    else
+	      echo ssh
+    fi
+}
+
 exit_timeout()
 {
     echo "Stop this program"
@@ -94,6 +106,8 @@ run_test()
     TEST_NAME=$(basename $1)
     TEST_ARGS=""
     IS_XFAIL=0
+    MAY_PASS=0
+    RANKS_DIE=0
 
     #check definitions file for particular test
     F="${TEST_NAME%.*}"
@@ -108,12 +122,29 @@ run_test()
 	          return
 	      fi
 
-	      # XFAIL=<dev>[,<dev>...] marks this test as expected to fail on the
-	      # listed device(s). Match against the resolved ACTIVE_DEVICE.
+	      # XFAIL=<name>[,...]: expected to fail with these devices or launchers.
 	      XFAIL_DEVS=`gawk 'BEGIN{FS="="} /^XFAIL/{print $2}' ${RUNTESTS_DIR}/defs/${F}.def`
 	      for d in `echo "$XFAIL_DEVS" | tr ',' ' '`; do
-	          if [ "$d" = "$ACTIVE_DEVICE" ]; then
+	          if [ "$d" = "$ACTIVE_DEVICE" ] || [ "$d" = "$ACTIVE_LAUNCHER" ]; then
 	              IS_XFAIL=1
+	          fi
+	      done
+
+	      # MAYFAIL=<name>[,...]: XFAIL without XPASS (fails on some providers).
+	      MAYFAIL_DEVS=`gawk 'BEGIN{FS="="} /^MAYFAIL/{print $2}' ${RUNTESTS_DIR}/defs/${F}.def`
+	      for d in `echo "$MAYFAIL_DEVS" | tr ',' ' '`; do
+	          if [ "$d" = "$ACTIVE_DEVICE" ] || [ "$d" = "$ACTIVE_LAUNCHER" ]; then
+	              IS_XFAIL=1
+	              MAY_PASS=1
+	          fi
+	      done
+
+	      # RANKS_DIE=<launcher>[,...]: ranks exit with 255 on purpose; keep
+	      # the job running with these launchers and judge the survivors.
+	      RANKS_DIE_LAUNCHERS=`gawk 'BEGIN{FS="="} /^RANKS_DIE/{print $2}' ${RUNTESTS_DIR}/defs/${F}.def`
+	      for d in `echo "$RANKS_DIE_LAUNCHERS" | tr ',' ' '`; do
+	          if [ "$d" = "$ACTIVE_LAUNCHER" ] && [ "$d" = pals ]; then
+	              RANKS_DIE=1
 	          fi
 	      done
 
@@ -133,12 +164,19 @@ run_test()
 
     echo "=================================== $1 ===================================" >> $LOG_FILE 2>&1
 
-    # Launch the test in its own session/process group (setsid) so the whole
-    # rank tree can be signalled as a unit. Killing gaspi_run alone orphaned the
-    # ranks, which kept holding their fixed ports
+    # Own process group, to signal all ranks at once (they hold fixed
+    # ports); same session, as PBS kills job processes in another one.
+    LOG_START=$(wc -l < $LOG_FILE)
     test_start=$(date +%s)
-    $SETSID $GASPI_RUN -m ${GPI2_TSUITE_MFILE} $1 $TEST_ARGS >> $LOG_FILE 2>&1 &
+    set -m
+    if [ $RANKS_DIE = 1 ]; then
+	      GPI2_PALS_ARGS="${GPI2_PALS_ARGS:+$GPI2_PALS_ARGS }--no-abort-on-failure" \
+	          $GASPI_RUN -m ${GPI2_TSUITE_MFILE} $1 $TEST_ARGS < /dev/null >> $LOG_FILE 2>&1 &
+    else
+	      $GASPI_RUN -m ${GPI2_TSUITE_MFILE} $1 $TEST_ARGS < /dev/null >> $LOG_FILE 2>&1 &
+    fi
     PID=$!
+    set +m
 
     PGID=$(ps -o pgid= -p "$PID" 2>/dev/null | tr -d ' ')
     if [ -n "$PGID" ] && [ "$PGID" != "$SELF_PGID" ]; then
@@ -181,12 +219,28 @@ run_test()
 	      TEST_PASSED=1
     fi
 
+    # RANKS_DIE: passed if PALS reports only exits with 255 and no
+    # survivor caught a signal (test_utils' handler also exits with -1).
+    if [ $RANKS_DIE = 1 ] && [ $TIMEDOUT = 0 ] && [ $TEST_RESULT != 0 ]; then
+	      TEST_OUT=$(tail -n +$((LOG_START + 1)) $LOG_FILE)
+	      RANK_ENDS=$(echo "$TEST_OUT" | grep -E 'rank [0-9]+ (exited|died|was killed|terminated)')
+	      if [ -n "$RANK_ENDS" ] \
+		     && ! echo "$RANK_ENDS" | grep -qvE 'rank [0-9]+ exited with code 255[[:space:]]*$' \
+		     && ! echo "$TEST_OUT" | grep -q '^Pid signal:'; then
+	          TEST_PASSED=1
+	          TEST_RESULT=0
+	      fi
+    fi
+
     if [ $IS_XFAIL = 1 ]; then
 	      if [ $TEST_PASSED = 0 ]; then
 	          # Expected failure (a timeout counts): XFAILED, not a suite failure.
 	          TESTS_XFAIL=$(($TESTS_XFAIL+1))
 	          printf '\033[94m'"XFAILED${TIME_STR}\n"
 	          $GASPI_CLEAN -m ${GPI2_TSUITE_MFILE}
+	      elif [ $MAY_PASS = 1 ]; then
+	          TESTS_PASS=$(($TESTS_PASS+1))
+	          printf '\033[32m'"PASSED${TIME_STR}\n"
 	      else
 	          # Unexpected pass: XPASS is treated as a failure so the stale
 	          # XFAIL marker gets noticed and removed.
@@ -244,9 +298,10 @@ while getopts "e:n:fm:o:ht" option ; do
     esac
 done
 
-# Resolve the active device (fixed at configure time) for XFAIL matching.
+# Active device (configure time) and launcher, for XFAIL.
 ACTIVE_DEVICE=$(detect_device)
-echo "Active device (for XFAIL): $ACTIVE_DEVICE"
+ACTIVE_LAUNCHER=$(detect_launcher)
+echo "Active device and launcher (for XFAIL): $ACTIVE_DEVICE, $ACTIVE_LAUNCHER"
 
 #go fast: quick overall check
 if [ $TESTS_GO_FAST = 1 ]; then
@@ -350,7 +405,6 @@ do
     if [ `find ${RUNTESTS_DIR}/bin/ -maxdepth 1 -iname $i ` ]; then
 	run_test ${RUNTESTS_DIR}/bin/$i
 	NUM_TESTS=$(($NUM_TESTS+1))
-	sleep 1
     else
 	echo "Test $i does not exist."
     fi

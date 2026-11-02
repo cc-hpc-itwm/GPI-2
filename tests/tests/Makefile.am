@@ -25,6 +25,8 @@ test_defs_pkgdata_DATA = $(abs_top_srcdir)/tests/defs/barrier_recover.def \
 		$(abs_top_srcdir)/tests/defs/default_ib.def \
 		$(abs_top_srcdir)/tests/defs/default_ofi.def \
 		$(abs_top_srcdir)/tests/defs/default_tcp.def \
+		$(abs_top_srcdir)/tests/defs/kill_procs.def \
+		$(abs_top_srcdir)/tests/defs/one_dies.def \
 		$(abs_top_srcdir)/tests/defs/one_dies_passive_atomic.def \
 		$(abs_top_srcdir)/tests/defs/passive_send_dead.def \
 		$(abs_top_builddir)/tests/defs/active_device
