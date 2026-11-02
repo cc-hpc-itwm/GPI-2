@@ -37,6 +37,8 @@ usage()
     echo "  -t, --time            Show the time (mm:ss) each test took."
     echo "  -h                    This help."
     echo
+    echo "  GPI2_TEST_THREADS=<n> caps the threads per rank of the *_mtt tests."
+    echo
 
 }
 
@@ -160,6 +162,10 @@ run_test()
 	      else
 	          printf "%51s: " "$TEST_NAME"
 	      fi
+    fi
+
+    if [ -n "${GPI2_TEST_THREADS:-}" ]; then
+        TEST_ARGS="$TEST_ARGS THREADS=$GPI2_TEST_THREADS"
     fi
 
     echo "=================================== $1 ===================================" >> $LOG_FILE 2>&1

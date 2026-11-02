@@ -60,7 +60,7 @@ main (int argc, char *argv[])
 
   int num_threads = 0;
 
-  ASSERT (gaspi_threads_init (&num_threads));
+  ASSERT (tsuite_threads_init (&num_threads));
 
   ASSERT (gaspi_proc_num (&numranks));
   ASSERT (gaspi_proc_rank (&myrank));

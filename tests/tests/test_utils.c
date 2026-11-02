@@ -8,8 +8,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <test_utils.h>
+#include <GASPI_Threads.h>
 
 #define BACKTRACE_SIZE 256
+
+/* Thread cap: argument THREADS=<n> (runtests.sh: GPI2_TEST_THREADS). */
+static gaspi_int tsuite_max_threads = 0;
 
 void
 tsuite_do_backtrace (int id, gaspi_rank_t node, FILE * bt_file)
@@ -84,6 +88,10 @@ tsuite_init (int argc, char *argv[])
 
     for (int i = 1; i < argc; i++)
     {
+      if (strncmp (argv[i], "THREADS=", 8) == 0)
+      {
+        tsuite_max_threads = atoi (argv[i] + 8);
+      }
       if (strcmp (argv[i], "GASPI_ETHERNET") == 0)
       {
         config.network = GASPI_ETHERNET;
@@ -123,6 +131,23 @@ tsuite_init (int argc, char *argv[])
     }
     ASSERT (gaspi_config_set (config));
   }
+}
+
+/* As gaspi_threads_init (one thread per core), at most the thread cap. */
+gaspi_return_t
+tsuite_threads_init (gaspi_int * const num)
+{
+  gaspi_int cores;
+  const gaspi_return_t ret = gaspi_threads_get_num_cores (&cores);
+  if (ret != GASPI_SUCCESS)
+  {
+    return ret;
+  }
+
+  *num = (tsuite_max_threads > 0 && tsuite_max_threads < cores)
+    ? tsuite_max_threads : cores;
+
+  return gaspi_threads_init_user (*num);
 }
 
 void

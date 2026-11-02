@@ -52,7 +52,7 @@ main(int argc, char *argv[])
   TSUITE_INIT(argc, argv);
   ASSERT (gaspi_proc_init(GASPI_BLOCK));
 
-  ASSERT(gaspi_threads_init(&num_threads));
+  ASSERT(tsuite_threads_init(&num_threads));
 
   ASSERT (gaspi_proc_num(&numranks));
   ASSERT (gaspi_proc_rank(&myrank));

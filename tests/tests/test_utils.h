@@ -20,6 +20,7 @@
 
 
 void tsuite_init (int argc, char *argv[]);
+gaspi_return_t tsuite_threads_init (gaspi_int * const num);
 void success_or_exit (const char *file, const int line,
                       const gaspi_return_t ec);
 void must_fail (const char *file, const int line, const gaspi_return_t ec);
