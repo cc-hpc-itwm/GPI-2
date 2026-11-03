@@ -226,6 +226,12 @@ or LoadLeveler:
 ./configure --with-loadleveler
 ```
 
+or PALS, the launcher of HPE Cray systems with PBS Pro:
+
+```
+./configure --with-pals
+```
+
 #### MPI Interoperability
 
 If the plan is to use GPI-2 with MPI to, for instance, start an
@@ -366,6 +372,27 @@ The `gaspi_run` utility has the following further options `[OPTIONS]`:
 
   -h, --help       Show help.
 ```
+
+### Running with PALS (HPE Cray, PBS Pro)
+
+In a PBS job, `gaspi_run` uses the job's nodes if no machine file is given.
+The entries of a node must be consecutive, and all nodes but the last need
+the same number of processes. By default, the processes of a node are
+spread over its NUMA nodes and use the NIC of their NUMA node.
+`GPI2_PALS_ARGS` passes further `mpiexec` options; a CPU binding there
+replaces the default, e.g. for hybrid (OpenMP) programs:
+
+```
+GPI2_PALS_ARGS="--depth 24 --cpu-bind depth" gaspi_run -m machinefile my_app
+```
+
+Keep each process within one NUMA node: unbound processes communicate
+much more slowly.
+
+`gaspi_cleanup -m machinefile` kills the last program started on the hosts
+of the machine file; with PALS it uses `mpiexec` and runs within the job.
+In the installed tests directory, `runtests.sh` uses this `gaspi_run` and
+`gaspi_cleanup`: a machine file in `tests/machines` is all it needs.
 
 ### Non-interactive usage
 
