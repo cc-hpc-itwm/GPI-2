@@ -10,3 +10,9 @@ echo "MOCK_SPAWNER GASPI_TRACE=${GASPI_TRACE:-<unset>}" >> "$MOCK_LOG"
 echo "MOCK_SPAWNER GASPI_IB_RELAXED_ORDERING=${GASPI_IB_RELAXED_ORDERING:-<unset>}" >> "$MOCK_LOG"
 echo "MOCK_SPAWNER GASPI_OFI_PROGRESS_PAUSE_US=${GASPI_OFI_PROGRESS_PAUSE_US:-<unset>}" >> "$MOCK_LOG"
 echo "MOCK_SPAWNER GPI2_OFI_PROVIDER=[${GPI2_OFI_PROVIDER:-}]" >> "$MOCK_LOG"
+
+# A rank still running after rank 0 has ended.
+if [ -n "${MOCK_SPAWNER_SLEEP:-}" ]; then
+    sleep "$MOCK_SPAWNER_SLEEP"
+    echo "MOCK_SPAWNER done" >> "$MOCK_LOG"
+fi

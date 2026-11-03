@@ -223,7 +223,7 @@ spawn_procs_on_hosts()
     local master_node=$(head -n 1 $mfile)
     local local_hostname=$(hostname)
 
-    uniq -c "$mfile" | while read -r count host; do
+    while read -r count host; do
 	      cmd="${GPI2_LAUNCHER_SPAWNER} ${master_node}"
 	      if [ $host != $master_node ]; then
 	          cmd="$cmd 0"
@@ -252,7 +252,7 @@ spawn_procs_on_hosts()
 
 	      rank=$((rank+count))
 	      node=$((node+1))
-    done
+    done < <(uniq -c "$mfile")
 }
 
 kill_procs_trap()

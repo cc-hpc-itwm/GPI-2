@@ -628,7 +628,7 @@ test_error_n_zero_no_m() {
 }
 
 ######################################################################
-# Category 5: Cleanup and exit codes (3 tests)
+# Category 5: Cleanup and exit codes (5 tests)
 ######################################################################
 
 test_exit_success() {
@@ -647,6 +647,19 @@ test_temp_files_cleaned_on_error() {
     run_gaspi_run -m /nonexistent/file "$FIXTURE_DIR/test_app.sh"
     assert_exit_code 1 &&
     assert_no_temp_files
+}
+
+# gaspi_run returns when all ranks have ended, not when rank 0 has.
+test_waits_for_ranks_local() {
+    MOCK_SPAWNER_SLEEP=2 run_gaspi_run -m "$MF_LOCAL" "$FIXTURE_DIR/test_app.sh"
+    assert_exit_code 0 &&
+    assert_mock_log_contains "MOCK_SPAWNER done"
+}
+
+test_waits_for_ranks_remote() {
+    MOCK_SPAWNER_SLEEP=2 run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/test_app.sh"
+    assert_exit_code 0 &&
+    assert_mock_log_contains "MOCK_SPAWNER done"
 }
 
 ######################################################################
@@ -775,6 +788,8 @@ echo "--- Cleanup and exit codes ---"
 run_test test_exit_success
 run_test test_exit_failure_on_app_error
 run_test test_temp_files_cleaned_on_error
+run_test test_waits_for_ranks_local
+run_test test_waits_for_ranks_remote
 
 # Category 6: Program path resolution
 echo
