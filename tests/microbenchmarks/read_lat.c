@@ -1,4 +1,3 @@
-#include "utils.h"
 #include "common.h"
 
 #include <GASPI.h>
@@ -32,7 +31,7 @@ int main()
 
   if (myrank < 2)
   {
-    if (myrank == 1)
+    if (myrank == 0)
     {
       printf ("-----------------------------------\n");
       printf ("%12s\t%5s\n", "Bytes", "Lat(usecs)");
@@ -46,7 +45,7 @@ int main()
         {
           gaspi_time_ticks (&(stamp[j]));
 
-          gaspi_read (0, 0, 0,
+          gaspi_read (0, 0, 1,
                       0, bytes, bytes,
                       0, GASPI_BLOCK);
 

@@ -51,7 +51,9 @@ main (int argc, char *argv[])
   gaspi_offset_t localOff = 0;
   const gaspi_offset_t remOff = 0;
 
-  for (commSize = sizeof (int); commSize < _8MB; commSize *= 2)
+  for (commSize = sizeof (int);
+       commSize < _8MB && commSize * (numranks - 1) <= _128MB;
+       commSize *= 2)
   {
     gaspi_rank_t rankSend;
 

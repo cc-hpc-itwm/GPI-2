@@ -53,7 +53,8 @@ main (int argc, char *argv[])
   assert (avoid_list != NULL);
   memset (avoid_list, 0, nprocs * sizeof (gaspi_rank_t));
 
-  gaspi_state_vector_t vec = (gaspi_state_vector_t) malloc (nprocs);
+  gaspi_state_vector_t vec =
+    (gaspi_state_vector_t) malloc (nprocs * sizeof (gaspi_state_t));
 
   assert (vec != NULL);
 

@@ -8,31 +8,21 @@
 
 #include <test_utils.h>
 
-/* This test stresses communication like the 4k_pressure test but in a multithreaded fashion */
-
-/* The following work is divided by the threads (each deals with a chunk of the whole memory) */
-
-/* 1- It fills the memory up to 1GB with random numbers */
-
-/* 2- transfers this 1GB to the other node to a intermediate position*/
-
-/* 3 - reads 1GB from intermediate position from the other node to a check place */
-
-/* 4 - make sure random generated values are the same on the initial buffer and the check place
-They should be the same as the is the same data */
+/* As z4k_pressure, multithreaded: each thread writes its chunk of an AREA in
+   blocks of 128 B to 4 KB to the next rank, reads it back and checks it. */
 
 /* There the same number of dummy threads doing communication but considering it junk. */
 
 /* Just to put pressure on the communication. */
 #define RUNS 2
 
-#define GB 1073741824
+#define AREA (64UL * 1024 * 1024)
 #define NUMTHREADS 2
 #define RANDNUM 1024
 
 //#define DEBUG 1
 
-gaspi_size_t memSize = 4294967296;      //4GB
+gaspi_size_t memSize = 4 * AREA;
 gaspi_rank_t myrank, highestnode;
 int error;
 
@@ -58,11 +48,11 @@ thread_function (void *arg)
   arg_ptr = (struct thread_args *) arg;
 
   const gaspi_offset_t offset_write_init =
-    0 + (arg_ptr->threadID * (GB / NUMTHREADS));
+    0 + (arg_ptr->threadID * (AREA / NUMTHREADS));
   const gaspi_offset_t offset_read_init =
-    memSize / 2 + (arg_ptr->threadID * (GB / NUMTHREADS));
+    memSize / 2 + (arg_ptr->threadID * (AREA / NUMTHREADS));
   const gaspi_offset_t offset_check_init =
-    3221225472 + (arg_ptr->threadID * (GB / NUMTHREADS));
+    3 * AREA + (arg_ptr->threadID * (AREA / NUMTHREADS));
   gaspi_offset_t offset_write = offset_write_init;
   gaspi_offset_t offset_read = offset_read_init;
   gaspi_number_t qmax;
@@ -109,7 +99,7 @@ thread_function (void *arg)
                     arg_ptr->threadID, offset_write, mptr[offset_write / 4]);
 #endif
 
-      while (counter < GB / NUMTHREADS)
+      while (counter < AREA / NUMTHREADS)
       {
         ASSERT (gaspi_write (0, offset_write, (myrank + 1) % highestnode,
                              0, offset_read, size, t_queue, GASPI_BLOCK));
@@ -156,7 +146,7 @@ thread_function (void *arg)
       counter = 0;              //reset
       //check if data was written successfully
       ASSERT (gaspi_read (0, offset_check_init, (myrank + 1) % highestnode,
-                          0, offset_read_init, GB / NUMTHREADS, t_queue,
+                          0, offset_read_init, AREA / NUMTHREADS, t_queue,
                           GASPI_BLOCK));
       ASSERT (gaspi_wait (t_queue, GASPI_BLOCK));
 
@@ -172,18 +162,19 @@ thread_function (void *arg)
       j = 0;
       int ck = 0;
 
-      while (ck < RANDNUM)
+      //the whole area, not only the RANDNUM values filled in this round
+      while (ck < AREA / NUMTHREADS / 4)
       {
         if (mptr[(offset_write_init / 4) + ck] !=
             mptr[(offset_check_init) / 4 + ck])
         {
-          gaspi_printf ("THREAD %d: value incorrect %f-%f at %d \n",
+          gaspi_printf ("THREAD %d: value incorrect %d-%d at %lu \n",
                         arg_ptr->threadID,
                         mptr[(offset_write_init / 4) + ck],
                         mptr[(offset_check_init / 4) + ck],
                         (offset_check_init / 4) + ck);
+          error = -1;
           break;
-
         }
         ck++;
       }
@@ -256,7 +247,7 @@ main (int argc, char *argv[])
   /* generate full random */
   srand48 ((unsigned) time (0));
 
-  /* fill randoms up to 1GB / NUMTHREADS */
+  /* fill randoms up to memSize */
   for (j = 0; j < memSize / 4; j++)
   {
     mptr[j] = drand48 () + (myrank * 1.0);

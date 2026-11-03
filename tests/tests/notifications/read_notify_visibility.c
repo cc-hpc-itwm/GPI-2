@@ -41,8 +41,11 @@ main (int argc, char *argv[])
   gaspi_config_t config;
   ASSERT (gaspi_config_get (&config));
 
-  const int iterations =
-    (config.network == GASPI_IB || config.network == GASPI_ROCE)
+  /* GPI2_TEST_ITERATIONS overrides the count. */
+  const char *const iter_env = getenv ("GPI2_TEST_ITERATIONS");
+  const int iterations = (iter_env != NULL && atoi (iter_env) > 0)
+    ? atoi (iter_env)
+    : (config.network == GASPI_IB || config.network == GASPI_ROCE)
     ? ITERATIONS_IB : ITERATIONS_OTHER;
 
   /* [0, MAX_SIZE): source on rank 1; [MAX_SIZE, 2 * MAX_SIZE): target on

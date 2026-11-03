@@ -20,7 +20,8 @@ main (int argc, char *argv[])
 
   EXPECT_FAIL (gaspi_state_vec_get (vec));
 
-  vec = (gaspi_state_vector_t) malloc (nprocs);
+  vec =
+    (gaspi_state_vector_t) malloc (nprocs * sizeof (gaspi_state_t));
 
   ASSERT (gaspi_state_vec_get (vec));
 

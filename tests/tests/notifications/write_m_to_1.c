@@ -36,7 +36,8 @@ main (int argc, char *argv[])
     return EXIT_SUCCESS;
   }
 
-  gaspi_size_t mem_size = 2 * SLOT_SIZE * (numranks - 1);
+  gaspi_size_t const half = SLOT_SIZE * (numranks - 1);
+  gaspi_size_t mem_size = (myrank == 0) ? 2 * half : SLOT_SIZE;
 
   if (myrank == 0)
   {
@@ -78,14 +79,14 @@ main (int argc, char *argv[])
       ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 
       /* fill slots with randoms */
-      for (j = 0; j < (mem_size / sizeof (float) / 2); j++)
+      for (j = 0; j < ((myrank == 0 ? half : mem_size) / sizeof (float)); j++)
       {
         mptr[j] = drand48 () + (myrank * 1.0);
       }
 
       ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 
-      gaspi_offset_t offset_in = 0, offset_out = mem_size / 2;
+      gaspi_offset_t offset_in = 0, offset_out = half;
 
       /* rank 0 write to all others */
       if (myrank == 0)
@@ -126,7 +127,7 @@ main (int argc, char *argv[])
       if (myrank != 0)
       {
         offset_in = 0;
-        offset_out = (mem_size / 2) + (cur_slot_size * (myrank - 1));
+        offset_out = half + (cur_slot_size * (myrank - 1));
 #ifdef WITH_SYNC
         ASSERT (gaspi_write_notify (0, offset_in, 0,
                                     0, offset_out, cur_slot_size,
@@ -163,7 +164,7 @@ main (int argc, char *argv[])
       {
         /* check correctness */
         float *in = (float *) _vptr;
-        float *out = (float *) ((char *) _vptr + mem_size / 2);
+        float *out = (float *) ((char *) _vptr + half);
         const gaspi_size_t total_elems =
           (cur_slot_size * (numranks - 1) / sizeof (float));
 

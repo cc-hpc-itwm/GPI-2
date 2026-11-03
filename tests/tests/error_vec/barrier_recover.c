@@ -309,7 +309,8 @@ main (int argc, char *argv[])
           (gm_seg_health_chk_array_id, health_chk_global_mem_size));
   ASSERT (gaspi_segment_ptr (gm_seg_health_chk_array_id, &gm_ptr_health_chk));
 
-  gaspi_state_vector_t health_vec = (gaspi_state_vector_t) malloc (numprocs);
+  gaspi_state_vector_t health_vec =
+    (gaspi_state_vector_t) malloc (numprocs * sizeof (gaspi_state_t));
 
   ASSERT (gaspi_state_vec_get (health_vec));
 

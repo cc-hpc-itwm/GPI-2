@@ -7,7 +7,7 @@
 int main()
 {
   struct timeval start_time, end_time;
-  gaspi_rank_t proc_num;
+  gaspi_rank_t proc_num, rank;
   double init_time = 0.0f;
   gaspi_config_t conf;
 
@@ -22,13 +22,17 @@ int main()
     return EXIT_FAILURE;
   }
   gettimeofday (&end_time, NULL);
-  gaspi_proc_rank (&proc_num);
+  gaspi_proc_num (&proc_num);
+  gaspi_proc_rank (&rank);
 
   init_time =
     (((double) end_time.tv_sec + (double) end_time.tv_usec * 1.e-6) -
      ((double) start_time.tv_sec + (double) start_time.tv_usec * 1.e-6));
 
-  printf ("gaspi_proc_init time for %d ranks: %.2f\n", proc_num, init_time);
+  if (rank == 0)
+  {
+    printf ("gaspi_proc_init time for %d ranks: %.2f\n", proc_num, init_time);
+  }
 
   if (gaspi_proc_term (GASPI_BLOCK) != GASPI_SUCCESS)
   {

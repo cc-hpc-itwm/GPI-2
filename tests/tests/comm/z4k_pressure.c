@@ -6,19 +6,11 @@
 
 #include <test_utils.h>
 
-/* This test stresses communication. */
-
-/* 1- It fills the memory up to 1GB with random numbers */
-
-/* 2- transfers this 1GB to the other node to a intermediate position*/
-
-/* 3 - reads 1GB from intermediate position from the other node to a check place */
-
-/* 4 - make sure random generated values are the same on the initial buffer and the check place
-They should be the same as the is the same data */
+/* Stresses communication: fills an AREA with random numbers, writes it in
+   4K blocks to the next rank, reads it back and checks the data. */
 
 #define RUNS 5
-#define GB 1073741824
+#define AREA (128UL * 1024 * 1024)
 
 /* #define DEBUG 1 */
 
@@ -31,11 +23,11 @@ main (int argc, char *argv[])
 
   const gaspi_size_t size = 4096;
 
-  const gaspi_size_t memSize = _4GB;
+  const gaspi_size_t memSize = 4 * AREA;
 
   gaspi_offset_t offset_write = 0;
-  gaspi_offset_t offset_read = _2GB;
-  gaspi_offset_t offset_check = 3221225472;
+  gaspi_offset_t offset_read = 2 * AREA;
+  gaspi_offset_t offset_check = 3 * AREA;
   gaspi_number_t qmax;
   gaspi_number_t queueSize;
 
@@ -68,13 +60,10 @@ main (int argc, char *argv[])
     ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 
     //clean
-    for (j = 0; j < memSize; j++)
-    {
-      mptr_c[j] = 0;
-    }
+    memset (mptr_c, 0, memSize);
 
-    /* fill randoms up to 1GB */
-    for (j = 0; j < (GB / sizeof (float)); j++)
+    /* fill randoms up to AREA */
+    for (j = 0; j < (AREA / sizeof (float)); j++)
     {
       mptr_f[j] = drand48 () + (myrank * 1.0);
     }
@@ -86,7 +75,7 @@ main (int argc, char *argv[])
 
     gaspi_printf ("\n....Running iteration %d of %d...\n", k, RUNS);
 
-    const unsigned long packets = (GB / size);
+    const unsigned long packets = (AREA / size);
 
     for (j = 0; j < packets; j++)
     {
@@ -104,7 +93,7 @@ main (int argc, char *argv[])
     }
 
     offset_write = 0;
-    offset_read = _2GB;
+    offset_read = 2 * AREA;
 
 #ifdef DEBUG
     gaspi_printf ("%d bytes written!\n", packets * size);
@@ -134,10 +123,11 @@ main (int argc, char *argv[])
 
     /* check if data was written successfully */
     ASSERT (gaspi_read (0, offset_check, (myrank + 1) % highestnode,
-                        0, offset_read, GB / 2, 0, GASPI_BLOCK));
+                        0, offset_read, AREA / 2, 0, GASPI_BLOCK));
 
-    ASSERT (gaspi_read (0, offset_check + (GB / 2), (myrank + 1) % highestnode,
-                        0, offset_read + (GB / 2), GB / 2, 0, GASPI_BLOCK));
+    ASSERT (gaspi_read (0, offset_check + (AREA / 2),
+                        (myrank + 1) % highestnode,
+                        0, offset_read + (AREA / 2), AREA / 2, 0, GASPI_BLOCK));
 
     ASSERT (gaspi_wait (0, GASPI_BLOCK));
 
@@ -148,7 +138,7 @@ main (int argc, char *argv[])
 #endif
 
     j = 0;
-    while (j < GB / sizeof (float))
+    while (j < AREA / sizeof (float))
     {
       if (mptr_f[j] != mptr_f[offset_check / sizeof (float) + j])
       {

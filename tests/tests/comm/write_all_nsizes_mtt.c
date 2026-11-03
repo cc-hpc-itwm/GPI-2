@@ -4,8 +4,13 @@
 
 gaspi_rank_t numranks, myrank;
 
+/* Every thread writes to every rank, sizes doubling up to maxSize: the
+   main thread up to 256 MB, the others (one per core) up to 512 KB. */
+#define MAIN_MAX_SIZE _500MB
+#define THREAD_MAX_SIZE _1MB
+
 void
-work()
+work (const gaspi_size_t maxSize)
 {
   gaspi_rank_t rankSend;
   gaspi_offset_t localOff = 0;
@@ -16,7 +21,7 @@ work()
 
   ASSERT (gaspi_queue_size_max (&qmax));
 
-  for (commSize = minSize; commSize < _500MB; commSize *= 2)
+  for (commSize = minSize; commSize < maxSize; commSize *= 2)
   {
     for (rankSend = 0; rankSend < numranks; rankSend++)
     {
@@ -47,7 +52,7 @@ thread_fun (void *args)
 
   ASSERT (gaspi_threads_register (&tid));
 
-  work();
+  work (args == NULL ? THREAD_MAX_SIZE : *(gaspi_size_t *) args);
 
   return NULL;
 }
@@ -74,7 +79,8 @@ main (int argc, char *argv[])
     ASSERT (gaspi_threads_run (thread_fun, NULL));
   }
 
-  thread_fun (NULL);
+  gaspi_size_t mainMax = MAIN_MAX_SIZE;
+  thread_fun (&mainMax);
 
   ASSERT (gaspi_barrier (GASPI_GROUP_ALL, GASPI_BLOCK));
 

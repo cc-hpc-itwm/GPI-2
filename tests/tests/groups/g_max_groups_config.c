@@ -10,7 +10,11 @@ main (int argc, char *argv[])
 
   gaspi_rank_t nprocs, n;
 
-  gaspi_number_t const user_max_groups = 255;
+  /* With GASPI_IB_RELAXED_ORDERING, collectives send the group id in 7
+     bits (gaspi_run forwards the variable to all ranks). */
+  const char *const ro_env = getenv ("GASPI_IB_RELAXED_ORDERING");
+  gaspi_number_t const user_max_groups =
+    (ro_env != NULL && atoi (ro_env) != 0) ? 128 : 255;
 
   gaspi_config_t config;
   ASSERT (gaspi_config_get (&config));

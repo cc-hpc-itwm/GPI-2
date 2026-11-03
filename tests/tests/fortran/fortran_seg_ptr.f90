@@ -1,8 +1,9 @@
 program main
   use gaspi
+  use gaspi_ext
   use , intrinsic :: ISO_C_BINDING
 
-  integer(gaspi_rank_t) :: rank, nprocs
+  integer(gaspi_rank_t) :: rank, nprocs, local_num
   integer(gaspi_segment_id_t) :: seg_id
   integer(gaspi_size_t) :: seg_size
   integer(gaspi_alloc_t) :: seg_alloc_policy
@@ -18,9 +19,18 @@ program main
 
   ret = gaspi_proc_rank(rank)
   ret = gaspi_proc_num(nprocs)
+  ret = gaspi_proc_local_num(local_num)
+  if(ret .ne. GASPI_SUCCESS) then
+     write(*,*) "gaspi_proc_local_num failed"
+     call exit(-1)
+  end if
 
   seg_id = 0
-  seg_size = 4 * 1024 * 1024 * 1024
+  if(local_num .eq. 1) then
+     seg_size = 4_8 * 1024 * 1024 * 1024
+  else
+     seg_size = 4 * 1024 * 1024
+  end if
 
   !create segment
   seg_alloc_policy = GASPI_MEM_UNINITIALIZED

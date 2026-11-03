@@ -29,6 +29,7 @@ micro_tests = bin/allreduce.bin \
      bin/nb_barrier.bin \
      bin/ping_pong.bin \
      bin/read_bw.bin \
+     bin/read_lat.bin \
      bin/read_notify_bw.bin \
      bin/write_bw.bin \
      bin/write_lat.bin \
@@ -43,6 +44,7 @@ bin_nb_allreduce_bin_SOURCES = nb_allreduce.c $(auxMICSRCS)
 bin_nb_barrier_bin_SOURCES = nb_barrier.c $(auxMICSRCS)
 bin_ping_pong_bin_SOURCES = ping_pong.c $(auxMICSRCS)
 bin_read_bw_bin_SOURCES = read_bw.c $(auxMICSRCS)
+bin_read_lat_bin_SOURCES = read_lat.c $(auxMICSRCS)
 bin_read_notify_bw_bin_SOURCES = read_notify_bw.c $(auxMICSRCS)
 bin_write_bw_bin_SOURCES = write_bw.c $(auxMICSRCS)
 bin_write_lat_bin_SOURCES = write_lat.c $(auxMICSRCS)
