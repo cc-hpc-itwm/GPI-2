@@ -1,2 +1,3 @@
 ARGS=numprocs_idle 1 timesteps 15
 RANKS_DIE=pals
+TIMEOUT=300

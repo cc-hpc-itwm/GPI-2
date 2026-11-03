@@ -110,6 +110,7 @@ run_test()
     IS_XFAIL=0
     MAY_PASS=0
     RANKS_DIE=0
+    TEST_TIME=$MAX_TIME
 
     #check definitions file for particular test
     F="${TEST_NAME%.*}"
@@ -149,6 +150,12 @@ run_test()
 	              RANKS_DIE=1
 	          fi
 	      done
+
+	      # TIMEOUT=<seconds>: this test may take longer than the -e timeout.
+	      DEF_TIME=`gawk 'BEGIN{FS="="} /^TIMEOUT=/{print $2}' ${RUNTESTS_DIR}/defs/${F}.def`
+	      if [ -n "$DEF_TIME" ] && [ "$DEF_TIME" -gt "$TEST_TIME" ]; then
+	          TEST_TIME=$DEF_TIME
+	      fi
 
 	      TEST_ARGS=`gawk 'BEGIN{FS="="} /ARGS/{print $2}' ${RUNTESTS_DIR}/defs/${F}.def`
     else
@@ -196,7 +203,7 @@ run_test()
 
     # on timeout send SIGTERM to the group first,
     (
-	      sleep $MAX_TIME
+	      sleep $TEST_TIME
 	      : > "$TIMEOUT_FLAG"
 	      kill -TERM $KILL_TARGET 2>/dev/null
 	      sleep 2
