@@ -662,6 +662,58 @@ test_waits_for_ranks_remote() {
     assert_mock_log_contains "MOCK_SPAWNER done"
 }
 
+# A failed rank on another host or on this one fails gaspi_run, and its
+# spawner's report reaches the output.
+test_spawner_failure_local() {
+    MOCK_SPAWNER_EXIT=1 MOCK_SPAWNER_STDERR="rank 1 exited with code 255" \
+        run_gaspi_run -m "$MF_LOCAL" "$FIXTURE_DIR/test_app.sh"
+    assert_exit_code 1 &&
+    assert_stderr_contains "rank 1 exited with code 255"
+}
+
+test_spawner_failure_remote() {
+    MOCK_SPAWNER_EXIT=1 MOCK_SPAWNER_STDERR="rank 1 exited with code 255" \
+        run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/test_app.sh"
+    assert_exit_code 1 &&
+    assert_output_contains "rank 1 exited with code 255"
+}
+
+test_spawner_success_local() {
+    MOCK_SPAWNER_EXIT=0 run_gaspi_run -m "$MF_LOCAL" "$FIXTURE_DIR/test_app.sh"
+    assert_exit_code 0
+}
+
+# The real spawner reports each rank that failed and exits non-zero.
+run_real_spawner() {
+    local app
+    app=$(mktemp /tmp/gaspi_test_app.XXXXXX)
+    printf '#!/bin/sh\n[ "$GASPI_RANK" = "%s" ] && exit 255\nexit 0\n' "$1" > "$app"
+    chmod +x "$app"
+    TEST_EXIT=0
+    "$TEST_DIR/../../bin/ssh.spawner" master 0 /dev/null 2 0 0 3 0 "$app" \
+        > "$TEST_STDOUT" 2> "$TEST_STDERR" || TEST_EXIT=$?
+    rm -f "$app"
+}
+
+test_real_spawner_reports_failed_rank() {
+    run_real_spawner 1
+    assert_exit_code 1 &&
+    assert_stderr_contains "rank 1 exited with code 255" &&
+    if grep -q 'rank [02] exited' "$TEST_STDERR"; then
+        fail "a rank that succeeded was reported"
+        return 1
+    fi
+}
+
+test_real_spawner_all_pass() {
+    run_real_spawner none
+    assert_exit_code 0 &&
+    if [ -s "$TEST_STDERR" ]; then
+        fail "unexpected stderr: $(cat "$TEST_STDERR")"
+        return 1
+    fi
+}
+
 # An ssh connection dropped before authentication is retried; one lost
 # after the command started is not.
 test_ssh_drop_master_retried() {
@@ -844,6 +896,11 @@ run_test test_exit_failure_on_app_error
 run_test test_temp_files_cleaned_on_error
 run_test test_waits_for_ranks_local
 run_test test_waits_for_ranks_remote
+run_test test_spawner_failure_local
+run_test test_spawner_failure_remote
+run_test test_spawner_success_local
+run_test test_real_spawner_reports_failed_rank
+run_test test_real_spawner_all_pass
 run_test test_ssh_drop_master_retried
 run_test test_ssh_drop_spawner_retried
 run_test test_ssh_drop_persistent_fails

@@ -257,7 +257,8 @@ spawn_procs_on_hosts()
 
 	      if [ "$host" = "$local_hostname" ]; then
 	          # No shell parses these values again (unlike over ssh): no quoting.
-	          GASPI_TRACE="$GPI2_TRACE" GPI2_OFI_PROVIDER="${FI_PROVIDER:-}" nohup $cmd > /dev/null 2>&1 &
+	          GASPI_TRACE="$GPI2_TRACE" GPI2_OFI_PROVIDER="${FI_PROVIDER:-}" nohup $cmd < /dev/null > /dev/null 2> >(cat >&2) &
+	          SPAWN_PIDS+=($!)
 	      else
 	          local trace_env=""
 	          if [ -n "$GPI2_TRACE" ]; then
@@ -269,11 +270,13 @@ spawn_procs_on_hosts()
 	          done
 	          {
 	              launch_with_retry "$host" "GPI2_OFI_PROVIDER=$(printf '%q' "$FI_PROVIDER") $trace_env $dev_env nohup $cmd $(cat /dev/null) 2>&1"
+	              rc=$?
 	              if [ -n "$LAUNCH_NOT_STARTED" ]; then
 	                  echo "Error: Failed to start ranks on $host"
 	                  kill_procs_in_all_hosts
 	                  exit 1
 	              fi
+	              exit $rc
 	          } &
 	          SPAWN_PIDS+=($!)
 	      fi

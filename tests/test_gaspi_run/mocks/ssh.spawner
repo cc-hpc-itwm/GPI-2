@@ -16,3 +16,9 @@ if [ -n "${MOCK_SPAWNER_SLEEP:-}" ]; then
     sleep "$MOCK_SPAWNER_SLEEP"
     echo "MOCK_SPAWNER done" >> "$MOCK_LOG"
 fi
+
+# A rank that failed: the spawner reports it and exits non-zero.
+if [ -n "${MOCK_SPAWNER_STDERR:-}" ]; then
+    echo "$MOCK_SPAWNER_STDERR" >&2
+fi
+exit "${MOCK_SPAWNER_EXIT:-0}"

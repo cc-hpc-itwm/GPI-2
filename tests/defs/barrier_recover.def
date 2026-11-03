@@ -1,3 +1,3 @@
 ARGS=numprocs_idle 1 timesteps 15
-RANKS_DIE=pals
+RANKS_DIE=pals,ssh
 TIMEOUT=300

@@ -39,6 +39,7 @@ fi
 
 PROG=$9
 ARGS=""
+pids=""
 
 count=1
 for i in "$@"
@@ -67,8 +68,19 @@ do
 
     cmd="$cmd; $PROG ${ARGS}'"
     eval "$cmd" &
+    pids="$pids $!:$(($6 + $i))"
 
 done
-wait
 
-exit 0
+status=0
+for pr in $pids
+do
+    wait "${pr%%:*}"
+    rc=$?
+    if [ "$rc" -ne 0 ]; then
+        echo "rank ${pr#*:} exited with code $rc" >&2
+        status=1
+    fi
+done
+
+exit $status

@@ -146,7 +146,7 @@ run_test()
 	      # the job running with these launchers and judge the survivors.
 	      RANKS_DIE_LAUNCHERS=`gawk 'BEGIN{FS="="} /^RANKS_DIE/{print $2}' ${RUNTESTS_DIR}/defs/${F}.def`
 	      for d in `echo "$RANKS_DIE_LAUNCHERS" | tr ',' ' '`; do
-	          if [ "$d" = "$ACTIVE_LAUNCHER" ] && [ "$d" = pals ]; then
+	          if [ "$d" = "$ACTIVE_LAUNCHER" ] && { [ "$d" = pals ] || [ "$d" = ssh ]; }; then
 	              RANKS_DIE=1
 	          fi
 	      done
@@ -232,8 +232,9 @@ run_test()
 	      TEST_PASSED=1
     fi
 
-    # RANKS_DIE: passed if PALS reports only exits with 255 and no
-    # survivor caught a signal (test_utils' handler also exits with -1).
+    # RANKS_DIE: passed if the launcher (PALS, ssh.spawner) reports only
+    # exits with 255 and no survivor caught a signal (test_utils' handler
+    # also exits with -1).
     if [ $RANKS_DIE = 1 ] && [ $TIMEDOUT = 0 ] && [ $TEST_RESULT != 0 ]; then
 	      TEST_OUT=$(tail -n +$((LOG_START + 1)) $LOG_FILE)
 	      RANK_ENDS=$(echo "$TEST_OUT" | grep -E 'rank [0-9]+ (exited|died|was killed|terminated)')
