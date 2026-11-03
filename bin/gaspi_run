@@ -88,6 +88,26 @@ clean_exit()
     exit $status
 }
 
+# Runs the launcher with the given arguments, retrying (3 attempts) when
+# the connection failed before the command could start; then sets
+# LAUNCH_NOT_STARTED. Returns the launcher's exit status.
+launch_with_retry()
+{
+    local errf rc attempt
+    errf=$(mktemp /tmp/.gpi2.ssh.XXXXXX)
+    LAUNCH_NOT_STARTED=""
+    for attempt in 1 2 3; do
+        { "$GPI2_LAUNCHER" "$@" 2>&1 1>&3 3>&- | tee "$errf" >&2; rc=${PIPESTATUS[0]}; } 3>&1
+        LAUNCH_NOT_STARTED=""
+        [ "$rc" = 255 ] || break
+        grep -qE '^(Connection (closed|reset) by .* port [0-9]+|kex_exchange_identification: .*|ssh: connect to host .* port [0-9]+: Connection (refused|timed out))'$'\r''?$' "$errf" || break
+        LAUNCH_NOT_STARTED=1
+        [ $attempt = 3 ] || sleep $attempt
+    done
+    rm -f "$errf"
+    return $rc
+}
+
 print_error_exit_failure()
 {
     echo
@@ -247,7 +267,15 @@ spawn_procs_on_hosts()
 	          for var in $(device_env_vars); do
 	              dev_env="$dev_env $var=$(printf '%q' "${!var}")"
 	          done
-	          $GPI2_LAUNCHER "$host" "GPI2_OFI_PROVIDER=$(printf '%q' "$FI_PROVIDER") $trace_env $dev_env nohup $cmd $(cat /dev/null) 2>&1" &
+	          {
+	              launch_with_retry "$host" "GPI2_OFI_PROVIDER=$(printf '%q' "$FI_PROVIDER") $trace_env $dev_env nohup $cmd $(cat /dev/null) 2>&1"
+	              if [ -n "$LAUNCH_NOT_STARTED" ]; then
+	                  echo "Error: Failed to start ranks on $host"
+	                  kill_procs_in_all_hosts
+	                  exit 1
+	              fi
+	          } &
+	          SPAWN_PIDS+=($!)
 	      fi
 
 	      rank=$((rank+count))
@@ -385,6 +413,7 @@ if [ -O /tmp/.last_gaspi_prg ]; then
 fi
 
 #spawn processes (other than master/rank 0)
+SPAWN_PIDS=()
 spawn_procs_on_hosts "$GPI2_MFILE" "$GPI2_NNODES" "$GPI2_PRG" "${GPI2_PRG_ARGS[@]}"
 
 
@@ -443,8 +472,14 @@ if [ "$first_hostname" != "$hn" ]; then
 
     cmd="$master_env; $GPI2_MASTER_PRG $escaped_args"
 
-    if ! $GPI2_LAUNCHER "$first_hostname" "GPI2_OFI_PROVIDER=$(printf '%q' "$FI_PROVIDER") eval $cmd" ; then
-	      echo "Error: Failed to start $GPI2_MASTER_PRG on $first_hostname"
+    launch_with_retry "$first_hostname" "GPI2_OFI_PROVIDER=$(printf '%q' "$FI_PROVIDER") eval $cmd"
+    master_rc=$?
+    if [ $master_rc != 0 ]; then
+	      if [ -n "$LAUNCH_NOT_STARTED" ]; then
+	          echo "Error: Failed to start $GPI2_MASTER_PRG on $first_hostname"
+	      elif [ $master_rc = 255 ]; then
+	          echo "Error: Lost connection to $first_hostname"
+	      fi
 	      clean_exit 1
     fi
 else
@@ -460,6 +495,9 @@ else
     fi
 fi
 
+for pid in "${SPAWN_PIDS[@]}"; do
+    wait $pid || clean_exit 1
+done
 wait
 
 #clean-up and exit

@@ -59,7 +59,7 @@ setup() {
 }
 
 teardown() {
-    rm -f "$MOCK_LOG" "$TEST_STDOUT" "$TEST_STDERR"
+    rm -f "$MOCK_LOG" "$MOCK_LOG.drops" "$TEST_STDOUT" "$TEST_STDERR"
     rm -f "$MF_LOCAL" "$MF_REMOTE" "$MF_MIXED" "$MF_3HOSTS"
     rm -rf "$TEST_BIN_DIR"
     # Clean up any temp files gaspi_run might have left behind
@@ -628,7 +628,7 @@ test_error_n_zero_no_m() {
 }
 
 ######################################################################
-# Category 5: Cleanup and exit codes (5 tests)
+# Category 5: Cleanup and exit codes (11 tests)
 ######################################################################
 
 test_exit_success() {
@@ -660,6 +660,60 @@ test_waits_for_ranks_remote() {
     MOCK_SPAWNER_SLEEP=2 run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/test_app.sh"
     assert_exit_code 0 &&
     assert_mock_log_contains "MOCK_SPAWNER done"
+}
+
+# An ssh connection dropped before authentication is retried; one lost
+# after the command started is not.
+test_ssh_drop_master_retried() {
+    MOCK_SSH_DROP_MATCH="GASPI_RANK=0" \
+        run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/test_app.sh"
+    assert_exit_code 0 &&
+    assert_output_contains "argc=1" &&
+    assert_mock_log_contains "MOCK_SSH dropped host=remotehost01"
+}
+
+test_ssh_drop_spawner_retried() {
+    MOCK_SSH_DROP_MATCH="ssh.spawner" \
+        run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/test_app.sh"
+    assert_exit_code 0 &&
+    assert_mock_log_contains "MOCK_SSH dropped" || return 1
+    local spawned
+    spawned=$(grep -c "MOCK_SPAWNER args=" "$MOCK_LOG")
+    [ "$spawned" -eq 2 ] || { fail "expected 2 spawner runs, got $spawned"; return 1; }
+}
+
+test_ssh_drop_persistent_fails() {
+    MOCK_SSH_DROP_MATCH="GASPI_RANK=0" MOCK_SSH_DROP=5 \
+        run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/test_app.sh"
+    assert_exit_code 1 &&
+    assert_output_contains "Failed to start" || return 1
+    local drops
+    drops=$(grep -c "MOCK_SSH dropped" "$MOCK_LOG")
+    [ "$drops" -eq 3 ] || { fail "expected 3 attempts, got $drops"; return 1; }
+}
+
+test_ssh_drop_spawner_persistent_fails() {
+    MOCK_SSH_DROP_MATCH="ssh.spawner" MOCK_SSH_DROP=9 \
+        run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/test_app.sh"
+    assert_exit_code 1 &&
+    assert_output_contains "Failed to start ranks on"
+}
+
+test_ssh_lost_after_start_not_retried() {
+    MOCK_SSH_DROP_MATCH="GASPI_RANK=0" \
+        MOCK_SSH_DROP_MSG="Connection to remotehost01 closed by remote host." \
+        run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/test_app.sh"
+    assert_exit_code 1 || return 1
+    local drops
+    drops=$(grep -c "MOCK_SSH dropped" "$MOCK_LOG")
+    [ "$drops" -eq 1 ] || { fail "expected 1 attempt, got $drops"; return 1; }
+}
+
+# A remote master that runs and fails is not a launch failure.
+test_exit_failure_remote_no_launch_error() {
+    run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/test_app_fail.sh"
+    assert_exit_code 1 &&
+    assert_output_not_contains "Failed to start"
 }
 
 ######################################################################
@@ -790,6 +844,12 @@ run_test test_exit_failure_on_app_error
 run_test test_temp_files_cleaned_on_error
 run_test test_waits_for_ranks_local
 run_test test_waits_for_ranks_remote
+run_test test_ssh_drop_master_retried
+run_test test_ssh_drop_spawner_retried
+run_test test_ssh_drop_persistent_fails
+run_test test_ssh_drop_spawner_persistent_fails
+run_test test_ssh_lost_after_start_not_retried
+run_test test_exit_failure_remote_no_launch_error
 
 # Category 6: Program path resolution
 echo

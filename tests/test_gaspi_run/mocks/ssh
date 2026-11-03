@@ -12,5 +12,18 @@ echo "MOCK_SSH host=$host cmd=$cmd" >> "$MOCK_LOG"
 # must reach the remote side has to travel in the command.
 unset GASPI_IB_RELAXED_ORDERING FI_PROVIDER
 
+# A connection dropped before authentication (or, with MOCK_SSH_DROP_MSG,
+# later): the first MOCK_SSH_DROP calls (default 1) whose command contains
+# MOCK_SSH_DROP_MATCH fail with exit 255 without running the command.
+if [ -n "${MOCK_SSH_DROP_MATCH:-}" ] && [[ "$cmd" == *"$MOCK_SSH_DROP_MATCH"* ]]; then
+    drops=$(cat "$MOCK_LOG.drops" 2>/dev/null || echo 0)
+    if [ "$drops" -lt "${MOCK_SSH_DROP:-1}" ]; then
+        echo $((drops + 1)) > "$MOCK_LOG.drops"
+        echo "MOCK_SSH dropped host=$host" >> "$MOCK_LOG"
+        echo "${MOCK_SSH_DROP_MSG:-Connection closed by 10.0.0.1 port 22}" >&2
+        exit 255
+    fi
+fi
+
 # Execute the command locally so we can capture program output
 eval "$cmd"
