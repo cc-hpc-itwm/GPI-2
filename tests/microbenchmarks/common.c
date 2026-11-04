@@ -24,6 +24,28 @@ mcycles_compare (const void *aptr, const void *bptr)
 }
 
 
+/* Communication benchmarks bind each rank to a CPU near the NIC, unless
+   GASPI_BIND is set already (GASPI_BIND=none: no binding). Before
+   gaspi_proc_init. */
+void
+bench_bind (void)
+{
+  setenv ("GASPI_BIND", "nic-core", 0);
+}
+
+/* Reminder of the placement in the benchmark output (rank 0). */
+void
+bench_bind_note (const gaspi_rank_t rank)
+{
+  if (rank == 0)
+  {
+    printf ("# GASPI_BIND=%s (benchmark default nic-core: each rank on a CPU"
+            " near the NIC; GASPI_BIND=none for no binding)\n",
+            getenv ("GASPI_BIND"));
+    fflush (stdout);
+  }
+}
+
 int
 start_bench (int max_nodes)
 {
@@ -31,6 +53,8 @@ start_bench (int max_nodes)
 
   const double dSize = 1024.0f * 1024.0f * 32.0f;
   const unsigned long segSize = (unsigned long) dSize;
+
+  bench_bind ();
 
   ret = gaspi_proc_init (GASPI_BLOCK);
   if (ret != GASPI_SUCCESS)
@@ -43,6 +67,7 @@ start_bench (int max_nodes)
 
   gaspi_proc_rank (&rank);
   gaspi_proc_num (&nprocs);
+  bench_bind_note (rank);
   if (nprocs > max_nodes)
   {
     printf ("Benchmark for %d nodes only\n", max_nodes);

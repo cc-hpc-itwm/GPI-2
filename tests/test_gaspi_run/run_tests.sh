@@ -28,7 +28,7 @@ HOSTNAME=$(hostname)
 setup() {
     # The tests set these themselves where needed; values exported by the
     # caller (e.g. when running the whole test suite) must not leak in.
-    unset GASPI_TRACE GASPI_IB_RELAXED_ORDERING GASPI_OFI_PROGRESS_PAUSE_US FI_PROVIDER
+    unset GASPI_TRACE GASPI_IB_RELAXED_ORDERING GASPI_OFI_PROGRESS_PAUSE_US FI_PROVIDER GASPI_BIND
 
     export MOCK_LOG=$(mktemp /tmp/gaspi_test_mock.XXXXXX)
     TEST_STDOUT=$(mktemp /tmp/gaspi_test_out.XXXXXX)
@@ -491,6 +491,13 @@ test_ofi_env_propagated_to_remote_spawner() {
     assert_mock_log_contains "MOCK_SPAWNER GASPI_OFI_PROGRESS_PAUSE_US=20"
 }
 
+test_bind_propagated_to_remote_master() {
+    # The placement setting travels in the command like the above.
+    GASPI_BIND=nic-core run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/trace_probe.sh"
+    assert_exit_code 0 &&
+    assert_output_contains "GASPI_BIND=nic-core"
+}
+
 test_provider_unset_local_spawner() {
     # Without FI_PROVIDER, the ranks on this host must not get a provider
     # name: a quoted empty value ('') selected no provider at all.
@@ -861,6 +868,7 @@ run_test test_ro_propagated_to_remote_master
 run_test test_ro_propagated_to_remote_spawner
 run_test test_ofi_env_propagated_to_remote_master
 run_test test_ofi_env_propagated_to_remote_spawner
+run_test test_bind_propagated_to_remote_master
 run_test test_provider_unset_local_spawner
 run_test test_provider_set_local_spawner
 run_test test_provider_propagated_to_remote_master

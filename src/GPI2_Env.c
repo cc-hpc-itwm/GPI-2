@@ -18,8 +18,10 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "GASPI_types.h"
 #include "GPI2_Env.h"
+#include "GPI2_Sys.h"
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
 #include "PGASPI.h"
@@ -218,11 +220,50 @@ gaspi_handle_env (gaspi_context_t * ctx)
     return -1;
   }
 
+  /* GASPI_BIND=nic-core (communication benchmarks): one CPU near a NIC per
+     rank. -N: the NUMA node of the local rank, round-robin from a NIC's
+     node. Neither replaces a binding the process has already. */
+  const char *bindPtr = getenv ("GASPI_BIND");
   const char *numaPtr = getenv ("GASPI_SET_NUMA_SOCKET");
+  const int nic_core = bindPtr != NULL && strcmp (bindPtr, "nic-core") == 0;
+  const int numa = numaPtr != NULL && atoi (numaPtr) == 1;
 
-  if (numaPtr)
+  if (bindPtr != NULL && !nic_core && strcmp (bindPtr, "none") != 0)
   {
-    if (atoi (numaPtr) == 1)
+    GASPI_DEBUG_PRINT_ERROR ("Invalid GASPI_BIND (%s): nic-core or none",
+                             bindPtr);
+    return -1;
+  }
+
+  if (nic_core || numa)
+  {
+    const char *what = nic_core ? "GASPI_BIND=nic-core" : "-N";
+
+    if (gaspi_affinity_is_bound())
+    {
+      if (ctx->rank == 0)
+      {
+        fprintf (stderr, "GPI-2: %s not applied: the process is bound"
+                 " already (launcher, numactl, taskset or cpuset).\n", what);
+      }
+    }
+    else if (nic_core)
+    {
+      const int cpu = gaspi_bind_nic_core (ctx->local_rank);
+
+      if (cpu < 0)
+      {
+        GASPI_DEBUG_PRINT_ERROR ("Failed to bind to a CPU near the NIC");
+        return -1;
+      }
+
+      if (ctx->rank == 0)
+      {
+        fprintf (stderr, "GPI-2: %s: rank 0 on CPU %d (NUMA node %d).\n",
+                 what, cpu, gaspi_cpus_numa_node());
+      }
+    }
+    else
     {
       gaspi_uchar numa_socket;
 

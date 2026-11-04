@@ -12,9 +12,6 @@
    queues and num_notification_ids notification ids (default 1 each). */
 int main(int argc, char *argv[])
 {
-  //on numa architectures you have to map this process to the numa node where nic is installed
-  //if(gaspi_set_socket_affinity(1) != GASPI_SUCCESS){ printf("gaspi_set_socket_affinity failed !\n");}
-
   if (start_bench (2) != 0)
   {
     printf ("Initialization failed\n");

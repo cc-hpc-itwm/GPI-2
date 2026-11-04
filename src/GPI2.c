@@ -107,8 +107,15 @@ pgaspi_numa_socket (gaspi_uchar * const sock)
   {
     if (atoi (numaPtr) == 1)
     {
-      /* More ranks on the node than NUMA nodes share them. */
-      const int node = gaspi_get_numa_node (gctx->local_rank);
+      /* The node the process runs on; before -N binds it (or if a
+         binding spans nodes), the node -N chooses. More ranks on the node
+         than NUMA nodes share them. */
+      int node = gaspi_cpus_numa_node();
+
+      if (node < 0)
+      {
+        node = gaspi_get_numa_node (gctx->local_rank);
+      }
 
       if (node < 0)
       {

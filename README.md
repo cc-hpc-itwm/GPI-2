@@ -154,6 +154,10 @@ support, however the user can also enable and using it (if the header
 file is found) by `--enable-infiniband-ext`. Note, however, they are
 for the moment an experimental feature.
 
+With several InfiniBand NICs and no `netdev_id` in the configuration, a
+process uses a NIC on the NUMA node of its CPUs. `GASPI_IB_VERBOSE=1` prints
+each process's device and the NUMA nodes of the device and the CPUs.
+
 ##### Ethernet / TCP
 On the other hand, GPI-2 can be installed on a system without
 Infiniband, using standard TCP sockets:
@@ -355,8 +359,11 @@ The `gaspi_run` utility has the following further options `[OPTIONS]`:
   -N, --NUMA       Enable NUMA for processes on same node. The
                    processes running on same node are bound to the
                    NUMA nodes with CPUs in turn: local process k to the
-                   (k mod n)-th of the n NUMA nodes. With more processes
-                   than NUMA nodes, processes share a NUMA node. Needs
+                   (k mod n)-th of the n NUMA nodes, starting with
+                   the first NUMA node with a NIC. With more processes
+                   than NUMA nodes, processes share a NUMA node. A
+                   process bound already (launcher, numactl, taskset,
+                   cpuset) keeps its binding, with a warning. Needs
                    numactl or lscpu on the nodes.
 
   -n, --nodes <procs>
@@ -374,12 +381,27 @@ The `gaspi_run` utility has the following further options `[OPTIONS]`:
   -h, --help       Show help.
 ```
 
+### Binding to a CPU near the NIC
+
+`GASPI_BIND=nic-core` binds each process to one CPU on a NUMA node with a
+NIC: local process k to the k-th CPU, taking one hardware thread per core
+first and the NUMA nodes with a NIC in turn. This gives the lowest latency
+and highest message rate for communication-bound runs; applications that
+need memory bandwidth or many cores per process are usually better served
+by `-N`. `GASPI_BIND=nic-core` takes precedence over `-N` and, like `-N`,
+leaves a process bound already as it is. `GASPI_BIND=none` (the default)
+binds nothing.
+
+The microbenchmarks in `tests/microbenchmarks` use `GASPI_BIND=nic-core`
+unless `GASPI_BIND` is set, and print the setting.
+
 ### Running with PALS (HPE Cray, PBS Pro)
 
 In a PBS job, `gaspi_run` uses the job's nodes if no machine file is given.
 The entries of a node must be consecutive, and all nodes but the last need
 the same number of processes. By default, the processes of a node are
-spread over its NUMA nodes and use the NIC of their NUMA node.
+spread over its NUMA nodes and use the NIC of their NUMA node; `-N` and
+`GASPI_BIND` therefore keep that binding.
 `GPI2_PALS_ARGS` passes further `mpiexec` options; a CPU binding there
 replaces the default, e.g. for hybrid (OpenMP) programs:
 

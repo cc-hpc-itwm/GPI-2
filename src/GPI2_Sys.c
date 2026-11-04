@@ -16,9 +16,12 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <dirent.h>
 #include <sched.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <time.h>
@@ -364,12 +367,90 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
   return 0;
 }
 
-/* The k-th NUMA node with CPUs, counting round-robin: nodes without CPUs
-   (memory only) do not count. Returns -1 if there is none. */
+/* NUMA node of a NIC, from sysfs by its device name (e.g. cxi0, mlx5_0),
+   or -1. */
 int
-gaspi_get_numa_node (const int k)
+gaspi_nic_numa_node (const char *name)
 {
-  int nodes[GASPI_MAX_NUMAS];
+  static const char *const classes[] = { "cxi", "infiniband" };
+
+  for (size_t i = 0; i < sizeof (classes) / sizeof (classes[0]); i++)
+  {
+    char path[256];
+    snprintf (path, sizeof (path), "/sys/class/%s/%s/device/numa_node",
+              classes[i], name);
+
+    FILE *f = fopen (path, "r");
+    if (f == NULL)
+    {
+      continue;
+    }
+
+    int node = -1;
+    if (fscanf (f, "%d", &node) != 1)
+    {
+      node = -1;
+    }
+    fclose (f);
+
+    return node;
+  }
+
+  return -1;
+}
+
+/* The NUMA nodes with a NIC (cxi or verbs device), in increasing order;
+   returns their number. */
+static int
+gaspi_nic_numa_nodes (int nodes[GASPI_MAX_NUMAS])
+{
+  static const char *const classes[] = { "cxi", "infiniband" };
+  int has_nic[GASPI_MAX_NUMAS] = { 0 };
+
+  for (size_t i = 0; i < sizeof (classes) / sizeof (classes[0]); i++)
+  {
+    char path[64];
+    snprintf (path, sizeof (path), "/sys/class/%s", classes[i]);
+
+    DIR *d = opendir (path);
+    if (d == NULL)
+    {
+      continue;
+    }
+
+    for (struct dirent * e; (e = readdir (d)) != NULL;)
+    {
+      if (e->d_name[0] == '.')
+      {
+        continue;
+      }
+
+      const int node = gaspi_nic_numa_node (e->d_name);
+      if (node >= 0 && node < GASPI_MAX_NUMAS)
+      {
+        has_nic[node] = 1;
+      }
+    }
+    closedir (d);
+  }
+
+  int n = 0;
+  for (int node = 0; node < GASPI_MAX_NUMAS; node++)
+  {
+    if (has_nic[node])
+    {
+      nodes[n++] = node;
+    }
+  }
+
+  return n;
+}
+
+/* The NUMA nodes with CPUs (nodes with memory only do not count), in
+   increasing order; returns their number. */
+static int
+gaspi_cpu_numa_nodes (int nodes[GASPI_MAX_NUMAS])
+{
   int n = 0;
 
   for (int node = 0; node < GASPI_MAX_NUMAS; node++)
@@ -382,7 +463,199 @@ gaspi_get_numa_node (const int k)
     }
   }
 
-  return n > 0 ? nodes[k % n] : -1;
+  return n;
+}
+
+/* The k-th NUMA node with CPUs, counting round-robin from the first node
+   with a NIC. Returns -1 if there is none. */
+int
+gaspi_get_numa_node (const int k)
+{
+  int nodes[GASPI_MAX_NUMAS];
+  const int n = gaspi_cpu_numa_nodes (nodes);
+
+  if (n == 0)
+  {
+    return -1;
+  }
+
+  int nics[GASPI_MAX_NUMAS];
+  int first = 0;
+
+  if (gaspi_nic_numa_nodes (nics) > 0)
+  {
+    for (int i = 0; i < n; i++)
+    {
+      if (nodes[i] == nics[0])
+      {
+        first = i;
+      }
+    }
+  }
+
+  return nodes[(first + k) % n];
+}
+
+/* NUMA node holding all CPUs this thread may run on, or -1. */
+int
+gaspi_cpus_numa_node (void)
+{
+  cpu_set_t allowed;
+  if (sched_getaffinity (0, sizeof (allowed), &allowed) != 0)
+  {
+    return -1;
+  }
+
+  int nodes[GASPI_MAX_NUMAS];
+  const int n = gaspi_cpu_numa_nodes (nodes);
+
+  for (int i = 0; i < n; i++)
+  {
+    cpu_set_t node_cpus, both;
+
+    if (gaspi_get_affinity_mask (nodes[i], &node_cpus) == 0)
+    {
+      CPU_AND (&both, &allowed, &node_cpus);
+      if (CPU_EQUAL (&both, &allowed))
+      {
+        return nodes[i];
+      }
+    }
+  }
+
+  return -1;
+}
+
+/* Whether this thread may run on fewer CPUs than are online: someone (a
+   launcher, numactl, taskset, a cpuset) has bound it already. */
+int
+gaspi_affinity_is_bound (void)
+{
+  cpu_set_t allowed;
+
+  if (sched_getaffinity (0, sizeof (allowed), &allowed) != 0)
+  {
+    return 0;
+  }
+
+  return CPU_COUNT (&allowed) < sysconf (_SC_NPROCESSORS_ONLN);
+}
+
+/* Whether cpu is the first hardware thread of its core. */
+static int
+gaspi_cpu_is_first_thread (const int cpu)
+{
+  char path[96];
+  snprintf (path, sizeof (path),
+            "/sys/devices/system/cpu/cpu%d/topology/thread_siblings_list", cpu);
+
+  FILE *f = fopen (path, "r");
+  if (f == NULL)
+  {
+    return 1;
+  }
+
+  int first = cpu;
+  if (fscanf (f, "%d", &first) != 1)
+  {
+    first = cpu;
+  }
+  fclose (f);
+
+  return first == cpu;
+}
+
+/* Appends the CPUs of the given NUMA nodes to order, one CPU of each node
+   in turn; only first hardware threads of cores, or only the others. */
+static void
+gaspi_append_cpus (const int *nodes, const int n, const int first_threads,
+                   int *order, int *count)
+{
+  cpu_set_t cpus[GASPI_MAX_NUMAS];
+  int next[GASPI_MAX_NUMAS];
+
+  for (int i = 0; i < n; i++)
+  {
+    if (gaspi_get_affinity_mask (nodes[i], &cpus[i]) != 0)
+    {
+      CPU_ZERO (&cpus[i]);
+    }
+    next[i] = 0;
+  }
+
+  for (int added = 1; added;)
+  {
+    added = 0;
+
+    for (int i = 0; i < n; i++)
+    {
+      while (next[i] < CPU_SETSIZE)
+      {
+        const int cpu = next[i]++;
+
+        if (CPU_ISSET (cpu, &cpus[i])
+            && gaspi_cpu_is_first_thread (cpu) == first_threads)
+        {
+          order[(*count)++] = cpu;
+          added = 1;
+          break;
+        }
+      }
+    }
+  }
+}
+
+/* Binds this thread to one CPU, for communication benchmarks: local rank k
+   gets the k-th CPU of the NUMA nodes with a NIC (one core of each such
+   node in turn, cores before their second hardware threads), then of the
+   other nodes. Returns the CPU or -1. */
+int
+gaspi_bind_nic_core (const int local_rank)
+{
+  int nics[GASPI_MAX_NUMAS], nodes[GASPI_MAX_NUMAS], others[GASPI_MAX_NUMAS];
+  const int nnics = gaspi_nic_numa_nodes (nics);
+  const int nnodes = gaspi_cpu_numa_nodes (nodes);
+  int nothers = 0;
+
+  for (int i = 0; i < nnodes; i++)
+  {
+    int is_nic = 0;
+
+    for (int j = 0; j < nnics; j++)
+    {
+      is_nic |= nodes[i] == nics[j];
+    }
+
+    if (!is_nic)
+    {
+      others[nothers++] = nodes[i];
+    }
+  }
+
+  static int order[CPU_SETSIZE];
+  int count = 0;
+
+  gaspi_append_cpus (nics, nnics, 1, order, &count);
+  gaspi_append_cpus (nics, nnics, 0, order, &count);
+  gaspi_append_cpus (others, nothers, 1, order, &count);
+  gaspi_append_cpus (others, nothers, 0, order, &count);
+
+  if (count == 0)
+  {
+    return -1;
+  }
+
+  const int cpu = order[local_rank % count];
+  cpu_set_t one;
+
+  CPU_ZERO (&one);
+  CPU_SET (cpu, &one);
+  if (sched_setaffinity (0, sizeof (one), &one) != 0)
+  {
+    return -1;
+  }
+
+  return cpu;
 }
 
 char *

@@ -15,6 +15,7 @@ main()
   gconf.queue_num = 1;
   gaspi_config_set (gconf);
 
+  bench_bind ();
   gaspi_proc_init (GASPI_BLOCK);
 
   gaspi_float cpu_freq;
@@ -22,6 +23,7 @@ main()
 
   gaspi_rank_t grank, gnum;
   gaspi_proc_rank (&grank);
+  bench_bind_note (grank);
   gaspi_proc_num (&gnum);
 
   if (0 == grank)

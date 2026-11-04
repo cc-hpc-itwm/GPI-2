@@ -19,6 +19,10 @@ gaspi_cycles_t stamp[ITERATIONS], stamp2[ITERATIONS], delta[ITERATIONS];
 
 int mcycles_compare (const void*, const void*);
 
+void bench_bind (void);
+
+void bench_bind_note (const gaspi_rank_t);
+
 int start_bench (int);
 
 void end_bench (void);

@@ -8,7 +8,6 @@
 
 int main()
 {
-  //on numa architectures you have to map this process to the numa node where nic is installed
   if (start_bench (2) != 0)
   {
     printf ("Initialization failed\n");

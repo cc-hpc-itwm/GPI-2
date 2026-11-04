@@ -30,6 +30,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Dev.h"
 #include "GPI2_GRP.h"
 #include "GPI2_IB.h"
+#include "GPI2_Sys.h"
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
 
@@ -387,14 +388,25 @@ pgaspi_dev_init_core(gaspi_context_t *const gctx)
   }
   else
   {
-    /* Look for one with IB Transport */
+    /* Look for one with IB Transport, first on the NUMA node of the
+       rank's CPUs (if they are on one) */
     exit_on_error = 0;
-    for (gaspi_int i = 0; i < avail_num_dev; i++)
+    const int cpu_node = gaspi_cpus_numa_node();
+
+    for (int pass = (cpu_node < 0); pass < 2 && configured_dev_id < 0; pass++)
     {
-      if (pgaspi_dev_query_id_dev (ib_dev_ctx, exit_on_error, i))
+      for (gaspi_int i = 0; i < avail_num_dev; i++)
       {
-        configured_dev_id = i;
-        break;
+        const int local = cpu_node >= 0
+          && gaspi_nic_numa_node (ibv_get_device_name
+                                  (ib_dev_ctx->dev_list[i])) == cpu_node;
+
+        if ((pass == 0) == local
+            && pgaspi_dev_query_id_dev (ib_dev_ctx, exit_on_error, i))
+        {
+          configured_dev_id = i;
+          break;
+        }
       }
     }
 
@@ -403,6 +415,16 @@ pgaspi_dev_init_core(gaspi_context_t *const gctx)
       GASPI_DEBUG_PRINT_ERROR ("Failed to auto-setup device (libibverbs)");
       return -1;
     }
+  }
+
+  if (getenv ("GASPI_IB_VERBOSE") != NULL)
+  {
+    const char *const name =
+      ibv_get_device_name (ib_dev_ctx->dev_list[configured_dev_id]);
+
+    fprintf (stderr, "GPI-2 rank %u: IB device %s (NIC NUMA node %d,"
+             " CPUs NUMA node %d)\n", gctx->rank, name,
+             gaspi_nic_numa_node (name), gaspi_cpus_numa_node());
   }
 
   /* Port check and set */

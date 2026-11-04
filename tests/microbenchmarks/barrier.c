@@ -14,6 +14,7 @@ int main()
   gconf.queue_num = 1;
   gaspi_config_set (gconf);
 
+  bench_bind ();
   GPI2_ASSERT (gaspi_proc_init (GASPI_BLOCK));
 
   gaspi_float vers;
@@ -21,6 +22,7 @@ int main()
 
   gaspi_rank_t rank, tnc;
   GPI2_ASSERT (gaspi_proc_rank (&rank));
+  bench_bind_note (rank);
   GPI2_ASSERT (gaspi_proc_num (&tnc));
 
   gaspi_float cpu_freq;

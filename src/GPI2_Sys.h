@@ -81,6 +81,14 @@ int gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset);
 
 int gaspi_get_numa_node (const int k);
 
+int gaspi_nic_numa_node (const char *name);
+
+int gaspi_cpus_numa_node (void);
+
+int gaspi_affinity_is_bound (void);
+
+int gaspi_bind_nic_core (const int local_rank);
+
 char* pgaspi_gethostname (gaspi_context_t const *const gctx,
                           const unsigned int id);
 

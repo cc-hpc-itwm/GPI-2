@@ -305,63 +305,6 @@ pgaspi_ofi_list_entry (const char* list, int index, char* buf, size_t len)
   return entry;
 }
 
-/* NUMA node of a NIC, from sysfs by its domain name (e.g. cxi0), or -1. */
-static int
-pgaspi_ofi_nic_numa_node (const char* name)
-{
-  static const char* const classes[] = { "cxi", "infiniband" };
-
-  for (size_t i = 0; i < sizeof (classes) / sizeof (classes[0]); i++)
-  {
-    char path[256];
-    snprintf (path, sizeof (path), "/sys/class/%s/%s/device/numa_node",
-              classes[i], name);
-
-    FILE* f = fopen (path, "r");
-    if (f == NULL)
-    {
-      continue;
-    }
-
-    int node = -1;
-    if (fscanf (f, "%d", &node) != 1)
-    {
-      node = -1;
-    }
-    fclose (f);
-
-    return node;
-  }
-
-  return -1;
-}
-
-/* NUMA node holding all CPUs this thread may run on, or -1. */
-static int
-pgaspi_ofi_cpus_numa_node (void)
-{
-  cpu_set_t allowed;
-  if (sched_getaffinity (0, sizeof (allowed), &allowed) != 0)
-  {
-    return -1;
-  }
-
-  cpu_set_t node_cpus;
-  for (int node = 0;
-       node < GASPI_MAX_NUMAS && gaspi_get_affinity_mask (node, &node_cpus) == 0;
-       node++)
-  {
-    cpu_set_t both;
-    CPU_AND (&both, &allowed, &node_cpus);
-    if (CPU_EQUAL (&both, &allowed))
-    {
-      return node;
-    }
-  }
-
-  return -1;
-}
-
 /* NIC on the NUMA node of the rank's CPUs, or GASPI_OFI_DEVICE; NULL: any. */
 static const char*
 pgaspi_ofi_local_device (struct fi_info* info)
@@ -372,7 +315,7 @@ pgaspi_ofi_local_device (struct fi_info* info)
     return dev;
   }
 
-  const int node = pgaspi_ofi_cpus_numa_node();
+  const int node = gaspi_cpus_numa_node();
   if (node < 0)
   {
     return NULL;
@@ -381,7 +324,7 @@ pgaspi_ofi_local_device (struct fi_info* info)
   for (struct fi_info* cur = info; cur != NULL; cur = cur->next)
   {
     if (strcmp (cur->fabric_attr->prov_name, info->fabric_attr->prov_name) == 0
-        && pgaspi_ofi_nic_numa_node (cur->domain_attr->name) == node)
+        && gaspi_nic_numa_node (cur->domain_attr->name) == node)
     {
       return cur->domain_attr->name;
     }
@@ -1488,8 +1431,8 @@ pgaspi_ofi_create_fabric (const char* prov_name,
     fprintf (stderr, "GPI-2 rank %u: %s device %s (NIC NUMA node %d,"
              " CPUs NUMA node %d)\n", glb_gaspi_ctx.rank,
              info->fabric_attr->prov_name, info->domain_attr->name,
-             pgaspi_ofi_nic_numa_node (info->domain_attr->name),
-             pgaspi_ofi_cpus_numa_node());
+             gaspi_nic_numa_node (info->domain_attr->name),
+             gaspi_cpus_numa_node());
   }
 
   if (pgaspi_ofi_set_cxi_auth_key (info) != 0)
