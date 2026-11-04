@@ -79,6 +79,8 @@ float gaspi_get_cpufreq (void);
 
 int gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset);
 
+int gaspi_get_numa_node (const int k);
+
 char* pgaspi_gethostname (gaspi_context_t const *const gctx,
                           const unsigned int id);
 

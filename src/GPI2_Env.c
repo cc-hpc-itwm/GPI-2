@@ -225,9 +225,9 @@ gaspi_handle_env (gaspi_context_t * ctx)
     if (atoi (numaPtr) == 1)
     {
       gaspi_uchar numa_socket;
-      pgaspi_numa_socket (&numa_socket);
 
-      if (pgaspi_set_socket_affinity (numa_socket) != GASPI_SUCCESS)
+      if (pgaspi_numa_socket (&numa_socket) != GASPI_SUCCESS
+          || pgaspi_set_socket_affinity (numa_socket) != GASPI_SUCCESS)
       {
         return -1;
       }

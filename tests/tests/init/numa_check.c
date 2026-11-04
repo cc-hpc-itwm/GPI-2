@@ -1,3 +1,6 @@
+#define _GNU_SOURCE
+#include <sched.h>
+#include <stdio.h>
 #include <test_utils.h>
 
 int
@@ -24,13 +27,12 @@ main (int argc, char *argv[])
   {
     ASSERT (gaspi_numa_socket (&numa_socket));
 
-    gaspi_rank_t local_rank;
-    ASSERT (gaspi_proc_local_rank (&local_rank));
-
-    // with NUMA enabled, we can only start as many processes per node
-    // as the available NUMA sockets, hence the NUMA socket must be
-    // equal to the local rank.
-    assert (numa_socket == local_rank);
+    // the process runs on a CPU of its NUMA node (with more processes
+    // on the node than NUMA nodes, several share one)
+    char path[128];
+    snprintf (path, sizeof (path), "/sys/devices/system/node/node%d/cpu%d",
+              numa_socket, sched_getcpu ());
+    assert (access (path, F_OK) == 0);
   }
 
   ASSERT (gaspi_proc_term (GASPI_BLOCK));

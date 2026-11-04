@@ -107,7 +107,16 @@ pgaspi_numa_socket (gaspi_uchar * const sock)
   {
     if (atoi (numaPtr) == 1)
     {
-      *sock = (gaspi_uchar) gctx->local_rank;
+      /* More ranks on the node than NUMA nodes share them. */
+      const int node = gaspi_get_numa_node (gctx->local_rank);
+
+      if (node < 0)
+      {
+        GASPI_DEBUG_PRINT_ERROR ("Found no NUMA node with CPUs");
+        return GASPI_ERROR;
+      }
+
+      *sock = (gaspi_uchar) node;
 
       return GASPI_SUCCESS;
     }

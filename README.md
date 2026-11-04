@@ -352,11 +352,12 @@ The `gaspi_run` utility has the following further options `[OPTIONS]`:
                    started with a different application than the rest
                    of the nodes (workers).
 
-  -N, --NUMMA      Enable NUMA for processes on same node. With this
-                   option it is only possible to start the same number
-                   of processes as NUMA nodes present on the system.
-                   The processes running on same node will be set with
-                   affinity to the proper NUMA node.
+  -N, --NUMA       Enable NUMA for processes on same node. The
+                   processes running on same node are bound to the
+                   NUMA nodes with CPUs in turn: local process k to the
+                   (k mod n)-th of the n NUMA nodes. With more processes
+                   than NUMA nodes, processes share a NUMA node. Needs
+                   numactl or lscpu on the nodes.
 
   -n, --nodes <procs>
                    Start as many <procs> from machine file.

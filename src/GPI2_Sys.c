@@ -364,6 +364,27 @@ gaspi_get_affinity_mask (const int sock, cpu_set_t * cpuset)
   return 0;
 }
 
+/* The k-th NUMA node with CPUs, counting round-robin: nodes without CPUs
+   (memory only) do not count. Returns -1 if there is none. */
+int
+gaspi_get_numa_node (const int k)
+{
+  int nodes[GASPI_MAX_NUMAS];
+  int n = 0;
+
+  for (int node = 0; node < GASPI_MAX_NUMAS; node++)
+  {
+    cpu_set_t cpus;
+
+    if (gaspi_get_affinity_mask (node, &cpus) == 0 && CPU_COUNT (&cpus) > 0)
+    {
+      nodes[n++] = node;
+    }
+  }
+
+  return n > 0 ? nodes[k % n] : -1;
+}
+
 char *
 pgaspi_gethostname (gaspi_context_t const *const gctx, const unsigned int id)
 {
