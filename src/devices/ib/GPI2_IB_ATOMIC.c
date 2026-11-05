@@ -36,19 +36,11 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
   slist.length = sizeof (gaspi_atomic_value_t);
   slist.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
 
-#ifdef GPI2_EXP_VERBS
-  struct ibv_exp_send_wr *bad_wr;
-  struct ibv_exp_send_wr swr;
-
-  swr.exp_opcode = IBV_EXP_WR_ATOMIC_FETCH_AND_ADD;
-  swr.exp_send_flags = IBV_EXP_SEND_SIGNALED;
-#else
   struct ibv_send_wr *bad_wr;
   struct ibv_send_wr swr;
 
   swr.opcode = IBV_WR_ATOMIC_FETCH_AND_ADD;
   swr.send_flags = IBV_SEND_SIGNALED;
-#endif
 
   swr.wr.atomic.remote_addr = gctx->rrmd[segment_id][rank].data.addr + offset;
   swr.wr.atomic.rkey = gctx->rrmd[segment_id][rank].rkey[0];
@@ -61,17 +53,10 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-#ifdef GPI2_EXP_VERBS
-  if (ibv_exp_post_send (ib_dev_ctx->qpGroups[rank], &swr, &bad_wr))
-  {
-    return GASPI_ERROR;
-  }
-#else
   if (ibv_post_send (ib_dev_ctx->qpGroups[rank], &swr, &bad_wr))
   {
     return GASPI_ERROR;
   }
-#endif
 
   int nr = __atomic_exchange_n (&gctx->ne_count_grp, 0, __ATOMIC_RELAXED) + 1;
 
@@ -109,20 +94,11 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
   slist.length = sizeof (gaspi_atomic_value_t);
   slist.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
 
-#ifdef GPI2_EXP_VERBS
-  struct ibv_exp_send_wr *bad_wr;
-  struct ibv_exp_send_wr swr;
-
-  swr.exp_opcode = IBV_WR_ATOMIC_CMP_AND_SWP;
-  swr.exp_send_flags = IBV_SEND_SIGNALED;
-
-#else
   struct ibv_send_wr *bad_wr;
   struct ibv_send_wr swr;
 
   swr.opcode = IBV_WR_ATOMIC_CMP_AND_SWP;
   swr.send_flags = IBV_SEND_SIGNALED;
-#endif
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
@@ -136,17 +112,10 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
   swr.num_sge = 1;
   swr.next = NULL;
 
-#ifdef GPI2_EXP_VERBS
-  if (ibv_exp_post_send (ib_dev_ctx->qpGroups[rank], &swr, &bad_wr))
-  {
-    return GASPI_ERROR;
-  }
-#else
   if (ibv_post_send (ib_dev_ctx->qpGroups[rank], &swr, &bad_wr))
   {
     return GASPI_ERROR;
   }
-#endif
 
   int nr = __atomic_exchange_n (&gctx->ne_count_grp, 0, __ATOMIC_RELAXED) + 1;
 

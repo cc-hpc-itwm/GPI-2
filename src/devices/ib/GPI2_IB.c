@@ -34,10 +34,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
 
-#ifdef GPI2_EXP_VERBS
-#include <math.h>
-#endif
-
 int ibv_read_sysfs_file (const char *dir, const char *file,
                          char *buf, size_t size);
 
@@ -549,29 +545,6 @@ pgaspi_dev_init_core(gaspi_context_t *const gctx)
 
   /* Create default completion queues */
   /* Groups */
-#ifdef GPI2_EXP_VERBS
-  struct ibv_exp_cq_init_attr cqattr;
-
-  memset (&cqattr, 0, sizeof (cqattr));
-
-  ib_dev_ctx->scqGroups =
-    ibv_exp_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,
-                       NULL, 0, &cqattr);
-  if (NULL == ib_dev_ctx->scqGroups)
-  {
-    GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
-    return -1;
-  }
-
-  ib_dev_ctx->rcqGroups =
-    ibv_exp_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,
-                       NULL, 0, &cqattr);
-  if (NULL == ib_dev_ctx->rcqGroups)
-  {
-    GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
-    return -1;
-  }
-#else
   ib_dev_ctx->scqGroups =
     ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,
                    NULL, 0);
@@ -589,7 +562,6 @@ pgaspi_dev_init_core(gaspi_context_t *const gctx)
     GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
     return -1;
   }
-#endif
 
   /* Passive */
   ib_dev_ctx->scqP =
@@ -772,87 +744,6 @@ _pgaspi_dev_create_qp (gaspi_context_t const *const gctx,
 }
 
 
-#ifdef GPI2_EXP_VERBS
-static struct ibv_qp *
-_pgaspi_dev_create_qp_exp (gaspi_context_t const *const gctx,
-                           struct ibv_cq *send_cq, struct ibv_cq *recv_cq,
-                           struct ibv_srq *srq, uint32_t depth)
-{
-  gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
-
-  struct ibv_exp_qp_init_attr attr;
-  struct ibv_qp *qp = NULL;
-  struct ibv_exp_device_attr dev_attr;
-
-  memset (&attr, 0, sizeof (attr));
-  memset (&dev_attr, 0, sizeof (dev_attr));
-
-  attr.pd = ib_dev_ctx->pd;
-  attr.cap.max_send_wr = depth;
-  attr.cap.max_recv_wr = depth;
-  attr.cap.max_send_sge = 1;
-  attr.cap.max_inline_data = MAX_INLINE_BYTES;
-
-  attr.comp_mask = IBV_EXP_QP_INIT_ATTR_PD | IBV_EXP_QP_INIT_ATTR_CREATE_FLAGS;
-  attr.comp_mask |= IBV_EXP_QP_INIT_ATTR_ATOMICS_ARG;
-  attr.max_atomic_arg = pow (2, dev_attr.ext_atom.log_max_atomic_inline);
-  attr.exp_create_flags = IBV_EXP_QP_CREATE_ATOMIC_BE_REPLY;
-
-  attr.send_cq = send_cq;
-  attr.recv_cq = recv_cq;
-  attr.srq = srq;
-
-  attr.qp_type = IBV_QPT_RC;
-
-  qp = ibv_exp_create_qp (ib_dev_ctx->context, &attr);
-  if (qp == NULL)
-  {
-    GASPI_DEBUG_PRINT_ERROR ("Failed to create QP (libibverbs)");
-    return NULL;
-  }
-
-  /* Set to init */
-  struct ibv_exp_qp_attr qp_attr;
-
-  memset (&qp_attr, 0, sizeof (struct ibv_exp_qp_attr));
-
-  qp_attr.qp_state = IBV_QPS_INIT;
-  qp_attr.pkey_index = 0;
-  qp_attr.port_num = ib_dev_ctx->ib_port;
-
-  qp_attr.qp_access_flags =
-    IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE |
-    IBV_ACCESS_REMOTE_ATOMIC;
-
-  struct ibv_exp_qp_attr exp_attr;
-  uint64_t exp_flags = 0;
-
-  memset (&exp_attr, 0, sizeof (struct ibv_exp_qp_attr));
-
-  exp_attr.qp_state = qp_attr.qp_state;
-  exp_attr.pkey_index = qp_attr.pkey_index;
-  exp_attr.port_num = ib_dev_ctx->ib_port;
-
-  exp_attr.qp_access_flags = qp_attr.qp_access_flags;
-
-  exp_flags = IBV_EXP_QP_STATE | IBV_EXP_QP_PKEY_INDEX | IBV_EXP_QP_PORT;
-  exp_flags |= IBV_EXP_QP_ACCESS_FLAGS;
-
-  if (ibv_exp_modify_qp (qp, &exp_attr, exp_flags))
-  {
-    GASPI_DEBUG_PRINT_ERROR ("Failed to modify QP (libibverbs)");
-
-    if (ibv_destroy_qp (qp))
-    {
-      GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
-    }
-    return NULL;
-  }
-
-  return qp;
-}
-#endif //GPI2_EXP_VERBS
-
 int
 pgaspi_dev_comm_queue_delete (gaspi_context_t const *const gctx,
                               const unsigned int id)
@@ -981,13 +872,6 @@ pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx, const int i,
   if (ib_dev_ctx->qpGroups[i] == NULL)
   {
     /* Groups QP */
-#ifdef GPI2_EXP_VERBS
-    ib_dev_ctx->qpGroups[i] =
-      _pgaspi_dev_create_qp_exp (gctx, ib_dev_ctx->scqGroups,
-                                 ib_dev_ctx->rcqGroups, NULL,
-                                 gctx->config->queue_size_max);
-
-#else
     ib_dev_ctx->qpGroups[i] =
       _pgaspi_dev_create_qp (gctx, ib_dev_ctx->scqGroups,
                              ib_dev_ctx->rcqGroups, NULL,
@@ -997,7 +881,6 @@ pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx, const int i,
     {
       return -1;
     }
-#endif
 
     /* Accept sync flags as immediate data even without relaxed ordering
        locally: a peer with GASPI_IB_RELAXED_ORDERING set sends them, and

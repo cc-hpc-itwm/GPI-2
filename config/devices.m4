@@ -47,7 +47,6 @@ AC_DEFUN([ACX_USABLE_DEVICE],[
            options="$options Ethernet"
         fi
         AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
- 	      AM_CONDITIONAL([WITH_INFINIBAND_EXT],[test x${HAVE_INFINIBAND_EXT} = x1 -a x$infiniband_ext != xno])
 
 	# Record the resolved device name so the test runner can match
 	# per-test XFAIL markers. Derived from the HAVE_* truth (not the
@@ -58,11 +57,7 @@ AC_DEFUN([ACX_USABLE_DEVICE],[
 	      [GPI2_DEVICE_NAME=unknown])
 	AC_SUBST([GPI2_DEVICE_NAME])
         if [test x${HAVE_INFINIBAND} = x1]; then
-           if [test x${HAVE_INFINIBAND_EXT} = x1 -a x$infiniband_ext != xno]; then
-              options="$options Infiniband Extensions"
-	   else
-	      options="$options Infiniband"
-	   fi
+           options="$options Infiniband"
 	   if [test x${HAVE_INFINIBAND_DEVICES} = x1]; then
 	      options="$options with actual devices"
 	   else
@@ -82,8 +77,6 @@ AC_DEFUN([ACX_INFINIBAND],[
       	      ac_inc_infiniband=$ac_path_infiniband/include/infiniband
 	      AC_CHECK_FILE($ac_inc_infiniband/verbs.h,
 	      	      [HAVE_INF_HEADER=1],[HAVE_INF_HEADER=0])
-	      AC_CHECK_FILE($ac_inc_infiniband/verbs_exp.h,
-			    [HAVE_INFINIBAND_EXT=1],[HAVE_INFINIBAND_EXT=0])
 	      for iblib in libibverbs.so libibverbs.a; do
 	          for iblib_path in lib lib64; do
 	      	      ac_lib_infiniband=$ac_path_infiniband/$iblib_path
@@ -105,11 +98,6 @@ AC_DEFUN([ACX_INFINIBAND],[
 	      	  ac_inc_infiniband=$ibinc/infiniband
 		  AC_CHECK_FILE($ac_inc_infiniband/verbs.h,
 		  	      	  [HAVE_INF_HEADER=1],[HAVE_INF_HEADER=0])
-	      	  if [test ${HAVE_INF_HEADER} = 1 -a x$infiniband_ext != xno]; then
-		     AC_CHECK_FILE($ac_inc_infiniband/verbs_exp.h,
-				   [HAVE_INFINIBAND_EXT=1],[HAVE_INFINIBAND_EXT=0])
-	      	     break
-	      	  fi
 	      done
 	      # Try to determine library path(s)
 	      for ibinc in $inc_paths; do
