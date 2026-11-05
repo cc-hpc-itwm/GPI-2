@@ -69,7 +69,7 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
     }
     while (ne == 0);
 
-    if ((ne < 0) || (ib_dev_ctx->wc_grp_send[i].status != IBV_WC_SUCCESS))
+    if ((ne < 0) || (ib_dev_ctx->wc_grp_send[0].status != IBV_WC_SUCCESS))
     {
       return GASPI_ERROR;
     }
@@ -127,7 +127,7 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
     }
     while (ne == 0);
 
-    if ((ne < 0) || (ib_dev_ctx->wc_grp_send[i].status != IBV_WC_SUCCESS))
+    if ((ne < 0) || (ib_dev_ctx->wc_grp_send[0].status != IBV_WC_SUCCESS))
     {
       return GASPI_ERROR;
     }
