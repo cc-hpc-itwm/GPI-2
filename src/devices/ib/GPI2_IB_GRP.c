@@ -69,7 +69,6 @@ pgaspi_dev_post_group_write (gaspi_context_t * const gctx,
 {
   struct ibv_sge slist;
   struct ibv_send_wr swr;
-  struct ibv_send_wr *bad_wr_send;
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
@@ -89,8 +88,7 @@ pgaspi_dev_post_group_write (gaspi_context_t * const gctx,
   swr.wr.rdma.rkey = gctx->groups[group].rrcd[dst].rkey[0];
   swr.wr_id = dst;
 
-  if (ibv_post_send
-      ((struct ibv_qp *) ib_dev_ctx->qpGroups[dst], &swr, &bad_wr_send))
+  if (pgaspi_ib_post_groups (ib_dev_ctx, dst, &swr))
   {
     return 1;
   }
@@ -157,7 +155,6 @@ pgaspi_dev_post_group_write_sync (gaspi_context_t * const gctx,
      o9-20). */
   struct ibv_sge slist;
   struct ibv_send_wr swr;
-  struct ibv_send_wr *bad_wr_send;
 
   slist.addr = (uintptr_t) local_addr;
   slist.length = length;
@@ -175,7 +172,7 @@ pgaspi_dev_post_group_write_sync (gaspi_context_t * const gctx,
   swr.wr.rdma.rkey = gctx->groups[group].rrcd[dst].rkey[0];
   swr.wr_id = dst;
 
-  if (ibv_post_send (ib_dev_ctx->qpGroups[dst], &swr, &bad_wr_send))
+  if (pgaspi_ib_post_groups (ib_dev_ctx, dst, &swr))
   {
     return 1;
   }

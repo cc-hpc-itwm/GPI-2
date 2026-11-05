@@ -36,7 +36,6 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
   slist.length = sizeof (gaspi_atomic_value_t);
   slist.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
 
-  struct ibv_send_wr *bad_wr;
   struct ibv_send_wr swr;
 
   swr.opcode = IBV_WR_ATOMIC_FETCH_AND_ADD;
@@ -53,7 +52,7 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  if (ibv_post_send (ib_dev_ctx->qpGroups[rank], &swr, &bad_wr))
+  if (pgaspi_ib_post_groups (ib_dev_ctx, rank, &swr))
   {
     return GASPI_ERROR;
   }
@@ -94,7 +93,6 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
   slist.length = sizeof (gaspi_atomic_value_t);
   slist.lkey = ((struct ibv_mr *) gctx->nsrc.mr[0])->lkey;
 
-  struct ibv_send_wr *bad_wr;
   struct ibv_send_wr swr;
 
   swr.opcode = IBV_WR_ATOMIC_CMP_AND_SWP;
@@ -112,7 +110,7 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
   swr.num_sge = 1;
   swr.next = NULL;
 
-  if (ibv_post_send (ib_dev_ctx->qpGroups[rank], &swr, &bad_wr))
+  if (pgaspi_ib_post_groups (ib_dev_ctx, rank, &swr))
   {
     return GASPI_ERROR;
   }

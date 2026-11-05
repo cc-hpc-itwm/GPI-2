@@ -85,4 +85,34 @@ typedef struct
 int pgaspi_ib_post_group_recvs (gaspi_context_t const *const gctx,
                                 const int rank, const int count);
 
+/* Post a chain of send requests to rank, on a communication queue, on the
+   groups channel (collectives, atomics) or on the passive channel. */
+static inline int
+pgaspi_ib_post_queue (gaspi_ib_ctx * const ib_dev_ctx,
+                      const gaspi_queue_id_t queue, const gaspi_rank_t rank,
+                      struct ibv_send_wr *const wr)
+{
+  struct ibv_send_wr *bad_wr;
+
+  return ibv_post_send (ib_dev_ctx->qpC[queue][rank], wr, &bad_wr);
+}
+
+static inline int
+pgaspi_ib_post_groups (gaspi_ib_ctx * const ib_dev_ctx,
+                       const gaspi_rank_t rank, struct ibv_send_wr *const wr)
+{
+  struct ibv_send_wr *bad_wr;
+
+  return ibv_post_send (ib_dev_ctx->qpGroups[rank], wr, &bad_wr);
+}
+
+static inline int
+pgaspi_ib_post_passive (gaspi_ib_ctx * const ib_dev_ctx,
+                        const gaspi_rank_t rank, struct ibv_send_wr *const wr)
+{
+  struct ibv_send_wr *bad_wr;
+
+  return ibv_post_send (ib_dev_ctx->qpP[rank], wr, &bad_wr);
+}
+
 #endif // _GPI2_IB_H_

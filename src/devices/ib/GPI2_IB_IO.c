@@ -36,7 +36,6 @@ pgaspi_dev_write (gaspi_context_t * const gctx,
                   const gaspi_offset_t offset_remote,
                   const gaspi_size_t size, const gaspi_queue_id_t queue)
 {
-  struct ibv_send_wr *bad_wr;
   struct ibv_sge slist;
   struct ibv_send_wr swr;
   enum ibv_send_flags sf;
@@ -71,7 +70,7 @@ pgaspi_dev_write (gaspi_context_t * const gctx,
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr, &bad_wr))
+  if (pgaspi_ib_post_queue (ib_dev_ctx, queue, rank, &swr))
   {
     return GASPI_ERROR;
   }
@@ -90,7 +89,6 @@ pgaspi_dev_read (gaspi_context_t * const gctx,
                  const gaspi_offset_t offset_remote,
                  const gaspi_size_t size, const gaspi_queue_id_t queue)
 {
-  struct ibv_send_wr *bad_wr;
   struct ibv_sge slist;
   struct ibv_send_wr swr;
 
@@ -120,7 +118,7 @@ pgaspi_dev_read (gaspi_context_t * const gctx,
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr, &bad_wr))
+  if (pgaspi_ib_post_queue (ib_dev_ctx, queue, rank, &swr))
   {
     return GASPI_ERROR;
   }
@@ -231,7 +229,6 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
                        gaspi_offset_t * const offset_remote,
                        gaspi_size_t * const size, const gaspi_queue_id_t queue)
 {
-  struct ibv_send_wr *bad_wr;
   struct ibv_sge slist[gctx->config->rw_list_elem_max];
   struct ibv_send_wr swr[gctx->config->rw_list_elem_max];
 
@@ -283,7 +280,7 @@ pgaspi_dev_write_list (gaspi_context_t * const gctx,
 
     gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-    if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr[0], &bad_wr))
+    if (pgaspi_ib_post_queue (ib_dev_ctx, queue, rank, &swr[0]))
     {
       return GASPI_ERROR;
     }
@@ -304,7 +301,6 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
                       gaspi_offset_t * const offset_remote,
                       gaspi_size_t * const size, const gaspi_queue_id_t queue)
 {
-  struct ibv_send_wr *bad_wr;
   struct ibv_sge slist[gctx->config->rw_list_elem_max];
   struct ibv_send_wr swr[gctx->config->rw_list_elem_max];
 
@@ -356,7 +352,7 @@ pgaspi_dev_read_list (gaspi_context_t * const gctx,
 
     gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-    if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr[0], &bad_wr))
+    if (pgaspi_ib_post_queue (ib_dev_ctx, queue, rank, &swr[0]))
     {
       return GASPI_ERROR;
     }
@@ -431,7 +427,6 @@ pgaspi_dev_notify (gaspi_context_t * const gctx,
                    const gaspi_notification_t notification_value,
                    const gaspi_queue_id_t queue)
 {
-  struct ibv_send_wr *bad_wr;
   struct ibv_sge slistN;
   struct ibv_send_wr swrN;
 
@@ -446,7 +441,7 @@ pgaspi_dev_notify (gaspi_context_t * const gctx,
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swrN, &bad_wr))
+  if (pgaspi_ib_post_queue (ib_dev_ctx, queue, rank, &swrN))
   {
     return GASPI_ERROR;
   }
@@ -468,7 +463,6 @@ pgaspi_dev_write_notify (gaspi_context_t * const gctx,
                          const gaspi_notification_t notification_value,
                          const gaspi_queue_id_t queue)
 {
-  struct ibv_send_wr *bad_wr;
   struct ibv_sge slist, slistN;
   struct ibv_send_wr swr, swrN;
 
@@ -502,7 +496,7 @@ pgaspi_dev_write_notify (gaspi_context_t * const gctx,
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr, &bad_wr))
+  if (pgaspi_ib_post_queue (ib_dev_ctx, queue, rank, &swr))
   {
     return GASPI_ERROR;
   }
@@ -526,7 +520,6 @@ pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
                               const gaspi_notification_t notification_value,
                               const gaspi_queue_id_t queue)
 {
-  struct ibv_send_wr *bad_wr;
   struct ibv_sge slist[gctx->config->rw_list_elem_max], slistN;
   struct ibv_send_wr swr[gctx->config->rw_list_elem_max], swrN;
 
@@ -592,7 +585,7 @@ pgaspi_dev_write_list_notify (gaspi_context_t * const gctx,
   struct ibv_send_wr *const first_wr =
     entries_counter > 0 ? &swr[0] : &swrN;
 
-  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], first_wr, &bad_wr))
+  if (pgaspi_ib_post_queue (ib_dev_ctx, queue, rank, first_wr))
   {
     return GASPI_ERROR;
   }
@@ -657,7 +650,6 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
                         const gaspi_notification_id_t notification_id,
                         const gaspi_queue_id_t queue)
 {
-  struct ibv_send_wr *bad_wr;
   struct ibv_sge slist, slistN;
   struct ibv_send_wr swr, swrN;
 
@@ -690,7 +682,7 @@ pgaspi_dev_read_notify (gaspi_context_t * const gctx,
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], &swr, &bad_wr))
+  if (pgaspi_ib_post_queue (ib_dev_ctx, queue, rank, &swr))
   {
     return GASPI_ERROR;
   }
@@ -713,7 +705,6 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
                              const gaspi_notification_id_t notification_id,
                              const gaspi_queue_id_t queue)
 {
-  struct ibv_send_wr *bad_wr;
   struct ibv_sge slist[gctx->config->rw_list_elem_max], slistN;
   struct ibv_send_wr swr[gctx->config->rw_list_elem_max], swrN;
 
@@ -780,7 +771,7 @@ pgaspi_dev_read_list_notify (gaspi_context_t * const gctx,
   struct ibv_send_wr *const first_wr =
     entries_counter > 0 ? &swr[0] : &swrN;
 
-  if (ibv_post_send (ib_dev_ctx->qpC[queue][rank], first_wr, &bad_wr))
+  if (pgaspi_ib_post_queue (ib_dev_ctx, queue, rank, first_wr))
   {
     return GASPI_ERROR;
   }
