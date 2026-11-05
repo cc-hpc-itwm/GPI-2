@@ -47,6 +47,7 @@ AC_DEFUN([ACX_USABLE_DEVICE],[
            options="$options Ethernet"
         fi
         AM_CONDITIONAL([WITH_INFINIBAND],[test x${HAVE_INFINIBAND} = x1])
+        AM_CONDITIONAL([WITH_IB_DC],[test x${HAVE_INFINIBAND} = x1 -a x${HAVE_IB_DC} = x1])
 
 	# Record the resolved device name so the test runner can match
 	# per-test XFAIL markers. Derived from the HAVE_* truth (not the
@@ -58,6 +59,9 @@ AC_DEFUN([ACX_USABLE_DEVICE],[
 	AC_SUBST([GPI2_DEVICE_NAME])
         if [test x${HAVE_INFINIBAND} = x1]; then
            options="$options Infiniband"
+	   if [test x${HAVE_IB_DC} = x1]; then
+	      options="$options (with DC)"
+	   fi
 	   if [test x${HAVE_INFINIBAND_DEVICES} = x1]; then
 	      options="$options with actual devices"
 	   else
@@ -127,11 +131,15 @@ AC_DEFUN([ACX_INFINIBAND],[
 	fi
 	if test ${HAVE_INF_HEADER} = 1 -a ${HAVE_INF_LIB} = 1; then
 	   ACX_IB_DEVI($ac_inc_infiniband,$ac_lib_infiniband,[HAVE_INFINIBAND=1],[HAVE_INFINIBAND=0])
+	   ACX_IB_DC($ac_inc_infiniband,$ac_lib_infiniband,[HAVE_IB_DC=1],[HAVE_IB_DC=0])
+	   if test x${HAVE_IB_DC} = x1; then
+	      ac_lib_ib_dc=" -lmlx5"
+	   fi
 	   AC_SUBST(ac_inc_infiniband,[-I$ac_inc_infiniband])
 	   if test ! -z $ac_lib_infiniband; then
-	      AC_SUBST(ac_lib_infiniband,["-L$ac_lib_infiniband -libverbs"])
+	      AC_SUBST(ac_lib_infiniband,["-L$ac_lib_infiniband -libverbs$ac_lib_ib_dc"])
 	   else
-	      AC_SUBST(ac_lib_infiniband,[-libverbs])
+	      AC_SUBST(ac_lib_infiniband,["-libverbs$ac_lib_ib_dc"])
 	   fi
 	else
 	   HAVE_INFINIBAND=0
@@ -182,6 +190,51 @@ AS_IF(test `./conftest_ib.exe; echo $?` -gt 0,
 	   [AC_MSG_RESULT([no]);
 	   HAVE_INFINIBAND_DEVICES=0]
 	   )
+])
+
+# Dynamically Connected transport (GASPI_IB_DCT): mlx5 direct verbs with
+# DC queue pairs and the extended post API. The result is cached, so
+# "./configure gpi2_cv_ib_dc=no" builds without it.
+AC_DEFUN([ACX_IB_DC],[
+	AC_CACHE_CHECK([whether mlx5dv supports the Dynamically Connected transport],
+	[gpi2_cv_ib_dc],[
+
+	AC_LANG_PUSH(C)
+
+cat >conftest_ib_dc.c <<_ACEOF
+#include <infiniband/mlx5dv.h>
+
+int main(int argc, char *argv[]){
+struct ibv_qp_init_attr_ex attr = { .qp_type = IBV_QPT_DRIVER };
+struct mlx5dv_qp_init_attr dv_attr = {
+  .comp_mask = MLX5DV_QP_INIT_ATTR_MASK_DC,
+  .dc_init_attr = { .dc_type = MLX5DV_DCTYPE_DCI } };
+if (argc > 1){
+struct ibv_qp *qp = mlx5dv_create_qp(NULL, &attr, &dv_attr);
+struct ibv_qp_ex *qpx = ibv_qp_to_qp_ex(qp);
+ibv_wr_start(qpx);
+mlx5dv_wr_set_dc_addr(mlx5dv_qp_ex_from_ibv_qp_ex(qpx), NULL, 0, 0);
+return ibv_wr_complete(qpx) + mlx5dv_is_supported(NULL);
+}
+return 0;
+}
+_ACEOF
+
+	OLD_CFLAGS=$CFLAGS
+	if test ! -z $2; then
+	   CFLAGS="$AM_CFLAGS $CFLAGS -I$1/.. -L$2 -lmlx5 -libverbs"
+	else
+	   CFLAGS="$AM_CFLAGS $CFLAGS -I$1/.. -lmlx5 -libverbs"
+	fi
+	AS_IF($CC conftest_ib_dc.c $CFLAGS -o conftest_ib_dc.exe > /dev/null 2>&1,
+	  [gpi2_cv_ib_dc=yes],
+	  [gpi2_cv_ib_dc=no]
+	  )
+	CFLAGS=$OLD_CFLAGS
+	rm -f conftest_ib_dc.c conftest_ib_dc.exe
+	AC_LANG_POP([C])
+	])
+	AS_IF([test x$gpi2_cv_ib_dc = xyes], [$3], [$4])
 ])
 
 ################################################
