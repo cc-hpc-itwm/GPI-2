@@ -98,8 +98,9 @@ pgaspi_dev_post_group_write (gaspi_context_t * const gctx,
   return 0;
 }
 
-/* Post receive requests without buffers on the groups QP to rank: a
-   write with immediate data consumes one but places its data directly. */
+/* Post receive requests without buffers on the groups QP to rank (DC: on
+   the SRQ of the groups DCT, shared by all peers): a write with immediate
+   data consumes one but places its data directly. */
 int
 pgaspi_ib_post_group_recvs (gaspi_context_t const *const gctx,
                             const int rank, const int count)
@@ -113,6 +114,22 @@ pgaspi_ib_post_group_recvs (gaspi_context_t const *const gctx,
   rwr.sg_list = NULL;
   rwr.num_sge = 0;
   rwr.next = NULL;
+
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc)
+  {
+    for (int i = 0; i < count; i++)
+    {
+      if (ibv_post_srq_recv (ib_dev_ctx->srqGroups, &rwr, &bad_rwr))
+      {
+        GASPI_DEBUG_PRINT_ERROR ("Failed to post receive (libibverbs)");
+        return -1;
+      }
+    }
+
+    return 0;
+  }
+#endif
 
   for (int i = 0; i < count; i++)
   {

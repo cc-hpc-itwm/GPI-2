@@ -26,6 +26,10 @@ SRCS += devices/ib/GPI2_IB_IO.c devices/ib/GPI2_IB_PASSIVE.c devices/ib/GPI2_IB_
 devices/ib/GPI2_IB_GRP.c devices/ib/GPI2_IB_SEG.c devices/ib/GPI2_IB.c
 SRCS += devices/ib/GPI2_IB.h
 default_includes += -I$(abs_top_srcdir)/src/devices/ib @ac_inc_infiniband@ -DGPI2_DEVICE_IB
+if WITH_IB_DC
+SRCS += devices/ib/GPI2_IB_DC.c
+default_includes += -DGPI2_IB_DC
+endif
 endif
 if WITH_OFI
 SRCS += devices/ofi/GPI2_OFI_IO.c devices/ofi/GPI2_OFI_PASSIVE.c devices/ofi/GPI2_OFI_ATOMIC.c \

@@ -141,6 +141,7 @@ pgaspi_ib_dev_print_info (gaspi_context_t * const gctx,
      is the setting of the node where the data is placed that matters (the
      target of a write, the initiator of a read): gaspi_run forwards the
      variable so all ranks use the same mode. */
+  printf ("\ttransport  : %s\n", ib_dev_ctx->dc ? "DC" : "RC");
   printf ("\tnotify     : %s\n",
           ib_dev_ctx->relaxed_ordering
           ? "atomic write, fenced read (relaxed ordering)"
@@ -348,6 +349,20 @@ pgaspi_dev_init_core(gaspi_context_t *const gctx)
              gctx->config->group_max);
     return -1;
   }
+
+  /* Dynamically Connected transport instead of RC. All ranks must use the
+     same transport: gaspi_run forwards the variable. */
+  const char *dct_env = getenv ("GASPI_IB_DCT");
+  ib_dev_ctx->dc = (dct_env != NULL && atoi (dct_env) != 0);
+
+#ifndef GPI2_IB_DC
+  if (ib_dev_ctx->dc)
+  {
+    fprintf (stderr, "GASPI_IB_DCT is set but GPI-2 was built without DC"
+             " support (mlx5dv not found at configure)\n");
+    return -1;
+  }
+#endif
 
   /* TODO: magic number */
   for (int i = 0; i < 64; i++)
@@ -679,6 +694,13 @@ pgaspi_dev_init_core(gaspi_context_t *const gctx)
     }
   }
 
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc && pgaspi_ib_dc_init (gctx) != 0)
+  {
+    return -1;
+  }
+#endif
+
   return 0;
 }
 
@@ -750,6 +772,17 @@ pgaspi_dev_comm_queue_delete (gaspi_context_t const *const gctx,
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
+  /* DC: the queue's DCI and DCT instead of a QP per peer */
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc)
+  {
+    if (pgaspi_ib_dc_queue_delete (gctx, id) != 0)
+    {
+      return -1;
+    }
+  }
+  else
+#endif
   for (int i = 0; i < gctx->tnc; i++)
   {
     if (gctx->ep_conn[i].istat == 0)
@@ -832,6 +865,20 @@ pgaspi_dev_comm_queue_create (gaspi_context_t const *const gctx,
     return -1;
   }
 
+  /* DC: one DCI and DCT for all peers, the local info of every peer gets
+     the DCT number */
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc)
+  {
+    if (NULL == ib_dev_ctx->dciC[id].qp)
+    {
+      return pgaspi_ib_dc_queue_create (gctx, id);
+    }
+
+    return 0;
+  }
+#endif
+
   ib_dev_ctx->qpC[id][remote_node] =
     _pgaspi_dev_create_qp (gctx, ib_dev_ctx->scqC[id], ib_dev_ctx->scqC[id],
                            NULL, gctx->config->queue_size_max);
@@ -869,7 +916,8 @@ pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx, const int i,
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  if (ib_dev_ctx->qpGroups[i] == NULL)
+  /* DC: the DCIs and DCTs exist since init, nothing is created per peer */
+  if (!ib_dev_ctx->dc && ib_dev_ctx->qpGroups[i] == NULL)
   {
     /* Groups QP */
     ib_dev_ctx->qpGroups[i] =
@@ -932,6 +980,13 @@ int
 pgaspi_dev_disconnect_context (gaspi_context_t * const gctx, const int i)
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
+
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc)
+  {
+    return pgaspi_ib_dc_disconnect (gctx, i);
+  }
+#endif
 
   if (ibv_destroy_qp (ib_dev_ctx->qpGroups[i]))
   {
@@ -1071,6 +1126,13 @@ pgaspi_dev_comm_queue_connect (gaspi_context_t const *const gctx,
   }
   while (ib_dev_ctx->remote_info[i].qpnC[q] == 0);
 
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc)
+  {
+    return 0;
+  }
+#endif
+
   return _pgaspi_dev_qp_set_ready (gctx,
                                    ib_dev_ctx->qpC[q][i],
                                    i, ib_dev_ctx->remote_info[i].qpnC[q]);
@@ -1081,6 +1143,22 @@ int
 pgaspi_dev_connect_context (gaspi_context_t const *const gctx, const int i)
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
+
+  if (ib_dev_ctx->remote_info[i].dc != ib_dev_ctx->dc)
+  {
+    fprintf (stderr, "Rank %d uses %s, this rank uses %s: set GASPI_IB_DCT"
+             " the same on all ranks\n", i,
+             ib_dev_ctx->remote_info[i].dc ? "DC" : "RC",
+             ib_dev_ctx->dc ? "DC" : "RC");
+    return -1;
+  }
+
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc)
+  {
+    return pgaspi_ib_dc_connect (gctx, i);
+  }
+#endif
 
   if (0 != _pgaspi_dev_qp_set_ready (gctx,
                                      ib_dev_ctx->qpGroups[i],
@@ -1116,6 +1194,18 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
 
   gaspi_number_t num_remaining_queues = MIN (gctx->num_queues, gctx->config->queue_num);
 
+  /* DC: the shared DCIs and DCTs (before their CQs and SRQs) instead of the
+     QPs of each peer */
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc)
+  {
+    if (pgaspi_ib_dc_cleanup (gctx) != 0)
+    {
+      return -1;
+    }
+  }
+  else
+#endif
   for (int i = 0; i < gctx->tnc; i++) {
     if (GASPI_ENDPOINT_CREATED == gctx->ep_conn[i].istat)
     {
