@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <arpa/inet.h>
 #include <infiniband/verbs.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -58,6 +59,17 @@ pgaspi_dev_passive_send (gaspi_context_t * const gctx,
 
   swr.sg_list = &slist;
   swr.num_sge = 1;
+
+  /* DC: all senders reach the same DCT, the receiver learns the sender from
+     the immediate data */
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc)
+  {
+    swr.opcode = IBV_WR_SEND_WITH_IMM;
+    swr.imm_data = htonl (gctx->rank);
+  }
+  else
+#endif
   swr.opcode = IBV_WR_SEND;
   swr.wr_id = rank;
   swr.send_flags = IBV_SEND_SIGNALED;
@@ -192,6 +204,14 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
     gctx->state_vec[GASPI_PASSIVE_QP][wc_recv.wr_id] = GASPI_STATE_CORRUPT;
     return GASPI_ERROR;
   }
+
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc)
+  {
+    *rem_rank = (gaspi_rank_t) ntohl (wc_recv.imm_data);
+    return GASPI_SUCCESS;
+  }
+#endif
 
   *rem_rank = 0xffff;
   do

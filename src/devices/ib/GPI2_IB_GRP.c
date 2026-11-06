@@ -219,6 +219,10 @@ pgaspi_dev_poll_group_sync (gaspi_context_t * const gctx)
 
   for (int i = 0; i < ne; i++)
   {
+    /* RC: wr_id is the rank of the QP the receive was posted on, and it is
+       valid in a failed completion. DC: the receives on the shared SRQ are
+       posted with wr_id 0 and any peer consumes them, so the sender of a
+       failed one is unknown and no rank is marked. */
     const int src = (int) wc[i].wr_id;
 
     /* receive requests of a destroyed QP (disconnected rank) */
@@ -230,9 +234,16 @@ pgaspi_dev_poll_group_sync (gaspi_context_t * const gctx)
     if (wc[i].status != IBV_WC_SUCCESS
         || wc[i].opcode != IBV_WC_RECV_RDMA_WITH_IMM)
     {
-      GASPI_DEBUG_PRINT_ERROR ("Failed receive from %d (status %d)",
-                               src, wc[i].status);
-      gctx->state_vec[GASPI_COLL_QP][src] = GASPI_STATE_CORRUPT;
+      if (ib_dev_ctx->dc)
+      {
+        GASPI_DEBUG_PRINT_ERROR ("Failed receive (status %d)", wc[i].status);
+      }
+      else
+      {
+        GASPI_DEBUG_PRINT_ERROR ("Failed receive from %d (status %d)",
+                                 src, wc[i].status);
+        gctx->state_vec[GASPI_COLL_QP][src] = GASPI_STATE_CORRUPT;
+      }
       return -1;
     }
 
@@ -240,7 +251,10 @@ pgaspi_dev_poll_group_sync (gaspi_context_t * const gctx)
 
     if (pgaspi_ib_post_group_recvs (gctx, src, 1) != 0)
     {
-      gctx->state_vec[GASPI_COLL_QP][src] = GASPI_STATE_CORRUPT;
+      if (!ib_dev_ctx->dc)
+      {
+        gctx->state_vec[GASPI_COLL_QP][src] = GASPI_STATE_CORRUPT;
+      }
       return -1;
     }
   }
