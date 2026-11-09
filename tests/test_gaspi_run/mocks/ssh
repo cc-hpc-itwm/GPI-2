@@ -10,7 +10,7 @@ echo "MOCK_SSH host=$host cmd=$cmd" >> "$MOCK_LOG"
 
 # A remote login does not inherit the launcher's environment: whatever
 # must reach the remote side has to travel in the command.
-unset GASPI_IB_RELAXED_ORDERING FI_PROVIDER
+unset GASPI_IB_RELAXED_ORDERING GASPI_IB_DCT FI_PROVIDER
 
 # A connection dropped before authentication (or, with MOCK_SSH_DROP_MSG,
 # later): the first MOCK_SSH_DROP calls (default 1) whose command contains
