@@ -59,6 +59,38 @@ pgaspi_dev_poll_groups (gaspi_context_t * const gctx)
 
   __atomic_sub_fetch (&gctx->ne_count_grp, pret, __ATOMIC_RELAXED);
 
+  /* DC: a failed request moves the shared groups DCI to the error state and
+     the requests behind it, also to other ranks, are flushed. Mark the rank
+     of the failed one and recover the DCI; the collective then times out, as
+     with RC, where the failed requests are not checked here. */
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc)
+  {
+    int failed = 0;
+
+    for (int i = 0; i < pret; i++)
+    {
+      if (ib_dev_ctx->wc_grp_send[i].status != IBV_WC_SUCCESS)
+      {
+        if (ib_dev_ctx->wc_grp_send[i].status != IBV_WC_WR_FLUSH_ERR)
+        {
+          gctx->state_vec[GASPI_COLL_QP][ib_dev_ctx->wc_grp_send[i].wr_id] =
+            GASPI_STATE_CORRUPT;
+        }
+        failed = 1;
+      }
+    }
+
+    if (failed
+        && pgaspi_ib_dc_recover (gctx, &ib_dev_ctx->dciGroups,
+                                 ib_dev_ctx->scqGroups,
+                                 &gctx->ne_count_grp) != 0)
+    {
+      return -1;
+    }
+  }
+#endif
+
   return pret;
 }
 

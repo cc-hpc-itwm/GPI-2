@@ -164,6 +164,20 @@ pgaspi_dev_purge (gaspi_context_t * const gctx,
     while (ne == 0);
   }
 
+  /* DC: a purged request may have failed and left the queue DCI in the
+     error state; with nothing outstanding, it is reset */
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc)
+  {
+    if (pgaspi_ib_dc_recover (gctx, &ib_dev_ctx->dciC[queue],
+                              ib_dev_ctx->scqC[queue],
+                              &gctx->ne_count_c[queue]) != 0)
+    {
+      return GASPI_ERROR;
+    }
+  }
+#endif
+
   return GASPI_SUCCESS;
 }
 
@@ -211,6 +225,17 @@ pgaspi_dev_wait (gaspi_context_t * const gctx,
       GASPI_DEBUG_PRINT_ERROR
         ("Failed request to %lu. Queue %d might be broken %s", wc.wr_id, queue,
          ibv_wc_status_str (wc.status));
+
+      /* DC: the requests behind it, also to other ranks, are flushed (not
+         marked) and the queue works again after the call */
+#ifdef GPI2_IB_DC
+      if (ib_dev_ctx->dc)
+      {
+        pgaspi_ib_dc_recover (gctx, &ib_dev_ctx->dciC[queue],
+                              ib_dev_ctx->scqC[queue],
+                              &gctx->ne_count_c[queue]);
+      }
+#endif
 
       return GASPI_ERROR;
     }

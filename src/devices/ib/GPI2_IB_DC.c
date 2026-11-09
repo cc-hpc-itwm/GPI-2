@@ -36,8 +36,12 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 #include "GASPI_types.h"
 #include "GPI2_IB.h"
+#include "GPI2_Sys.h"
 #include "GPI2_Types.h"
 #include "GPI2_Utility.h"
+
+/* Bound on waiting for the flushed completions behind a failed request */
+#define GPI2_IB_DC_RECOVER_MS (60000)
 
 /* Errors that make GASPI_IB_DCT unusable are reported also in the
    production library: DC is an explicit request of the user. */
@@ -566,6 +570,58 @@ pgaspi_ib_dc_cleanup (gaspi_context_t const *const gctx)
   ib_dev_ctx->srqC = NULL;
 
   return 0;
+}
+
+/* A failed request moves its DCI to the error state; the requests behind it,
+   also those to other peers, complete as flushed. Poll them (outstanding:
+   completions still expected on cq) and bring the DCI back to RTS, so that
+   the channel works again for the healthy peers. */
+int
+pgaspi_ib_dc_recover (gaspi_context_t const *const gctx,
+                      struct pgaspi_ib_dci *const dci,
+                      struct ibv_cq *const cq, gaspi_uint * const outstanding)
+{
+  const gaspi_cycles_t s0 = gaspi_get_cycles ();
+
+  while (__atomic_load_n (outstanding, __ATOMIC_RELAXED) > 0)
+  {
+    struct ibv_wc wc;
+    const int ne = ibv_poll_cq (cq, 1, &wc);
+
+    if (ne < 0)
+    {
+      return -1;
+    }
+
+    if (ne > 0)
+    {
+      __atomic_sub_fetch (outstanding, 1, __ATOMIC_RELAXED);
+      continue;
+    }
+
+    const float ms =
+      (float) (gaspi_get_cycles () - s0) * gctx->cycles_to_msecs;
+    if (ms > GPI2_IB_DC_RECOVER_MS)
+    {
+      fprintf (stderr, "GASPI_IB_DCT: %u completions missing after an error\n",
+               __atomic_load_n (outstanding, __ATOMIC_RELAXED));
+      return -1;
+    }
+  }
+
+  struct ibv_qp_attr qp_attr;
+
+  memset (&qp_attr, 0, sizeof (qp_attr));
+  qp_attr.qp_state = IBV_QPS_RESET;
+
+  const int rc = ibv_modify_qp (dci->qp, &qp_attr, IBV_QP_STATE);
+  if (rc != 0)
+  {
+    GPI2_IB_DC_ERROR (rc, "DCI to RESET");
+    return -1;
+  }
+
+  return _pgaspi_ib_dc_dci_ready (gctx, dci->qp);
 }
 
 /* Post a chain of send requests, built as for RC, on a DCI to the DCT dctn

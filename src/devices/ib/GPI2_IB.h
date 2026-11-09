@@ -124,6 +124,10 @@ int pgaspi_ib_dc_post (gaspi_ib_ctx * const ib_dev_ctx,
                        struct pgaspi_ib_dci *const dci,
                        const gaspi_rank_t rank, const uint32_t dctn,
                        struct ibv_send_wr *wr);
+int pgaspi_ib_dc_recover (gaspi_context_t const *const gctx,
+                          struct pgaspi_ib_dci *const dci,
+                          struct ibv_cq *const cq,
+                          gaspi_uint * const outstanding);
 #endif
 
 /* Post a chain of send requests to rank, on a communication queue, on the

@@ -109,6 +109,17 @@ checkL:
 
   if ((ne < 0) || (wc_send.status != IBV_WC_SUCCESS))
   {
+    /* DC: recover the passive DCI (a send to another rank still pending on
+       it, after a timeout, is lost) */
+#ifdef GPI2_IB_DC
+    if (ib_dev_ctx->dc)
+    {
+      gaspi_uint behind = 0;
+
+      pgaspi_ib_dc_recover (gctx, &ib_dev_ctx->dciP, ib_dev_ctx->scqP,
+                            &behind);
+    }
+#endif
     return GASPI_ERROR;
   }
 

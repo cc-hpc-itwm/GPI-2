@@ -71,6 +71,16 @@ pgaspi_dev_atomic_fetch_add (gaspi_context_t * const gctx,
 
     if ((ne < 0) || (ib_dev_ctx->wc_grp_send[0].status != IBV_WC_SUCCESS))
     {
+      /* DC: the requests behind it on the groups DCI are flushed */
+#ifdef GPI2_IB_DC
+      if (ib_dev_ctx->dc)
+      {
+        gaspi_uint behind = nr - i - 1;
+
+        pgaspi_ib_dc_recover (gctx, &ib_dev_ctx->dciGroups,
+                              ib_dev_ctx->scqGroups, &behind);
+      }
+#endif
       return GASPI_ERROR;
     }
   }
@@ -129,6 +139,16 @@ pgaspi_dev_atomic_compare_swap (gaspi_context_t * const gctx,
 
     if ((ne < 0) || (ib_dev_ctx->wc_grp_send[0].status != IBV_WC_SUCCESS))
     {
+      /* DC: the requests behind it on the groups DCI are flushed */
+#ifdef GPI2_IB_DC
+      if (ib_dev_ctx->dc)
+      {
+        gaspi_uint behind = nr - i - 1;
+
+        pgaspi_ib_dc_recover (gctx, &ib_dev_ctx->dciGroups,
+                              ib_dev_ctx->scqGroups, &behind);
+      }
+#endif
       return GASPI_ERROR;
     }
   }
