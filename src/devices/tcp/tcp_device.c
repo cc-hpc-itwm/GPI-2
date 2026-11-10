@@ -118,6 +118,10 @@ list recvList =
   .count = 0
 };
 
+/* Per peer: requests sent that complete with its answer (passive sends,
+   reads, atomics); they fail if the connection to the peer breaks. */
+static list *awaiting = NULL;
+
 int cq_ref_counter = 0;
 int qs_ref_counter = 0;
 
@@ -320,7 +324,8 @@ _tcp_dev_alloc_remote_states (int n)
 
   rank_state =
     (tcp_dev_conn_state_t **) calloc (n, sizeof (tcp_dev_conn_state_t *));
-  if (rank_state == NULL)
+  awaiting = (list *) calloc (n, sizeof (list));
+  if (rank_state == NULL || awaiting == NULL)
   {
     GASPI_DEBUG_PRINT_ERROR ("Failed to allocate memory");
     return 1;
@@ -586,6 +591,71 @@ _tcp_dev_post_wc (uint64_t wr_id,
   return 0;
 }
 
+
+static int
+_tcp_dev_awaits_answer (const tcp_dev_wr_t * wr)
+{
+  return wr->opcode == REQUEST_RDMA_READ
+    || wr->opcode == REQUEST_ATOMIC_CMP_AND_SWP
+    || wr->opcode == REQUEST_ATOMIC_FETCH_AND_ADD
+    || (wr->opcode == NOTIFICATION_SEND && wr->compare_add != 1);
+}
+
+/* The answer to request opcode op (wr_id, cq_handle) arrived from rank. */
+static void
+_tcp_dev_answered (int rank, int op, uint64_t wr_id, uint32_t cq_handle)
+{
+  if (awaiting == NULL || rank < 0)
+  {
+    return;
+  }
+
+  for (listNode * n = awaiting[rank].first; n != NULL; n = n->next)
+  {
+    if ((int) n->wr.opcode == op && n->wr.wr_id == wr_id
+        && n->wr.cq_handle == cq_handle)
+    {
+      list_remove (&awaiting[rank], n);
+      return;
+    }
+  }
+}
+
+static void
+_tcp_dev_fail_awaiting (int rank)
+{
+  if (awaiting == NULL || rank < 0)
+  {
+    return;
+  }
+
+  for (listNode * n = awaiting[rank].first; n != NULL; n = n->next)
+  {
+    enum tcp_dev_wc_opcode op = TCP_DEV_WC_SEND;
+
+    if (n->wr.opcode == REQUEST_RDMA_READ)
+    {
+      op = TCP_DEV_WC_RDMA_READ;
+    }
+    else if (n->wr.opcode == REQUEST_ATOMIC_CMP_AND_SWP)
+    {
+      op = TCP_DEV_WC_CMP_SWAP;
+    }
+    else if (n->wr.opcode == REQUEST_ATOMIC_FETCH_AND_ADD)
+    {
+      op = TCP_DEV_WC_FETCH_ADD;
+    }
+
+    if (_tcp_dev_post_wc (n->wr.wr_id, TCP_WC_REM_OP_ERROR, op,
+                          n->wr.cq_handle) != 0)
+    {
+      GASPI_DEBUG_PRINT_ERROR ("Failed to post completion error.");
+    }
+  }
+
+  list_clear (&awaiting[rank]);
+}
+
 static inline void
 _tcp_dev_set_default_read_conn_state (tcp_dev_conn_state_t * estate)
 {
@@ -836,6 +906,9 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
       }
     case RESPONSE_RDMA_READ:
       {
+        /* From here the read itself fails if the connection breaks. */
+        _tcp_dev_answered (estate->rank, REQUEST_RDMA_READ,
+                           estate->wr_buff.wr_id, estate->wr_buff.cq_handle);
         estate->read.wr_id = estate->wr_buff.wr_id;
         estate->read.cq_handle = estate->wr_buff.cq_handle;
         estate->read.opcode = RECV_RDMA_READ;
@@ -901,10 +974,16 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
         if (estate->wr_buff.opcode == RESPONSE_ATOMIC_CMP_AND_SWP)
         {
           op = TCP_DEV_WC_CMP_SWAP;
+          _tcp_dev_answered (estate->rank, REQUEST_ATOMIC_CMP_AND_SWP,
+                             estate->wr_buff.wr_id,
+                             estate->wr_buff.cq_handle);
         }
         else
         {
           op = TCP_DEV_WC_FETCH_ADD;
+          _tcp_dev_answered (estate->rank, REQUEST_ATOMIC_FETCH_AND_ADD,
+                             estate->wr_buff.wr_id,
+                             estate->wr_buff.cq_handle);
         }
 
         if (_tcp_dev_post_wc (estate->wr_buff.wr_id,
@@ -976,6 +1055,8 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
       }
     case RESPONSE_SEND:
       {
+        _tcp_dev_answered (estate->rank, NOTIFICATION_SEND,
+                           estate->wr_buff.wr_id, estate->wr_buff.cq_handle);
         if (_tcp_dev_post_wc (estate->wr_buff.wr_id,
                             TCP_WC_SUCCESS,
                               TCP_DEV_WC_SEND, estate->wr_buff.cq_handle) != 0)
@@ -1177,6 +1258,11 @@ _tcp_dev_process_delayed (int pollfd)
         {
           done += bytes_sent;
         }
+      }
+
+      if (!found_error && _tcp_dev_awaits_answer (&wr))
+      {
+        list_insert (&awaiting[wr.target], &wr);
       }
 
       if ((wr.opcode == NOTIFICATION_RDMA_WRITE && wr.compare_add == 1)
@@ -1481,6 +1567,16 @@ _tcp_dev_bring_down (int pollfd, int num_peers)
   {
     free (rank_state);
     rank_state = NULL;
+  }
+
+  if (awaiting)
+  {
+    for (int p = 0; p < num_peers; p++)
+    {
+      list_clear (&awaiting[p]);
+    }
+    free (awaiting);
+    awaiting = NULL;
   }
 
   if (delayedList.count > 0)
@@ -2035,10 +2131,11 @@ tcp_virt_dev (void *args)
           }
         }
 
-        /* still had something to write => generate error wc */
+        /* still had something to write => generate error wc (a send
+           fails below, with the requests awaiting an answer) */
         if (estate->write.opcode != SEND_DISABLED)
         {
-          if (_tcp_dev_post_wc
+          if (estate->write.opcode != SEND_SEND && _tcp_dev_post_wc
               (estate->write.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE,
                estate->write.cq_handle) != 0)
           {
@@ -2081,6 +2178,7 @@ tcp_virt_dev (void *args)
 
         if (event_rank >= 0)
         {
+          _tcp_dev_fail_awaiting (event_rank);
           rank_state[event_rank]->fd = -2;      /* just invalidate fd */
           /* rank_state[event_rank] = NULL; */
         }
