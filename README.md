@@ -149,10 +149,28 @@ installation:
 ./configure --with-infiniband<=full_path_to_ofed>
 ```
 
-By default, GPI-2 will be compiled without Infiniband Extensions
-support, however the user can also enable and using it (if the header
-file is found) by `--enable-infiniband-ext`. Note, however, they are
-for the moment an experimental feature.
+###### Dynamically Connected transport
+
+`GASPI_IB_DCT=1` selects the Dynamically Connected (DC) transport of
+NVIDIA (Mellanox) NICs instead of RC: a fixed number of queue pairs per
+process instead of a number growing with the job size. It is built if
+`mlx5dv` (rdma-core) is found (`./configure gpi2_cv_ib_dc=no` to disable);
+if DC is not available, `gaspi_proc_init` fails. All processes must use the
+same setting (`gaspi_run` forwards it):
+
+```
+GASPI_IB_DCT=1 gaspi_run -m machinefile my_app
+```
+
+Each queue and the collectives use up to 16 DC initiators, created when
+first used (about 260 KiB each); reads from 16 KiB go in up to four parts.
+
+With DC, a request to an unreachable process (e.g. a dead one) also fails
+the requests behind it on the same initiator, i.e. to processes sharing it;
+`gaspi_state_vec_get` marks only the unreachable process. Applications
+that must tolerate failed processes should keep RC.
+
+The former option `--enable-infiniband-ext` was removed.
 
 With several InfiniBand NICs and no `netdev_id` in the configuration, a
 process uses a NIC on the NUMA node of its CPUs. `GASPI_IB_VERBOSE=1` prints
