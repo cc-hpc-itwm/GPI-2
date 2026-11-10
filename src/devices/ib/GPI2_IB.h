@@ -99,6 +99,13 @@ typedef struct
   struct ibv_qp **qpP;
   struct ibv_cq *scqP;
   struct ibv_cq *rcqP;
+
+  /* Passive receive slots, posted on srqP */
+  void *passive_buf;
+  struct ibv_mr *passive_mr;
+  uint32_t passive_slots;
+  uint32_t passive_slot_size;
+
   struct ibv_cq *scqC[GASPI_MAX_QP];
   struct ibv_qp **qpC[GASPI_MAX_QP];
   union ibv_gid gid;
@@ -138,6 +145,11 @@ typedef struct
 
 int pgaspi_ib_post_group_recvs (gaspi_context_t const *const gctx,
                                 const int rank, const int count);
+
+#define GPI2_IB_PASSIVE_SLOTS (64)
+
+int pgaspi_ib_passive_init (gaspi_context_t const *const gctx);
+int pgaspi_ib_passive_cleanup (gaspi_ib_ctx * const ib_dev_ctx);
 
 #ifdef GPI2_IB_DC
 int pgaspi_ib_dc_init (gaspi_context_t const *const gctx);

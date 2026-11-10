@@ -558,6 +558,11 @@ pgaspi_dev_init_core(gaspi_context_t *const gctx)
     return -1;
   }
 
+  if (pgaspi_ib_passive_init (gctx) != 0)
+  {
+    return -1;
+  }
+
   /* Create default completion queues */
   /* Groups */
   ib_dev_ctx->scqGroups =
@@ -1270,6 +1275,11 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   if (ibv_destroy_srq (ib_dev_ctx->srqP))
   {
     GASPI_DEBUG_PRINT_ERROR ("Failed to destroy SRQ (libibverbs)");
+    return -1;
+  }
+
+  if (pgaspi_ib_passive_cleanup (ib_dev_ctx) != 0)
+  {
     return -1;
   }
 
