@@ -219,7 +219,14 @@ pgaspi_dev_passive_receive (gaspi_context_t * const gctx,
 #ifdef GPI2_IB_DC
   if (ib_dev_ctx->dc)
   {
-    *rem_rank = (gaspi_rank_t) ntohl (wc_recv.imm_data);
+    const uint32_t sender = ntohl (wc_recv.imm_data);
+
+    if (sender >= gctx->tnc)
+    {
+      return GASPI_ERROR;
+    }
+
+    *rem_rank = (gaspi_rank_t) sender;
     return GASPI_SUCCESS;
   }
 #endif

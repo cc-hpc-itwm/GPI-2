@@ -201,7 +201,8 @@ _pgaspi_ib_completed (gaspi_context_t * const gctx,
   }
 
 #ifdef GPI2_IB_DC
-  if (wc->wr_id & GPI2_IB_DC_PART)
+  /* dc_parts is 0 after a failed recovery, which counted parts as entries */
+  if ((wc->wr_id & GPI2_IB_DC_PART) && ib_dev_ctx->dc_parts[queue] > 0)
   {
     ib_dev_ctx->dc_parts[queue]--;
     return;

@@ -31,17 +31,16 @@ pgaspi_dev_poll_groups (gaspi_context_t * const gctx)
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  const int pret = ibv_poll_cq (ib_dev_ctx->scqGroups,
-                                gctx->ne_count_grp,
+  const int max = (int) MIN (gctx->ne_count_grp,
+                             sizeof (ib_dev_ctx->wc_grp_send)
+                             / sizeof (ib_dev_ctx->wc_grp_send[0]));
+  const int pret = ibv_poll_cq (ib_dev_ctx->scqGroups, max,
                                 ib_dev_ctx->wc_grp_send);
 
   if (pret < 0)
   {
-    gaspi_uint i;
-    for (i = 0; i < gctx->ne_count_grp; i++)
+    for (int i = 0; i < max; i++)
     {
-      /* TODO: wc_grp_send is a [64] so we're basically assuming
-         that ne_count_grp will never exceed that */
       if (ib_dev_ctx->wc_grp_send[i].status != IBV_WC_SUCCESS)
       {
         //TODO: for now here because we need to identify the erroneous rank
@@ -51,9 +50,7 @@ pgaspi_dev_poll_groups (gaspi_context_t * const gctx)
       }
     }
 
-    GASPI_DEBUG_PRINT_ERROR
-      ("Failed request to %lu. Collectives queue might be broken",
-       ib_dev_ctx->wc_grp_send[i].wr_id);
+    GASPI_DEBUG_PRINT_ERROR ("Collectives queue might be broken");
     return -1;
   }
 
@@ -81,12 +78,20 @@ pgaspi_dev_poll_groups (gaspi_context_t * const gctx)
       }
     }
 
-    if (failed
-        && pgaspi_ib_dc_recover (gctx, &ib_dev_ctx->dciGroups,
-                                 ib_dev_ctx->scqGroups,
-                                 &gctx->ne_count_grp) != 0)
+    if (failed)
     {
-      return -1;
+      /* Only what is outstanding now: other threads may post meanwhile */
+      const gaspi_uint n =
+        __atomic_load_n (&gctx->ne_count_grp, __ATOMIC_RELAXED);
+      gaspi_uint left = n;
+      const int rc = pgaspi_ib_dc_recover (gctx, &ib_dev_ctx->dciGroups,
+                                           ib_dev_ctx->scqGroups, &left);
+
+      __atomic_sub_fetch (&gctx->ne_count_grp, n - left, __ATOMIC_RELAXED);
+      if (rc != 0)
+      {
+        return -1;
+      }
     }
   }
 #endif

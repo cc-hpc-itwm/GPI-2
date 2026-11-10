@@ -762,7 +762,7 @@ pgaspi_ib_dc_post (gaspi_ib_ctx * const ib_dev_ctx,
   for (; wr != NULL; wr = wr->next)
   {
     qpx->wr_id = wr->wr_id;
-    qpx->wr_flags = wr->send_flags;
+    qpx->wr_flags = wr->send_flags & ~IBV_SEND_INLINE;
 
     switch (wr->opcode)
     {
