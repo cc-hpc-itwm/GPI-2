@@ -19,11 +19,16 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 /* Dynamically Connected (DC) transport of the IB device (GASPI_IB_DCT).
 
    Instead of an RC queue pair per channel and peer, each channel (groups,
-   passive, each communication queue) has one DC initiator (DCI), which
-   reaches any peer, and one DC target (DCT), which any peer reaches. The
+   passive, each communication queue) has DC initiators (DCIs), which reach
+   any peer, and one DC target (DCT), which any peer reaches. The
    destination (address handle of the peer and its DCT number) is given in
    every work request. The DCT numbers travel in struct ib_ctx_info (qpn*)
-   like the RC QP numbers. */
+   like the RC QP numbers.
+
+   A DCI reconnects (about 2 us) whenever its target changes, so groups and
+   each queue have a pool of DCIs, rank r on DCI r % pool; passive has one.
+   Each queue has further DCIs for the parts of large reads. DCIs are
+   created on first use. */
 
 #include <errno.h>
 #include <stdint.h>
@@ -35,6 +40,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <infiniband/mlx5dv.h>
 
 #include "GASPI_types.h"
+#include "GPI2.h"
 #include "GPI2_IB.h"
 #include "GPI2_Sys.h"
 #include "GPI2_Types.h"
@@ -308,6 +314,68 @@ _pgaspi_ib_dc_destroy_dci (struct pgaspi_ib_dci *const dci)
 }
 
 static int
+_pgaspi_ib_dc_destroy_channel (struct pgaspi_ib_dc_channel *const chan)
+{
+  int rc = 0;
+
+  for (int i = 0; i < chan->num; i++)
+  {
+    rc |= _pgaspi_ib_dc_destroy_dci (&chan->pool[i]);
+  }
+
+  for (int i = 0; i < chan->num_read; i++)
+  {
+    rc |= _pgaspi_ib_dc_destroy_dci (&chan->read[i]);
+  }
+
+  chan->num = 0;
+  chan->num_read = 0;
+
+  return rc;
+}
+
+static void
+_pgaspi_ib_dc_init_channel (struct ibv_cq *const cq, const uint32_t depth,
+                            const int num, const int num_read,
+                            const uint8_t * const slot,
+                            struct pgaspi_ib_dc_channel *const chan)
+{
+  chan->cq = cq;
+  chan->depth = depth;
+  chan->slot = slot;
+  chan->num_read = num_read;
+  chan->num = num;
+}
+
+/* Full depth: one rank may get all requests of the channel */
+int
+pgaspi_ib_dc_open_dci (struct pgaspi_ib_dc_channel *const chan,
+                       struct pgaspi_ib_dci *const dci)
+{
+  int rc = 0;
+
+  lock_gaspi (&chan->lock);
+
+  if (NULL == dci->qp)
+  {
+    struct pgaspi_ib_dci new_dci;
+
+    rc = _pgaspi_ib_dc_create_dci (&glb_gaspi_ctx, chan->cq, chan->depth,
+                                   &new_dci);
+    if (0 == rc)
+    {
+      dci->qpx = new_dci.qpx;
+      dci->mqpx = new_dci.mqpx;
+      __atomic_store_n (&dci->qp, new_dci.qp, __ATOMIC_RELEASE);
+    }
+  }
+
+  unlock_gaspi (&chan->lock);
+
+  return rc;
+}
+
+static int
 _pgaspi_ib_dc_destroy_dct (struct ibv_qp **const dct)
 {
   if (*dct != NULL && ibv_destroy_qp (*dct))
@@ -334,13 +402,11 @@ pgaspi_ib_dc_queue_create (gaspi_context_t const *const gctx,
     return -1;
   }
 
-  if (_pgaspi_ib_dc_create_dci (gctx, ib_dev_ctx->scqC[id],
-                                gctx->config->queue_size_max,
-                                &ib_dev_ctx->dciC[id]) != 0)
-  {
-    _pgaspi_ib_dc_destroy_dct (&ib_dev_ctx->dctC[id]);
-    return -1;
-  }
+  _pgaspi_ib_dc_init_channel (ib_dev_ctx->scqC[id],
+                              gctx->config->queue_size_max,
+                              ib_dev_ctx->dc_pool, GPI2_IB_DC_READ_PARTS - 1,
+                              ib_dev_ctx->dc_slot, &ib_dev_ctx->dciC[id]);
+  ib_dev_ctx->dc_parts[id] = 0;
 
   for (gaspi_rank_t i = 0; i < gctx->tnc; i++)
   {
@@ -356,7 +422,7 @@ pgaspi_ib_dc_queue_delete (gaspi_context_t const *const gctx,
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
-  if (_pgaspi_ib_dc_destroy_dci (&ib_dev_ctx->dciC[id]) != 0
+  if (_pgaspi_ib_dc_destroy_channel (&ib_dev_ctx->dciC[id]) != 0
       || _pgaspi_ib_dc_destroy_dct (&ib_dev_ctx->dctC[id]) != 0)
   {
     return -1;
@@ -383,6 +449,21 @@ pgaspi_ib_dc_init (gaspi_context_t const *const gctx)
     fprintf (stderr, "GASPI_IB_DCT: device %s does not support mlx5dv\n",
              ibv_get_device_name (ib_dev_ctx->ib_dev));
     return -1;
+  }
+
+  ib_dev_ctx->dc_pool = MIN (GPI2_IB_DC_POOL, (int) gctx->tnc);
+
+  ib_dev_ctx->dc_slot = (uint8_t *) malloc (gctx->tnc);
+  ib_dev_ctx->dc_slot0 = (uint8_t *) calloc (gctx->tnc, 1);
+  if (NULL == ib_dev_ctx->dc_slot || NULL == ib_dev_ctx->dc_slot0)
+  {
+    GASPI_DEBUG_PRINT_ERROR ("Failed to allocate memory.");
+    return -1;
+  }
+
+  for (gaspi_rank_t i = 0; i < gctx->tnc; i++)
+  {
+    ib_dev_ctx->dc_slot[i] = (uint8_t) (i % ib_dev_ctx->dc_pool);
   }
 
   /* Receives for the sync flags of all peers (pgaspi_ib_post_group_recvs),
@@ -433,12 +514,10 @@ pgaspi_ib_dc_init (gaspi_context_t const *const gctx)
     return -1;
   }
 
-  if (_pgaspi_ib_dc_create_dci (gctx, ib_dev_ctx->scqGroups,
-                                gctx->config->queue_size_max,
-                                &ib_dev_ctx->dciGroups) != 0)
-  {
-    return -1;
-  }
+  _pgaspi_ib_dc_init_channel (ib_dev_ctx->scqGroups,
+                              gctx->config->queue_size_max,
+                              ib_dev_ctx->dc_pool, 0, ib_dev_ctx->dc_slot,
+                              &ib_dev_ctx->dciGroups);
 
   /* Passive */
   ib_dev_ctx->dctP =
@@ -448,12 +527,9 @@ pgaspi_ib_dc_init (gaspi_context_t const *const gctx)
     return -1;
   }
 
-  if (_pgaspi_ib_dc_create_dci (gctx, ib_dev_ctx->scqP,
-                                gctx->config->passive_queue_size_max,
-                                &ib_dev_ctx->dciP) != 0)
-  {
-    return -1;
-  }
+  _pgaspi_ib_dc_init_channel (ib_dev_ctx->scqP,
+                              gctx->config->passive_queue_size_max, 1, 0,
+                              ib_dev_ctx->dc_slot0, &ib_dev_ctx->dciP);
 
   /* Communication queues */
   for (unsigned int c = 0; c < gctx->config->queue_num; c++)
@@ -538,18 +614,23 @@ pgaspi_ib_dc_cleanup (gaspi_context_t const *const gctx)
     ib_dev_ctx->ah = NULL;
   }
 
+  free (ib_dev_ctx->dc_slot);
+  ib_dev_ctx->dc_slot = NULL;
+  free (ib_dev_ctx->dc_slot0);
+  ib_dev_ctx->dc_slot0 = NULL;
+
   for (unsigned int c = 0; c < GASPI_MAX_QP; c++)
   {
-    if (_pgaspi_ib_dc_destroy_dci (&ib_dev_ctx->dciC[c]) != 0
+    if (_pgaspi_ib_dc_destroy_channel (&ib_dev_ctx->dciC[c]) != 0
         || _pgaspi_ib_dc_destroy_dct (&ib_dev_ctx->dctC[c]) != 0)
     {
       return -1;
     }
   }
 
-  if (_pgaspi_ib_dc_destroy_dci (&ib_dev_ctx->dciGroups) != 0
+  if (_pgaspi_ib_dc_destroy_channel (&ib_dev_ctx->dciGroups) != 0
       || _pgaspi_ib_dc_destroy_dct (&ib_dev_ctx->dctGroups) != 0
-      || _pgaspi_ib_dc_destroy_dci (&ib_dev_ctx->dciP) != 0
+      || _pgaspi_ib_dc_destroy_channel (&ib_dev_ctx->dciP) != 0
       || _pgaspi_ib_dc_destroy_dct (&ib_dev_ctx->dctP) != 0)
   {
     return -1;
@@ -572,13 +653,49 @@ pgaspi_ib_dc_cleanup (gaspi_context_t const *const gctx)
   return 0;
 }
 
-/* A failed request moves its DCI to the error state; the requests behind it,
-   also those to other peers, complete as flushed. Poll them (outstanding:
-   completions still expected on cq) and bring the DCI back to RTS, so that
-   the channel works again for the healthy peers. */
+static int
+_pgaspi_ib_dc_reset_dci (gaspi_context_t const *const gctx,
+                         struct pgaspi_ib_dci *const dci)
+{
+  struct ibv_qp_attr qp_attr;
+  struct ibv_qp_init_attr init_attr;
+
+  if (NULL == dci->qp)
+  {
+    return 0;
+  }
+
+  int rc = ibv_query_qp (dci->qp, &qp_attr, IBV_QP_STATE, &init_attr);
+  if (rc != 0)
+  {
+    GPI2_IB_DC_ERROR (rc, "DCI state query");
+    return -1;
+  }
+
+  if (qp_attr.qp_state == IBV_QPS_RTS)
+  {
+    return 0;
+  }
+
+  memset (&qp_attr, 0, sizeof (qp_attr));
+  qp_attr.qp_state = IBV_QPS_RESET;
+
+  rc = ibv_modify_qp (dci->qp, &qp_attr, IBV_QP_STATE);
+  if (rc != 0)
+  {
+    GPI2_IB_DC_ERROR (rc, "DCI to RESET");
+    return -1;
+  }
+
+  return _pgaspi_ib_dc_dci_ready (gctx, dci->qp);
+}
+
+/* A failed request moves its DCI to the error state and flushes the
+   requests behind it, also to other peers. Poll the outstanding completions
+   and bring the failed DCIs back to RTS. */
 int
 pgaspi_ib_dc_recover (gaspi_context_t const *const gctx,
-                      struct pgaspi_ib_dci *const dci,
+                      struct pgaspi_ib_dc_channel *const chan,
                       struct ibv_cq *const cq, gaspi_uint * const outstanding)
 {
   const gaspi_cycles_t s0 = gaspi_get_cycles ();
@@ -609,19 +726,19 @@ pgaspi_ib_dc_recover (gaspi_context_t const *const gctx,
     }
   }
 
-  struct ibv_qp_attr qp_attr;
+  int rc = 0;
 
-  memset (&qp_attr, 0, sizeof (qp_attr));
-  qp_attr.qp_state = IBV_QPS_RESET;
-
-  const int rc = ibv_modify_qp (dci->qp, &qp_attr, IBV_QP_STATE);
-  if (rc != 0)
+  for (int i = 0; i < chan->num; i++)
   {
-    GPI2_IB_DC_ERROR (rc, "DCI to RESET");
-    return -1;
+    rc |= _pgaspi_ib_dc_reset_dci (gctx, &chan->pool[i]);
   }
 
-  return _pgaspi_ib_dc_dci_ready (gctx, dci->qp);
+  for (int i = 0; i < chan->num_read; i++)
+  {
+    rc |= _pgaspi_ib_dc_reset_dci (gctx, &chan->read[i]);
+  }
+
+  return rc;
 }
 
 /* Post a chain of send requests, built as for RC, on a DCI to the DCT dctn

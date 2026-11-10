@@ -28,7 +28,8 @@ HOSTNAME=$(hostname)
 setup() {
     # The tests set these themselves where needed; values exported by the
     # caller (e.g. when running the whole test suite) must not leak in.
-    unset GASPI_TRACE GASPI_IB_RELAXED_ORDERING GASPI_IB_DCT GASPI_OFI_PROGRESS_PAUSE_US FI_PROVIDER GASPI_BIND
+    unset GASPI_TRACE GASPI_IB_RELAXED_ORDERING GASPI_IB_DCT GASPI_BIND \
+          GASPI_OFI_PROGRESS_PAUSE_US FI_PROVIDER
 
     export MOCK_LOG=$(mktemp /tmp/gaspi_test_mock.XXXXXX)
     TEST_STDOUT=$(mktemp /tmp/gaspi_test_out.XXXXXX)
@@ -493,7 +494,8 @@ test_ofi_env_propagated_to_remote_spawner() {
 
 test_bind_propagated_to_remote_master() {
     # The placement setting travels in the command like the above.
-    GASPI_BIND=nic-core run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/trace_probe.sh"
+    GASPI_BIND=nic-core \
+        run_gaspi_run -m "$MF_REMOTE" "$FIXTURE_DIR/trace_probe.sh"
     assert_exit_code 0 &&
     assert_output_contains "GASPI_BIND=nic-core"
 }

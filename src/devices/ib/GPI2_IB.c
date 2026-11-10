@@ -608,8 +608,8 @@ pgaspi_dev_init_core(gaspi_context_t *const gctx)
   for (unsigned int c = 0; c < gctx->config->queue_num; c++)
   {
     ib_dev_ctx->scqC[c] =
-      ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,
-                     NULL, 0);
+      ibv_create_cq (ib_dev_ctx->context, pgaspi_ib_queue_cq_size (gctx),
+                     NULL, NULL, 0);
     if (NULL == ib_dev_ctx->scqC[c])
     {
       GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
@@ -839,8 +839,8 @@ pgaspi_dev_comm_queue_create (gaspi_context_t const *const gctx,
   {
     /* Completion queue */
     ib_dev_ctx->scqC[id] =
-      ibv_create_cq (ib_dev_ctx->context, gctx->config->queue_size_max, NULL,
-                     NULL, 0);
+      ibv_create_cq (ib_dev_ctx->context, pgaspi_ib_queue_cq_size (gctx),
+                     NULL, NULL, 0);
     if (!ib_dev_ctx->scqC[id])
     {
       GASPI_DEBUG_PRINT_ERROR ("Failed to create CQ (libibverbs)");
@@ -865,12 +865,12 @@ pgaspi_dev_comm_queue_create (gaspi_context_t const *const gctx,
     return -1;
   }
 
-  /* DC: one DCI and DCT for all peers, the local info of every peer gets
-     the DCT number */
+  /* DC: the DCIs and the DCT serve all peers, the local info of every peer
+     gets the DCT number */
 #ifdef GPI2_IB_DC
   if (ib_dev_ctx->dc)
   {
-    if (NULL == ib_dev_ctx->dciC[id].qp)
+    if (0 == ib_dev_ctx->dciC[id].num)
     {
       return pgaspi_ib_dc_queue_create (gctx, id);
     }

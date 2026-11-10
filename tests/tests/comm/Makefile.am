@@ -6,6 +6,7 @@ comm_tests = \
 	../../bin/all-to-rank0.bin \
 	../../bin/comm_limits.bin \
 	../../bin/queue_full.bin \
+	../../bin/read_large_parts.bin \
 	../../bin/read_nsizes.bin \
 	../../bin/read_smalls.bin \
 	../../bin/read_write.bin \
@@ -31,6 +32,7 @@ ______bin_all_to_all_bin_SOURCES = all-to-all.c $(auxSRCS)
 ______bin_all_to_rank0_bin_SOURCES = all-to-rank0.c $(auxSRCS)
 ______bin_comm_limits_bin_SOURCES = comm_limits.c $(auxSRCS)
 ______bin_queue_full_bin_SOURCES = queue_full.c $(auxSRCS)
+______bin_read_large_parts_bin_SOURCES = read_large_parts.c $(auxSRCS)
 ______bin_read_nsizes_bin_SOURCES = read_nsizes.c $(auxSRCS)
 ______bin_read_smalls_bin_SOURCES = read_smalls.c $(auxSRCS)
 ______bin_read_write_bin_SOURCES = read_write.c $(auxSRCS)

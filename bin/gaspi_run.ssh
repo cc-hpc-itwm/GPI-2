@@ -119,7 +119,8 @@ print_error_exit_failure()
 # Device settings, passed to the ranks ssh starts without the environment.
 device_env_vars()
 {
-    compgen -e | grep -E '^(GASPI_BIND|GASPI_IB_RELAXED_ORDERING|GASPI_IB_DCT|GASPI_IB_VERBOSE|GASPI_OFI_[A-Z0-9_]+)$'
+    compgen -e \
+        | grep -E '^(GASPI_BIND|GASPI_IB_[A-Z0-9_]+|GASPI_OFI_[A-Z0-9_]+)$'
 }
 
 utility_exists()

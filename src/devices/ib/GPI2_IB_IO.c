@@ -118,6 +118,52 @@ pgaspi_dev_read (gaspi_context_t * const gctx,
 
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
+  /* DC: a large read in parts, part 0 on the rank's DCI; one queue entry */
+#ifdef GPI2_IB_DC
+  if (ib_dev_ctx->dc && size >= GPI2_IB_DC_READ_PART_MIN)
+  {
+    struct pgaspi_ib_dc_channel *const chan = &ib_dev_ctx->dciC[queue];
+    const uint32_t dctn = ib_dev_ctx->remote_info[rank].qpnC[queue];
+    const int n = (int) MAX (2, MIN (size / GPI2_IB_DC_READ_PART_MIN,
+                                     GPI2_IB_DC_READ_PARTS));
+    const gaspi_size_t part = size / n;
+
+    for (int p = 0; p < n; p++)
+    {
+      struct pgaspi_ib_dci *const dci = (p == 0)
+        ? pgaspi_ib_dc_dci (chan, rank)
+        : pgaspi_ib_dc_use (chan, &chan->read[p - 1]);
+
+      if (NULL == dci)
+      {
+        return GASPI_ERROR;
+      }
+
+      slist.length = (p == n - 1) ? size - p * part : part;
+      swr.wr_id = (p == 0) ? rank : (rank | GPI2_IB_DC_PART);
+
+      if (pgaspi_ib_dc_post (ib_dev_ctx, dci, rank, dctn, &swr))
+      {
+        return GASPI_ERROR;
+      }
+
+      if (p == 0)
+      {
+        gctx->ne_count_c[queue]++;
+      }
+      else
+      {
+        ib_dev_ctx->dc_parts[queue]++;
+      }
+
+      slist.addr += part;
+      swr.wr.rdma.remote_addr += part;
+    }
+
+    return GASPI_SUCCESS;
+  }
+#endif
+
   if (pgaspi_ib_post_queue (ib_dev_ctx, queue, rank, &swr))
   {
     return GASPI_ERROR;
@@ -128,6 +174,45 @@ pgaspi_dev_read (gaspi_context_t * const gctx,
   return GASPI_SUCCESS;
 }
 
+/* Queue entries plus, with DC, further read parts */
+static inline int
+_pgaspi_ib_outstanding (gaspi_context_t const *const gctx,
+                        gaspi_ib_ctx const *const ib_dev_ctx,
+                        const gaspi_queue_id_t queue)
+{
+#ifdef GPI2_IB_DC
+  return (int) (gctx->ne_count_c[queue] + ib_dev_ctx->dc_parts[queue]);
+#else
+  (void) ib_dev_ctx;
+  return (int) gctx->ne_count_c[queue];
+#endif
+}
+
+/* Count a polled completion (ne: result of ibv_poll_cq for one) */
+static inline void
+_pgaspi_ib_completed (gaspi_context_t * const gctx,
+                      gaspi_ib_ctx * const ib_dev_ctx,
+                      const gaspi_queue_id_t queue,
+                      struct ibv_wc const *const wc, const int ne)
+{
+  if (ne <= 0)
+  {
+    return;
+  }
+
+#ifdef GPI2_IB_DC
+  if (wc->wr_id & GPI2_IB_DC_PART)
+  {
+    ib_dev_ctx->dc_parts[queue]--;
+    return;
+  }
+#else
+  (void) ib_dev_ctx;
+  (void) wc;
+#endif
+  gctx->ne_count_c[queue]--;
+}
+
 gaspi_return_t
 pgaspi_dev_purge (gaspi_context_t * const gctx,
                   const gaspi_queue_id_t queue,
@@ -136,17 +221,17 @@ pgaspi_dev_purge (gaspi_context_t * const gctx,
   int ne = 0;
   struct ibv_wc wc;
 
-  const int nr = gctx->ne_count_c[queue];
-  const gaspi_cycles_t s0 = gaspi_get_cycles();
-
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
+
+  const int nr = _pgaspi_ib_outstanding (gctx, ib_dev_ctx, queue);
+  const gaspi_cycles_t s0 = gaspi_get_cycles();
 
   for (int i = 0; i < nr; i++)
   {
     do
     {
       ne = ibv_poll_cq (ib_dev_ctx->scqC[queue], 1, &wc);
-      gctx->ne_count_c[queue] -= ne;
+      _pgaspi_ib_completed (gctx, ib_dev_ctx, queue, &wc, ne);
 
       if (ne == 0)
       {
@@ -164,8 +249,7 @@ pgaspi_dev_purge (gaspi_context_t * const gctx,
     while (ne == 0);
   }
 
-  /* DC: a purged request may have failed and left the queue DCI in the
-     error state; with nothing outstanding, it is reset */
+  /* DC: a purged request may have failed: reset its DCI */
 #ifdef GPI2_IB_DC
   if (ib_dev_ctx->dc)
   {
@@ -188,10 +272,10 @@ pgaspi_dev_wait (gaspi_context_t * const gctx,
 {
   struct ibv_wc wc;
 
-  const int nr = gctx->ne_count_c[queue];
-  const gaspi_cycles_t s0 = gaspi_get_cycles();
-
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
+
+  const int nr = _pgaspi_ib_outstanding (gctx, ib_dev_ctx, queue);
+  const gaspi_cycles_t s0 = gaspi_get_cycles();
 
   int ne = 0;
   for (int i = 0; i < nr; i++)
@@ -199,7 +283,7 @@ pgaspi_dev_wait (gaspi_context_t * const gctx,
     do
     {
       ne = ibv_poll_cq (ib_dev_ctx->scqC[queue], 1, &wc);
-      gctx->ne_count_c[queue] -= ne;    //TODO: this should be done below, when ne > 0
+      _pgaspi_ib_completed (gctx, ib_dev_ctx, queue, &wc, ne);
 
       if (ne == 0)
       {
@@ -221,19 +305,26 @@ pgaspi_dev_wait (gaspi_context_t * const gctx,
     {
       //TODO: for now here because we have to identify the rank
       // but should be out of device?
-      gctx->state_vec[queue][wc.wr_id] = GASPI_STATE_CORRUPT;
+#ifdef GPI2_IB_DC
+      const uint64_t failed = wc.wr_id & ~GPI2_IB_DC_PART;
+#else
+      const uint64_t failed = wc.wr_id;
+#endif
+      gctx->state_vec[queue][failed] = GASPI_STATE_CORRUPT;
       GASPI_DEBUG_PRINT_ERROR
-        ("Failed request to %lu. Queue %d might be broken %s", wc.wr_id, queue,
+        ("Failed request to %lu. Queue %d might be broken %s", failed, queue,
          ibv_wc_status_str (wc.status));
 
-      /* DC: the requests behind it, also to other ranks, are flushed (not
-         marked) and the queue works again after the call */
+      /* DC: the flushed requests behind it are not marked */
 #ifdef GPI2_IB_DC
       if (ib_dev_ctx->dc)
       {
+        gaspi_uint left = _pgaspi_ib_outstanding (gctx, ib_dev_ctx, queue);
+
         pgaspi_ib_dc_recover (gctx, &ib_dev_ctx->dciC[queue],
-                              ib_dev_ctx->scqC[queue],
-                              &gctx->ne_count_c[queue]);
+                              ib_dev_ctx->scqC[queue], &left);
+        gctx->ne_count_c[queue] = left;
+        ib_dev_ctx->dc_parts[queue] = 0;
       }
 #endif
 
