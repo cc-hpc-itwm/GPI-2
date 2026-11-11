@@ -45,6 +45,9 @@ typedef struct
 
   int device_channel;
 
+  gaspi_rank_t rank;
+  gaspi_rank_t *peer_rank;
+
 } gaspi_tcp_ctx;
 
 #endif //_GPI2_TCP_H_

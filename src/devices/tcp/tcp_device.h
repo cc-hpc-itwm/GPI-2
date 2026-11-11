@@ -195,6 +195,7 @@ int tcp_dev_stop_device (int);
 int tcp_dev_is_valid_state (unsigned short);
 
 int tcp_dev_connect_to (const int i, char const *const host, const int port);
+int tcp_dev_wait_peer (const int i);
 
 char *tcp_dev_get_local_ip (char const *const host);
 

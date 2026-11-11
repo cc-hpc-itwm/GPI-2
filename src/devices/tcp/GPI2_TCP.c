@@ -27,17 +27,26 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include "GPI2_Utility.h"
 
 int
-pgaspi_dev_create_endpoint (gaspi_context_t const *const GASPI_UNUSED (gctx),
-                            const int GASPI_UNUSED (i),
+pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx,
+                            const int i,
                             void **info,
                             void **remote_info,
                             size_t * info_size)
 {
-  *info = NULL;
-  *remote_info = NULL;
-  *info_size = 0;
+  gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
-  return 0;
+  *info = &(tcp_dev_ctx->rank);
+  *remote_info = &(tcp_dev_ctx->peer_rank[i]);
+  *info_size = sizeof (gaspi_rank_t);
+
+  if (gctx->rank < i)
+  {
+    return 0;
+  }
+
+  return tcp_dev_connect_to (i, pgaspi_gethostname (gctx, i),
+                             gctx->config->dev_config.params.tcp.port +
+                             gctx->topology->local_ids[i]) == 0 ? 0 : -1;
 }
 
 //TODO:
@@ -52,6 +61,11 @@ int
 pgaspi_dev_connect_context (gaspi_context_t const *const gctx,
                             const int i)
 {
+  if (gctx->rank < i)
+  {
+    return tcp_dev_wait_peer (i);
+  }
+
   return tcp_dev_connect_to (i, pgaspi_gethostname (gctx, i),
                              gctx->config->dev_config.params.tcp.port +
                              gctx->topology->local_ids[i]);
@@ -164,6 +178,13 @@ pgaspi_dev_init_core (gaspi_context_t * const gctx)
   }
 
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
+
+  tcp_dev_ctx->rank = gctx->rank;
+  tcp_dev_ctx->peer_rank = calloc (gctx->tnc, sizeof (gaspi_rank_t));
+  if (NULL == tcp_dev_ctx->peer_rank)
+  {
+    return -1;
+  }
 
   struct tcp_dev_args *dev_args = malloc (sizeof (struct tcp_dev_args));
 
@@ -355,6 +376,7 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
   }
   close (tcp_dev_ctx->device_channel);
 
+  free (tcp_dev_ctx->peer_rank);
   free (gctx->device->ctx);
   gctx->device->ctx = NULL;
   free (gctx->device);

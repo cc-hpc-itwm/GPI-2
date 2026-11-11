@@ -336,6 +336,12 @@ _tcp_dev_alloc_remote_states (int n)
   return 0;
 }
 
+static void
+_tcp_dev_register (int rank, tcp_dev_conn_state_t * state)
+{
+  (void) __sync_bool_compare_and_swap (&rank_state[rank], NULL, state);
+}
+
 static inline tcp_dev_conn_state_t *
 _tcp_dev_add_new_conn (int rank, int conn_sock, int pollfd)
 {
@@ -525,9 +531,26 @@ tcp_dev_connect_to (const int i, char const *const host, const int port)
   }
 
   /* register peer */
-  rank_state[i] = nstate;
+  _tcp_dev_register (i, nstate);
 
   return 0;
+}
+
+int
+tcp_dev_wait_peer (const int i)
+{
+  for (int ms = 0; ms < 10000; ms++)
+  {
+    if (__atomic_load_n (&rank_state[i], __ATOMIC_ACQUIRE) != NULL)
+    {
+      return 0;
+    }
+
+    usleep (1000);
+  }
+
+  GASPI_DEBUG_PRINT_ERROR ("No connection from rank %d.", i);
+  return 1;
 }
 
 inline int
@@ -684,7 +707,7 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
     case REGISTER_PEER:
     {
       estate->rank = estate->wr_buff.source;
-      rank_state[estate->rank] = estate;
+      _tcp_dev_register (estate->rank, estate);
 
       _tcp_dev_set_default_read_conn_state (estate);
 
@@ -2208,7 +2231,7 @@ tcp_virt_dev (void *args)
         if (event_rank >= 0)
         {
           _tcp_dev_fail_awaiting (event_rank);
-          rank_state[event_rank]->fd = -2;      /* just invalidate fd */
+          estate->fd = -2;      /* just invalidate fd */
           /* rank_state[event_rank] = NULL; */
         }
       }
