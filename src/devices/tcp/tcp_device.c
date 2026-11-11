@@ -23,6 +23,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <poll.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stddef.h>
@@ -34,6 +35,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <time.h>
 #include <unistd.h>
 #include "GASPI_types.h"
 #include "GPI2_SN.h"
@@ -1403,16 +1405,18 @@ _tcp_dev_get_outstanding (int fd, int *in, int *out)
 static void
 _tcp_dev_wait_outstanding_out (int fd)
 {
-  for (;;)
+  for (int ms = 0; ms < 5000; ms++)
   {
     int outstanding_out = 0;
+    struct tcp_info info;
+    socklen_t len = sizeof (info);
 
-    if (fd > 0)
-    {
-      ioctl (fd, SIOCOUTQ, &outstanding_out);
-    }
-
-    if (!outstanding_out)
+    if (fd <= 0
+        || ioctl (fd, SIOCOUTQ, &outstanding_out) != 0
+        || outstanding_out == 0
+        || getsockopt (fd, IPPROTO_TCP, TCP_INFO, &info, &len) != 0
+        || (info.tcpi_state != TCP_ESTABLISHED
+            && info.tcpi_state != TCP_CLOSE_WAIT))
     {
       break;
     }
@@ -1435,6 +1439,9 @@ gaspi_tcp_dev_status_get (void)
 
 #define TCP_DEV_DEBUG 1
 
+/* How long the device waits in all for lower ranks to close at shutdown. */
+#define TCP_DEV_CLOSE_WAIT_MS 5000
+
 static void
 _tcp_dev_bring_down (int pollfd, int num_peers)
 {
@@ -1442,6 +1449,9 @@ _tcp_dev_bring_down (int pollfd, int num_peers)
   int tcp_dev_active_closed_connections = 0;
   int tcp_dev_passive_closed_connections = 0;
 #endif
+  struct timespec start;
+
+  clock_gettime (CLOCK_MONOTONIC, &start);
 
   for (int p = 0; p < num_peers; p++)
   {
@@ -1536,13 +1546,32 @@ _tcp_dev_bring_down (int pollfd, int num_peers)
 
       ssize_t final_read = -1;
       char final_request[64];
+      struct timespec now;
+      struct pollfd pfd = {
+        .fd = rank_state[p]->fd,
+        .events = POLLIN
+      };
 
-      final_read = read (rank_state[p]->fd, &final_request, 64);
-      if (final_read != 0)
+      clock_gettime (CLOCK_MONOTONIC, &now);
+      const long left = TCP_DEV_CLOSE_WAIT_MS
+        - ((now.tv_sec - start.tv_sec) * 1000
+           + (now.tv_nsec - start.tv_nsec) / 1000000);
+
+      if (poll (&pfd, 1, left > 0 ? (int) left : 0) > 0)
       {
-        GASPI_DEBUG_PRINT_ERROR ("Unexpected incoming data from %d (%ld)", p,
-                                 final_read);
+        final_read = read (rank_state[p]->fd, &final_request, 64);
+        if (final_read != 0)
+        {
+          GASPI_DEBUG_PRINT_ERROR ("Unexpected incoming data from %d (%ld)",
+                                   p, final_read);
+        }
       }
+      else
+      {
+        GASPI_DEBUG_PRINT_ERROR ("Rank %d did not close the connection.", p);
+      }
+
+      close (rank_state[p]->fd);
 #ifdef TCP_DEV_DEBUG
       tcp_dev_passive_closed_connections++;
 #endif
