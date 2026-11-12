@@ -20,6 +20,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define _TCP_DEVICE_H_
 
 #include <stdint.h>
+#include "GASPI_types.h"
 #include "rb.h"
 
 
@@ -33,7 +34,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define CQ_HANDLE_NONE (CQ_MAX_NUM)
 #define QP_HANDLE_NONE (QP_MAX_NUM)
 
-#define CONN_TIMEOUT 1000000
 
 typedef enum
 {
@@ -194,8 +194,9 @@ int tcp_dev_stop_device (int);
 
 int tcp_dev_is_valid_state (unsigned short);
 
-int tcp_dev_connect_to (const int i, char const *const host, const int port);
-int tcp_dev_wait_peer (const int i);
+int tcp_dev_connect_to (const int i, char const *const host, const int port,
+                        const gaspi_timeout_t timeout_ms);
+int tcp_dev_wait_peer (const int i, const gaspi_timeout_t timeout_ms);
 
 char *tcp_dev_get_local_ip (char const *const host);
 

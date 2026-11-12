@@ -38,6 +38,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <time.h>
 #include <unistd.h>
 #include "GASPI_types.h"
+#include "GPI2_Dev.h"
 #include "GPI2_SN.h"
 #include "GPI2_Sys.h"
 #include "GPI2_Utility.h"
@@ -471,12 +472,13 @@ tcp_dev_get_local_ip (char const *const host)
 
 //TODO: ideally we would remove the need for argument i
 int
-tcp_dev_connect_to (const int i, char const *const host, const int port)
+tcp_dev_connect_to (const int i, char const *const host, const int port,
+                    const gaspi_timeout_t timeout_ms)
 {
   /* no connections state map? */
   if (rank_state == NULL)
   {
-    return 1;
+    return -1;
   }
 
   /* connection already exists? */
@@ -486,12 +488,12 @@ tcp_dev_connect_to (const int i, char const *const host, const int port)
   }
 
   /* connect to node/rank */
-  int conn_sock = gaspi_sn_connect2port (host, port, CONN_TIMEOUT);
+  int conn_sock = gaspi_sn_connect2port (host, port, timeout_ms);
 
-  if (conn_sock == -1)
+  if (conn_sock < 0)
   {
     GASPI_DEBUG_PRINT_ERROR ("Error connecting to %s on port %i.", host, port);
-    return 1;
+    return GPI2_SN_TIMEOUT == conn_sock ? GPI2_DEV_TIMEOUT : -1;
   }
 
   /* prepare work request */
@@ -513,7 +515,7 @@ tcp_dev_connect_to (const int i, char const *const host, const int port)
     GASPI_DEBUG_PRINT_ERROR ("Failed to send registration request to %s.",
                              host);
     close (conn_sock);
-    return 1;
+    return -1;
   }
 
   gaspi_sn_set_non_blocking (conn_sock);
@@ -527,7 +529,7 @@ tcp_dev_connect_to (const int i, char const *const host, const int port)
     close (conn_sock);
     GASPI_DEBUG_PRINT_ERROR
       ("Failed to add new connection (%s) to events instance", host);
-    return 1;
+    return -1;
   }
 
   /* register peer */
@@ -537,20 +539,25 @@ tcp_dev_connect_to (const int i, char const *const host, const int port)
 }
 
 int
-tcp_dev_wait_peer (const int i)
+tcp_dev_wait_peer (const int i, const gaspi_timeout_t timeout_ms)
 {
-  for (int ms = 0; ms < 10000; ms++)
+  for (gaspi_timeout_t ms = 0;; ms++)
   {
     if (__atomic_load_n (&rank_state[i], __ATOMIC_ACQUIRE) != NULL)
     {
       return 0;
     }
 
+    if (ms >= timeout_ms)
+    {
+      break;
+    }
+
     usleep (1000);
   }
 
   GASPI_DEBUG_PRINT_ERROR ("No connection from rank %d.", i);
-  return 1;
+  return GPI2_DEV_TIMEOUT;
 }
 
 inline int

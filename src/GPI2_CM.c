@@ -46,13 +46,15 @@ pgaspi_create_endpoint_to (const gaspi_rank_t rank,
     return GASPI_SUCCESS;
   }
 
-  if (pgaspi_dev_create_endpoint (gctx, i,
-                                  &(info->local_info),
-                                  &(info->remote_info),
-                                  &(info->info_size)) < 0)
+  const int dret = pgaspi_dev_create_endpoint (gctx, i,
+                                               &(info->local_info),
+                                               &(info->remote_info),
+                                               &(info->info_size),
+                                               timeout_ms);
+  if (dret != 0)
   {
     unlock_gaspi (&(gctx->create_lock));
-    return GASPI_ERR_DEVICE;
+    return GPI2_DEV_TIMEOUT == dret ? GASPI_TIMEOUT : GASPI_ERR_DEVICE;
   }
 
   if (GASPI_ENDPOINT_NOT_CREATED == gctx->ep_conn[i].istat)
@@ -84,9 +86,10 @@ pgaspi_connect_endpoint_to (const gaspi_rank_t rank,
   }
   else
   {
-    if (pgaspi_dev_connect_context (gctx, i) != 0)
+    const int dret = pgaspi_dev_connect_context (gctx, i, timeout_ms);
+    if (dret != 0)
     {
-      eret = GASPI_ERR_DEVICE;
+      eret = GPI2_DEV_TIMEOUT == dret ? GASPI_TIMEOUT : GASPI_ERR_DEVICE;
     }
     else
     {

@@ -62,13 +62,6 @@ volatile enum gaspi_sn_status gaspi_sn_status = GASPI_SN_STATE_INIT;
 
 volatile int _gaspi_sn_stop = 0;
 
-enum
-{
-  GPI2_SN_TIMEOUT = -3,
-  GPI2_SN_EMFILE = -2,
-  GPI2_SN_ERROR = -1
-};
-
 static uint64_t
 get_delta_msecs (struct timespec *start, struct timespec* end)
 {
@@ -816,9 +809,6 @@ gaspi_sn_connect_to_rank (const gaspi_rank_t rank,
                           const gaspi_timeout_t timeout_ms)
 {
   gaspi_context_t const *const gctx = &glb_gaspi_ctx;
-  struct timespec t0, t1;
-
-  clock_gettime (CLOCK_MONOTONIC_RAW, &t0);
 
 #ifdef DEBUG
   if (strcmp (pgaspi_gethostname (gctx, rank), "") == 0)
@@ -828,28 +818,28 @@ gaspi_sn_connect_to_rank (const gaspi_rank_t rank,
   }
 #endif
 
-  /* TODO: introduce backoff delay? */
-  while (gctx->sockfd[rank] == -1)
+  if (gctx->sockfd[rank] != -1)
   {
-    gctx->sockfd[rank] = gaspi_sn_connect2port (pgaspi_gethostname (gctx, rank),
-                                                gctx->config->sn_port +
-                                                gctx->topology->local_ids[rank],
-                                                timeout_ms);
-
-    if (-2 == gctx->sockfd[rank])
-    {
-      return GASPI_ERR_EMFILE;
-    }
-
-    if (-1 == gctx->sockfd[rank])
-    {
-      clock_gettime (CLOCK_MONOTONIC_RAW, &t1);
-      const uint64_t delta_ms = get_delta_msecs (&t0, &t1);
-
-      if (delta_ms > timeout_ms)
-        return GASPI_TIMEOUT;
-    }
+    return GASPI_SUCCESS;
   }
+
+  const int sockfd =
+    gaspi_sn_connect2port (pgaspi_gethostname (gctx, rank),
+                           gctx->config->sn_port +
+                           gctx->topology->local_ids[rank],
+                           timeout_ms);
+
+  if (GPI2_SN_EMFILE == sockfd)
+  {
+    return GASPI_ERR_EMFILE;
+  }
+
+  if (sockfd < 0)
+  {
+    return GASPI_TIMEOUT;
+  }
+
+  gctx->sockfd[rank] = sockfd;
 
   return GASPI_SUCCESS;
 }

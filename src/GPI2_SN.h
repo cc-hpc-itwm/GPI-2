@@ -102,6 +102,13 @@ int gaspi_sn_set_non_blocking (const int sock);
 
 int gaspi_sn_set_blocking (const int sock);
 
+enum
+{
+  GPI2_SN_TIMEOUT = -3,
+  GPI2_SN_EMFILE = -2,
+  GPI2_SN_ERROR = -1
+};
+
 int
 gaspi_sn_connect2port (const char *hn,
                        const unsigned short port,

@@ -35,8 +35,11 @@ int
 pgaspi_dev_unregister_mem (gaspi_context_t const *const,
                            gaspi_rc_mseg_t *);
 
+#define GPI2_DEV_TIMEOUT 1
+
 int pgaspi_dev_connect_context (gaspi_context_t const *const,
-                                const int);
+                                const int,
+                                const gaspi_timeout_t);
 
 int pgaspi_dev_disconnect_context (gaspi_context_t * const,
                                    const int);
@@ -46,7 +49,8 @@ pgaspi_dev_create_endpoint (gaspi_context_t const *const,
                             const int,
                             void **,
                             void **,
-                            size_t *);
+                            size_t *,
+                            const gaspi_timeout_t);
 
 int
 pgaspi_dev_comm_queue_delete (gaspi_context_t const *const,

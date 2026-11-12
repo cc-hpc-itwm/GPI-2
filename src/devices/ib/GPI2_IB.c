@@ -917,7 +917,8 @@ pgaspi_dev_comm_queue_is_valid (gaspi_context_t const *const gctx,
 int
 pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx, const int i,
                             void **info, void **remote_info,
-                            size_t * info_size)
+                            size_t * info_size,
+                            const gaspi_timeout_t GASPI_UNUSED (timeout_ms))
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 
@@ -1145,7 +1146,8 @@ pgaspi_dev_comm_queue_connect (gaspi_context_t const *const gctx,
 
 /* TODO: rename to endpoint */
 int
-pgaspi_dev_connect_context (gaspi_context_t const *const gctx, const int i)
+pgaspi_dev_connect_context (gaspi_context_t const *const gctx, const int i,
+                            const gaspi_timeout_t GASPI_UNUSED (timeout_ms))
 {
   gaspi_ib_ctx *const ib_dev_ctx = (gaspi_ib_ctx *) gctx->device->ctx;
 

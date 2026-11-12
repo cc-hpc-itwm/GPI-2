@@ -629,8 +629,13 @@ pgaspi_proc_ping (const gaspi_rank_t rank, const gaspi_timeout_t timeout_ms)
     return GASPI_TIMEOUT;
   }
 
-  gaspi_return_t const eret =
+  gaspi_return_t eret =
     gaspi_sn_command (GASPI_SN_PROC_PING, rank, timeout_ms, NULL);
+  if (GASPI_TIMEOUT == eret)
+  {
+    eret = GASPI_ERROR;
+  }
+
   if (GASPI_ERROR == eret)
   {
     gctx->state_vec[GASPI_SN][rank] = GASPI_STATE_CORRUPT;

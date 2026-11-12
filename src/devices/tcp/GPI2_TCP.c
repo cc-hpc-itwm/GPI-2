@@ -31,7 +31,8 @@ pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx,
                             const int i,
                             void **info,
                             void **remote_info,
-                            size_t * info_size)
+                            size_t * info_size,
+                            const gaspi_timeout_t timeout_ms)
 {
   gaspi_tcp_ctx *const tcp_dev_ctx = (gaspi_tcp_ctx *) gctx->device->ctx;
 
@@ -46,7 +47,7 @@ pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx,
 
   return tcp_dev_connect_to (i, pgaspi_gethostname (gctx, i),
                              gctx->config->dev_config.params.tcp.port +
-                             gctx->topology->local_ids[i]) == 0 ? 0 : -1;
+                             gctx->topology->local_ids[i], timeout_ms);
 }
 
 //TODO:
@@ -59,16 +60,17 @@ pgaspi_dev_disconnect_context (gaspi_context_t * const GASPI_UNUSED (gctx),
 
 int
 pgaspi_dev_connect_context (gaspi_context_t const *const gctx,
-                            const int i)
+                            const int i,
+                            const gaspi_timeout_t timeout_ms)
 {
   if (gctx->rank < i)
   {
-    return tcp_dev_wait_peer (i);
+    return tcp_dev_wait_peer (i, timeout_ms);
   }
 
   return tcp_dev_connect_to (i, pgaspi_gethostname (gctx, i),
                              gctx->config->dev_config.params.tcp.port +
-                             gctx->topology->local_ids[i]);
+                             gctx->topology->local_ids[i], timeout_ms);
 }
 
 int

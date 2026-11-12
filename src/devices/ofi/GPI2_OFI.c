@@ -1802,7 +1802,8 @@ pgaspi_dev_cleanup_core (gaspi_context_t * const gctx)
 
 
 int pgaspi_dev_connect_context (gaspi_context_t const *const gctx,
-                                const int i)
+                                const int i,
+                                const gaspi_timeout_t GASPI_UNUSED (timeout_ms))
 {
   gaspi_ofi_ctx* ofi_ctx = gctx->device->ctx;
   if (NULL == ofi_ctx)
@@ -1984,7 +1985,8 @@ pgaspi_dev_create_endpoint (gaspi_context_t const *const gctx,
                             const int i,
                             void ** info,
                             void ** remote_info,
-                            size_t * info_size)
+                            size_t * info_size,
+                            const gaspi_timeout_t GASPI_UNUSED (timeout_ms))
 {
   gaspi_ofi_ctx* ofi_ctx = gctx->device->ctx;
 
