@@ -342,6 +342,19 @@ AC_DEFUN([ACX_OFI],[
 	fi
 
 	if test $HAVE_OFI = 1; then
+	   # A run-time path to a libfabric outside the linker's default
+	   # directories: ranks need not inherit LD_LIBRARY_PATH (ssh).
+	   for ofi_flag in $ofi_libs; do
+	      case $ofi_flag in
+	         -L*)
+	            ofi_dir=`echo "$ofi_flag" | sed 's/^-L//'`
+	            case $ofi_dir in
+	               /lib|/lib64|/usr/lib|/usr/lib64|/lib/$ofi_triplet|/usr/lib/$ofi_triplet) ;;
+	               *) ofi_libs="$ofi_libs -Wl,-rpath,$ofi_dir"
+	                  AC_MSG_NOTICE([OFI: run-time path $ofi_dir]) ;;
+	            esac ;;
+	      esac
+	   done
 	   AC_SUBST(ac_inc_ofi,[$ofi_cflags])
 	   AC_SUBST(ac_lib_ofi,[$ofi_libs])
 	else
