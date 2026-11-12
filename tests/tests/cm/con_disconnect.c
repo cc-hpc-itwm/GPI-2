@@ -49,8 +49,11 @@ main (int argc, char *argv[])
     ASSERT (gaspi_connect (i, GASPI_BLOCK));
   }
 
+  ASSERT (gaspi_barrier (g, GASPI_BLOCK));
+
   ASSERT (gaspi_write_notify
           (0, 0, rankSend, 0, 0, 4, rankSend, 1, 0, GASPI_BLOCK));
+  ASSERT (gaspi_wait (0, GASPI_BLOCK));
 
   gaspi_notification_id_t id;
 
@@ -59,6 +62,8 @@ main (int argc, char *argv[])
   gaspi_notification_t val;
 
   ASSERT (gaspi_notify_reset (0, id, &val));
+
+  ASSERT (gaspi_barrier (g, GASPI_BLOCK));
 
   for (i = 0; i < num; i++)
   {
