@@ -999,6 +999,7 @@ pgaspi_dev_disconnect_context (gaspi_context_t * const gctx, const int i)
     GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
     return -1;
   }
+  ib_dev_ctx->qpGroups[i] = NULL;
 
   for (unsigned int c = 0; c < gctx->config->queue_num; c++)
   {
@@ -1007,6 +1008,7 @@ pgaspi_dev_disconnect_context (gaspi_context_t * const gctx, const int i)
       GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
       return -1;
     }
+    ib_dev_ctx->qpC[c][i] = NULL;
   }
 
   if (ibv_destroy_qp (ib_dev_ctx->qpP[i]))
@@ -1014,6 +1016,7 @@ pgaspi_dev_disconnect_context (gaspi_context_t * const gctx, const int i)
     GASPI_DEBUG_PRINT_ERROR ("Failed to destroy QP (libibverbs)");
     return -1;
   }
+  ib_dev_ctx->qpP[i] = NULL;
 
   ib_dev_ctx->local_info[i].qpnGroup = 0;
   ib_dev_ctx->local_info[i].qpnP = 0;
