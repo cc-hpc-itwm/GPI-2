@@ -24,7 +24,7 @@ tutorial:
 
 # FOR DISTRIBUTION
 EXTRA_DIST = configure.ac.in config.site autogen.sh bin tutorial/* \
-	tests/defs tests/runtests.sh \
+	tests/defs tests/runtests.sh tests/test_gaspi_run tests/test_gaspi_cleanup \
 	docs/Doxyfile.in docs/Makefile.am docs/Makefile.in docs/mainpage.dox docs/new_arch.png
 
 # TESTING

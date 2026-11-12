@@ -603,6 +603,21 @@ test_gaspi_run_matches_ssh_variant() {
     return 0
 }
 
+test_all_defs_installed() {
+    # runtests.sh in the installed tree judges a test by its .def file:
+    # tests/tests/Makefile.am must install each of them.
+    local f missing=""
+    for f in "$TEST_DIR"/../defs/*.def; do
+        grep -qF "tests/defs/$(basename "$f")" "$TEST_DIR/../tests/Makefile.am" ||
+            missing="$missing $(basename "$f")"
+    done
+    if [ -n "$missing" ]; then
+        fail "not installed by tests/tests/Makefile.am:$missing"
+        return 1
+    fi
+    return 0
+}
+
 ######################################################################
 # Category 4: Error cases (13 tests)
 ######################################################################
@@ -946,6 +961,7 @@ run_test test_dct_propagated_to_remote_spawner
 echo
 echo "--- Repository consistency ---"
 run_test test_gaspi_run_matches_ssh_variant
+run_test test_all_defs_installed
 
 # Category 4: Error cases
 echo
