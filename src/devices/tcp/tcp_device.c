@@ -1969,8 +1969,8 @@ tcp_virt_dev (void *args)
       int io_err = 0;
 
       if (events[n].events & EPOLLERR
-          || events[n].events & EPOLLHUP
-          || events[n].events & EPOLLRDHUP)
+          || ((events[n].events & (EPOLLHUP | EPOLLRDHUP))
+              && !(events[n].events & EPOLLIN)))
       {
         io_err = 1;
       }
@@ -2080,6 +2080,13 @@ tcp_virt_dev (void *args)
             else if (bytesReceived == 0 && bytesRemaining == 0)
             {
               /* Recv WR not present */
+            }
+            else if (bytesReceived == 0
+                     && estate->read.opcode == RECV_HEADER
+                     && estate->read.done == 0)
+            {
+              io_err = 1;
+              break;
             }
             else if (bytesReceived <= 0)
             {
