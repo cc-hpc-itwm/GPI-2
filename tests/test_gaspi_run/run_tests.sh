@@ -21,6 +21,30 @@ FAILURES=""
 
 HOSTNAME=$(hostname)
 
+# The first directory where a script the tests create may run (/tmp may be
+# mounted noexec).
+exec_tmp_dir() {
+    local d f
+    for d in "${GPI2_TEST_TMPDIR:-}" "${TMPDIR:-}" /tmp "$TEST_DIR"; do
+        [ -n "$d" ] && [ -d "$d" ] && [ -w "$d" ] || continue
+        f=$(mktemp "$d/gaspi_test_exec.XXXXXX") || continue
+        printf '#!/bin/sh\nexit 0\n' > "$f"
+        chmod +x "$f"
+        if "$f" 2> /dev/null; then
+            rm -f "$f"
+            echo "$d"
+            return 0
+        fi
+        rm -f "$f"
+    done
+    return 1
+}
+
+EXEC_TMP=$(exec_tmp_dir) || {
+    echo "No directory where test scripts can run (set GPI2_TEST_TMPDIR)."
+    exit 1
+}
+
 ######################################################################
 # Setup / teardown
 ######################################################################
@@ -37,7 +61,7 @@ setup() {
     TEST_EXIT=0
 
     # Create a copy of gaspi_run's bin dir with our mock spawner
-    TEST_BIN_DIR=$(mktemp -d /tmp/gaspi_test_bin.XXXXXX)
+    TEST_BIN_DIR=$(mktemp -d "$EXEC_TMP/gaspi_test_bin.XXXXXX")
     cp "$GASPI_RUN" "$TEST_BIN_DIR/gaspi_run"
     cp "$MOCK_DIR/ssh.spawner" "$TEST_BIN_DIR/ssh.spawner"
     chmod +x "$TEST_BIN_DIR/ssh.spawner"
@@ -356,7 +380,7 @@ test_numa_option() {
 test_numa_option_lscpu_only() {
     # Without numactl, lscpu is enough to enable -N: the mocks without
     # numactl, plus a mock lscpu.
-    local mocks=$(mktemp -d /tmp/gaspi_test_mocks.XXXXXX)
+    local mocks=$(mktemp -d "$EXEC_TMP/gaspi_test_mocks.XXXXXX")
     cp "$MOCK_DIR"/* "$mocks"/
     rm "$mocks/numactl"
     printf '#!/bin/sh\necho "NUMA node(s): 2"\n' > "$mocks/lscpu"
@@ -730,7 +754,7 @@ test_spawner_success_local() {
 # The real spawner reports each rank that failed and exits non-zero.
 run_real_spawner() {
     local app
-    app=$(mktemp /tmp/gaspi_test_app.XXXXXX)
+    app=$(mktemp "$EXEC_TMP/gaspi_test_app.XXXXXX")
     printf '#!/bin/sh\n[ "$GASPI_RANK" = "%s" ] && exit 255\nexit 0\n' "$1" > "$app"
     chmod +x "$app"
     TEST_EXIT=0
