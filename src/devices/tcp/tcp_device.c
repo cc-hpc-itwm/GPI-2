@@ -627,7 +627,8 @@ _tcp_dev_post_wc (uint64_t wr_id,
 static int
 _tcp_dev_awaits_answer (const tcp_dev_wr_t * wr)
 {
-  return wr->opcode == REQUEST_RDMA_READ
+  return wr->opcode == NOTIFICATION_RDMA_WRITE
+    || wr->opcode == REQUEST_RDMA_READ
     || wr->opcode == REQUEST_ATOMIC_CMP_AND_SWP
     || wr->opcode == REQUEST_ATOMIC_FETCH_AND_ADD
     || (wr->opcode == NOTIFICATION_SEND && wr->compare_add != 1);
@@ -665,7 +666,11 @@ _tcp_dev_fail_awaiting (int rank)
   {
     enum tcp_dev_wc_opcode op = TCP_DEV_WC_SEND;
 
-    if (n->wr.opcode == REQUEST_RDMA_READ)
+    if (n->wr.opcode == NOTIFICATION_RDMA_WRITE)
+    {
+      op = TCP_DEV_WC_RDMA_WRITE;
+    }
+    else if (n->wr.opcode == REQUEST_RDMA_READ)
     {
       op = TCP_DEV_WC_RDMA_READ;
     }
@@ -699,6 +704,24 @@ _tcp_dev_set_default_read_conn_state (tcp_dev_conn_state_t * estate)
   estate->read.addr = (uintptr_t) & estate->wr_buff;
   estate->read.length = sizeof (tcp_dev_wr_t);
   estate->read.done = 0;
+}
+
+/* The data of the write in wr_buff is in place: tell its source. */
+static void
+_tcp_dev_answer_write (tcp_dev_conn_state_t * estate)
+{
+  tcp_dev_wr_t wr =
+    {
+      .wr_id = estate->wr_buff.wr_id,
+      .cq_handle = estate->wr_buff.cq_handle,
+      .opcode = RESPONSE_RDMA_WRITE,
+      .source = estate->wr_buff.target,
+      .target = estate->wr_buff.source
+    };
+
+  list_insert (&delayedList, &wr);
+
+  _tcp_dev_set_default_read_conn_state (estate);
 }
 
 static int
@@ -911,6 +934,11 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
         estate->read.length = estate->wr_buff.length;
         estate->read.done = 0;
 
+        if (0 == estate->read.length)
+        {
+          _tcp_dev_answer_write (estate);
+        }
+
         break;
       }
     case REQUEST_RDMA_READ:
@@ -1100,12 +1128,28 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
 
         break;
       }
+    case RESPONSE_RDMA_WRITE:
+      {
+        _tcp_dev_answered (estate->rank, NOTIFICATION_RDMA_WRITE,
+                           estate->wr_buff.wr_id, estate->wr_buff.cq_handle);
+        if (_tcp_dev_post_wc (estate->wr_buff.wr_id,
+                              TCP_WC_SUCCESS,
+                              TCP_DEV_WC_RDMA_WRITE,
+                              estate->wr_buff.cq_handle) != 0)
+        {
+          return 1;
+        }
+
+        _tcp_dev_set_default_read_conn_state (estate);
+
+        break;
+      }
     }                           /* switch opcode */
   }                             /* if RECV_HEADER */
 
   else if (estate->read.opcode == RECV_RDMA_WRITE)
   {
-    _tcp_dev_set_default_read_conn_state (estate);
+    _tcp_dev_answer_write (estate);
   }
 
   else if (estate->read.opcode == RECV_RDMA_READ)
@@ -1148,16 +1192,6 @@ _tcp_dev_process_recv_data (tcp_dev_conn_state_t * estate)
 static int
 _tcp_dev_process_sent_data (int pollfd, tcp_dev_conn_state_t * estate)
 {
-  if (estate->write.opcode == SEND_RDMA_WRITE)
-  {
-    if (_tcp_dev_post_wc (estate->write.wr_id,
-                          TCP_WC_SUCCESS,
-                          TCP_DEV_WC_RDMA_WRITE, estate->write.cq_handle) != 0)
-    {
-      return 1;
-    }
-  }
-
   struct epoll_event ev = {
     .data.ptr = estate,
     .events = EPOLLIN | EPOLLRDHUP
@@ -1292,11 +1326,6 @@ _tcp_dev_process_delayed (int pollfd)
         }
       }
 
-      if (!found_error && _tcp_dev_awaits_answer (&wr))
-      {
-        list_insert (&awaiting[wr.target], &wr);
-      }
-
       if ((wr.opcode == NOTIFICATION_RDMA_WRITE && wr.compare_add == 1)
           || (wr.opcode == NOTIFICATION_SEND && wr.compare_add == 1))
       {
@@ -1337,9 +1366,10 @@ _tcp_dev_process_delayed (int pollfd)
         wr.opcode == NOTIFICATION_RDMA_WRITE
           ? op = TCP_DEV_WC_RDMA_WRITE
           : TCP_DEV_WC_SEND;
-        if (_tcp_dev_post_wc
-            (element->wr.wr_id, TCP_WC_SUCCESS, TCP_DEV_WC_RDMA_WRITE,
-             element->wr.cq_handle) != 0)
+        if (!found_error && wr.opcode == NOTIFICATION_SEND
+            && _tcp_dev_post_wc (element->wr.wr_id, TCP_WC_SUCCESS,
+                                 TCP_DEV_WC_RDMA_WRITE,
+                                 element->wr.cq_handle) != 0)
         {
           GASPI_DEBUG_PRINT_ERROR ("Failed to post completion success.");
           return 1;
@@ -1387,6 +1417,11 @@ _tcp_dev_process_delayed (int pollfd)
             exit (EXIT_FAILURE);
           }
         }
+      }
+
+      if (!found_error && _tcp_dev_awaits_answer (&wr))
+      {
+        list_insert (&awaiting[wr.target], &wr);
       }
 
       delete = element;
@@ -2043,8 +2078,6 @@ tcp_virt_dev (void *args)
       {
         if (events[n].events & EPOLLIN)
         {
-          char tmp[4];
-
           /* read until would block */
           while (1)
           {
@@ -2061,7 +2094,7 @@ tcp_virt_dev (void *args)
             if (estate->read.length == sizeof (uint32_t))
             {
               bytesReceived =
-                read (estate->fd, (void *) tmp + estate->read.done,
+                read (estate->fd, (void *) estate->read.tmp + estate->read.done,
                       bytesRemaining);
             }
             else
@@ -2109,7 +2142,8 @@ tcp_virt_dev (void *args)
               if (estate->read.length == sizeof (uint32_t))
               {
                 /* copy tmp to final destinatin */
-                memcpy ((void *) estate->read.addr, tmp, sizeof (uint32_t));
+                memcpy ((void *) estate->read.addr, estate->read.tmp,
+                        sizeof (uint32_t));
               }
 
               int ret = _tcp_dev_process_recv_data (estate);
@@ -2197,11 +2231,11 @@ tcp_virt_dev (void *args)
           }
         }
 
-        /* still had something to write => generate error wc (a send
-           fails below, with the requests awaiting an answer) */
+        /* still had something to write => generate error wc (sends and
+           writes fail below, with the requests awaiting an answer) */
         if (estate->write.opcode != SEND_DISABLED)
         {
-          if (estate->write.opcode != SEND_SEND && _tcp_dev_post_wc
+          if (estate->write.opcode == SEND_RDMA_READ && _tcp_dev_post_wc
               (estate->write.wr_id, TCP_WC_REM_OP_ERROR, TCP_DEV_WC_RDMA_WRITE,
                estate->write.cq_handle) != 0)
           {

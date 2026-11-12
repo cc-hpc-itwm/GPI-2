@@ -71,6 +71,7 @@ typedef struct
     RESPONSE_RDMA_READ,
     NOTIFICATION_SEND,
     RESPONSE_SEND,
+    RESPONSE_RDMA_WRITE,
   } opcode;
 
   uint16_t target, source;
@@ -96,6 +97,9 @@ typedef struct
 
     uint64_t addr;
     uint32_t length, done;
+
+    /* 4-byte data (notifications), set at the destination when complete */
+    char tmp[4];
   } read;
 
   struct
