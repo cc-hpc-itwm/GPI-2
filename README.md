@@ -534,6 +534,44 @@ libraries, try to setup directly the MPI compilers (wrappers) through
 the environment variables CC and FC.
 
 
+### Locked memory limit (memlock)
+
+With Infiniband, and with libfabric providers that register memory with the
+NIC, GPI-2 pins its segments, queues and notification buffers in physical
+memory. Pinned memory counts against the locked memory limit (`ulimit -l`, in
+KiB). Many systems default to a few MiB, so `gaspi_proc_init` or
+`gaspi_segment_create` fails (with the debug library: "Memory registration
+failed") although enough memory is free. The Ethernet/TCP device and the
+libfabric `tcp` and `shm` providers are not affected.
+
+Check the limits that the ranks get on each node:
+
+```
+ssh <node> 'ulimit -Sl; ulimit -Hl'
+```
+
+If only the soft limit is low, raise it up to the hard limit before the
+application starts, in the shell initialization file (e.g. `~/.bashrc`) or in a
+wrapper script (see "Environment variables" below):
+
+```
+ulimit -l unlimited
+```
+
+The hard limit can only be raised by root. On every node, add to
+`/etc/security/limits.d/90-memlock.conf`:
+
+```
+*   soft  memlock  unlimited
+*   hard  memlock  unlimited
+```
+
+and log in again (this also applies to processes started through ssh, such as
+the ranks of `gaspi_run`). If the ranks are started by Slurm, also set
+`LimitMEMLOCK=infinity` for the `slurmd` service (`systemctl edit slurmd`) and
+restart it.
+
+
 ### Infiniband with relaxed PCIe ordering
 
 On NVIDIA (Mellanox) NICs the firmware setting `PCI_WR_ORDERING=1`

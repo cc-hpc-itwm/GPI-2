@@ -300,6 +300,8 @@ pgaspi_proc_init (const gaspi_timeout_t timeout_ms)
       goto errL;
     }
 
+    gaspi_check_memlock (gctx);
+
     //start sn_backend
     if (pthread_create (&gctx->snt, NULL, gaspi_sn_backend, NULL) != 0)
     {

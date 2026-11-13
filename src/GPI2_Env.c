@@ -19,6 +19,8 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
+#include <unistd.h>
 #include "GASPI_types.h"
 #include "GPI2_Env.h"
 #include "GPI2_Sys.h"
@@ -286,4 +288,53 @@ gaspi_handle_env (gaspi_context_t * ctx)
   snprintf (ctx->mfile, 1024, "%s", mfilePtr);
 
   return 0;
+}
+
+#define GASPI_MEMLOCK_WARN_BYTES (64UL * 1024 * 1024)
+
+void
+gaspi_check_memlock (const gaspi_context_t * const ctx)
+{
+#ifndef GPI2_DEVICE_TCP
+  struct rlimit lim;
+
+  if (ctx->local_rank != 0 || getrlimit (RLIMIT_MEMLOCK, &lim) != 0)
+  {
+    return;
+  }
+
+  if (lim.rlim_cur == RLIM_INFINITY || lim.rlim_cur >= GASPI_MEMLOCK_WARN_BYTES)
+  {
+    return;
+  }
+
+  char host[256] = "unknown";
+
+  if (gethostname (host, sizeof (host)) == 0)
+  {
+    host[sizeof (host) - 1] = '\0';
+  }
+
+  char hard[32] = "unlimited";
+
+  if (lim.rlim_max != RLIM_INFINITY)
+  {
+    snprintf (hard, sizeof (hard), "%lu KiB",
+              (unsigned long) (lim.rlim_max / 1024));
+  }
+
+  const int can_raise = lim.rlim_max == RLIM_INFINITY
+    || lim.rlim_max >= GASPI_MEMLOCK_WARN_BYTES;
+
+  fprintf (stderr,
+           "GPI-2: %s: locked memory limit (ulimit -l) is %lu KiB (hard: %s);"
+           " memory registration may fail. %s See the README, section"
+           " \"Locked memory limit\".\n",
+           host, (unsigned long) (lim.rlim_cur / 1024), hard,
+           can_raise
+           ? "Raise it with ulimit -l before starting the application."
+           : "Only root can raise the hard limit.");
+#else
+  (void) ctx;
+#endif
 }

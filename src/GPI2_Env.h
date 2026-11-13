@@ -23,4 +23,6 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 
 int gaspi_handle_env (gaspi_context_t * ctx);
 
+void gaspi_check_memlock (const gaspi_context_t * const ctx);
+
 #endif //_GPI2_ENV_H_
