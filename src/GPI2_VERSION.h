@@ -20,7 +20,7 @@ along with GPI-2. If not, see <http://www.gnu.org/licenses/>.
 #define _GPI2_VERSION_H_ 1
 
 #define GASPI_MAJOR_VERSION (1)
-#define GASPI_MINOR_VERSION (7)
+#define GASPI_MINOR_VERSION (8)
 #define GASPI_REVISION (0)
 
 #define GASPI_VERSION \
